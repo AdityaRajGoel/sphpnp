@@ -22,6 +22,7 @@ import {
 } from "recharts";
 import SEOHead from "@/components/SEOHead";
 import MarketDataManager from "@/components/admin/MarketDataManager";
+import PageTransition from "@/components/PageTransition";
 
 // ---- Types ----
 type UnlistedShare = {
@@ -153,7 +154,7 @@ const ShareForm = memo(({ form, setForm, onSave, onCancel, title, shareId, passw
           <div className="flex flex-wrap gap-1.5 mt-1 mb-2">
             {TAG_PRESETS.map((t) => (
               <button key={t.value} type="button" onClick={() => setForm({ ...form, tag: t.value, tag_color: t.color })}
-                className={`px-2 py-1 rounded-full text-[10px] font-semibold border transition-all ${form.tag === t.value && form.tag_color === t.color ? "ring-2 ring-secondary" : ""} ${t.color}`}>{t.label}</button>
+                className={`px-2 py-1 rounded-full text-[10px] font-semibold border transition-[color,background-color,border-color,box-shadow] ${form.tag === t.value && form.tag_color === t.color ? "ring-2 ring-secondary" : ""} ${t.color}`}>{t.label}</button>
             ))}
           </div>
           {/* Custom tag input */}
@@ -181,7 +182,7 @@ const ShareForm = memo(({ form, setForm, onSave, onCancel, title, shareId, passw
                   type="button"
                   title={t.label}
                   onClick={() => setForm({ ...form, tag_color: t.color })}
-                  className={`px-2 py-0.5 rounded-full text-[9px] font-bold border transition-all ${t.color} ${form.tag_color === t.color ? "ring-2 ring-secondary scale-105" : ""}`}
+                  className={`px-2 py-0.5 rounded-full text-[9px] font-bold border transition-[color,background-color,border-color,box-shadow] ${t.color} ${form.tag_color === t.color ? "ring-2 ring-secondary scale-105" : ""}`}
                 >
                   Aa
                 </button>
@@ -193,7 +194,7 @@ const ShareForm = memo(({ form, setForm, onSave, onCancel, title, shareId, passw
           <div className="flex flex-wrap gap-1.5 mt-1">
             {GRADIENT_PRESETS.map((g) => (
               <button key={g.value} type="button" onClick={() => setForm({ ...form, gradient_color: g.value })}
-                className={`w-7 h-7 rounded-lg bg-gradient-to-br ${g.value} border-2 transition-all ${form.gradient_color === g.value ? "ring-2 ring-secondary scale-110" : "border-transparent"}`} title={g.label} />
+                className={`w-7 h-7 rounded-lg bg-gradient-to-br ${g.value} border-2 transition-[color,background-color,border-color,box-shadow] ${form.gradient_color === g.value ? "ring-2 ring-secondary scale-110" : "border-transparent"}`} title={g.label} />
             ))}
           </div>
         </div>
@@ -730,6 +731,7 @@ const AdminPage = () => {
 
   if (!authenticated) {
     return (
+    <PageTransition>
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
@@ -749,7 +751,8 @@ const AdminPage = () => {
           </CardContent>
         </Card>
       </div>
-    );
+    </PageTransition>
+  );
   }
 
   return (

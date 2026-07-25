@@ -14,6 +14,7 @@ import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/react";
 
 import useScrollToHash from "@/hooks/useScrollToHash";
+import SmoothScroll from "@/components/SmoothScroll";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { useLocation } from "react-router-dom";
 import SmartPopup from "@/components/SmartPopup";
@@ -28,6 +29,7 @@ const KeyboardShortcuts = () => { useKeyboardShortcuts(); return null; };
 // Eagerly load the home page for fastest FCP
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
+import { EASE_OUT } from "@/lib/motion";
 
 // Lazy load all other pages
 const AboutPage = lazy(() => import("./pages/AboutPage"));
@@ -191,7 +193,11 @@ const App = () => (
   <HelmetProvider>
     <LanguageProvider>
     <QueryClientProvider client={queryClient}>
-      <MotionConfig reducedMotion="user">
+      {/* One default curve for every Motion animation on the site. Around 90
+          of them specified no easing at all and silently fell back to Motion's
+          default, which is why the same reveal felt different from page to
+          page. Anything that sets its own `ease` still wins. */}
+      <MotionConfig reducedMotion="user" transition={{ ease: EASE_OUT }}>
       <TooltipProvider>
         <LiveMarketProvider>
         <Toaster />
@@ -207,9 +213,11 @@ const App = () => (
             <CookieConsent />
             <StickyMobileCTA />
             <ErrorBoundary>
-              <Suspense fallback={<PageFallback />}>
-                <AnimatedRoutes />
-              </Suspense>
+              <SmoothScroll>
+                <Suspense fallback={<PageFallback />}>
+                  <AnimatedRoutes />
+                </Suspense>
+              </SmoothScroll>
             </ErrorBoundary>
           </AuthProvider>
         </BrowserRouter>

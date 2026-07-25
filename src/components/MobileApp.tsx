@@ -90,7 +90,7 @@ const MobileApp = () => {
                 <motion.div
                   key={feature.text}
                   className="flex items-center gap-3"
-                  initial={{ opacity: 0, y: 20 }}
+                  initial={{ opacity: 0, y: 24 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ delay: index * 0.1, duration: 0.5 }}
@@ -130,7 +130,7 @@ const MobileApp = () => {
                 <Button
                   asChild
                   size="lg"
-                  className="bg-primary-foreground text-primary hover:bg-primary-foreground/90 font-semibold transition-all duration-300"
+                  className="bg-primary-foreground text-primary hover:bg-primary-foreground/90 font-semibold transition-colors duration-300"
                 >
                   <a
                     href="https://play.google.com/store/apps/details?id=com.parasramindia.xts"
@@ -146,7 +146,7 @@ const MobileApp = () => {
                 <Button
                   asChild
                   size="lg"
-                  className="bg-primary-foreground text-primary hover:bg-primary-foreground/90 font-semibold transition-all duration-300"
+                  className="bg-primary-foreground text-primary hover:bg-primary-foreground/90 font-semibold transition-colors duration-300"
                 >
                   <a
                     href="https://apps.apple.com/us/app/parasram-trade/id1564728869"

@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { ExternalLink } from "lucide-react";
 import { motion } from "motion/react";
 import type { SubItem } from "./megaMenuData";
+import { EASE_OUT } from "@/lib/motion";
 
 interface MegaDropdownProps {
   items: SubItem[];
@@ -11,10 +12,10 @@ interface MegaDropdownProps {
 const MegaDropdown = ({ items, onClose }: MegaDropdownProps) => {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 8 }}
+      initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 8 }}
-      transition={{ duration: 0.2, ease: "easeOut" }}
+      transition={{ duration: 0.2, ease: EASE_OUT }}
       className="absolute top-full left-0 w-full bg-card border-b border-border shadow-xl z-50"
     >
       <div className="container mx-auto px-4 py-6">

@@ -166,12 +166,12 @@ const MessageCard = ({ message, index }: { message: TelegramMessage; index: numb
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: 24 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
       transition={{ delay: Math.min(index * 0.06, 0.3), duration: 0.35 }}
     >
-      <Card className={`group overflow-hidden transition-all duration-300 hover:shadow-xl ${config.glowColor} border ${config.borderColor} hover:scale-[1.01]`}>
+      <Card className={`group overflow-hidden transition-[box-shadow,transform] ease-out duration-300 hover:shadow-xl ${config.glowColor} border ${config.borderColor} hover:scale-[1.01]`}>
         {/* Category accent - left border */}
         <div className="flex">
           <div className={`w-1.5 flex-shrink-0 ${config.bgColor}`}
@@ -382,7 +382,7 @@ const TelegramChannel = ({ limit = 10, showViewAll = false, showFilters = false 
         {/* Header */}
         <motion.div
           className="text-center mb-10"
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 24 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.5 }}
@@ -554,7 +554,7 @@ const TelegramChannel = ({ limit = 10, showViewAll = false, showFilters = false 
         {showViewAll && messages.length > 0 && (
           <motion.div
             className="mt-8 flex justify-center"
-            initial={{ opacity: 0, y: 10 }}
+            initial={{ opacity: 0, y: 16 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: 0.3 }}
@@ -585,7 +585,7 @@ const TelegramChannel = ({ limit = 10, showViewAll = false, showFilters = false 
         {/* ⚠️ SEBI Investment Disclaimer */}
         <motion.div
           className="mt-8 md:mt-12"
-          initial={{ opacity: 0, y: 15 }}
+          initial={{ opacity: 0, y: 16 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ delay: 0.4, duration: 0.5 }}

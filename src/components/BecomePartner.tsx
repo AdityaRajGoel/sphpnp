@@ -118,7 +118,7 @@ const BecomePartner = () => {
                 <motion.div
                   key={b.text}
                   className="flex items-start gap-3"
-                  initial={{ opacity: 0, y: 15 }}
+                  initial={{ opacity: 0, y: 16 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ delay: 0.3 + i * 0.1 }}
@@ -241,7 +241,7 @@ const BecomePartner = () => {
                 <Button
                   type="submit"
                   disabled={loading}
-                  className="w-full bg-secondary hover:bg-secondary/90 text-secondary-foreground font-bold transition-all"
+                  className="w-full bg-secondary hover:bg-secondary/90 text-secondary-foreground font-bold transition-colors"
                 >
                   {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Send className="w-4 h-4 mr-2" />}
                   {loading ? "Submitting..." : "Submit Application"}

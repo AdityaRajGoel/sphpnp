@@ -15,6 +15,7 @@ import { useWatchlist } from "@/hooks/useWatchlist";
 import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip as RechartsTooltip, Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis } from "recharts";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { EASE_IN_OUT, EASE_OUT } from "@/lib/motion";
 
 export interface StockForAnalysis {
   name: string;
@@ -154,7 +155,7 @@ const AnalysisScanner = () => {
               key={i}
               initial={{ opacity: 0, scaleY: 0 }}
               animate={{ opacity: 1, scaleY: 1 }}
-              transition={{ delay: i * 0.05, duration: 0.4, ease: "easeOut" }}
+              transition={{ delay: i * 0.05, duration: 0.4, ease: EASE_OUT }}
               style={{ transformOrigin: `${x}px 104px` }}
             >
               <line x1={x} y1={bodyTop - 7} x2={x} y2={110} stroke={color} strokeWidth="1.2" opacity="0.65" />
@@ -171,7 +172,7 @@ const AnalysisScanner = () => {
         <motion.g
           initial={{ x: -24 }}
           animate={{ x: 240 }}
-          transition={{ duration: 1.9, repeat: Infinity, ease: "easeInOut" }}
+          transition={{ duration: 1.9, repeat: Infinity, ease: EASE_IN_OUT }}
         >
           <rect x="-24" y="0" width="24" height="112" fill="url(#scanTrail)" />
           <rect x="-1.5" y="0" width="3" height="112" fill="url(#scanGlow)" />
@@ -763,7 +764,7 @@ export const AIAnalysisModal = ({ isOpen, onClose, stock }: AIAnalysisModalProps
                     {/* Price Targets Card - shown when AI has returned structured data */}
                     {geminiVerdict?.structured?.price_targets && (
                       <motion.div
-                        initial={{ opacity: 0, y: 12 }}
+                        initial={{ opacity: 0, y: 16 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.3 }}
                         className="bg-gradient-to-br from-brand-orange/5 via-transparent to-secondary/5 border border-brand-orange/20 rounded-xl p-4"
@@ -819,7 +820,7 @@ export const AIAnalysisModal = ({ isOpen, onClose, stock }: AIAnalysisModalProps
                                     (geminiVerdict.structured.price_targets.resistance - geminiVerdict.structured.price_targets.support)) * 100
                                   ))}%`
                                 }}
-                                transition={{ duration: 0.8, ease: "easeOut" }}
+                                transition={{ duration: 0.8, ease: EASE_OUT }}
                                 style={{ transform: "translate(-50%, -50%)" }}
                               />
                             </div>
@@ -830,7 +831,7 @@ export const AIAnalysisModal = ({ isOpen, onClose, stock }: AIAnalysisModalProps
 
                     {/* New Infographics Section */}
                     {geminiVerdict?.structured && (
-                      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
+                      <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                           {/* Sentiment Meter */}
                           <div className="bg-card border rounded-xl p-4 flex flex-col items-center justify-center text-center">
@@ -842,7 +843,7 @@ export const AIAnalysisModal = ({ isOpen, onClose, stock }: AIAnalysisModalProps
                                   strokeDasharray={2 * Math.PI * 36}
                                   initial={{ strokeDashoffset: 2 * Math.PI * 36 }}
                                   animate={{ strokeDashoffset: 2 * Math.PI * 36 * (1 - geminiVerdict.structured.sentiment_score / 100) }}
-                                  transition={{ duration: 1.5, ease: "easeOut" }}
+                                  transition={{ duration: 1.5, ease: EASE_OUT }}
                                   className={geminiVerdict.structured.sentiment_score > 60 ? "text-secondary" : geminiVerdict.structured.sentiment_score > 40 ? "text-brand-gold" : "text-destructive"} 
                                 />
                               </svg>
@@ -1239,7 +1240,7 @@ export const AIAnalysisModal = ({ isOpen, onClose, stock }: AIAnalysisModalProps
                             key={i}
                             onClick={() => handleSampleQuestion(q)}
                             disabled={isChatting}
-                            className="shrink-0 text-[10px] font-medium bg-muted/50 hover:bg-brand-orange/10 hover:text-brand-orange border border-border/50 rounded-full px-3 py-1.5 transition-all whitespace-nowrap"
+                            className="shrink-0 text-[10px] font-medium bg-muted/50 hover:bg-brand-orange/10 hover:text-brand-orange border border-border/50 rounded-full px-3 py-1.5 transition-colors whitespace-nowrap"
                           >
                             {q}
                           </button>

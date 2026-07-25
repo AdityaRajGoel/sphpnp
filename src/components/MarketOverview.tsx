@@ -360,7 +360,7 @@ const MarketOverview = () => {
   }, []);
 
   return (
-    <section ref={sectionRef} className="py-8 md:py-20 bg-muted/30 relative overflow-hidden">
+    <section ref={sectionRef} className="py-8 md:py-16 bg-muted/30 relative overflow-hidden">
       {/* Subtle background */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-[0.03]">
         <div style={{ backgroundImage: `linear-gradient(hsl(213 80% 25%) 1px, transparent 1px), linear-gradient(90deg, hsl(213 80% 25%) 1px, transparent 1px)`, backgroundSize: '60px 60px', width: '100%', height: '100%' }} />
@@ -368,7 +368,7 @@ const MarketOverview = () => {
 
       <div className="container mx-auto px-4 relative z-10">
         {/* Header */}
-        <motion.div className="text-center mb-12" initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
+        <motion.div className="text-center mb-12" initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
           <motion.span className="inline-flex items-center gap-1.5 bg-brand-orange/10 text-brand-orange font-semibold text-sm uppercase tracking-wider px-3 py-1.5 rounded-full mb-3">
             <BarChart3 className="w-3.5 h-3.5" />
             Market Pulse
@@ -381,7 +381,7 @@ const MarketOverview = () => {
         </motion.div>
 
         {/* Stats strip */}
-        <motion.div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3 mb-12" initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
+        <motion.div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3 mb-12" initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
           {marketStats.map((stat, i) => (
             <motion.div key={stat.label} className={`bg-card border border-border/50 rounded-xl p-3 text-center group cursor-pointer ${i >= 4 ? 'hidden sm:block' : ''}`} whileHover={{ scale: 1.05, y: -4 }} transition={{ type: "spring", stiffness: 300 }}>
               <div className={`w-9 h-9 mx-auto mb-1.5 rounded-xl flex items-center justify-center ${stat.bgColor}`}>
@@ -400,7 +400,7 @@ const MarketOverview = () => {
               const Icon = tab.icon;
               return (
                 <button key={tab.key} onClick={() => setActiveTab(tab.key)}
-                  className={`flex items-center gap-1.5 px-2.5 sm:px-3.5 py-2 min-h-[44px] min-w-[44px] shrink-0 justify-center rounded-lg text-[11px] sm:text-xs font-semibold transition-all duration-200 whitespace-nowrap ${
+                  className={`flex items-center gap-1.5 px-2.5 sm:px-3.5 py-2 min-h-[44px] min-w-[44px] shrink-0 justify-center rounded-lg text-[11px] sm:text-xs font-semibold transition-colors duration-200 whitespace-nowrap ${
                     activeTab === tab.key
                       ? tab.key === "losers" ? "bg-destructive/10 text-destructive shadow-sm" : "bg-secondary/10 text-secondary shadow-sm"
                       : "text-muted-foreground hover:text-foreground hover:bg-muted"
@@ -432,7 +432,7 @@ const MarketOverview = () => {
             )}
 
             <AnimatePresence mode="wait">
-              <motion.div key={activeTab} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.2 }} className="p-1 sm:p-2">
+              <motion.div key={activeTab} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.2 }} className="p-1 sm:p-2">
                 {activeTab === "calendar" && activeConfig.data.length === 0 ? (
                   <div className="py-8 text-center text-sm text-muted-foreground">
                     No upcoming corporate actions listed right now - check back soon.
@@ -462,7 +462,7 @@ const MarketOverview = () => {
         </Card>
 
         {/* Market Breadth Bar */}
-        <motion.div className="mt-8 bg-card border border-border/50 rounded-xl p-5" initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
+        <motion.div className="mt-8 bg-card border border-border/50 rounded-xl p-5" initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-bold text-foreground">Market Breadth</h3>
             <span className="text-[10px] text-muted-foreground">NSE</span>

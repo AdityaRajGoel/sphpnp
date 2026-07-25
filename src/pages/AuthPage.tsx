@@ -11,6 +11,7 @@ import { Eye, EyeOff, Mail, Lock, User, ArrowRight, TrendingUp } from "lucide-re
 import SEOHead from "@/components/SEOHead";
 import logo80 from "@/assets/logo-80.webp";
 import logo160 from "@/assets/logo-160.webp";
+import PageTransition from "@/components/PageTransition";
 
 type AuthMode = "login" | "signup" | "forgot";
 
@@ -79,6 +80,7 @@ const AuthPage = () => {
 
   if (emailSent) {
     return (
+    <PageTransition>
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <SEOHead title="Check Your Email | Parasram India" description="Verify your email to continue" noindex />
         <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="text-center max-w-md">
@@ -96,7 +98,8 @@ const AuthPage = () => {
           </Button>
         </motion.div>
       </div>
-    );
+    </PageTransition>
+  );
   }
 
   return (
@@ -113,7 +116,7 @@ const AuthPage = () => {
           backgroundImage: "radial-gradient(circle at 20% 50%, hsl(var(--secondary)) 0%, transparent 50%), radial-gradient(circle at 80% 50%, hsl(var(--brand-gold)) 0%, transparent 50%)",
         }} />
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
           className="relative z-10 text-center text-primary-foreground"
         >
@@ -155,7 +158,7 @@ const AuthPage = () => {
           <AnimatePresence mode="wait">
             <motion.div
               key={mode}
-              initial={{ opacity: 0, y: 10 }}
+              initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
               transition={{ duration: 0.2 }}
@@ -233,6 +236,8 @@ const AuthPage = () => {
                       />
                       <button
                         type="button"
+                        aria-label={showPassword ? "Hide password" : "Show password"}
+                        aria-pressed={showPassword}
                         onClick={() => setShowPassword(!showPassword)}
                         className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                       >

@@ -23,9 +23,18 @@ const Header = () => {
   const { watchlist } = useWatchlist();
   const [scrolled, setScrolled] = useState(false);
 
-  // Compact, elevated header once the user scrolls past the hero fold
+  // Compact, elevated header once the user scrolls past the hero fold.
+  // The ref guard means React state is touched only when the value actually
+  // flips, not on every scroll event - otherwise this queues an update on
+  // every frame of every scroll for the life of the page.
+  const isScrolledRef = useRef(false);
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 24);
+    const onScroll = () => {
+      const next = window.scrollY > 24;
+      if (next === isScrolledRef.current) return;
+      isScrolledRef.current = next;
+      setScrolled(next);
+    };
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
@@ -85,13 +94,13 @@ const Header = () => {
           </div>
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2.5 pr-3 border-r border-primary-foreground/20">
-              <a href="https://www.instagram.com/parasrampanipat/" target="_blank" rel="noopener noreferrer" aria-label="Follow us on Instagram" className="hover:text-secondary hover:scale-110 transition-all">
+              <a href="https://www.instagram.com/parasrampanipat/" target="_blank" rel="noopener noreferrer" aria-label="Follow us on Instagram" className="inline-flex hover:text-secondary hover:scale-110 transition-[color,transform] duration-fast ease-out">
                 <Instagram className="w-3.5 h-3.5" />
               </a>
-              <a href="https://www.facebook.com/share/18B5W5rZaT/" target="_blank" rel="noopener noreferrer" aria-label="Follow us on Facebook" className="hover:text-secondary hover:scale-110 transition-all">
+              <a href="https://www.facebook.com/share/18B5W5rZaT/" target="_blank" rel="noopener noreferrer" aria-label="Follow us on Facebook" className="inline-flex hover:text-secondary hover:scale-110 transition-[color,transform] duration-fast ease-out">
                 <Facebook className="w-3.5 h-3.5" />
               </a>
-              <a href="https://x.com/ParasramPanipat" target="_blank" rel="noopener noreferrer" aria-label="Follow us on X (Twitter)" className="hover:text-secondary hover:scale-110 transition-all">
+              <a href="https://x.com/ParasramPanipat" target="_blank" rel="noopener noreferrer" aria-label="Follow us on X (Twitter)" className="inline-flex hover:text-secondary hover:scale-110 transition-[color,transform] duration-fast ease-out">
                 <Twitter className="w-3.5 h-3.5" />
               </a>
             </div>
@@ -104,9 +113,13 @@ const Header = () => {
       </div>
 
       {/* Main header */}
-      <div className={`bg-card/95 backdrop-blur-md relative transition-shadow duration-300 ${scrolled ? "shadow-lg" : "shadow-md"}`}>
+      <div className={`bg-card/95 backdrop-blur-md relative transition-shadow duration-base ease-out ${scrolled ? "shadow-lg" : "shadow-md"}`}>
         <div className="container mx-auto px-4 py-1 flex justify-between items-center">
-          <Link to="/" className="flex items-center group">
+          {/* The logo box is a fixed height so the header never changes size.
+              The shrink-on-scroll affordance is a transform on the image
+              instead: it costs no layout, so scrolling can't reflow the page
+              or shift what's underneath. */}
+          <Link to="/" className="flex h-10 md:h-16 items-center group">
             <img
               src={logo80}
               srcSet={`${logo80} 80w, ${logo160} 160w`}
@@ -115,7 +128,9 @@ const Header = () => {
               width={80}
               height={80}
               decoding="async"
-              className={`w-auto transition-all duration-300 group-hover:scale-105 ${scrolled ? "h-9 md:h-14" : "h-10 md:h-20"}`}
+              className={`h-full w-auto origin-left transition-transform duration-base ease-out ${
+                scrolled ? "scale-90" : "scale-100"
+              }`}
             />
           </Link>
 
@@ -153,14 +168,14 @@ const Header = () => {
                       <Link to={item.href} className="hover:text-secondary inset-0 flex items-center">{navLabel(item.label)}</Link>
                     ) : navLabel(item.label)}
                     {item.subItems && (
-                      <ChevronDown className={`w-3.5 h-3.5 ml-0.5 transition-transform duration-200 ${activeMenu === item.label ? "rotate-180" : ""}`} />
+                      <ChevronDown className={`w-3.5 h-3.5 ml-0.5 transition-transform duration-fast ease-out ${activeMenu === item.label ? "rotate-180" : ""}`} />
                     )}
                   </div>
                 )}
                 {/* Animated underline */}
                 {!item.highlight && (
                   <span
-                    className={`pointer-events-none absolute left-3 right-3 bottom-1 h-0.5 rounded-full bg-secondary origin-left transition-transform duration-300 ${
+                    className={`pointer-events-none absolute left-3 right-3 bottom-1 h-0.5 rounded-full bg-secondary origin-left transition-transform duration-fast ease-out ${
                       isActive(item) || activeMenu === item.label ? "scale-x-100" : "scale-x-0 group-hover/nav:scale-x-100"
                     }`}
                   />
@@ -197,7 +212,7 @@ const Header = () => {
                 <BarChart3 className="w-4 h-4 mr-1" />{t("cta.webTrade")}
               </a>
             </Button>
-            <Button asChild className="hidden sm:inline-flex btn-shine bg-gradient-to-r from-secondary to-brand-green hover:from-secondary/90 hover:to-brand-green/90 text-secondary-foreground font-bold shadow-md shadow-secondary/25 hover:shadow-lg hover:shadow-secondary/30 hover:scale-[1.03] active:scale-95 transition-all duration-200">
+            <Button asChild className="hidden sm:inline-flex btn-shine bg-gradient-to-r from-secondary to-brand-green hover:from-secondary/90 hover:to-brand-green/90 text-secondary-foreground font-bold shadow-md shadow-secondary/25 hover:shadow-lg hover:shadow-secondary/30">
               <Link to="/open-account">{t("cta.openAccount")}</Link>
             </Button>
             <button
@@ -252,7 +267,7 @@ const Header = () => {
                           }`}
                         >
                           {navLabel(item.label)}
-                          <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${expandedMobileSection === item.label ? "rotate-180" : ""}`} />
+                          <ChevronDown className={`w-4 h-4 transition-transform duration-fast ease-out ${expandedMobileSection === item.label ? "rotate-180" : ""}`} />
                         </button>
                         <AnimatePresence>
                           {expandedMobileSection === item.label && (

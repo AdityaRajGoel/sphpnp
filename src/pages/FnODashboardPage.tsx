@@ -15,6 +15,8 @@ import { Button } from "@/components/ui/button";
 import { TrendingUp, TrendingDown, Activity, Target, BarChart3, RefreshCw, Loader2, Download } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { downloadCsv, todayStamp } from "@/lib/exportData";
+import PageTransition from "@/components/PageTransition";
+import { EASE_IN_OUT } from "@/lib/motion";
 
 type OptionRow = {
   strike: number;
@@ -104,7 +106,7 @@ const FnOLoadingAnimation = () => {
             className="h-full bg-gradient-to-r from-secondary via-primary to-destructive rounded-full"
             initial={{ x: "-100%" }}
             animate={{ x: "100%" }}
-            transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+            transition={{ duration: 1.5, repeat: Infinity, ease: EASE_IN_OUT }}
             style={{ width: "60%" }}
           />
         </div>
@@ -213,6 +215,7 @@ const FnODashboardPage = () => {
   const maxPutOI = chain.length > 0 ? Math.max(...chain.map(r => r.putOI)) : 1;
 
   return (
+    <PageTransition>
     <div className="min-h-screen bg-background">
       <SEOHead 
         title="F&O Dashboard | Options Chain, PCR & Max Pain | Parasram India"
@@ -257,7 +260,7 @@ const FnODashboardPage = () => {
       <Header />
       <VisibleBreadcrumbs items={[{ name: "Home", url: "/" }, { name: "F&O Dashboard" }]} />
       <main className="container mx-auto px-4 py-8">
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-6">
+        <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} className="mb-6">
           <h1 className="text-3xl md:text-4xl font-heading font-bold text-foreground mb-2">{t("page.fno")}</h1>
           <p className="text-muted-foreground">Live options chain, Put-Call Ratio & Max Pain analysis</p>
         </motion.div>
@@ -323,7 +326,7 @@ const FnODashboardPage = () => {
               </>
             ) : (
               <>
-                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0 }}>
+                <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0 }}>
                   <Card className="p-4 text-center">
                     <Activity className="w-5 h-5 mx-auto mb-1 text-muted-foreground" />
                     <p className="text-xs text-muted-foreground">Put-Call Ratio</p>
@@ -331,7 +334,7 @@ const FnODashboardPage = () => {
                     <p className="text-[10px] text-muted-foreground">{pcr > 1.2 ? "Bullish" : pcr > 0.8 ? "Neutral" : "Bearish"}</p>
                   </Card>
                 </motion.div>
-                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+                <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
                   <Card className="p-4 text-center">
                     <Target className="w-5 h-5 mx-auto mb-1 text-muted-foreground" />
                     <p className="text-xs text-muted-foreground">Max Pain</p>
@@ -339,14 +342,14 @@ const FnODashboardPage = () => {
                     <p className="text-[10px] text-muted-foreground">{maxPain > spot ? "Above Spot" : "Below Spot"}</p>
                   </Card>
                 </motion.div>
-                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+                <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
                   <Card className="p-4 text-center">
                     <TrendingUp className="w-5 h-5 mx-auto mb-1 text-secondary" />
                     <p className="text-xs text-muted-foreground">Total Call OI</p>
                     <p className="text-xl font-bold font-mono text-foreground">{totalCallOI > 1000000 ? `${(totalCallOI / 1000000).toFixed(1)}M` : `${(totalCallOI / 1000).toFixed(0)}K`}</p>
                   </Card>
                 </motion.div>
-                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
+                <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
                   <Card className="p-4 text-center">
                     <TrendingDown className="w-5 h-5 mx-auto mb-1 text-destructive" />
                     <p className="text-xs text-muted-foreground">Total Put OI</p>
@@ -364,7 +367,7 @@ const FnODashboardPage = () => {
               <FnOLoadingAnimation />
             </motion.div>
           ) : (
-            <motion.div key="fno-content" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+            <motion.div key="fno-content" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
               <Tabs defaultValue="chain" className="w-full">
                 <TabsList className="mb-4">
                   <TabsTrigger value="chain">Options Chain</TabsTrigger>
@@ -532,6 +535,7 @@ const FnODashboardPage = () => {
       <Footer />
       <WhatsAppButton />
     </div>
+  </PageTransition>
   );
 };
 

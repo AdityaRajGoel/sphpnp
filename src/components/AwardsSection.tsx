@@ -16,7 +16,7 @@ const AwardsSection = () => {
   const scale = useTransform(scrollYProgress, [0, 0.5, 1], [0.95, 1, 0.95]);
 
   return (
-    <section ref={ref} className="py-10 md:py-20 relative overflow-hidden bg-background">
+    <section ref={ref} className="py-12 md:py-20 relative overflow-hidden bg-background">
       {/* Background decorations */}
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute top-0 right-0 w-96 h-96 bg-brand-gold/10 rounded-full blur-3xl opacity-50" />
@@ -26,7 +26,7 @@ const AwardsSection = () => {
       <div className="container mx-auto px-4 relative z-10">
         <motion.div 
           className="text-center mb-16"
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 24 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
@@ -46,14 +46,14 @@ const AwardsSection = () => {
           {awards.map((award, index) => (
             <motion.div
               key={index}
-              className="bg-card glass-card rounded-2xl p-6 text-center border-border/50 hover:border-brand-gold/50 shadow-sm hover:shadow-xl transition-all duration-300 group"
-              initial={{ opacity: 0, y: 20 }}
+              className="bg-card glass-card rounded-2xl p-6 text-center border-border/50 hover:border-brand-gold/50 shadow-sm hover:shadow-xl transition-[color,background-color,border-color,box-shadow] duration-300 group"
+              initial={{ opacity: 0, y: 24 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: index * 0.1, duration: 0.5 }}
               whileHover={{ y: -5 }}
             >
-              <div className="w-16 h-16 mx-auto mb-5 rounded-full bg-brand-gold/10 flex items-center justify-center group-hover:scale-110 group-hover:bg-brand-gold/20 transition-all duration-300">
+              <div className="w-16 h-16 mx-auto mb-5 rounded-full bg-brand-gold/10 flex items-center justify-center group-hover:scale-110 group-hover:bg-brand-gold/20 transition-[transform,color,background-color,border-color] ease-out duration-300">
                 <award.icon className="w-8 h-8 text-brand-gold" />
               </div>
               <h3 className="font-heading font-bold text-lg text-foreground mb-1">{award.title}</h3>

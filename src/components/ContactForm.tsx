@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { RippleButton } from "@/components/ui/ripple-button";
 
 const PHONE_REGEX = /^(\+?91)?[6-9]\d{9}$/;
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -99,7 +100,7 @@ const ContactForm = () => {
     <motion.form
       onSubmit={handleSubmit}
       className="bg-card border border-border/50 rounded-2xl p-6 md:p-8 shadow-lg space-y-4"
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: 24 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
     >
@@ -145,10 +146,10 @@ const ContactForm = () => {
         <p className="text-muted-foreground text-[10px] mt-1 text-right">{form.message.length}/1000</p>
       </div>
 
-      <Button type="submit" disabled={loading} className="w-full bg-secondary hover:bg-secondary/90 text-secondary-foreground font-bold">
+      <RippleButton type="submit" disabled={loading} className="w-full bg-secondary hover:bg-secondary/90 text-secondary-foreground font-bold">
         {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Send className="w-4 h-4 mr-2" />}
         {loading ? "Sending..." : "Send Message"}
-      </Button>
+      </RippleButton>
     </motion.form>
   );
 };

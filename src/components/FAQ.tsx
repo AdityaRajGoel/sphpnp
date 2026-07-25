@@ -27,7 +27,7 @@ const FAQ = ({ title = "Frequently Asked Questions", subtitle, items }: FAQProps
       <div className="container mx-auto px-4 relative z-10">
         <motion.div
           className="text-center mb-12"
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 24 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
         >
@@ -48,7 +48,7 @@ const FAQ = ({ title = "Frequently Asked Questions", subtitle, items }: FAQProps
 
         <motion.div
           className="max-w-3xl mx-auto"
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 24 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ delay: 0.1 }}
@@ -58,7 +58,7 @@ const FAQ = ({ title = "Frequently Asked Questions", subtitle, items }: FAQProps
               <AccordionItem
                 key={i}
                 value={`item-${i}`}
-                className="bg-card border border-border/50 rounded-xl px-5 shadow-sm hover:shadow-md hover:border-secondary/30 transition-all data-[state=open]:border-secondary/40 data-[state=open]:shadow-lg"
+                className="bg-card border border-border/50 rounded-xl px-5 shadow-sm hover:shadow-md hover:border-secondary/30 transition-[box-shadow,color,background-color,border-color] data-[state=open]:border-secondary/40 data-[state=open]:shadow-lg"
               >
                 <AccordionTrigger className="text-left font-heading font-semibold text-foreground text-sm md:text-base hover:text-secondary transition-colors py-4 [&[data-state=open]]:text-secondary">
                   {item.q}

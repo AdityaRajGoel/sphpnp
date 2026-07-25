@@ -119,7 +119,7 @@ const MarketMovers = ({ stocks, onPick }: MarketMoversProps) => {
       <AnimatePresence mode="wait">
         <motion.div
           key={tab}
-          initial={{ opacity: 0, y: 8 }}
+          initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -8 }}
           transition={{ duration: 0.2 }}
@@ -151,7 +151,7 @@ const MarketMovers = ({ stocks, onPick }: MarketMoversProps) => {
                       onClick={() => onPick(s.symbol)}
                       title={`Add ${s.symbol} to chart`}
                       aria-label={`Add ${s.symbol} to chart comparison`}
-                      className="shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground opacity-60 hover:opacity-100 hover:text-primary hover:bg-primary/10 transition-all"
+                      className="shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground opacity-60 hover:opacity-100 hover:text-primary hover:bg-primary/10 transition-[opacity,color,background-color,border-color]"
                     >
                       <LineChart className="w-4 h-4" />
                     </button>

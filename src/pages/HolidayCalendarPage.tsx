@@ -9,6 +9,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CalendarDays, Building2, Clock, AlertCircle, PartyPopper } from "lucide-react";
 import { useMemo } from "react";
+import PageTransition from "@/components/PageTransition";
 
 type Holiday = {
   date: string;
@@ -68,6 +69,7 @@ const HolidayCalendarPage = () => {
   const upcomingCount = HOLIDAYS_2026.length - pastCount;
 
   return (
+    <PageTransition>
     <div className="min-h-screen bg-background">
       <SEOHead
         title={`NSE BSE Market Holiday Calendar ${CALENDAR_YEAR} | Parasram India`}
@@ -128,7 +130,7 @@ const HolidayCalendarPage = () => {
       <Header />
       <VisibleBreadcrumbs items={[{ name: "Home", url: "/" }, { name: "Holiday Calendar" }]} />
       <main className="container mx-auto px-4 py-8">
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
+        <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
           <div className="flex items-center gap-3 mb-2">
             <CalendarDays className="w-8 h-8 text-secondary" />
             <h1 className="text-3xl md:text-4xl font-heading font-bold text-foreground">Market Holiday Calendar {CALENDAR_YEAR}</h1>
@@ -139,7 +141,7 @@ const HolidayCalendarPage = () => {
         {/* Next holiday banner */}
         {nextHoliday && daysUntilNext !== null && (
           <motion.div
-            initial={{ opacity: 0, y: 10 }}
+            initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
           >
@@ -184,7 +186,7 @@ const HolidayCalendarPage = () => {
             return (
               <motion.div
                 key={month}
-                initial={{ opacity: 0, y: 15 }}
+                initial={{ opacity: 0, y: 16 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: mIdx * 0.03 }}
@@ -207,7 +209,7 @@ const HolidayCalendarPage = () => {
                         viewport={{ once: true }}
                         transition={{ delay: i * 0.04 }}
                       >
-                        <Card className={`flex items-center justify-between px-4 py-3 transition-all hover:bg-muted/50 hover:shadow-sm ${isPast ? "opacity-40" : ""} ${isToday ? "ring-1 ring-secondary bg-secondary/5" : ""}`}>
+                        <Card className={`flex items-center justify-between px-4 py-3 transition-[color,background-color,border-color,box-shadow] hover:bg-muted/50 hover:shadow-sm ${isPast ? "opacity-40" : ""} ${isToday ? "ring-1 ring-secondary bg-secondary/5" : ""}`}>
                           <div className="flex items-center gap-4">
                             <div className="text-center min-w-[50px]">
                               <div className={`text-lg font-bold ${isToday ? "text-secondary" : "text-foreground"}`}>{h.date.split(" ")[1]}</div>
@@ -249,6 +251,7 @@ const HolidayCalendarPage = () => {
       <Footer />
       <WhatsAppButton />
     </div>
+  </PageTransition>
   );
 };
 

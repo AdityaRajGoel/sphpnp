@@ -4,6 +4,12 @@ import typography from "@tailwindcss/typography";
 
 export default {
   darkMode: ["class"],
+  // Compiles `hover:` to `@media (hover: hover)`, so a tap on a phone no
+  // longer leaves elements stuck in their hover state after the finger
+  // lifts. Applies to every hover utility on the site at once.
+  future: {
+    hoverOnlyWhenSupported: true,
+  },
   content: ["./pages/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}", "./app/**/*.{ts,tsx}", "./src/**/*.{ts,tsx}"],
   prefix: "",
   theme: {
@@ -79,6 +85,23 @@ export default {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
+        // Semantic roles: controls use lg/md/sm, surfaces use `surface`,
+        // chips and tokens use `pill`. See the shape scale in index.css.
+        surface: "var(--radius-surface)",
+        pill: "var(--radius-pill)",
+      },
+      transitionTimingFunction: {
+        // `ease-out` / `ease-in-out` are overridden on purpose: the CSS
+        // defaults are too soft to read as deliberate.
+        "out": "var(--ease-out)",
+        "in-out": "var(--ease-in-out)",
+        "drawer": "var(--ease-drawer)",
+      },
+      transitionDuration: {
+        press: "var(--duration-press)",
+        fast: "var(--duration-fast)",
+        base: "var(--duration-base)",
+        slow: "var(--duration-slow)",
       },
       keyframes: {
         "accordion-down": {

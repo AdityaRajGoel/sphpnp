@@ -27,7 +27,7 @@ export function useScreenerStocks() {
   const [updatedAt, setUpdatedAt] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const mapStock = useCallback((s: { symbol: string; name: string; sector?: string; yahoo?: string } & Record<string, unknown>): ScreenerStock => ({
+  const mapStock = useCallback((s: { symbol: string; name: string; sector?: string; yahoo?: string; updated_at: string } & Record<string, unknown>): ScreenerStock => ({
     symbol: s.symbol,
     name: s.name,
     sector: s.sector || "General",

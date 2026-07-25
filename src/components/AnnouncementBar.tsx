@@ -102,7 +102,7 @@ const AnnouncementBar = () => {
     <div
       role="region"
       aria-label="Site announcements"
-      className={`relative overflow-hidden border-b border-white/5 transition-all duration-300 ${
+      className={`relative overflow-hidden border-b border-white/5 transition-[height,opacity] duration-300 ${
         hidden ? "h-0 border-transparent opacity-0" : "h-8 md:h-10 opacity-100"
       }`}
       style={{ background: "linear-gradient(90deg, hsl(213 80% 10%) 0%, hsl(213 80% 15%) 50%, hsl(145 70% 12%) 100%)" }}
@@ -162,7 +162,7 @@ const AnnouncementBar = () => {
                 key={i}
                 onClick={() => setIndex(i)}
                 aria-label={`Show announcement: ${a.text}`}
-                className={`relative h-1.5 rounded-full overflow-hidden transition-all duration-300 ${i === index ? "w-5 bg-white/20" : "w-1.5 bg-white/25 hover:bg-white/40"}`}
+                className={`relative h-1.5 rounded-full overflow-hidden transition-colors duration-300 ${i === index ? "w-5 bg-white/20" : "w-1.5 bg-white/25 hover:bg-white/40"}`}
               >
                 {i === index && !paused && (
                   <motion.span

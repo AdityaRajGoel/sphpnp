@@ -1,5 +1,6 @@
 import { motion, useReducedMotion } from "motion/react";
 import { ReactNode } from "react";
+import { EASE_OUT } from "@/lib/motion";
 
 // Route transition: content fade/lift plus a brand-colored wipe that sweeps
 // across the viewport between pages (App.tsx wraps routes in AnimatePresence
@@ -26,8 +27,8 @@ export const PageTransition = ({ children }: PageTransitionProps) => {
       <motion.div
         variants={{
           initial: { opacity: 0, y: 12 },
-          in: { opacity: 1, y: 0, transition: { duration: 0.25, ease: "easeOut", delay: 0.08 } },
-          out: { opacity: 0, y: -8, transition: { duration: 0.15, ease: "easeIn" } },
+          in: { opacity: 1, y: 0, transition: { duration: 0.25, ease: EASE_OUT, delay: 0.08 } },
+          out: { opacity: 0, y: -8, transition: { duration: 0.15, ease: EASE_OUT } },
         }}
       >
         {children}

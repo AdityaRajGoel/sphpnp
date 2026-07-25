@@ -70,7 +70,7 @@ const BulkBlockDeals = () => {
       </div>
 
       <AnimatePresence mode="wait">
-        <motion.div key={tab} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.2 }}>
+        <motion.div key={tab} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.2 }}>
           {rows.length === 0 ? (
             <p className="text-xs text-muted-foreground py-6 text-center">
               No {tab} deals reported for the latest session.

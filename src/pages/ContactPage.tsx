@@ -68,7 +68,7 @@ const ContactPage = () => {
         <div className="container mx-auto px-4 relative z-10 text-center">
           <motion.div
             className="inline-flex items-center gap-2 bg-white/10 border border-white/20 rounded-full px-4 py-2 mb-6"
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
           >
             <MessageCircle className="w-4 h-4 text-brand-gold" />
@@ -76,7 +76,7 @@ const ContactPage = () => {
           </motion.div>
           <motion.h1
             className="font-heading text-4xl md:text-5xl font-bold mb-4"
-            initial={{ opacity: 0, y: 30 }}
+            initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
           >
@@ -100,11 +100,11 @@ const ContactPage = () => {
             {quickContacts.map((item, i) => (
               <motion.div
                 key={item.label}
-                initial={{ opacity: 0, y: 30 }}
+                initial={{ opacity: 0, y: 24 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.1 * i, duration: 0.5 }}
               >
-                <Card className="bg-card border-border/50 shadow-lg hover:shadow-xl hover:border-secondary/30 transition-all duration-300 group h-full">
+                <Card className="bg-card border-border/50 shadow-lg hover:shadow-xl hover:border-secondary/30 transition-[box-shadow,color,background-color,border-color] duration-300 group h-full">
                   <CardContent className="p-4 md:p-5 text-center">
                     <div className="w-10 h-10 bg-secondary/10 group-hover:bg-secondary/20 rounded-xl flex items-center justify-center mx-auto mb-3 transition-colors">
                       <item.icon className="w-5 h-5 text-secondary" />
@@ -160,10 +160,10 @@ const ContactPage = () => {
                   <CardContent className="p-5">
                     <h3 className="font-heading font-semibold text-foreground mb-3">Follow Us</h3>
                     <div className="flex gap-3">
-                      <a href="https://www.instagram.com/parasrampanipat/" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-4 py-2 rounded-lg bg-muted hover:bg-secondary/10 text-muted-foreground hover:text-secondary transition-all text-sm">
+                      <a href="https://www.instagram.com/parasrampanipat/" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-4 py-2 rounded-lg bg-muted hover:bg-secondary/10 text-muted-foreground hover:text-secondary transition-colors text-sm">
                         <Instagram className="w-4 h-4" /> Instagram
                       </a>
-                      <a href="https://www.facebook.com/share/18B5W5rZaT/" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-4 py-2 rounded-lg bg-muted hover:bg-secondary/10 text-muted-foreground hover:text-secondary transition-all text-sm">
+                      <a href="https://www.facebook.com/share/18B5W5rZaT/" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-4 py-2 rounded-lg bg-muted hover:bg-secondary/10 text-muted-foreground hover:text-secondary transition-colors text-sm">
                         <Facebook className="w-4 h-4" /> Facebook
                       </a>
                     </div>
@@ -196,7 +196,7 @@ const ContactPage = () => {
         <div className="container mx-auto px-4">
           <motion.div
             className="rounded-2xl overflow-hidden border border-border/50 shadow-lg"
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 24 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
           >

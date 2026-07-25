@@ -22,7 +22,7 @@ const CompanyValues = () => {
       <div className="container mx-auto px-4 relative z-10">
         <motion.div
           className="text-center mb-12"
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 24 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
         >
@@ -43,8 +43,8 @@ const CompanyValues = () => {
           {values.map((v, i) => (
             <motion.div
               key={v.title}
-              className="bg-card border border-border/50 rounded-xl p-6 hover:shadow-xl hover:border-secondary/30 transition-all group"
-              initial={{ opacity: 0, y: 30 }}
+              className="bg-card border border-border/50 rounded-xl p-6 hover:shadow-xl hover:border-secondary/30 transition-[box-shadow,color,background-color,border-color] group"
+              initial={{ opacity: 0, y: 24 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: i * 0.08 }}

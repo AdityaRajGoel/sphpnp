@@ -163,9 +163,9 @@ const CountdownTimer = ({ fetchedAt, marketOpen }: { fetchedAt: string | null, m
 const TickerSkeleton = ({ rows = 2 }: { rows?: number }) => {
   const pills = Array.from({ length: 8 });
   return (
-    <div aria-live="polite" aria-busy="true" className="bg-[#1a1f2e] dark:bg-brand-charcoal text-white">
+    <div aria-live="polite" aria-busy="true" className="flex h-full flex-col bg-[#1a1f2e] dark:bg-brand-charcoal text-white">
       {Array.from({ length: rows }).map((_, r) => (
-        <div key={r} className={`flex items-center gap-4 md:gap-6 px-4 py-1 md:py-1.5 overflow-hidden ${r > 0 ? "border-t border-white/5" : ""}`}>
+        <div key={r} className={`flex flex-1 items-center gap-4 md:gap-6 px-4 overflow-hidden ${r > 0 ? "border-t border-white/5" : ""}`}>
           <span className="text-[10px] text-white/40 font-medium shrink-0 flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 rounded-full bg-brand-gold animate-pulse" /> Loading live prices…
           </span>
@@ -188,8 +188,11 @@ const StockTicker = () => {
   const nextOpenCountdown = useCountdown(nextMarketOpen);
   const closeCountdown = useCountdown(marketClose);
 
+  // Fixed height: the skeleton used to be shorter than the loaded rows, so every
+  // page on the site dropped by 13-23px the moment live prices arrived. Both
+  // states now fill the same box.
   return (
-    <div className="border-b border-[#1a1f2e]/20 dark:border-brand-orange/20 bg-[#1a1f2e] dark:bg-brand-charcoal relative">
+    <div className="border-b border-[#1a1f2e]/20 dark:border-brand-orange/20 bg-[#1a1f2e] dark:bg-brand-charcoal relative h-9 md:h-[78px] overflow-hidden">
       {loading ? (
         <TickerSkeleton rows={isMobile ? 1 : 2} />
       ) : (
@@ -204,8 +207,14 @@ const StockTicker = () => {
         </>
       )}
 
-      {/* Market status bar — solid fade background so scrolling prices don't show through */}
-      <div className="absolute top-0 right-0 h-6 md:h-7 flex items-center gap-2 z-20 pl-10 pr-2 bg-gradient-to-l from-[#1a1f2e] via-[#1a1f2e] to-transparent dark:from-brand-charcoal dark:via-brand-charcoal">
+      {/* Market status bar — solid fade background so scrolling prices don't show
+          through. Full height on mobile because there is only one ticker row
+          there and it is taller than this bar: at a fixed h-6 the prices scrolled
+          out from under the badge and collided with it. Desktop keeps the short
+          bar so it masks only the first of the two rows. The fade runway also
+          has to be wide enough that the gradient is fully opaque before the
+          badge starts, or text reads through underneath it. */}
+      <div className="absolute top-0 right-0 h-full md:h-7 flex items-center gap-2 z-20 pl-14 pr-2 bg-gradient-to-l from-[#1a1f2e] from-60% via-[#1a1f2e] to-transparent dark:from-brand-charcoal dark:via-brand-charcoal">
         {/* Status badge */}
         <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full ${
           marketOpen 

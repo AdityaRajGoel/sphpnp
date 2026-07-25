@@ -4,6 +4,7 @@ import { motion, Variants, useScroll, useTransform } from "motion/react";
 import { useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { useT } from "@/i18n/LanguageContext";
+import { EASE_OUT } from "@/lib/motion";
 
 // Every service links to the page that actually explains it - the cards show a
 // "go" arrow, so they must be real links.
@@ -107,7 +108,7 @@ const Services = () => {
       opacity: 1,
       y: 0,
       scale: 1,
-      transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] },
+      transition: { duration: 0.5, ease: EASE_OUT },
     },
   };
 
@@ -150,7 +151,7 @@ const Services = () => {
       <div className="container mx-auto px-4 relative z-10">
         <motion.div
           className="text-center mb-16"
-          initial={{ opacity: 0, y: 30 }}
+          initial={{ opacity: 0, y: 24 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
@@ -203,14 +204,14 @@ const Services = () => {
                 aria-label={`${service.title} - learn more`}
                 className="block h-full rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-2"
               >
-              <Card className="group bg-card hover:shadow-2xl transition-all duration-300 border-border/50 hover:border-secondary/50 overflow-hidden h-full relative">
+              <Card className="group bg-card hover:shadow-2xl transition-[box-shadow,color,background-color,border-color] duration-300 border-border/50 hover:border-secondary/50 overflow-hidden h-full relative">
                 {/* Gradient overlay on hover */}
                 <motion.div className="absolute inset-0 bg-gradient-to-br from-secondary/5 to-brand-gold/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
                 <CardContent className="p-6 relative z-10">
                   <div className="flex items-start justify-between mb-4">
                     <motion.div
-                      className="w-14 h-14 bg-primary/10 rounded-xl flex items-center justify-center group-hover:bg-secondary/20 transition-all duration-300"
+                      className="w-14 h-14 bg-primary/10 rounded-xl flex items-center justify-center group-hover:bg-secondary/20 transition-colors duration-300"
                       animate={hoveredIndex === index ? { rotate: [0, -10, 10, 0] } : {}}
                       transition={{ duration: 0.5 }}
                     >
@@ -258,7 +259,7 @@ const Services = () => {
 
         <motion.div
           className="text-center mt-12"
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 24 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ delay: 0.5 }}

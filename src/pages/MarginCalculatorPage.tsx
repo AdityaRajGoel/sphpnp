@@ -6,6 +6,7 @@ import WhatsAppButton from "@/components/WhatsAppButton";
 import ScrollProgress from "@/components/ScrollProgress";
 import { useState, useMemo } from "react";
 import { motion } from "motion/react";
+import { DURATION, EASE_OUT, REVEAL_Y } from "@/lib/motion";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Calculator, TrendingUp, IndianRupee, Info } from "lucide-react";
+import PageTransition from "@/components/PageTransition";
 
 const MARGIN_RATES: Record<string, { span: number; exposure: number; label: string }> = {
   NIFTY: { span: 9, exposure: 3, label: "NIFTY 50" },
@@ -64,6 +66,7 @@ const MarginCalculatorPage = () => {
   const fmt = (n: number) => `₹${n.toLocaleString("en-IN", { maximumFractionDigits: 0 })}`;
 
   return (
+    <PageTransition>
     <div className="min-h-screen bg-background">
       <SEOHead 
         title="F&O Margin Calculator - SPAN + Exposure NSE | Parasram India" 
@@ -102,7 +105,7 @@ const MarginCalculatorPage = () => {
       <Header />
       <VisibleBreadcrumbs items={[{ name: "Home", url: "/" }, { name: "Margin Calculator" }]} />
       <main className="container mx-auto px-4 py-8 max-w-4xl">
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
+        <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
           <div className="flex items-center gap-3 mb-2">
             <Calculator className="w-8 h-8 text-primary" />
             <h1 className="text-3xl md:text-4xl font-heading font-bold text-foreground">Margin Calculator</h1>
@@ -117,7 +120,13 @@ const MarginCalculatorPage = () => {
           </TabsList>
 
           <TabsContent value="futures">
-            <div className="grid md:grid-cols-2 gap-6">
+            <motion.div
+              key="futures"
+              className="grid md:grid-cols-2 gap-6"
+              initial={{ opacity: 0, y: REVEAL_Y.item }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: DURATION.base, ease: EASE_OUT }}
+            >
               <Card className="p-6 space-y-4">
                 <h2 className="font-semibold text-lg text-foreground">Trade Details</h2>
                 <div className="space-y-3">
@@ -172,11 +181,17 @@ const MarginCalculatorPage = () => {
                   </div>
                 </div>
               </Card>
-            </div>
+            </motion.div>
           </TabsContent>
 
           <TabsContent value="equity">
-            <div className="grid md:grid-cols-2 gap-6">
+            <motion.div
+              key="equity"
+              className="grid md:grid-cols-2 gap-6"
+              initial={{ opacity: 0, y: REVEAL_Y.item }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: DURATION.base, ease: EASE_OUT }}
+            >
               <Card className="p-6 space-y-4">
                 <h2 className="font-semibold text-lg text-foreground">Trade Details</h2>
                 <div className="space-y-3">
@@ -219,7 +234,7 @@ const MarginCalculatorPage = () => {
                   </div>
                 </div>
               </Card>
-            </div>
+            </motion.div>
           </TabsContent>
         </Tabs>
 
@@ -233,6 +248,7 @@ const MarginCalculatorPage = () => {
       <Footer />
       <WhatsAppButton />
     </div>
+  </PageTransition>
   );
 };
 

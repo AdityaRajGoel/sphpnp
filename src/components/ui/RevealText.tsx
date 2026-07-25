@@ -1,4 +1,5 @@
 import { motion, Variants } from "motion/react";
+import { EASE_OUT } from "@/lib/motion";
 
 // Reveals a heading word-by-word as it scrolls into view.
 // Renders inline spans so it drops into any <h2>/<h3> without changing layout.
@@ -9,7 +10,7 @@ const container: Variants = {
 
 const word: Variants = {
   hidden: { opacity: 0, y: 16 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] } },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: EASE_OUT } },
 };
 
 type Props = {

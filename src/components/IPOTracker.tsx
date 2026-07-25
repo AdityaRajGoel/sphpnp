@@ -33,8 +33,8 @@ const tabs: { key: TabKey; label: string; icon: LucideIcon }[] = [
 
 const IPOCard = ({ ipo, index }: { ipo: IPO; index: number }) => (
   <motion.div
-    className="bg-card border border-border/50 rounded-xl p-4 hover:shadow-lg hover:border-brand-orange/30 transition-all cursor-pointer group"
-    initial={{ opacity: 0, y: 15 }}
+    className="bg-card border border-border/50 rounded-xl p-4 hover:shadow-lg hover:border-brand-orange/30 transition-[box-shadow,color,background-color,border-color] cursor-pointer group"
+    initial={{ opacity: 0, y: 16 }}
     whileInView={{ opacity: 1, y: 0 }}
     viewport={{ once: true }}
     transition={{ delay: index * 0.06 }}
@@ -186,7 +186,7 @@ const IPOTracker = () => {
       </div>
 
       <div className="container mx-auto px-4 relative z-10">
-        <motion.div className="text-center mb-10" initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
+        <motion.div className="text-center mb-10" initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
           <motion.span className="inline-flex items-center gap-1.5 bg-brand-orange/10 text-brand-orange text-xs font-bold uppercase tracking-wider px-3 py-1.5 rounded-full mb-3">
             <Rocket className="w-3.5 h-3.5" />
             IPO Central
@@ -216,7 +216,7 @@ const IPOTracker = () => {
               <button
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key)}
-                className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${
+                className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold transition-colors ${
                   activeTab === tab.key
                     ? "bg-brand-orange text-white shadow-lg shadow-brand-orange/30"
                     : "bg-card border border-border/50 text-muted-foreground hover:text-foreground hover:bg-muted"
@@ -242,7 +242,7 @@ const IPOTracker = () => {
           <AnimatePresence mode="wait">
             <motion.div
               key={activeTab}
-              initial={{ opacity: 0, y: 10 }}
+              initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
               className="grid md:grid-cols-2 lg:grid-cols-3 gap-4"
@@ -274,7 +274,7 @@ const IPOTracker = () => {
           ].map((s) => (
             <motion.div
               key={s.num}
-              className="relative bg-card border border-border/50 rounded-xl p-4 hover:border-brand-orange/40 hover:shadow-md transition-all"
+              className="relative bg-card border border-border/50 rounded-xl p-4 hover:border-brand-orange/40 hover:shadow-md transition-[color,background-color,border-color,box-shadow]"
               variants={{ hidden: { opacity: 0, y: 16 }, visible: { opacity: 1, y: 0, transition: { duration: 0.4 } } }}
             >
               <span className="absolute -top-2.5 left-4 text-[10px] font-bold bg-brand-orange text-white px-2 py-0.5 rounded-full">
@@ -287,7 +287,7 @@ const IPOTracker = () => {
         </motion.div>
 
         {/* CTA */}
-        <motion.div className="mt-8 text-center" initial={{ opacity: 0, y: 15 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
+        <motion.div className="mt-8 text-center" initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
           <p className="text-sm text-muted-foreground mb-3">
             Want to apply for IPOs? Open your Demat account with Parasram India today.
           </p>

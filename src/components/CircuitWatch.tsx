@@ -31,6 +31,8 @@ function computeCircuits(rows: BhavcopyRow[]) {
 interface CircuitWatchProps {
   rows: BhavcopyRow[];
   asOf: string | null;
+  /** True while the bhavcopy is still in flight, so the slot can be held open. */
+  loading?: boolean;
 }
 
 /**
@@ -38,7 +40,7 @@ interface CircuitWatchProps {
  * derived from the official bhavcopy (close == day extreme + >=4.95% move) -
  * the exchange-site "securities in price band" list, approximated honestly.
  */
-const CircuitWatch = ({ rows, asOf }: CircuitWatchProps) => {
+const CircuitWatch = ({ rows, asOf, loading = false }: CircuitWatchProps) => {
   const [tab, setTab] = useState<"upper" | "lower">("upper");
   const { upper, lower } = useMemo(() => computeCircuits(rows), [rows]);
   const list = tab === "upper" ? upper : lower;
@@ -47,7 +49,21 @@ const CircuitWatch = ({ rows, asOf }: CircuitWatchProps) => {
     ? new Date(asOf).toLocaleDateString("en-IN", { day: "numeric", month: "short" })
     : null;
 
-  // No bhavcopy yet - render nothing rather than an empty shell.
+  // While the bhavcopy is in flight, hold the slot open - popping this card in
+  // afterwards shifted the whole page. Once we know there is genuinely no data,
+  // collapse as before rather than showing an empty shell.
+  if (loading) {
+    return (
+      <Card className="p-4 h-full" aria-busy="true">
+        <div className="h-5 w-40 animate-pulse rounded bg-muted" />
+        <div className="mt-4 space-y-2">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="h-8 animate-pulse rounded bg-muted/60" />
+          ))}
+        </div>
+      </Card>
+    );
+  }
   if (rows.length === 0) return null;
 
   return (
@@ -76,7 +92,7 @@ const CircuitWatch = ({ rows, asOf }: CircuitWatchProps) => {
       </div>
 
       <AnimatePresence mode="wait">
-        <motion.div key={tab} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.2 }}>
+        <motion.div key={tab} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.2 }}>
           {list.length === 0 ? (
             <p className="text-xs text-muted-foreground py-6 text-center">
               No {tab} band hitters in the latest session.

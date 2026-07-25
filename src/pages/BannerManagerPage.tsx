@@ -18,6 +18,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import SEOHead from "@/components/SEOHead";
 import logo80 from "@/assets/logo-80.webp";
+import PageTransition from "@/components/PageTransition";
 
 // ---- Types & Constants ----
 type BannerMessage = {
@@ -239,6 +240,7 @@ const BannerManagerPage = () => {
   // Loading / auth gate
   if (authLoading) {
     return (
+    <PageTransition>
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="space-y-3 w-full max-w-md">
           {[1, 2, 3].map((i) => (
@@ -246,7 +248,8 @@ const BannerManagerPage = () => {
           ))}
         </div>
       </div>
-    );
+    </PageTransition>
+  );
   }
 
   if (!user) {
@@ -397,7 +400,7 @@ const BannerManagerPage = () => {
                     key={t.value}
                     type="button"
                     onClick={() => setForm({ ...form, bg_theme: t.value })}
-                    className={`px-3 py-1.5 rounded-md text-xs font-medium border transition-all ${
+                    className={`px-3 py-1.5 rounded-md text-xs font-medium border transition-colors ${
                       form.bg_theme === t.value 
                       ? "border-primary bg-primary/5 text-primary ring-1 ring-primary/20" 
                       : "border-border hover:bg-muted text-muted-foreground"
@@ -417,7 +420,7 @@ const BannerManagerPage = () => {
                     key={t.value}
                     type="button"
                     onClick={() => setForm({ ...form, type: t.value })}
-                    className={`flex items-center gap-1 px-2.5 py-1.5 rounded-full text-[11px] font-semibold border transition-all ${
+                    className={`flex items-center gap-1 px-2.5 py-1.5 rounded-full text-[11px] font-semibold border transition-[color,background-color,border-color,box-shadow,filter] ${
                       form.type === t.value ? "ring-2 ring-primary border-transparent" : "opacity-70 grayscale"
                     } ${t.color}`}
                   >
@@ -502,7 +505,7 @@ const BannerManagerPage = () => {
 
       {/* Content */}
       <main className="container mx-auto px-4 py-8 max-w-4xl">
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}>
           {/* Title + Add button */}
           <div className="flex items-center justify-between mb-8">
             <div>

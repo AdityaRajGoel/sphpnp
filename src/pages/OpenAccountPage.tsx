@@ -19,6 +19,7 @@ import VisibleBreadcrumbs from "@/components/VisibleBreadcrumbs";
 import PageTransition from "@/components/PageTransition";
 import ScrollProgress from "@/components/ScrollProgress";
 import WhatsAppButton from "@/components/WhatsAppButton";
+import { RippleButton } from "@/components/ui/ripple-button";
 
 const benefits = [
   { icon: Shield, title: "SEBI Registered", desc: "Trade with a trusted, regulation-compliant broker" },
@@ -219,13 +220,13 @@ const OpenAccountPage = () => {
           <div className="absolute bottom-10 left-10 w-80 h-80 bg-brand-gold/15 rounded-full blur-3xl" />
         </div>
         <div className="container mx-auto px-4 relative z-10 text-center">
-          <motion.span className="inline-flex items-center gap-1.5 bg-white/10 border border-white/20 text-white text-xs font-bold uppercase tracking-wider px-3 py-1.5 rounded-full mb-4" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+          <motion.span className="inline-flex items-center gap-1.5 bg-white/10 border border-white/20 text-white text-xs font-bold uppercase tracking-wider px-3 py-1.5 rounded-full mb-4" initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }}>
             <TrendingUp className="w-3.5 h-3.5 text-secondary" /> Free Demat Account
           </motion.span>
-          <motion.h1 className="font-heading text-4xl md:text-5xl lg:text-6xl font-bold text-primary-foreground mb-4" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+          <motion.h1 className="font-heading text-4xl md:text-5xl lg:text-6xl font-bold text-primary-foreground mb-4" initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
             {t("openAccount.title1")} <span className="text-transparent bg-clip-text bg-gradient-to-r from-secondary to-brand-gold">{t("openAccount.title2")}</span>
           </motion.h1>
-          <motion.p className="text-lg text-primary-foreground/80 max-w-xl mx-auto" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+          <motion.p className="text-lg text-primary-foreground/80 max-w-xl mx-auto" initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
             {t("openAccount.subtitle")}
           </motion.p>
         </div>
@@ -235,7 +236,7 @@ const OpenAccountPage = () => {
         <div className="container mx-auto px-4">
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {benefits.map((b, i) => (
-              <motion.div key={b.title} className="flex items-start gap-3 bg-card border border-border/50 rounded-xl p-4" initial={{ opacity: 0, y: 15 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.08 }}>
+              <motion.div key={b.title} className="flex items-start gap-3 bg-card border border-border/50 rounded-xl p-4" initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.08 }}>
                 <div className="w-10 h-10 rounded-lg bg-brand-orange/10 flex items-center justify-center shrink-0"><b.icon className="w-5 h-5 text-brand-orange" /></div>
                 <div><h3 className="text-sm font-bold text-foreground">{b.title}</h3><p className="text-xs text-muted-foreground mt-0.5">{b.desc}</p></div>
               </motion.div>
@@ -292,10 +293,10 @@ const OpenAccountPage = () => {
                   <label className="text-xs font-semibold text-foreground mb-1.5 block">Message (Optional)</label>
                   <Textarea name="message" aria-label="Message" value={form.message} onChange={handleChange} placeholder="Any specific requirements or questions..." rows={4} maxLength={1000} />
                 </div>
-                <Button type="submit" disabled={loading} className="w-full sm:w-auto bg-gradient-to-r from-brand-orange to-brand-gold text-white font-bold text-base px-10 py-6 shadow-lg shadow-brand-orange/20 hover:opacity-90 transition-opacity">
+                <RippleButton type="submit" disabled={loading} className="w-full sm:w-auto bg-gradient-to-r from-brand-orange to-brand-gold text-white font-bold text-base px-10 py-6 shadow-lg shadow-brand-orange/20 hover:opacity-90 transition-opacity">
                   {loading ? "Submitting..." : "Submit Request"}
                   <ArrowRight className="ml-2 w-5 h-5" />
-                </Button>
+                </RippleButton>
               </form>
             </motion.div>
 

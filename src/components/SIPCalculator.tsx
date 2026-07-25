@@ -5,7 +5,20 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 
-const SIPCalculator = () => {
+/*
+ * Rendered both as the entire /sip-calculator page and as one section inside
+ * /services. On the dedicated page its title is the document's main heading; in
+ * the services page it is a subsection under that page's own h1. The level is
+ * therefore a prop rather than a fixed tag - /sip-calculator previously shipped
+ * with no h1 at all.
+ */
+interface SIPCalculatorProps {
+  /** Heading level for the section title. Use 1 only when this is the page. */
+  headingLevel?: 1 | 2;
+}
+
+const SIPCalculator = ({ headingLevel = 2 }: SIPCalculatorProps) => {
+  const Heading = headingLevel === 1 ? "h1" : "h2";
   const [monthlyInvestment, setMonthlyInvestment] = useState(5000);
   const [years, setYears] = useState(10);
   const [expectedReturn, setExpectedReturn] = useState(12);
@@ -34,7 +47,7 @@ const SIPCalculator = () => {
       <div className="container mx-auto px-4 relative z-10">
         <motion.div
           className="text-center mb-12"
-          initial={{ opacity: 0, y: 30 }}
+          initial={{ opacity: 0, y: 24 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
         >
@@ -46,9 +59,9 @@ const SIPCalculator = () => {
             <Calculator className="w-4 h-4 text-secondary" />
             <span className="text-secondary font-semibold text-sm">Investment Tool</span>
           </motion.div>
-          <h2 className="font-heading text-3xl md:text-4xl font-bold text-foreground mb-4">
+          <Heading className="font-heading text-3xl md:text-4xl font-bold text-foreground mb-4">
             SIP Calculator
-          </h2>
+          </Heading>
           <p className="text-muted-foreground text-lg max-w-xl mx-auto">
             Plan your systematic investments and see your wealth grow over time
           </p>

@@ -69,7 +69,7 @@ const FooterColumn = ({
   title, open, onToggle, delay, children,
 }: { title: string; open: boolean; onToggle: () => void; delay: number; children: ReactNode }) => (
   <motion.div
-    initial={{ opacity: 0, y: 20 }}
+    initial={{ opacity: 0, y: 24 }}
     whileInView={{ opacity: 1, y: 0 }}
     viewport={{ once: true }}
     transition={{ duration: 0.5, delay }}
@@ -134,7 +134,7 @@ const Footer = () => {
         <div className="container mx-auto px-4 py-6 md:py-8">
           <motion.div
             className="flex flex-col md:flex-row items-center justify-between gap-4"
-            initial={{ opacity: 0, y: 15 }}
+            initial={{ opacity: 0, y: 16 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.5 }}
@@ -170,7 +170,7 @@ const Footer = () => {
         <div className="grid md:grid-cols-2 lg:grid-cols-5 gap-4 md:gap-6 mb-6 md:mb-10">
           {/* Column 1 - Brand */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 24 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.5 }}
@@ -196,7 +196,7 @@ const Footer = () => {
                   target={item.href.startsWith("http") ? "_blank" : undefined}
                   rel={item.href.startsWith("http") ? "noopener noreferrer" : undefined}
                   aria-label={item.label}
-                  className="w-9 h-9 bg-primary-foreground/10 rounded-full flex items-center justify-center hover:bg-secondary hover:scale-110 hover:-translate-y-1 transition-all"
+                  className="w-9 h-9 bg-primary-foreground/10 rounded-full flex items-center justify-center hover:bg-secondary hover:scale-110 hover:-translate-y-1 transition-[color,background-color,border-color,transform] ease-out"
                 >
                   <item.icon className="w-4 h-4" />
                 </a>
@@ -250,7 +250,7 @@ const Footer = () => {
                       href="https://play.google.com/store/apps/details?id=com.parasramindia.xts"
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center bg-primary-foreground/10 hover:bg-secondary/30 rounded-md px-2.5 py-1.5 text-[11px] font-medium transition-all hover:scale-105"
+                      className="inline-flex items-center bg-primary-foreground/10 hover:bg-secondary/30 rounded-md px-2.5 py-1.5 text-[11px] font-medium transition-[color,background-color,border-color,transform] ease-out hover:scale-105"
                     >
                       Google Play
                     </a>
@@ -258,7 +258,7 @@ const Footer = () => {
                       href="https://apps.apple.com/us/app/parasram-trade/id1564728869"
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center bg-primary-foreground/10 hover:bg-secondary/30 rounded-md px-2.5 py-1.5 text-[11px] font-medium transition-all hover:scale-105"
+                      className="inline-flex items-center bg-primary-foreground/10 hover:bg-secondary/30 rounded-md px-2.5 py-1.5 text-[11px] font-medium transition-[color,background-color,border-color,transform] ease-out hover:scale-105"
                     >
                       App Store
                     </a>
@@ -272,7 +272,7 @@ const Footer = () => {
         {/* Compliance & Grievance */}
         <motion.div
           className="border-t border-primary-foreground/15 pt-6 mb-6"
-          initial={{ opacity: 0, y: 15 }}
+          initial={{ opacity: 0, y: 16 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.5, delay: 0.3 }}
@@ -367,7 +367,7 @@ const Footer = () => {
             <button
               onClick={scrollToTop}
               aria-label="Scroll to top"
-              className="w-10 h-10 bg-secondary/20 hover:bg-secondary rounded-full flex items-center justify-center text-primary-foreground transition-all hover:scale-110 hover:-translate-y-1 active:scale-95"
+              className="w-10 h-10 bg-secondary/20 hover:bg-secondary rounded-full flex items-center justify-center text-primary-foreground transition-[color,background-color,border-color,transform] ease-out hover:scale-110 hover:-translate-y-1 active:scale-[0.97]"
             >
               <ArrowUp className="w-5 h-5" />
             </button>

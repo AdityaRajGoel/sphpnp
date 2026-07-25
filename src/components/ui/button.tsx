@@ -1,20 +1,41 @@
 import * as React from "react";
 import { Slot } from "@radix-ui/react-slot";
 import { cva, type VariantProps } from "class-variance-authority";
-import { motion } from "motion/react";
 
 import { cn } from "@/lib/utils";
 
+/*
+ * Buttons are the most-repeated interaction on the site, so their motion is
+ * deliberately cheap and deliberately short.
+ *
+ * - Press feedback is scale(0.97) on :active. It is the one animation that
+ *   earns a place here: it confirms the interface heard the tap before any
+ *   navigation or network work begins.
+ * - It runs on a CSS transition, not JS. CSS animates off the main thread, so
+ *   the press still feels instant while the app is fetching, hydrating or
+ *   painting - which is exactly when a user is most likely to be pressing
+ *   something, and exactly when a main-thread animation drops frames.
+ * - There is no hover scale. Hover is seen dozens of times a session; growing
+ *   the button every time is noise. Hover reads through colour alone.
+ * - Only transform, colour and shadow transition. Never `all`.
+ */
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+  [
+    "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium",
+    "ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+    "disabled:pointer-events-none disabled:opacity-50",
+    "[&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+    "transition-[transform,background-color,border-color,color,box-shadow] duration-press ease-out",
+  ].join(" "),
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground hover:bg-primary/90",
-        destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90",
-        outline: "border border-input bg-background hover:bg-accent hover:text-accent-foreground",
-        secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
-        ghost: "hover:bg-accent hover:text-accent-foreground",
+        default: "bg-primary text-primary-foreground hover:bg-primary/90 active:scale-[0.97]",
+        destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90 active:scale-[0.97]",
+        outline: "border border-input bg-background hover:bg-accent hover:text-accent-foreground active:scale-[0.97]",
+        secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80 active:scale-[0.97]",
+        ghost: "hover:bg-accent hover:text-accent-foreground active:scale-[0.97]",
+        // A text link is not a surface, so it doesn't compress on press.
         link: "text-primary underline-offset-4 hover:underline",
       },
       size: {
@@ -37,21 +58,10 @@ export interface ButtonProps
   asChild?: boolean;
 }
 
-const MotionSlot = motion.create(Slot);
-const MotionButton = motion.button;
-
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant, size, asChild = false, ...props }, ref) => {
-    const Comp = asChild ? MotionSlot : MotionButton;
-    return (
-      <Comp
-        whileHover={{ scale: 1.02 }}
-        whileTap={{ scale: 0.98 }}
-        className={cn(buttonVariants({ variant, size, className }))}
-        ref={ref}
-        {...props}
-      />
-    );
+    const Comp = asChild ? Slot : "button";
+    return <Comp className={cn(buttonVariants({ variant, size, className }))} ref={ref} {...props} />;
   },
 );
 Button.displayName = "Button";

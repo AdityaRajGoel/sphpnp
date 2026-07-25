@@ -134,7 +134,7 @@ const BannerMessage = () => {
         <div className="absolute top-4 right-4 md:top-6 md:right-6 z-50">
           <button 
             onClick={dismiss} 
-            className="flex items-center gap-2 px-4 py-2 rounded-full bg-black/40 hover:bg-black/60 text-white backdrop-blur-md border border-white/20 transition-all duration-200"
+            className="flex items-center gap-2 px-4 py-2 rounded-full bg-black/40 hover:bg-black/60 text-white backdrop-blur-md border border-white/20 transition-colors duration-200"
           >
             <span className="text-xs font-bold uppercase tracking-wider">Close</span>
             <X className="w-4 h-4" />

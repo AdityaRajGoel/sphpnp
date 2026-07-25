@@ -30,11 +30,11 @@ const TrustBadges = () => {
   const inView = useInView(sectionRef, { once: true, margin: "-80px" });
 
   return (
-    <section className="py-12 bg-muted/30 border-y border-border/30 overflow-hidden">
+    <section className="py-8 md:py-12 bg-muted/30 border-y border-border/30 overflow-hidden">
       <div className="container mx-auto px-4" ref={sectionRef}>
         <motion.div
           className="text-center mb-8"
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 24 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
         >

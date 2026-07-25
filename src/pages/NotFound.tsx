@@ -4,6 +4,8 @@ import { motion } from "motion/react";
 import { TrendingUp, Home, ArrowLeft, Search, HelpCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import SEOHead from "@/components/SEOHead";
+import PageTransition from "@/components/PageTransition";
+import { EASE_OUT } from "@/lib/motion";
 
 const glitchVariants = {
   animate: {
@@ -39,6 +41,7 @@ const NotFound = () => {
   ];
 
   return (
+    <PageTransition>
     <div className="min-h-screen bg-background flex items-center justify-center p-4 relative overflow-hidden">
       <SEOHead title="Page Not Found" description="The page you are looking for does not exist on Parasram India Panipat." noindex />
       {/* Background grid pattern */}
@@ -50,7 +53,7 @@ const NotFound = () => {
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+        transition={{ duration: 0.5, ease: EASE_OUT }}
         className="text-center relative z-10 max-w-lg mx-auto"
       >
         {/* Stock ticker style 404 */}
@@ -80,17 +83,17 @@ const NotFound = () => {
           </div>
         </motion.div>
 
-        <motion.h2
-          initial={{ opacity: 0, y: 10 }}
+        <motion.h1
+          initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
           className="text-xl sm:text-2xl font-heading font-bold text-foreground mb-2"
         >
           This page hit the circuit breaker
-        </motion.h2>
+        </motion.h1>
 
         <motion.p
-          initial={{ opacity: 0, y: 10 }}
+          initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
           className="text-muted-foreground mb-1"
@@ -98,7 +101,7 @@ const NotFound = () => {
           The route <code className="text-xs bg-muted px-2 py-0.5 rounded font-mono">{location.pathname}</code> doesn't exist.
         </motion.p>
         <motion.p
-          initial={{ opacity: 0, y: 10 }}
+          initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.35 }}
           className="text-sm text-muted-foreground mb-8"
@@ -108,7 +111,7 @@ const NotFound = () => {
 
         {/* Action buttons */}
         <motion.div
-          initial={{ opacity: 0, y: 10 }}
+          initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
           className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-8"
@@ -143,6 +146,7 @@ const NotFound = () => {
         </motion.div>
       </motion.div>
     </div>
+    </PageTransition>
   );
 };
 

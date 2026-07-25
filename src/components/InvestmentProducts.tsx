@@ -5,6 +5,7 @@ import {
   LineChart, Activity, Sparkles, PiggyBank, Rocket,
   Gem, Landmark, Vault, ArrowRight, BadgeCheck,
 } from "lucide-react";
+import { EASE_IN_OUT, EASE_OUT } from "@/lib/motion";
 
 // Segmented product menu - the pattern both Motilal Oswal & Angel One lead
 // with. Each card links to an existing route and maps to the parent
@@ -41,7 +42,7 @@ const FeaturedSparkline = () => (
       initial={{ pathLength: 0 }}
       whileInView={{ pathLength: 1 }}
       viewport={{ once: true, margin: "-60px" }}
-      transition={{ duration: 1.6, ease: "easeInOut", delay: 0.3 }}
+      transition={{ duration: 1.6, ease: EASE_IN_OUT, delay: 0.3 }}
     />
     <motion.circle
       cx="218" cy="6" r="3.5"
@@ -61,7 +62,7 @@ const containerVariants: Variants = {
 
 const itemVariants: Variants = {
   hidden: { opacity: 0, y: 30, scale: 0.95 },
-  visible: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] } },
+  visible: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.5, ease: EASE_OUT } },
 };
 
 // Track cursor position as CSS vars so the card glow follows the pointer.
@@ -89,7 +90,7 @@ const InvestmentProducts = () => {
         {/* Heading */}
         <motion.div
           className="text-center mb-10"
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 24 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.5 }}
@@ -129,7 +130,7 @@ const InvestmentProducts = () => {
                   to={p.to}
                   aria-label={`${p.title} - learn more`}
                   onMouseMove={handleCardGlow}
-                  className={`card-glow group relative flex flex-col h-full bg-card border border-border/50 rounded-2xl hover:border-secondary/40 hover:shadow-xl transition-all duration-300 overflow-hidden ${
+                  className={`card-glow group relative flex flex-col h-full bg-card border border-border/50 rounded-2xl hover:border-secondary/40 hover:shadow-xl transition-[color,background-color,border-color,box-shadow] duration-300 overflow-hidden ${
                     isFeatured ? "p-5 md:p-7 bg-gradient-to-br from-card to-secondary/[0.04]" : "p-4 md:p-5"
                   }`}
                 >
@@ -137,7 +138,7 @@ const InvestmentProducts = () => {
 
                   <div className="relative z-10 flex flex-col h-full">
                     <div className="flex items-start justify-between mb-3">
-                      <div className={`bg-secondary/10 rounded-xl flex items-center justify-center group-hover:bg-secondary/20 group-hover:scale-110 transition-all duration-300 ${isFeatured ? "w-14 h-14" : "w-11 h-11"}`}>
+                      <div className={`bg-secondary/10 rounded-xl flex items-center justify-center group-hover:bg-secondary/20 group-hover:scale-110 transition-[color,background-color,border-color,transform] ease-out duration-300 ${isFeatured ? "w-14 h-14" : "w-11 h-11"}`}>
                         <Icon className={`text-secondary ${isFeatured ? "w-7 h-7" : "w-5 h-5"}`} />
                       </div>
                       <span className="text-[9px] font-bold uppercase tracking-wide text-brand-orange bg-brand-orange/10 border border-brand-orange/20 rounded-full px-2 py-0.5">
@@ -154,7 +155,7 @@ const InvestmentProducts = () => {
 
                     {isFeatured && <FeaturedSparkline />}
 
-                    <span className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-secondary opacity-0 group-hover:opacity-100 -translate-x-1 group-hover:translate-x-0 transition-all duration-300">
+                    <span className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-secondary opacity-0 group-hover:opacity-100 -translate-x-1 group-hover:translate-x-0 transition-[opacity,transform] ease-out duration-300">
                       Explore <ArrowRight className="w-3.5 h-3.5" />
                     </span>
                   </div>
@@ -174,7 +175,7 @@ const InvestmentProducts = () => {
         {/* Trust strip + primary CTA - competitor pattern: funnel to account opening */}
         <motion.div
           className="mt-10 flex flex-col md:flex-row items-center justify-center gap-4 md:gap-6 text-center"
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 24 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.5 }}
@@ -192,7 +193,7 @@ const InvestmentProducts = () => {
           </div>
           <Link
             to="/open-account"
-            className="inline-flex items-center gap-2 btn-shine bg-gradient-to-r from-secondary to-brand-green text-secondary-foreground font-bold px-6 py-3 rounded-xl shadow-lg hover:shadow-xl hover:scale-[1.03] transition-all duration-300"
+            className="inline-flex items-center gap-2 btn-shine bg-gradient-to-r from-secondary to-brand-green text-secondary-foreground font-bold px-6 py-3 rounded-xl shadow-lg hover:shadow-xl hover:scale-[1.03] transition-[box-shadow,transform] ease-out duration-300"
           >
             Open Free Demat Account <ArrowRight className="w-4 h-4" />
           </Link>

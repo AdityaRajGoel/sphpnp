@@ -54,7 +54,7 @@ const DailyResearch = () => {
       <div className="container mx-auto px-4 relative z-10">
         <motion.div
           className="text-center mb-12"
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 24 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.5 }}
@@ -90,8 +90,8 @@ const DailyResearch = () => {
               href={card.href}
               target="_blank"
               rel="noopener noreferrer"
-              className="group relative overflow-hidden rounded-2xl bg-card border border-border/50 hover:border-transparent transition-all duration-300 hover:shadow-2xl block"
-              initial={{ opacity: 0, y: 30 }}
+              className="group relative overflow-hidden rounded-2xl bg-card border border-border/50 hover:border-transparent transition-[color,background-color,border-color,box-shadow] duration-300 hover:shadow-2xl block"
+              initial={{ opacity: 0, y: 24 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: i * 0.1, duration: 0.5 }}
@@ -127,9 +127,9 @@ const DailyResearch = () => {
                   {card.description}
                 </p>
 
-                <div className={`inline-flex items-center gap-2 text-sm font-semibold ${card.textColor} group-hover:gap-3 transition-all duration-300`}>
+                <div className={`inline-flex items-center gap-2 text-sm font-semibold ${card.textColor}`}>
                   {card.cta}
-                  <ArrowUpRight className="w-4 h-4" />
+                  <ArrowUpRight className="w-4 h-4 transition-transform duration-base ease-out group-hover:translate-x-1 group-hover:-translate-y-0.5" />
                 </div>
               </div>
 

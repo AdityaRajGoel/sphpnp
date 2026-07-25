@@ -39,7 +39,7 @@ const SIPCalculatorPage = () => (
         items={[{ name: "Home", url: "/" }, { name: "SIP Calculator" }]}
       />
       <main className="flex-1">
-        <SIPCalculator />
+        <SIPCalculator headingLevel={1} />
       </main>
       <Footer />
       <WhatsAppButton />

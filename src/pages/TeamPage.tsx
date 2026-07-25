@@ -17,6 +17,7 @@ import {
   MapPin, Calendar
 } from "lucide-react";
 import { useRef } from "react";
+import { EASE_OUT } from "@/lib/motion";
 
 const teamMembers = [
   {
@@ -99,11 +100,11 @@ const TeamMemberCard = ({ member, index }: { member: typeof teamMembers[0]; inde
 
   return (
     <motion.div
-      className="group bg-card rounded-2xl border border-border/50 hover:border-secondary/30 shadow-lg hover:shadow-2xl transition-all duration-500 relative overflow-hidden"
+      className="group bg-card rounded-2xl border border-border/50 hover:border-secondary/30 shadow-lg hover:shadow-2xl transition-[color,background-color,border-color,box-shadow] duration-500 relative overflow-hidden"
       initial={{ opacity: 0, y: 50 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-50px" }}
-      transition={{ delay: index * 0.12, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+      transition={{ delay: index * 0.12, duration: 0.6, ease: EASE_OUT }}
       whileHover={{ y: -6 }}
     >
       {/* Top gradient bar */}
@@ -252,7 +253,7 @@ const TeamPage = () => {
         <div className="container mx-auto px-4 relative z-10">
           <motion.div
             className="text-center mb-6"
-            initial={{ opacity: 0, y: 30 }}
+            initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
           >
@@ -300,7 +301,7 @@ const TeamPage = () => {
               <motion.div
                 key={stat.label}
                 className="flex items-center gap-3 justify-center py-3"
-                initial={{ opacity: 0, y: 20 }}
+                initial={{ opacity: 0, y: 24 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.1 }}
@@ -349,7 +350,7 @@ const TeamPage = () => {
             ].map((item, i) => (
               <motion.div
                 key={item.title}
-                initial={{ opacity: 0, y: 20 }}
+                initial={{ opacity: 0, y: 24 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.08 }}
@@ -369,7 +370,7 @@ const TeamPage = () => {
       <section className="py-8 md:py-16 bg-background">
         <div className="container mx-auto px-4 text-center">
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 24 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
           >

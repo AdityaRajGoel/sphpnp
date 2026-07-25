@@ -2,6 +2,7 @@ import { motion, Variants, useScroll, useTransform } from "motion/react";
 import { Star, Quote, ChevronLeft, ChevronRight } from "lucide-react";
 import { useRef, useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import { EASE_OUT } from "@/lib/motion";
 
 const testimonials = [
   {
@@ -79,7 +80,7 @@ const Testimonials = () => {
       opacity: 1,
       y: 0,
       scale: 1,
-      transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] },
+      transition: { duration: 0.6, ease: EASE_OUT },
     },
   };
 
@@ -119,7 +120,7 @@ const Testimonials = () => {
       <div className="container mx-auto px-4 relative z-10">
         <motion.div
           className="text-center mb-16"
-          initial={{ opacity: 0, y: 30 }}
+          initial={{ opacity: 0, y: 24 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
@@ -143,7 +144,7 @@ const Testimonials = () => {
         {/* Featured testimonial */}
         <motion.div
           className="max-w-3xl mx-auto mb-16"
-          initial={{ opacity: 0, y: 30 }}
+          initial={{ opacity: 0, y: 24 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
         >
@@ -188,18 +189,28 @@ const Testimonials = () => {
 
             {/* Navigation dots */}
             <div className="flex items-center justify-center gap-2 mt-8">
-              <button onClick={() => setActiveIndex((prev) => (prev - 1 + testimonials.length) % testimonials.length)} className="p-1 rounded-full hover:bg-muted transition-colors">
+              <button
+                aria-label="Previous testimonial"
+                onClick={() => setActiveIndex((prev) => (prev - 1 + testimonials.length) % testimonials.length)}
+                className="p-1 rounded-full hover:bg-muted transition-colors"
+              >
                 <ChevronLeft className="w-5 h-5 text-muted-foreground" />
               </button>
               {testimonials.map((_, i) => (
                 <motion.button
                   key={i}
+                  aria-label={`Show testimonial ${i + 1} of ${testimonials.length}`}
+                  aria-current={i === activeIndex}
                   onClick={() => setActiveIndex(i)}
-                  className={`rounded-full transition-all duration-300 ${i === activeIndex ? "w-8 h-2 bg-secondary" : "w-2 h-2 bg-muted-foreground/30 hover:bg-muted-foreground/50"}`}
+                  className={`tap-area rounded-full transition-colors duration-300 ${i === activeIndex ? "w-8 h-2 bg-secondary" : "w-2 h-2 bg-muted-foreground/30 hover:bg-muted-foreground/50"}`}
                   whileHover={{ scale: 1.2 }}
                 />
               ))}
-              <button onClick={() => setActiveIndex((prev) => (prev + 1) % testimonials.length)} className="p-1 rounded-full hover:bg-muted transition-colors">
+              <button
+                aria-label="Next testimonial"
+                onClick={() => setActiveIndex((prev) => (prev + 1) % testimonials.length)}
+                className="p-1 rounded-full hover:bg-muted transition-colors"
+              >
                 <ChevronRight className="w-5 h-5 text-muted-foreground" />
               </button>
             </div>
@@ -217,7 +228,7 @@ const Testimonials = () => {
           {visibleTestimonials.map((testimonial, index) => (
             <motion.div
               key={testimonial.name}
-              className="group relative bg-card rounded-2xl p-6 shadow-lg hover:shadow-2xl transition-all duration-500 border border-border/50"
+              className="group relative bg-card rounded-2xl p-6 shadow-lg hover:shadow-2xl transition-shadow duration-500 border border-border/50"
               variants={cardVariants}
               whileHover={{ y: -10, scale: 1.02 }}
             >
@@ -273,7 +284,7 @@ const Testimonials = () => {
         {/* CTA */}
         <motion.div
           className="text-center mt-16"
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 24 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ delay: 0.5 }}
@@ -281,7 +292,7 @@ const Testimonials = () => {
           <p className="text-muted-foreground mb-4">Ready to start your investment journey?</p>
           <Link
             to="/contact"
-            className="inline-flex items-center gap-2 text-secondary font-semibold hover:gap-4 transition-all duration-300"
+            className="group inline-flex items-center gap-2 text-secondary font-semibold"
           >
             Get in touch with us today
             <motion.span

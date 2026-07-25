@@ -21,7 +21,7 @@ const HowItWorks = () => {
       <div className="container mx-auto px-4 relative z-10">
         <motion.div
           className="text-center mb-14"
-          initial={{ opacity: 0, y: 30 }}
+          initial={{ opacity: 0, y: 24 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
         >

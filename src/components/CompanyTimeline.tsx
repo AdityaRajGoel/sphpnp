@@ -32,7 +32,7 @@ const CompanyTimeline = () => {
       <div className="container mx-auto px-4 relative z-10">
         <motion.div
           className="text-center mb-16"
-          initial={{ opacity: 0, y: 30 }}
+          initial={{ opacity: 0, y: 24 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
         >
@@ -83,7 +83,7 @@ const CompanyTimeline = () => {
                   {/* Content card */}
                   <div className={`ml-16 md:ml-0 md:w-[calc(50%-40px)] ${isLeft ? "md:pr-4" : "md:pl-4"}`}>
                     <motion.div
-                      className="bg-card border border-border/50 rounded-xl p-5 shadow-md hover:shadow-xl hover:border-secondary/30 transition-all group"
+                      className="bg-card border border-border/50 rounded-xl p-5 shadow-md hover:shadow-xl hover:border-secondary/30 transition-[box-shadow,color,background-color,border-color] group"
                       whileHover={{ y: -4 }}
                     >
                       <div className="flex items-center gap-3 mb-2">

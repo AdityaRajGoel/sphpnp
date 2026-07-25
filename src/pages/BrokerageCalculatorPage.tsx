@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { IndianRupee, ArrowRight, TrendingUp, TrendingDown, Info, Calculator, BarChart3, ExternalLink, ChevronDown, ChevronUp } from "lucide-react";
+import PageTransition from "@/components/PageTransition";
 
 /* ─── Parasram Brokerage & Statutory Rates (as of April 2026) ─── */
 
@@ -213,6 +214,7 @@ const BrokerageCalculatorPage = () => {
   ];
 
   return (
+    <PageTransition>
     <div className="min-h-screen bg-background">
       <SEOHead
         title="Brokerage Calculator | Parasram India - Panipat"
@@ -286,7 +288,7 @@ const BrokerageCalculatorPage = () => {
             <button
               key={seg.key}
               onClick={() => setSegment(seg.key)}
-              className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-colors duration-200 ${
                 segment === seg.key
                   ? "bg-primary text-primary-foreground shadow-md scale-105"
                   : "bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground"
@@ -405,7 +407,7 @@ const BrokerageCalculatorPage = () => {
             >
               <button
                 onClick={() => setShowRateCard(!showRateCard)}
-                className="w-full flex items-center justify-between gap-2 text-sm text-muted-foreground hover:text-foreground bg-muted/30 hover:bg-muted/50 rounded-lg px-4 py-3 transition-all"
+                className="w-full flex items-center justify-between gap-2 text-sm text-muted-foreground hover:text-foreground bg-muted/30 hover:bg-muted/50 rounded-lg px-4 py-3 transition-colors"
               >
                 <span className="flex items-center gap-2">
                   <Info className="w-4 h-4 text-primary" />
@@ -440,7 +442,7 @@ const BrokerageCalculatorPage = () => {
                       </p>
                     </div>
                   </motion.div>
-                )}
+                  )}
               </AnimatePresence>
             </motion.div>
           </motion.div>
@@ -488,7 +490,7 @@ const BrokerageCalculatorPage = () => {
                     netPnL >= 0 ? "text-secondary" : "text-destructive"
                   }`}
                   key={netPnL}
-                  initial={{ opacity: 0, y: 8 }}
+                  initial={{ opacity: 0, y: 16 }}
                   animate={{ opacity: 1, y: 0 }}
                 >
                   {netPnL >= 0 ? "+" : "−"}{fmt(netPnL)}
@@ -563,7 +565,7 @@ const BrokerageCalculatorPage = () => {
               href="https://webtrade.parasramindia.com/calculator#!/span"
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center justify-between gap-3 rounded-xl border border-secondary/30 bg-secondary/5 hover:bg-secondary/10 px-5 py-4 transition-all group"
+              className="flex items-center justify-between gap-3 rounded-xl border border-secondary/30 bg-secondary/5 hover:bg-secondary/10 px-5 py-4 transition-colors group"
               whileHover={{ scale: 1.01 }}
               whileTap={{ scale: 0.99 }}
             >
@@ -576,7 +578,7 @@ const BrokerageCalculatorPage = () => {
                   Calculate SPAN & exposure margin requirements for your F&O positions
                 </p>
               </div>
-              <ArrowRight className="w-5 h-5 text-secondary opacity-60 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
+              <ArrowRight className="w-5 h-5 text-secondary opacity-60 group-hover:opacity-100 group-hover:translate-x-1 transition-[opacity,transform] ease-out" />
             </motion.a>
           </motion.div>
         </div>
@@ -599,6 +601,7 @@ const BrokerageCalculatorPage = () => {
       <Footer />
       <WhatsAppButton />
     </div>
+    </PageTransition>
   );
 };
 

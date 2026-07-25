@@ -13,6 +13,8 @@ import { Button } from "@/components/ui/button";
 import { GitCompareArrows, Search, X, TrendingUp, TrendingDown, Star, Bot, Share2, Zap } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import type { StockForAnalysis } from "@/components/AIAnalysisModal";
+import PageTransition from "@/components/PageTransition";
+import { EASE_OUT } from "@/lib/motion";
 const AIAnalysisModal = lazy(() => import("@/components/AIAnalysisModal"));
 
 type Stock = {
@@ -38,7 +40,7 @@ function StatBar({ value, max, color }: { value: number | null; max: number; col
   return (
     <div className="w-full h-1 bg-muted rounded-full mt-1 overflow-hidden">
       <motion.div className={`h-full rounded-full ${color}`} initial={{ width: 0 }}
-        animate={{ width: `${pct}%` }} transition={{ duration: 0.8, ease: "easeOut" }} />
+        animate={{ width: `${pct}%` }} transition={{ duration: 0.8, ease: EASE_OUT }} />
     </div>
   );
 }
@@ -53,7 +55,7 @@ function RangeBar({ price, low, high }: { price: number | null; low: number | nu
       <div className="relative w-24 h-1.5 bg-muted rounded-full">
         <motion.div className="absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-primary border-2 border-background shadow-sm"
           initial={{ left: "50%" }} animate={{ left: `${pct}%` }}
-          transition={{ duration: 0.8, ease: "easeOut" }} style={{ marginLeft: "-6px" }} />
+          transition={{ duration: 0.8, ease: EASE_OUT }} style={{ marginLeft: "-6px" }} />
       </div>
       <div className="flex gap-3 text-muted-foreground">
         <span>L:₹{fmtK(low)}</span>
@@ -197,6 +199,7 @@ const StockComparisonPage = () => {
   ];
 
   return (
+    <PageTransition>
     <div className="min-h-screen bg-background">
       <SEOHead 
         title="Compare Stocks Side-by-Side NSE BSE | Parasram India" 
@@ -233,7 +236,7 @@ const StockComparisonPage = () => {
       <Header />
       <VisibleBreadcrumbs items={[{ name: "Home", url: "/" }, { name: "Compare Stocks" }]} />
       <main className="container mx-auto px-4 py-8">
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
+        <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
           <div className="flex items-center gap-3 mb-2">
             <GitCompareArrows className="w-8 h-8 text-primary" />
             <h1 className="text-3xl md:text-4xl font-heading font-bold text-foreground">Stock Comparison</h1>
@@ -242,7 +245,7 @@ const StockComparisonPage = () => {
         </motion.div>
 
         {/* Preset chips */}
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
+        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
           className="flex flex-wrap gap-2 mb-6">
           <span className="text-xs text-muted-foreground self-center">Quick compare:</span>
           {PRESETS.map(p => (
@@ -360,7 +363,7 @@ const StockComparisonPage = () => {
               <p className="text-sm">Add up to 3 stocks, or pick a preset above</p>
             </Card>
           ) : (
-            <motion.div key="table" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+            <motion.div key="table" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}>
               <Card className="overflow-x-auto rounded-xl border border-border/50 shadow-sm">
                 <table className="w-full text-sm">
                   <thead>
@@ -434,6 +437,7 @@ const StockComparisonPage = () => {
         </Suspense>
       )}
     </div>
+  </PageTransition>
   );
 };
 

@@ -89,7 +89,7 @@ const FeaturedCard = ({ item }: { item: NewsItem }) => {
   const linkProps = href ? { href, target: "_blank", rel: "noopener noreferrer" } : {};
   return (
     <motion.div initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.4 }}>
-      <Card className="group overflow-hidden border-border/50 hover:border-secondary/40 hover:shadow-xl transition-all duration-300">
+      <Card className="group overflow-hidden border-border/50 hover:border-secondary/40 hover:shadow-xl transition-[color,background-color,border-color,box-shadow] duration-300">
         <Wrapper {...linkProps} className="block">
           <CardContent className="p-5 md:p-7">
             <div className="flex items-center gap-2 mb-3">
@@ -105,7 +105,7 @@ const FeaturedCard = ({ item }: { item: NewsItem }) => {
             <p className="text-sm md:text-base text-muted-foreground mt-2.5 line-clamp-3 max-w-3xl">{item.summary}</p>
             <div className="flex items-center gap-2 mt-4 text-xs font-semibold text-muted-foreground">
               <span>{item.source}</span>
-              {href && <span className="inline-flex items-center gap-1 text-secondary group-hover:gap-1.5 transition-all">Read <ExternalLink className="w-3 h-3" /></span>}
+              {href && <span className="inline-flex items-center gap-1 text-secondary">Read <ExternalLink className="w-3 h-3 transition-transform duration-fast ease-out group-hover:translate-x-0.5" /></span>}
             </div>
           </CardContent>
         </Wrapper>
@@ -120,8 +120,8 @@ const NewsCard = ({ item, index }: { item: NewsItem; index: number }) => {
   const Wrapper = href ? "a" : "div";
   const linkProps = href ? { href, target: "_blank", rel: "noopener noreferrer" } : {};
   return (
-    <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: Math.min(index, 6) * 0.06, duration: 0.4 }}>
-      <Card className="h-full bg-card hover:shadow-lg hover:border-secondary/30 transition-all duration-300 group border-border/50">
+    <motion.div initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: Math.min(index, 6) * 0.06, duration: 0.4 }}>
+      <Card className="h-full bg-card hover:shadow-lg hover:border-secondary/30 transition-[box-shadow,color,background-color,border-color] duration-300 group border-border/50">
         <Wrapper {...linkProps} className="block h-full">
           <CardContent className="p-4">
             <div className="flex items-start justify-between gap-3">
@@ -236,14 +236,14 @@ const MarketNews = () => {
   const hiddenCount = rest.length - visibleRest.length;
 
   return (
-    <section id="news" className="py-10 md:py-20 bg-background relative overflow-hidden">
+    <section id="news" className="py-12 md:py-20 bg-background relative overflow-hidden">
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute top-20 right-10 w-80 h-80 bg-secondary/5 rounded-full blur-3xl" />
         <div className="absolute bottom-20 left-10 w-96 h-96 bg-brand-gold/5 rounded-full blur-3xl" />
       </div>
 
       <div className="container mx-auto px-4 relative z-10">
-        <motion.div className="text-center mb-8" initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.6 }}>
+        <motion.div className="text-center mb-8" initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.6 }}>
           <span className="inline-block text-secondary font-semibold text-sm uppercase tracking-wider mb-3">Stay Informed</span>
           <h2 className="font-heading text-3xl md:text-4xl font-bold text-foreground mb-4">Market News &amp; Updates</h2>
           <p className="text-muted-foreground text-lg max-w-2xl mx-auto">Latest financial news from India and around the world</p>
@@ -252,10 +252,10 @@ const MarketNews = () => {
         {/* Tab switcher + refresh */}
         <div className="flex items-center justify-center gap-2 mb-5">
           <div className="inline-flex bg-muted rounded-xl p-1 border border-border/50">
-            <button onClick={() => setActiveTab("indian")} className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold transition-all duration-300 ${activeTab === "indian" ? "bg-primary text-primary-foreground shadow-lg" : "text-muted-foreground hover:text-foreground"}`}>
+            <button onClick={() => setActiveTab("indian")} className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold transition-colors duration-300 ${activeTab === "indian" ? "bg-primary text-primary-foreground shadow-lg" : "text-muted-foreground hover:text-foreground"}`}>
               <TrendingUp className="w-4 h-4" />India
             </button>
-            <button onClick={() => setActiveTab("world")} className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold transition-all duration-300 ${activeTab === "world" ? "bg-primary text-primary-foreground shadow-lg" : "text-muted-foreground hover:text-foreground"}`}>
+            <button onClick={() => setActiveTab("world")} className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold transition-colors duration-300 ${activeTab === "world" ? "bg-primary text-primary-foreground shadow-lg" : "text-muted-foreground hover:text-foreground"}`}>
               <Globe className="w-4 h-4" />World
             </button>
           </div>
@@ -297,7 +297,7 @@ const MarketNews = () => {
 
         {/* Feed */}
         <AnimatePresence mode="wait">
-          <motion.div key={`${activeTab}-${activeCategory}-${activeSource}-${query}`} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.3 }}>
+          <motion.div key={`${activeTab}-${activeCategory}-${activeSource}-${query}`} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.3 }}>
             {filtered.length === 0 ? (
               <div className="text-center py-16 text-muted-foreground">
                 <Newspaper className="w-10 h-10 mx-auto mb-3 opacity-20" />

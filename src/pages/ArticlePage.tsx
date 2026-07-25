@@ -60,7 +60,7 @@ const ArticlePage = () => {
         <main className="container mx-auto px-4 py-8 md:py-12 max-w-3xl">
           {/* Article header */}
           <motion.header
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
             className="mb-8"
@@ -83,7 +83,7 @@ const ArticlePage = () => {
 
           {/* Key takeaways box */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.1 }}
             className="mb-8 bg-secondary/5 border border-secondary/20 rounded-2xl p-5"
@@ -146,7 +146,7 @@ const ArticlePage = () => {
 
           {/* CTA */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 24 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             className="mt-10 bg-gradient-to-br from-brand-navy to-primary text-white rounded-2xl p-6 md:p-8 text-center"
@@ -172,7 +172,7 @@ const ArticlePage = () => {
                   <Link
                     key={r.slug}
                     to={`/learn/${r.slug}`}
-                    className="group bg-card border border-border/50 rounded-xl p-4 hover:border-secondary/40 hover:shadow-lg transition-all"
+                    className="group bg-card border border-border/50 rounded-xl p-4 hover:border-secondary/40 hover:shadow-lg transition-[color,background-color,border-color,box-shadow]"
                   >
                     <span className="text-[10px] font-semibold text-secondary uppercase">{r.category}</span>
                     <h3 className="font-heading text-sm font-bold text-foreground mt-1 mb-2 group-hover:text-secondary transition-colors line-clamp-2">

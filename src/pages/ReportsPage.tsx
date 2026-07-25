@@ -80,7 +80,20 @@ const iconFor = (label: string) => {
 // degrades to a "coming soon" note until the pipeline is deployed and first run.
 const EODDeliveryPanel = () => {
   const { rows, asOf, loading } = useBhavcopy();
-  if (loading) return null;
+
+  // Reserve the panel's footprint while loading rather than returning null.
+  // Returning null here was the single largest layout shift on this page.
+  if (loading) {
+    return (
+      <div className="mb-10 rounded-2xl border border-border/60 bg-card p-5" aria-busy="true">
+        <div className="flex items-center gap-2 text-foreground font-semibold">
+          <Table2 className="w-5 h-5 text-secondary" /> EOD Delivery Data
+        </div>
+        <div className="mt-2 h-4 w-3/4 animate-pulse rounded bg-muted" />
+        <div className="mt-1.5 h-4 w-1/2 animate-pulse rounded bg-muted" />
+      </div>
+    );
+  }
 
   if (!asOf || rows.length === 0) {
     return (
@@ -166,7 +179,7 @@ const ReportsPage = () => {
             </motion.span>
             <motion.h1
               className="text-3xl md:text-5xl font-heading font-bold mb-4 text-white"
-              initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
+              initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
             >
               Market Reports &amp; Downloads
             </motion.h1>
@@ -218,7 +231,7 @@ const ReportsPage = () => {
                       </div>
                     </>
                   );
-                  const cls = "group flex items-start gap-3 p-4 min-h-[44px] rounded-2xl bg-card border border-border/60 hover:border-secondary/50 hover:shadow-md transition-all";
+                  const cls = "group flex items-start gap-3 p-4 min-h-[44px] rounded-2xl bg-card border border-border/60 hover:border-secondary/50 hover:shadow-md transition-[color,background-color,border-color,box-shadow]";
                   return item.external ? (
                     <a key={item.label} href={item.href} target="_blank" rel="noopener noreferrer" className={cls}>
                       {inner}

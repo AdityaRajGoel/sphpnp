@@ -2,6 +2,7 @@ import { Star, ExternalLink, MessageSquare } from "lucide-react";
 import { motion, Variants, useScroll, useTransform } from "motion/react";
 import { Button } from "@/components/ui/button";
 import { useRef } from "react";
+import { EASE_OUT } from "@/lib/motion";
 
 const googleReviews = [
   {
@@ -63,7 +64,7 @@ const GoogleReviews = () => {
       opacity: 1,
       y: 0,
       scale: 1,
-      transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] },
+      transition: { duration: 0.5, ease: EASE_OUT },
     },
   };
 
@@ -98,7 +99,7 @@ const GoogleReviews = () => {
         {/* Header */}
         <motion.div
           className="text-center mb-14"
-          initial={{ opacity: 0, y: 30 }}
+          initial={{ opacity: 0, y: 24 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
@@ -176,7 +177,7 @@ const GoogleReviews = () => {
           {googleReviews.map((review, index) => (
             <motion.div
               key={review.name}
-              className="group bg-card rounded-2xl p-6 shadow-md hover:shadow-xl transition-all duration-500 border border-border/50 relative"
+              className="group bg-card rounded-2xl p-6 shadow-md hover:shadow-xl transition-shadow duration-500 border border-border/50 relative"
               variants={cardVariants}
               whileHover={{ y: -8, scale: 1.02 }}
             >
@@ -239,7 +240,7 @@ const GoogleReviews = () => {
         {/* CTA */}
         <motion.div
           className="text-center flex flex-col sm:flex-row items-center justify-center gap-4"
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 24 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ delay: 0.4 }}

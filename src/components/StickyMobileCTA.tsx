@@ -34,13 +34,13 @@ const StickyMobileCTA = () => {
             <a
               href="tel:+919416400314"
               aria-label="Call Parasram India Panipat"
-              className="shrink-0 h-12 w-12 flex items-center justify-center rounded-xl border border-border bg-card text-secondary shadow-lg active:scale-95 transition-transform"
+              className="shrink-0 h-12 w-12 flex items-center justify-center rounded-xl border border-border bg-card text-secondary shadow-lg active:scale-[0.97] transition-transform"
             >
               <Phone className="w-5 h-5" />
             </a>
             <Link
               to="/open-account"
-              className="flex-1 h-12 flex items-center justify-center gap-2 rounded-xl btn-shine bg-gradient-to-r from-secondary to-brand-green text-secondary-foreground font-bold shadow-lg active:scale-[0.98] transition-transform"
+              className="flex-1 h-12 flex items-center justify-center gap-2 rounded-xl btn-shine bg-gradient-to-r from-secondary to-brand-green text-secondary-foreground font-bold shadow-lg active:scale-[0.97] transition-transform"
             >
               Open Free Demat Account <ArrowRight className="w-4 h-4" />
             </Link>

@@ -14,6 +14,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useScreenerStocks, type ScreenerStock } from "@/hooks/useScreenerStocks";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
+import PageTransition from "@/components/PageTransition";
 
 const StockRow = ({ stock, type }: { stock: ScreenerStock; type: "high" | "low" }) => {
   const range = stock.high_52 - stock.low_52;
@@ -94,6 +95,7 @@ const Week52TrackerPage = () => {
   };
 
   return (
+    <PageTransition>
     <div className="min-h-screen bg-background">
       <SEOHead 
         title="52-Week High Low Tracker | NSE Stocks | Parasram India Panipat"
@@ -128,7 +130,7 @@ const Week52TrackerPage = () => {
       <Header />
       <VisibleBreadcrumbs items={[{ name: "Home", url: "/" }, { name: "52-Week Tracker" }]} />
       <main className="container mx-auto px-4 py-8">
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-8 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+        <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} className="mb-8 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
           <div>
             <h1 className="text-3xl md:text-4xl font-heading font-bold text-foreground mb-2">52-Week High / Low Tracker</h1>
             <p className="text-muted-foreground">Live stocks near their yearly extremes - spot breakout and reversal candidates</p>
@@ -194,6 +196,7 @@ const Week52TrackerPage = () => {
       <Footer />
       <WhatsAppButton />
     </div>
+  </PageTransition>
   );
 };
 

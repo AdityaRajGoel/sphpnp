@@ -245,7 +245,7 @@ const ChartCompare = ({ stocks, selected, onChange }: ChartCompareProps) => {
             <button
               key={tf.id}
               onClick={() => setTimeframe(tf.id)}
-              className={`px-3 py-1 rounded-md text-xs font-semibold transition-all ${timeframe === tf.id ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+              className={`px-3 py-1 rounded-md text-xs font-semibold transition-colors ${timeframe === tf.id ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
             >
               {tf.label}
             </button>

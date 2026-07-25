@@ -87,7 +87,7 @@ const ProductsPage = () => {
           <div className="container mx-auto px-4 z-10 relative text-center">
             <motion.h1 
               className="text-4xl md:text-5xl lg:text-6xl font-heading font-bold mb-6"
-              initial={{ opacity: 0, y: 30 }}
+              initial={{ opacity: 0, y: 24 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6 }}
             >
@@ -112,7 +112,7 @@ const ProductsPage = () => {
                 <motion.div 
                   key={product.title}
                   className="bg-card glass-card p-8 md:p-10 rounded-3xl border border-border/50 shadow-sm relative overflow-hidden group hover:border-brand-gold/50 transition-colors"
-                  initial={{ opacity: 0, y: 30 }}
+                  initial={{ opacity: 0, y: 24 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true, margin: "-100px" }}
                   transition={{ delay: idx * 0.1, duration: 0.5 }}

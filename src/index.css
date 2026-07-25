@@ -37,6 +37,43 @@
 
     --radius: 0.5rem;
 
+    /* ---- Shape scale -------------------------------------------------
+       One system, three roles. Controls (buttons, inputs, badges) use
+       --radius. Surfaces (cards, panels, media) use --radius-surface.
+       Anything that reads as a token or chip goes fully round. Mixing
+       these freely is what makes a page look assembled rather than
+       designed, so new UI picks one of the three. */
+    --radius-surface: 0.875rem;
+    --radius-pill: 9999px;
+
+    /* ---- Site chrome -------------------------------------------------
+       Combined height of everything stacked above the hero in normal
+       flow: the sticky header (top bar + nav), the announcement bar and
+       the stock ticker. A full-height hero has to subtract this or it
+       overshoots the fold by exactly this much, pushing its own CTA and
+       stats off screen. Measured, not guessed - re-measure if that stack
+       gains or loses a row. */
+    --site-chrome: 116px;
+
+    /* ---- Motion ------------------------------------------------------
+       The built-in CSS easings are too weak to read as intentional.
+       These are the only curves the site should use.
+       - out:     entering/exiting UI. Starts fast, so it feels instant.
+       - in-out:  elements moving or morphing while already on screen.
+       - drawer:  sheets and panels that travel a long distance.
+       Never ease-in on UI: it delays the first frame, which is exactly
+       the moment the user is watching. */
+    --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+    --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+    --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+
+    /* Durations are capped deliberately. Anything a user triggers more
+       than a few times a session stays under 250ms. */
+    --duration-press: 140ms;
+    --duration-fast: 180ms;
+    --duration-base: 240ms;
+    --duration-slow: 360ms;
+
     /* Custom brand colors */
     --brand-navy: 210 100% 20%;
     --brand-green: 150 50% 40%;
@@ -128,6 +165,13 @@
     scroll-behavior: smooth;
   }
 
+  /* The top bar and the second ticker row only exist from sm/md up. */
+  @media (min-width: 768px) {
+    :root {
+      --site-chrome: 218px;
+    }
+  }
+
   body {
     @apply bg-background text-foreground font-sans;
     font-family: 'Open Sans', system-ui, -apple-system, sans-serif;
@@ -164,8 +208,25 @@
     @apply bg-card/80 backdrop-blur-sm border border-border/50;
   }
 
+  /* Hover lift. Gated so a tap on a touch device doesn't leave the
+     element stuck in its hover state. */
   .hover-scale {
-    @apply transition-transform duration-200 hover:scale-105;
+    transition: transform var(--duration-fast) var(--ease-out);
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .hover-scale:hover {
+      transform: scale(1.05);
+    }
+  }
+
+  /* Press feedback for things that are clickable but aren't <Button>:
+     cards, tiles, links acting as targets. Gives the interface the
+     "it heard me" beat that a pure colour change never does. */
+  .pressable {
+    transition: transform var(--duration-press) var(--ease-out);
+  }
+  .pressable:active {
+    transform: scale(0.985);
   }
 
   /* Diagonal light sweep on hover for primary CTAs */
@@ -180,12 +241,14 @@
     inset: 0;
     background: linear-gradient(120deg, transparent 30%, hsl(0 0% 100% / 0.35) 50%, transparent 70%);
     transform: translateX(-130%);
-    transition: transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: transform 0.7s var(--ease-out);
     pointer-events: none;
     z-index: 1;
   }
-  .btn-shine:hover::after {
-    transform: translateX(130%);
+  @media (hover: hover) and (pointer: fine) {
+    .btn-shine:hover::after {
+      transform: translateX(130%);
+    }
   }
 
   /* Left-to-right animated underline for nav links */
@@ -202,11 +265,15 @@
     background: hsl(var(--secondary));
     transform: scaleX(0);
     transform-origin: left;
-    transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: transform var(--duration-fast) var(--ease-out);
   }
-  .nav-underline:hover::after,
   .nav-underline[data-active="true"]::after {
     transform: scaleX(1);
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .nav-underline:hover::after {
+      transform: scaleX(1);
+    }
   }
 
   /* Hero aurora — slow-drifting brand-colored glows behind the video overlay */

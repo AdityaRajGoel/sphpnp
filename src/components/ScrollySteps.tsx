@@ -1,6 +1,7 @@
 import { motion, AnimatePresence, useScroll, useMotionValueEvent, useReducedMotion } from "motion/react";
 import { useRef, useState } from "react";
 import type { LucideIcon } from "lucide-react";
+import { EASE_OUT } from "@/lib/motion";
 
 // Scrollytelling steps: on desktop a sticky visual panel morphs as the user
 // scrolls through the steps beside it; on mobile it degrades to stacked cards.
@@ -28,7 +29,7 @@ const SceneAccent = ({ accent }: { accent: ScrollyStep["accent"] }) => {
           fill="none"
           initial={{ pathLength: 0 }}
           animate={{ pathLength: 1 }}
-          transition={{ duration: 0.6, delay: 0.35, ease: "easeOut" }}
+          transition={{ duration: 0.6, delay: 0.35, ease: EASE_OUT }}
         />
       </svg>
     );
@@ -45,7 +46,7 @@ const SceneAccent = ({ accent }: { accent: ScrollyStep["accent"] }) => {
             fill={i % 2 ? "hsl(var(--brand-gold))" : "hsl(var(--secondary))"}
             initial={{ y: 44, height: 0 }}
             animate={{ y: 44 - (14 + i * 6), height: 14 + i * 6 }}
-            transition={{ duration: 0.45, delay: 0.3 + i * 0.08, ease: [0.16, 1, 0.3, 1] }}
+            transition={{ duration: 0.45, delay: 0.3 + i * 0.08, ease: EASE_OUT }}
           />
         ))}
       </svg>
@@ -81,7 +82,7 @@ const SceneAccent = ({ accent }: { accent: ScrollyStep["accent"] }) => {
           className="absolute inset-0 rounded-3xl border-2 border-secondary/40"
           initial={{ scale: 1, opacity: 0.6 }}
           animate={{ scale: 1.45, opacity: 0 }}
-          transition={{ duration: 1.8, delay: i * 0.9, repeat: Infinity, ease: "easeOut" }}
+          transition={{ duration: 1.8, delay: i * 0.9, repeat: Infinity, ease: EASE_OUT }}
           aria-hidden="true"
         />
       ))}

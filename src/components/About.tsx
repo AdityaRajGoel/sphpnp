@@ -1,6 +1,7 @@
 import { CheckCircle2, TrendingUp, Users, Award, BarChart2 } from "lucide-react";
 import { motion, Variants, useScroll, useTransform } from "motion/react";
 import { useRef } from "react";
+import { EASE_IN_OUT, EASE_OUT } from "@/lib/motion";
 
 const features = [
   "SEBI Registered Stock Broker",
@@ -33,7 +34,7 @@ const About = () => {
     visible: {
       opacity: 1,
       x: 0,
-      transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] },
+      transition: { duration: 0.5, ease: EASE_OUT },
     },
   };
 
@@ -43,7 +44,7 @@ const About = () => {
       opacity: 1,
       x: 0,
       rotateY: 0,
-      transition: { duration: 0.7, ease: [0.16, 1, 0.3, 1] },
+      transition: { duration: 0.7, ease: EASE_OUT },
     },
   };
 
@@ -63,7 +64,7 @@ const About = () => {
         {/* Stats strip */}
         <motion.div
           className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-20 bg-gradient-to-r from-primary/5 via-secondary/5 to-brand-gold/5 rounded-2xl p-8 border border-border/50"
-          initial={{ opacity: 0, y: 30 }}
+          initial={{ opacity: 0, y: 24 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
@@ -77,7 +78,7 @@ const About = () => {
             <motion.div
               key={stat.label}
               className="flex flex-col items-center text-center gap-3 group"
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 24 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: i * 0.1, duration: 0.5 }}
@@ -112,7 +113,7 @@ const About = () => {
               Welcome to Parasram India
               <motion.span
                 className="block text-secondary mt-2"
-                initial={{ opacity: 0, y: 20 }}
+                initial={{ opacity: 0, y: 24 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: 0.3, duration: 0.5 }}
@@ -222,7 +223,7 @@ const About = () => {
             <motion.div
               className="absolute top-1/2 -right-8 w-6 h-6 bg-secondary/40 rounded-full -z-10"
               animate={{ y: [-10, 10, -10], opacity: [0.4, 0.9, 0.4] }}
-              transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+              transition={{ duration: 3, repeat: Infinity, ease: EASE_IN_OUT }}
             />
           </motion.div>
         </div>
@@ -230,7 +231,7 @@ const About = () => {
         {/* Pan-India network strip - borrows the parent group's scale for branch trust */}
         <motion.div
           className="mt-14 flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-6 text-center bg-muted/40 border border-border/40 rounded-2xl px-6 py-4"
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 24 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.5 }}
@@ -247,8 +248,8 @@ const About = () => {
         {/* Vision & Mission */}
         <div className="mt-8 grid md:grid-cols-2 gap-6">
           <motion.div
-            className="bg-card border border-border/50 rounded-2xl p-6 md:p-8 hover:border-secondary/40 hover:shadow-lg transition-all"
-            initial={{ opacity: 0, y: 20 }}
+            className="bg-card border border-border/50 rounded-2xl p-6 md:p-8 hover:border-secondary/40 hover:shadow-lg transition-[color,background-color,border-color,box-shadow]"
+            initial={{ opacity: 0, y: 24 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.5 }}
@@ -261,8 +262,8 @@ const About = () => {
             </p>
           </motion.div>
           <motion.div
-            className="bg-card border border-border/50 rounded-2xl p-6 md:p-8 hover:border-brand-gold/40 hover:shadow-lg transition-all"
-            initial={{ opacity: 0, y: 20 }}
+            className="bg-card border border-border/50 rounded-2xl p-6 md:p-8 hover:border-brand-gold/40 hover:shadow-lg transition-[color,background-color,border-color,box-shadow]"
+            initial={{ opacity: 0, y: 24 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.5, delay: 0.1 }}

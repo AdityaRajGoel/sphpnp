@@ -509,7 +509,7 @@ const GlobalStockSearch = ({ className }: Props) => {
                     <div className="flex items-center gap-1 bg-background/50 p-1 rounded-lg border border-border/20">
                       {TIME_RANGES.map(({ key, label }) => (
                         <Button key={key} variant={chartRange === key ? "secondary" : "ghost"} size="sm"
-                          className={`h-7 px-3 text-[10px] font-bold transition-all ${chartRange === key ? "shadow-sm" : ""}`} onClick={() => setChartRange(key)}>
+                          className={`h-7 px-3 text-[10px] font-bold transition-[color,background-color,border-color,box-shadow] ${chartRange === key ? "shadow-sm" : ""}`} onClick={() => setChartRange(key)}>
                           {label}
                         </Button>
                       ))}

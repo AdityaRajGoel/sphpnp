@@ -43,6 +43,10 @@ const generateVolumeData = (points: number, seed: number) => {
 
 // Calculate SMA
 const calcSMA = (data: number[], period: number): (number | null)[] => {
+  // A period below 1 divides by zero and yields NaN for every point, which then
+  // reaches the SVG as `points="0,NaN 500,NaN"`. There is no meaningful average
+  // over fewer than one sample, so report "no line" instead.
+  if (period < 1) return data.map(() => null);
   return data.map((_, i) => {
     if (i < period - 1) return null;
     let sum = 0;
@@ -81,42 +85,52 @@ function formatVol(v: number) {
 
 const InteractiveChart = memo(({ data, volumeData, timestamps, up, large = false, showIndicators = false }: { data: number[]; volumeData?: number[]; timestamps?: number[]; up: boolean; large?: boolean; showIndicators?: boolean }) => {
   const [hoverIdx, setHoverIdx] = useState<number | null>(null);
-  const min = Math.min(...data);
-  const max = Math.max(...data);
+
+  // Drop non-finite samples before any maths touches them. A single NaN in the
+  // series poisons the whole chart silently: Math.min/max return NaN, and
+  // `max - min || 1` then falls through to 1 because NaN is falsy, so every y
+  // resolves to NaN and the SVG is rejected with
+  // `<polyline> attribute points: Expected number, "0,NaN 500,NaN"`.
+  const series = useMemo(() => data.filter((v) => Number.isFinite(v)), [data]);
+
+  const min = series.length ? Math.min(...series) : 0;
+  const max = series.length ? Math.max(...series) : 0;
   const range = max - min || 1;
   const h = large ? 160 : 40;
   const volH = large ? 40 : 0;
   const w = large ? 500 : 100;
 
-  const coords = useMemo(() => data.map((v, i) => ({
-    x: (i / (data.length - 1)) * w,
+  const coords = useMemo(() => series.map((v, i) => ({
+    // A single sample has no span to divide by; pin it to the left edge rather
+    // than dividing by zero.
+    x: series.length > 1 ? (i / (series.length - 1)) * w : 0,
     y: h - ((v - min) / range) * h,
     val: v,
-  })), [data, w, h, min, range]);
+  })), [series, w, h, min, range]);
 
   // SMA lines
-  const sma20 = useMemo(() => showIndicators ? calcSMA(data, 20) : [], [data, showIndicators]);
-  const sma50 = useMemo(() => showIndicators ? calcSMA(data, Math.min(50, Math.floor(data.length * 0.4))) : [], [data, showIndicators]);
+  const sma20 = useMemo(() => showIndicators ? calcSMA(series, 20) : [], [series, showIndicators]);
+  const sma50 = useMemo(() => showIndicators ? calcSMA(series, Math.min(50, Math.floor(series.length * 0.4)) || series.length) : [], [series, showIndicators]);
 
   const sma20Pts = useMemo(() => {
     if (!showIndicators) return "";
     return sma20.map((v, i) => {
-      if (v === null) return null;
-      const x = (i / (data.length - 1)) * w;
+      if (v === null || !Number.isFinite(v)) return null;
+      const x = series.length > 1 ? (i / (series.length - 1)) * w : 0;
       const y = h - ((v - min) / range) * h;
       return `${x},${y}`;
     }).filter(Boolean).join(" ");
-  }, [sma20, showIndicators, data.length, w, h, min, range]);
+  }, [sma20, showIndicators, series.length, w, h, min, range]);
 
   const sma50Pts = useMemo(() => {
     if (!showIndicators) return "";
     return sma50.map((v, i) => {
-      if (v === null) return null;
-      const x = (i / (data.length - 1)) * w;
+      if (v === null || !Number.isFinite(v)) return null;
+      const x = series.length > 1 ? (i / (series.length - 1)) * w : 0;
       const y = h - ((v - min) / range) * h;
       return `${x},${y}`;
     }).filter(Boolean).join(" ");
-  }, [sma50, showIndicators, data.length, w, h, min, range]);
+  }, [sma50, showIndicators, series.length, w, h, min, range]);
 
   const points = coords.map(c => `${c.x},${c.y}`).join(" ");
   const areaPoints = `0,${h} ${points} ${w},${h}`;
@@ -152,8 +166,12 @@ const InteractiveChart = memo(({ data, volumeData, timestamps, up, large = false
         {large && [0, 1, 2, 3].map(i => (
           <line key={i} x1={0} y1={(h / 3) * i} x2={w} y2={(h / 3) * i} stroke="hsl(var(--border))" strokeWidth="0.5" strokeDasharray="4 4" opacity="0.3" />
         ))}
-        <polygon points={areaPoints} fill={`url(#${gradientId})`} />
-        <polyline points={points} fill="none" stroke={color} strokeWidth={large ? "2" : "1.5"} strokeLinecap="round" strokeLinejoin="round" />
+        {coords.length > 1 && (
+          <>
+            <polygon points={areaPoints} fill={`url(#${gradientId})`} />
+            <polyline points={points} fill="none" stroke={color} strokeWidth={large ? "2" : "1.5"} strokeLinecap="round" strokeLinejoin="round" />
+          </>
+        )}
         {/* SMA overlays */}
         {large && showIndicators && sma20Pts && (
           <polyline points={sma20Pts} fill="none" stroke="hsl(var(--brand-gold))" strokeWidth="1.2" strokeDasharray="3 2" opacity="0.7" />
@@ -168,7 +186,7 @@ const InteractiveChart = memo(({ data, volumeData, timestamps, up, large = false
             const barH = (v / maxVol) * volH;
             return (
               <rect key={i} x={i * barW} y={h + volH - barH} width={barW * 0.7} height={barH}
-                fill={data[i] >= (data[i - 1] || data[i]) ? "hsl(145, 70%, 40%)" : "hsl(0, 84%, 60%)"}
+                fill={series[i] >= (series[i - 1] ?? series[i]) ? "hsl(145, 70%, 40%)" : "hsl(0, 84%, 60%)"}
                 opacity={hoverIdx === i ? 0.8 : 0.25} rx="1" />
             );
           });
@@ -201,15 +219,17 @@ const InteractiveChart = memo(({ data, volumeData, timestamps, up, large = false
 
 // RSI Chart component
 const RSIChart = memo(({ data }: { data: number[] }) => {
-  const rsi = useMemo(() => calcRSI(data), [data]);
+  const series = useMemo(() => data.filter((v) => Number.isFinite(v)), [data]);
+  const rsi = useMemo(() => calcRSI(series), [series]);
   const w = 500, h = 50;
 
   const points = useMemo(() => {
     return rsi.map((v, i) => {
-      if (v === null) return null;
-      return `${(i / (data.length - 1)) * w},${h - (v / 100) * h}`;
+      if (v === null || !Number.isFinite(v)) return null;
+      const x = series.length > 1 ? (i / (series.length - 1)) * w : 0;
+      return `${x},${h - (v / 100) * h}`;
     }).filter(Boolean).join(" ");
-  }, [rsi, data.length]);
+  }, [rsi, series.length]);
 
   const latestRSI = rsi.filter(v => v !== null).pop() || 50;
   const rsiColor = latestRSI > 70 ? "text-destructive" : latestRSI < 30 ? "text-secondary" : "text-brand-gold";
@@ -413,7 +433,7 @@ const LiveChart = () => {
         <div className="absolute inset-0 opacity-[0.02]" style={{ backgroundImage: `linear-gradient(hsl(var(--foreground)) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--foreground)) 1px, transparent 1px)`, backgroundSize: '40px 40px' }} />
       </div>
       <div className="container mx-auto px-4 relative z-10">
-        <motion.div className="flex items-center flex-wrap gap-2 mb-6" initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
+        <motion.div className="flex items-center flex-wrap gap-2 mb-6" initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
           <div className="w-8 h-8 rounded-lg bg-brand-orange/10 flex items-center justify-center">
             <BarChart3 className="w-4 h-4 text-brand-orange" />
           </div>

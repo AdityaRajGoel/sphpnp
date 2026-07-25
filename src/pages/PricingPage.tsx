@@ -90,7 +90,7 @@ const faqs = [
 const ChargesTable = ({ title, rows, cols }: { title: string; rows: { [k: string]: string | boolean | undefined }[]; cols: [string, string] }) => (
   <motion.div
     className="bg-card border border-border/50 rounded-2xl overflow-hidden"
-    initial={{ opacity: 0, y: 20 }}
+    initial={{ opacity: 0, y: 24 }}
     whileInView={{ opacity: 1, y: 0 }}
     viewport={{ once: true, margin: "-40px" }}
     transition={{ duration: 0.5 }}
@@ -136,7 +136,7 @@ const PricingPage = () => {
 
         <main className="container mx-auto px-4 py-10 md:py-16 max-w-4xl">
           {/* Hero */}
-          <motion.div className="text-center mb-12" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+          <motion.div className="text-center mb-12" initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }}>
             <span className="inline-flex items-center gap-1.5 text-secondary font-semibold text-sm uppercase tracking-[0.15em] mb-3">
               <IndianRupee className="w-4 h-4" /> Transparent Pricing
             </span>
@@ -152,7 +152,7 @@ const PricingPage = () => {
           {/* Free-opening banner */}
           <motion.div
             className="mb-10 flex flex-wrap items-center justify-center gap-x-8 gap-y-2 bg-secondary/5 border border-secondary/20 rounded-2xl px-6 py-4 text-sm font-semibold"
-            initial={{ opacity: 0, y: 15 }}
+            initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.15 }}
           >
@@ -171,7 +171,7 @@ const PricingPage = () => {
           <section className="mt-12">
             <motion.div
               className="text-center mb-8"
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 24 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
             >
@@ -194,10 +194,10 @@ const PricingPage = () => {
               {usps.map((u) => (
                 <motion.div
                   key={u.title}
-                  className="group bg-card border border-border/50 rounded-2xl p-5 hover:border-secondary/40 hover:shadow-lg transition-all"
+                  className="group bg-card border border-border/50 rounded-2xl p-5 hover:border-secondary/40 hover:shadow-lg transition-[color,background-color,border-color,box-shadow]"
                   variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0, transition: { duration: 0.45 } } }}
                 >
-                  <div className="w-11 h-11 rounded-xl bg-secondary/10 flex items-center justify-center mb-3 group-hover:bg-secondary/20 group-hover:scale-110 transition-all">
+                  <div className="w-11 h-11 rounded-xl bg-secondary/10 flex items-center justify-center mb-3 group-hover:bg-secondary/20 group-hover:scale-110 transition-[color,background-color,border-color,transform] ease-out">
                     <u.icon className="w-5 h-5 text-secondary" />
                   </div>
                   <h3 className="font-heading text-base font-bold text-foreground mb-1.5 group-hover:text-secondary transition-colors">
@@ -210,7 +210,7 @@ const PricingPage = () => {
 
             <motion.div
               className="mt-5 border-beam bg-gradient-to-br from-secondary/5 to-brand-gold/5 border border-secondary/20 rounded-2xl px-6 py-5 text-center"
-              initial={{ opacity: 0, y: 15 }}
+              initial={{ opacity: 0, y: 16 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
             >
@@ -230,11 +230,11 @@ const PricingPage = () => {
           {/* Calculator cross-links */}
           <motion.div
             className="mt-10 grid sm:grid-cols-2 gap-4"
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 24 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
           >
-            <Link to="/brokerage-calculator" className="group flex items-center gap-3 bg-card border border-border/50 rounded-xl p-4 hover:border-secondary/40 hover:shadow-lg transition-all">
+            <Link to="/brokerage-calculator" className="group flex items-center gap-3 bg-card border border-border/50 rounded-xl p-4 hover:border-secondary/40 hover:shadow-lg transition-[color,background-color,border-color,box-shadow]">
               <div className="w-10 h-10 rounded-lg bg-secondary/10 flex items-center justify-center">
                 <Calculator className="w-5 h-5 text-secondary" />
               </div>
@@ -242,9 +242,9 @@ const PricingPage = () => {
                 <div className="font-semibold text-sm text-foreground group-hover:text-secondary transition-colors">Brokerage Calculator</div>
                 <div className="text-xs text-muted-foreground">See your exact cost & breakeven before trading</div>
               </div>
-              <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-secondary group-hover:translate-x-1 transition-all" />
+              <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-secondary group-hover:translate-x-1 transition-[color,background-color,border-color,transform] ease-out" />
             </Link>
-            <Link to="/margin-calculator" className="group flex items-center gap-3 bg-card border border-border/50 rounded-xl p-4 hover:border-secondary/40 hover:shadow-lg transition-all">
+            <Link to="/margin-calculator" className="group flex items-center gap-3 bg-card border border-border/50 rounded-xl p-4 hover:border-secondary/40 hover:shadow-lg transition-[color,background-color,border-color,box-shadow]">
               <div className="w-10 h-10 rounded-lg bg-brand-gold/10 flex items-center justify-center">
                 <Calculator className="w-5 h-5 text-brand-gold" />
               </div>
@@ -252,7 +252,7 @@ const PricingPage = () => {
                 <div className="font-semibold text-sm text-foreground group-hover:text-secondary transition-colors">Margin Calculator</div>
                 <div className="text-xs text-muted-foreground">SPAN + exposure margins for F&O positions</div>
               </div>
-              <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-secondary group-hover:translate-x-1 transition-all" />
+              <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-secondary group-hover:translate-x-1 transition-[color,background-color,border-color,transform] ease-out" />
             </Link>
           </motion.div>
 
@@ -264,7 +264,7 @@ const PricingPage = () => {
                 <motion.details
                   key={f.q}
                   className="group bg-card border border-border/50 rounded-xl px-5 py-4 open:border-secondary/40 transition-colors"
-                  initial={{ opacity: 0, y: 12 }}
+                  initial={{ opacity: 0, y: 16 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ delay: i * 0.06 }}
@@ -293,7 +293,7 @@ const PricingPage = () => {
           {/* CTA */}
           <motion.div
             className="mt-12 bg-gradient-to-br from-brand-navy to-primary text-white rounded-2xl p-6 md:p-8 text-center"
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 24 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
           >

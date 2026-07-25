@@ -4,6 +4,7 @@ import {
   Shield, Smartphone, Award, PhoneCall, Percent,
   Headphones, MapPin, TrendingUp, MessageCircle
 } from "lucide-react";
+import { EASE_OUT } from "@/lib/motion";
 
 const usps = [
   {
@@ -62,7 +63,7 @@ const itemVariants: Variants = {
     opacity: 1,
     y: 0,
     scale: 1,
-    transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] },
+    transition: { duration: 0.5, ease: EASE_OUT },
   },
 };
 
@@ -82,7 +83,7 @@ const WhyChooseUs = () => {
       <div className="container mx-auto px-4 relative z-10">
         <motion.div
           className="text-center mb-12"
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 24 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.5 }}
@@ -125,14 +126,14 @@ const WhyChooseUs = () => {
                 key={usp.title}
                 variants={itemVariants}
                 whileHover={{ y: -6, scale: 1.02 }}
-                className="group relative bg-card border border-border/50 rounded-2xl p-5 hover:border-secondary/40 hover:shadow-xl transition-all duration-300 overflow-hidden"
+                className="group relative bg-card border border-border/50 rounded-2xl p-5 hover:border-secondary/40 hover:shadow-xl transition-[color,background-color,border-color,box-shadow] duration-300 overflow-hidden"
               >
                 {/* Hover gradient overlay */}
                 <div className="absolute inset-0 bg-gradient-to-br from-secondary/5 to-brand-gold/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
                 <div className="relative z-10">
                   <motion.div
-                    className="w-12 h-12 bg-secondary/10 rounded-xl flex items-center justify-center mb-4 group-hover:bg-secondary/20 group-hover:scale-110 transition-all duration-300"
+                    className="w-12 h-12 bg-secondary/10 rounded-xl flex items-center justify-center mb-4 group-hover:bg-secondary/20 group-hover:scale-110 transition-[color,background-color,border-color,transform] ease-out duration-300"
                     whileHover={{ rotate: [0, -8, 8, 0] }}
                     transition={{ duration: 0.5 }}
                   >

@@ -22,6 +22,8 @@ import GlobalStockSearch from "@/components/GlobalStockSearch";
 import MarketMovers from "@/components/MarketMovers";
 import BulkBlockDeals from "@/components/BulkBlockDeals";
 import CircuitWatch from "@/components/CircuitWatch";
+import PageTransition from "@/components/PageTransition";
+import { EASE_IN_OUT, EASE_OUT } from "@/lib/motion";
 const AIAnalysisModal = lazy(() => import("@/components/AIAnalysisModal"));
 const ChartCompare = lazy(() => import("@/components/ChartCompare"));
 
@@ -83,7 +85,7 @@ const StockLoadingAnimation = () => {
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: h, opacity: [0, 1, 0.7, 1] }}
               transition={{
-                height: { duration: 0.6, delay: i * 0.08, ease: "easeOut" },
+                height: { duration: 0.6, delay: i * 0.08, ease: EASE_OUT },
                 opacity: { duration: 1.5, delay: i * 0.08, repeat: Infinity, repeatType: "reverse" },
               }}
             />
@@ -104,7 +106,7 @@ const StockLoadingAnimation = () => {
             className="h-full bg-gradient-to-r from-secondary via-primary to-destructive rounded-full"
             initial={{ x: "-100%" }}
             animate={{ x: "100%" }}
-            transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+            transition={{ duration: 1.5, repeat: Infinity, ease: EASE_IN_OUT }}
             style={{ width: "60%" }}
           />
         </div>
@@ -177,7 +179,7 @@ const StockScreenerPage = () => {
   const { t } = useT();
   const { stocks, loading, refreshing: bgRefreshing, updatedAt, error, refresh } = useScreenerStocks();
   // Delivery % per symbol from the daily EOD bhavcopy (empty until the pipeline is deployed).
-  const { rows: bhavRows, asOf: bhavAsOf } = useBhavcopy();
+  const { rows: bhavRows, asOf: bhavAsOf, loading: bhavLoading } = useBhavcopy();
   const deliveryMap = useMemo(() => buildDeliveryMap(bhavRows), [bhavRows]);
   // Filters live in the URL so a configured screen can be shared/bookmarked.
   const [searchParams, setSearchParams] = useSearchParams();
@@ -279,6 +281,7 @@ const StockScreenerPage = () => {
   };
 
   return (
+    <PageTransition>
     <div className="min-h-screen bg-background">
       <SEOHead 
         title="Stock Screener | Live NSE BSE Stocks | Parasram India Panipat"
@@ -316,7 +319,7 @@ const StockScreenerPage = () => {
       <Header />
       <VisibleBreadcrumbs items={[{ name: "Home", url: "/" }, { name: "Stock Screener" }]} />
       <main className="container mx-auto px-4 py-8">
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-8 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+        <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} className="mb-8 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
           <div>
             <h1 className="text-3xl md:text-4xl font-heading font-bold text-foreground mb-2">{t("page.screener")}</h1>
             <p className="text-muted-foreground">Live prices for {stocks.length}+ NSE stocks • Filter by sector, market cap, P/E & more</p>
@@ -354,7 +357,7 @@ const StockScreenerPage = () => {
         {/* EOD smart-money boards: bulk/block deals + circuit hitters */}
         <div className="grid md:grid-cols-2 gap-6 mb-8 empty:hidden">
           <BulkBlockDeals />
-          <CircuitWatch rows={bhavRows} asOf={bhavAsOf} />
+          <CircuitWatch rows={bhavRows} asOf={bhavAsOf} loading={bhavLoading} />
         </div>
 
         {/* Global Stock Search */}
@@ -380,7 +383,7 @@ const StockScreenerPage = () => {
               return (
                 <Card 
                   key={b.id} 
-                  className={`p-4 flex flex-col cursor-pointer transition-all hover:scale-[1.02] active:scale-[0.98] ${isActive ? "ring-2 ring-brand-orange bg-brand-orange/5 border-brand-orange/50" : "hover:border-primary/50"}`}
+                  className={`p-4 flex flex-col cursor-pointer transition-transform ease-out hover:scale-[1.02] active:scale-[0.97] ${isActive ? "ring-2 ring-brand-orange bg-brand-orange/5 border-brand-orange/50" : "hover:border-primary/50"}`}
                   onClick={() => setActiveBasket(isActive ? null : b.id)}
                 >
                   <Icon className={`w-6 h-6 mb-3 ${isActive ? "text-brand-orange" : "text-muted-foreground"}`} />
@@ -412,7 +415,7 @@ const StockScreenerPage = () => {
               return (
                 <Card 
                   key={s.id} 
-                  className={`p-4 flex flex-col cursor-pointer transition-all hover:scale-[1.02] active:scale-[0.98] ${isActive ? "ring-2 ring-secondary bg-secondary/5 border-secondary/50" : "hover:border-primary/50"}`}
+                  className={`p-4 flex flex-col cursor-pointer transition-transform ease-out hover:scale-[1.02] active:scale-[0.97] ${isActive ? "ring-2 ring-secondary bg-secondary/5 border-secondary/50" : "hover:border-primary/50"}`}
                   onClick={() => setActiveScanner(isActive ? null : s.id)}
                 >
                   <Icon className={`w-6 h-6 mb-3 ${isActive ? "text-secondary" : "text-muted-foreground"}`} />
@@ -476,7 +479,7 @@ const StockScreenerPage = () => {
               <StockLoadingAnimation />
             </motion.div>
           ) : (
-            <motion.div key="content" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+            <motion.div key="content" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
                 <p className="text-sm text-muted-foreground flex items-center gap-2">
                   {filtered.length > 0
@@ -493,19 +496,19 @@ const StockScreenerPage = () => {
                 <div className="flex bg-muted rounded-lg p-1 self-start sm:self-auto">
                   <button 
                     onClick={() => setViewMode("list")} 
-                    className={`px-4 py-1.5 rounded-md text-xs font-semibold transition-all flex items-center gap-2 ${viewMode === "list" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+                    className={`px-4 py-1.5 rounded-md text-xs font-semibold transition-colors flex items-center gap-2 ${viewMode === "list" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
                   >
                     <List className="w-4 h-4" /> List
                   </button>
                   <button
                     onClick={() => setViewMode("heatmap")}
-                    className={`px-4 py-1.5 rounded-md text-xs font-semibold transition-all flex items-center gap-2 ${viewMode === "heatmap" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+                    className={`px-4 py-1.5 rounded-md text-xs font-semibold transition-colors flex items-center gap-2 ${viewMode === "heatmap" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
                   >
                     <LayoutGrid className="w-4 h-4" /> Heatmap
                   </button>
                   <button
                     onClick={() => setViewMode("chart")}
-                    className={`px-4 py-1.5 rounded-md text-xs font-semibold transition-all flex items-center gap-2 ${viewMode === "chart" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+                    className={`px-4 py-1.5 rounded-md text-xs font-semibold transition-colors flex items-center gap-2 ${viewMode === "chart" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
                   >
                     <LineChart className="w-4 h-4" /> Chart
                   </button>
@@ -513,7 +516,7 @@ const StockScreenerPage = () => {
               </div>
 
               {viewMode === "chart" ? (
-                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="min-h-[50vh]">
+                <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="min-h-[50vh]">
                   <Suspense fallback={<StockLoadingAnimation />}>
                     <ChartCompare stocks={compareUniverse} selected={compareSymbols} onChange={setCompareSymbols} />
                   </Suspense>
@@ -647,6 +650,7 @@ const StockScreenerPage = () => {
       <Footer />
       <WhatsAppButton />
     </div>
+  </PageTransition>
   );
 };
 
