@@ -8,6 +8,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
+import PriceChart from "@/components/charts/PriceChart";
 const AIAnalysisModal = lazy(() => import("@/components/AIAnalysisModal"));
 
 type StockResult = {
@@ -48,171 +49,6 @@ const formatMarketCap = (cr: number) => {
   if (cr >= 1000) return `₹${(cr / 1000).toFixed(0)}K Cr`;
   if (cr > 0) return `₹${cr.toFixed(0)} Cr`;
   return "-";
-};
-
-// Candlestick + Volume chart
-const CandlestickSVGChart = ({ data, width = 420, height = 180 }: { data: ChartPoint[]; width?: number; height?: number }) => {
-  const [hoverIdx, setHoverIdx] = useState<number | null>(null);
-  const svgRef = useRef<SVGSVGElement>(null);
-
-  const chartH = height * 0.72;
-  const volH = height * 0.2;
-  const gap = height * 0.08;
-  const pad = { left: 0, right: 0 };
-  const cw = width - pad.left - pad.right;
-
-  const allPrices = data.flatMap(d => [d.h, d.l]);
-  const pMin = Math.min(...allPrices);
-  const pMax = Math.max(...allPrices);
-  const pRange = pMax - pMin || 1;
-  const maxVol = Math.max(...data.map(d => d.v)) || 1;
-
-  const candleW = Math.max(1, (cw / data.length) * 0.65);
-  const wickW = Math.max(0.5, candleW * 0.15);
-
-  const toY = (price: number) => 4 + chartH - ((price - pMin) / pRange) * (chartH - 8);
-  const toVolY = (vol: number) => chartH + gap + volH - (vol / maxVol) * volH;
-
-  const handleMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
-    if (!svgRef.current) return;
-    const rect = svgRef.current.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const idx = Math.round((x / cw) * (data.length - 1));
-    setHoverIdx(Math.max(0, Math.min(data.length - 1, idx)));
-  };
-
-  const hovered = hoverIdx !== null ? data[hoverIdx] : null;
-
-  return (
-    <svg
-      ref={svgRef}
-      width="100%"
-      height={height}
-      viewBox={`0 0 ${width} ${height}`}
-      className="overflow-visible cursor-crosshair"
-      onMouseMove={handleMouseMove}
-      onMouseLeave={() => setHoverIdx(null)}
-    >
-      {/* Grid lines */}
-      {[0, 0.25, 0.5, 0.75, 1].map(pct => (
-        <line key={pct} x1={0} x2={width} y1={toY(pMin + pRange * pct)} y2={toY(pMin + pRange * pct)}
-          stroke="hsl(var(--border))" strokeWidth="0.5" opacity="0.5" />
-      ))}
-
-      {/* Candles */}
-      {data.map((d, i) => {
-        const x = pad.left + (i / (data.length - 1)) * cw;
-        const up = d.c >= d.o;
-        const color = up ? "hsl(var(--secondary))" : "hsl(var(--destructive))";
-        const bodyTop = toY(Math.max(d.o, d.c));
-        const bodyBot = toY(Math.min(d.o, d.c));
-        const bodyH = Math.max(1, bodyBot - bodyTop);
-
-        return (
-          <g key={i}>
-            {/* Wick */}
-            <line x1={x} x2={x} y1={toY(d.h)} y2={toY(d.l)} stroke={color} strokeWidth={wickW} />
-            {/* Body */}
-            <rect x={x - candleW / 2} y={bodyTop} width={candleW} height={bodyH} fill={up ? color : color} rx="0.5" />
-            {/* Volume bar */}
-            <rect x={x - candleW / 2} y={toVolY(d.v)} width={candleW} height={chartH + gap + volH - toVolY(d.v)}
-              fill={color} opacity="0.3" rx="0.5" />
-          </g>
-        );
-      })}
-
-      {/* Hover tooltip */}
-      {hovered && hoverIdx !== null && (
-        <>
-          {(() => {
-            const x = pad.left + (hoverIdx / (data.length - 1)) * cw;
-            return (
-              <>
-                <line x1={x} y1={0} x2={x} y2={height} stroke="hsl(var(--muted-foreground))" strokeWidth="0.5" strokeDasharray="3,3" opacity="0.6" />
-                <rect x={Math.min(x + 8, width - 130)} y={4} width="122" height="72" rx="6"
-                  fill="hsl(var(--popover))" stroke="hsl(var(--border))" strokeWidth="1" opacity="0.95" />
-                <text x={Math.min(x + 14, width - 124)} y={18} fontSize="9" fill="hsl(var(--muted-foreground))">
-                  {new Date(hovered.t).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "2-digit" })}
-                </text>
-                {[
-                  { label: "O", val: hovered.o },
-                  { label: "H", val: hovered.h },
-                  { label: "L", val: hovered.l },
-                  { label: "C", val: hovered.c },
-                ].map((item, idx) => (
-                  <text key={item.label} x={Math.min(x + 14, width - 124)} y={32 + idx * 11} fontSize="10" fontFamily="monospace"
-                    fill={item.label === "C" ? (hovered.c >= hovered.o ? "hsl(var(--secondary))" : "hsl(var(--destructive))") : "hsl(var(--foreground))"}>
-                    {item.label}: ₹{item.val.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  </text>
-                ))}
-              </>
-            );
-          })()}
-        </>
-      )}
-    </svg>
-  );
-};
-
-// Line chart with area fill
-const LineAreaChart = ({ data, up, width = 420, height = 180 }: { data: ChartPoint[]; up: boolean; width?: number; height?: number }) => {
-  const [hoverIdx, setHoverIdx] = useState<number | null>(null);
-  const svgRef = useRef<SVGSVGElement>(null);
-
-  const closes = data.map(d => d.c);
-  const min = Math.min(...closes);
-  const max = Math.max(...closes);
-  const range = max - min || 1;
-  const pad = { top: 10, bottom: 20 };
-  const ch = height - pad.top - pad.bottom;
-
-  const points = closes.map((v, i) => ({
-    x: (i / (closes.length - 1)) * width,
-    y: pad.top + ch - ((v - min) / range) * ch,
-    val: v, time: data[i].t,
-  }));
-
-  const polyline = points.map(p => `${p.x},${p.y}`).join(" ");
-  const polygon = `0,${pad.top + ch} ${polyline} ${width},${pad.top + ch}`;
-  const color = up ? "hsl(var(--secondary))" : "hsl(var(--destructive))";
-
-  const handleMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
-    if (!svgRef.current) return;
-    const rect = svgRef.current.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const idx = Math.round((x / width) * (points.length - 1));
-    setHoverIdx(Math.max(0, Math.min(points.length - 1, idx)));
-  };
-
-  const hovered = hoverIdx !== null ? points[hoverIdx] : null;
-
-  return (
-    <svg ref={svgRef} width="100%" height={height} viewBox={`0 0 ${width} ${height}`}
-      className="overflow-visible cursor-crosshair" onMouseMove={handleMouseMove} onMouseLeave={() => setHoverIdx(null)}>
-      <defs>
-        <linearGradient id="line-grad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={color} stopOpacity="0.25" />
-          <stop offset="100%" stopColor={color} stopOpacity="0.02" />
-        </linearGradient>
-      </defs>
-      <polygon points={polygon} fill="url(#line-grad)" />
-      <polyline points={polyline} fill="none" stroke={color} strokeWidth="2" strokeLinejoin="round" />
-      {hovered && (
-        <>
-          <line x1={hovered.x} y1={pad.top} x2={hovered.x} y2={pad.top + ch} stroke="hsl(var(--muted-foreground))" strokeWidth="1" strokeDasharray="3,3" opacity="0.5" />
-          <circle cx={hovered.x} cy={hovered.y} r="4" fill={color} stroke="hsl(var(--background))" strokeWidth="2" />
-          <rect x={Math.min(hovered.x - 55, width - 115)} y={Math.max(hovered.y - 42, 0)} width="110" height="36" rx="6"
-            fill="hsl(var(--popover))" stroke="hsl(var(--border))" strokeWidth="1" />
-          <text x={Math.min(hovered.x - 50, width - 110)} y={Math.max(hovered.y - 25, 13)} fontSize="11" fontWeight="600" fill="hsl(var(--foreground))" fontFamily="monospace">
-            ₹{hovered.val.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-          </text>
-          <text x={Math.min(hovered.x - 50, width - 110)} y={Math.max(hovered.y - 12, 26)} fontSize="9" fill="hsl(var(--muted-foreground))">
-            {new Date(hovered.time).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "2-digit" })}
-          </text>
-        </>
-      )}
-    </svg>
-  );
 };
 
 type Props = { className?: string };
@@ -548,13 +384,11 @@ const GlobalStockSearch = ({ className }: Props) => {
                         <Loader2 className="h-6 w-6 animate-spin text-brand-orange opacity-50" />
                       </div>
                     ) : chartData.length > 1 ? (
-                      <div className="h-[220px]">
-                        {chartMode === "candle" ? (
-                          <CandlestickSVGChart data={chartData} height={220} />
-                        ) : (
-                          <LineAreaChart data={chartData} up={chartUp} height={220} />
-                        )}
-                      </div>
+                      <PriceChart
+                        data={chartData}
+                        mode={chartMode === "candle" ? "candle" : "area"}
+                        height={220}
+                      />
                     ) : (
                       <div className="h-[220px] flex items-center justify-center text-xs text-muted-foreground font-medium">
                         Live technical data unavailable for this range
