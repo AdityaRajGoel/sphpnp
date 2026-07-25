@@ -146,18 +146,18 @@ const Contact = () => {
                 transition={{ delay: index * 0.1, duration: 0.5, ease: EASE_OUT }}
                 whileHover={{ x: 6 }}
               >
-                <Card className="bg-card border-border/50 hover:shadow-xl hover:border-secondary/40 transition-[box-shadow,color,background-color,border-color] duration-300 group">
+                <Card className="bg-card border-border/50 hover:shadow-xl hover:border-secondary/40 transition-[box-shadow,color,background-color,border-color] duration-base group">
                   <CardContent className="p-5">
                     <div className="flex gap-4 items-start">
                       <motion.div
-                        className="w-11 h-11 bg-primary/10 group-hover:bg-secondary/20 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors duration-300"
+                        className="w-11 h-11 bg-primary/10 group-hover:bg-secondary/20 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors duration-base"
                         whileHover={{ rotate: [0, -12, 12, 0] }}
                         transition={{ duration: 0.5 }}
                       >
-                        <item.icon className="w-5 h-5 text-primary group-hover:text-secondary transition-colors duration-300" />
+                        <item.icon className="w-5 h-5 text-primary group-hover:text-secondary transition-colors duration-base" />
                       </motion.div>
                       <div>
-                        <h3 className="font-heading font-semibold text-foreground mb-1 group-hover:text-secondary transition-colors duration-300">
+                        <h3 className="font-heading font-semibold text-foreground mb-1 group-hover:text-secondary transition-colors duration-base">
                           {item.title}
                         </h3>
                         <p className="text-muted-foreground text-sm leading-relaxed">{item.content}</p>
@@ -199,7 +199,7 @@ const Contact = () => {
               />
               <div className="bg-card p-4 flex items-center justify-between">
                 <p className="text-sm text-muted-foreground">Shakuntala Complex, Palika Bazaar, Panipat</p>
-                <Button asChild variant="outline" size="sm" className="border-primary text-primary hover:bg-primary hover:text-primary-foreground transition-colors duration-300">
+                <Button asChild variant="outline" size="sm" className="border-primary text-primary hover:bg-primary hover:text-primary-foreground transition-colors duration-base">
                   <a href="https://maps.app.goo.gl/g9hDv9cKfdz28Hhx6" target="_blank" rel="noopener noreferrer">
                     Open in Maps
                     <ExternalLink className="ml-2 w-4 h-4" />
@@ -243,7 +243,7 @@ const Contact = () => {
                     <Button
                       asChild
                       size="lg"
-                      className="bg-secondary hover:bg-secondary/90 text-secondary-foreground font-semibold w-full transition-colors duration-300 group"
+                      className="bg-secondary hover:bg-secondary/90 text-secondary-foreground font-semibold w-full transition-colors duration-base group"
                     >
                       <a href="https://parasramindia.com" target="_blank" rel="noopener noreferrer">
                         Open Account Now

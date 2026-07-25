@@ -126,21 +126,21 @@ const WhyChooseUs = () => {
                 key={usp.title}
                 variants={itemVariants}
                 whileHover={{ y: -6, scale: 1.02 }}
-                className="group relative bg-card border border-border/50 rounded-2xl p-5 hover:border-secondary/40 hover:shadow-xl transition-[color,background-color,border-color,box-shadow] duration-300 overflow-hidden"
+                className="group relative bg-card border border-border/50 rounded-2xl p-5 hover:border-secondary/40 hover:shadow-xl transition-[color,background-color,border-color,box-shadow] duration-base overflow-hidden"
               >
                 {/* Hover gradient overlay */}
-                <div className="absolute inset-0 bg-gradient-to-br from-secondary/5 to-brand-gold/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <div className="absolute inset-0 bg-gradient-to-br from-secondary/5 to-brand-gold/5 opacity-0 group-hover:opacity-100 transition-opacity duration-slow" />
 
                 <div className="relative z-10">
                   <motion.div
-                    className="w-12 h-12 bg-secondary/10 rounded-xl flex items-center justify-center mb-4 group-hover:bg-secondary/20 group-hover:scale-110 transition-[color,background-color,border-color,transform] ease-out duration-300"
+                    className="w-12 h-12 bg-secondary/10 rounded-xl flex items-center justify-center mb-4 group-hover:bg-secondary/20 group-hover:scale-110 transition-[color,background-color,border-color,transform] ease-out duration-base"
                     whileHover={{ rotate: [0, -8, 8, 0] }}
                     transition={{ duration: 0.5 }}
                   >
                     <Icon className="w-6 h-6 text-secondary" />
                   </motion.div>
 
-                  <h3 className="font-heading text-base font-bold text-foreground mb-1.5 group-hover:text-secondary transition-colors duration-300">
+                  <h3 className="font-heading text-base font-bold text-foreground mb-1.5 group-hover:text-secondary transition-colors duration-base">
                     {usp.title}
                   </h3>
                   <p className="text-muted-foreground text-sm leading-relaxed">

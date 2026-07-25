@@ -130,15 +130,15 @@ const InvestmentProducts = () => {
                   to={p.to}
                   aria-label={`${p.title} - learn more`}
                   onMouseMove={handleCardGlow}
-                  className={`card-glow group relative flex flex-col h-full bg-card border border-border/50 rounded-2xl hover:border-secondary/40 hover:shadow-xl transition-[color,background-color,border-color,box-shadow] duration-300 overflow-hidden ${
+                  className={`card-glow group relative flex flex-col h-full bg-card border border-border/50 rounded-2xl hover:border-secondary/40 hover:shadow-xl transition-[color,background-color,border-color,box-shadow] duration-base overflow-hidden ${
                     isFeatured ? "p-5 md:p-7 bg-gradient-to-br from-card to-secondary/[0.04]" : "p-4 md:p-5"
                   }`}
                 >
-                  <div className="absolute inset-0 bg-gradient-to-br from-secondary/5 to-brand-gold/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                  <div className="absolute inset-0 bg-gradient-to-br from-secondary/5 to-brand-gold/5 opacity-0 group-hover:opacity-100 transition-opacity duration-slow" />
 
                   <div className="relative z-10 flex flex-col h-full">
                     <div className="flex items-start justify-between mb-3">
-                      <div className={`bg-secondary/10 rounded-xl flex items-center justify-center group-hover:bg-secondary/20 group-hover:scale-110 transition-[color,background-color,border-color,transform] ease-out duration-300 ${isFeatured ? "w-14 h-14" : "w-11 h-11"}`}>
+                      <div className={`bg-secondary/10 rounded-xl flex items-center justify-center group-hover:bg-secondary/20 group-hover:scale-110 transition-[color,background-color,border-color,transform] ease-out duration-base ${isFeatured ? "w-14 h-14" : "w-11 h-11"}`}>
                         <Icon className={`text-secondary ${isFeatured ? "w-7 h-7" : "w-5 h-5"}`} />
                       </div>
                       <span className="text-[9px] font-bold uppercase tracking-wide text-brand-orange bg-brand-orange/10 border border-brand-orange/20 rounded-full px-2 py-0.5">
@@ -146,7 +146,7 @@ const InvestmentProducts = () => {
                       </span>
                     </div>
 
-                    <h3 className={`font-heading font-bold text-foreground mb-1.5 group-hover:text-secondary transition-colors duration-300 ${isFeatured ? "text-lg md:text-2xl" : "text-sm md:text-base"}`}>
+                    <h3 className={`font-heading font-bold text-foreground mb-1.5 group-hover:text-secondary transition-colors duration-base ${isFeatured ? "text-lg md:text-2xl" : "text-sm md:text-base"}`}>
                       {p.title}
                     </h3>
                     <p className={`text-muted-foreground leading-relaxed flex-1 ${isFeatured ? "text-sm md:text-base max-w-md" : "text-xs md:text-sm"}`}>
@@ -155,7 +155,7 @@ const InvestmentProducts = () => {
 
                     {isFeatured && <FeaturedSparkline />}
 
-                    <span className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-secondary opacity-0 group-hover:opacity-100 -translate-x-1 group-hover:translate-x-0 transition-[opacity,transform] ease-out duration-300">
+                    <span className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-secondary opacity-0 group-hover:opacity-100 -translate-x-1 group-hover:translate-x-0 transition-[opacity,transform] ease-out duration-base">
                       Explore <ArrowRight className="w-3.5 h-3.5" />
                     </span>
                   </div>
@@ -193,7 +193,7 @@ const InvestmentProducts = () => {
           </div>
           <Link
             to="/open-account"
-            className="inline-flex items-center gap-2 btn-shine bg-gradient-to-r from-secondary to-brand-green text-secondary-foreground font-bold px-6 py-3 rounded-xl shadow-lg hover:shadow-xl hover:scale-[1.03] transition-[box-shadow,transform] ease-out duration-300"
+            className="inline-flex items-center gap-2 btn-shine bg-gradient-to-r from-secondary to-brand-green text-secondary-foreground font-bold px-6 py-3 rounded-xl shadow-lg hover:shadow-xl hover:scale-[1.03] transition-[box-shadow,transform] ease-out duration-base"
           >
             Open Free Demat Account <ArrowRight className="w-4 h-4" />
           </Link>

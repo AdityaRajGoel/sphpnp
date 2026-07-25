@@ -204,28 +204,28 @@ const Services = () => {
                 aria-label={`${service.title} - learn more`}
                 className="block h-full rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-2"
               >
-              <Card className="group bg-card hover:shadow-2xl transition-[box-shadow,color,background-color,border-color] duration-300 border-border/50 hover:border-secondary/50 overflow-hidden h-full relative">
+              <Card className="group bg-card hover:shadow-2xl transition-[box-shadow,color,background-color,border-color] duration-base border-border/50 hover:border-secondary/50 overflow-hidden h-full relative">
                 {/* Gradient overlay on hover */}
-                <motion.div className="absolute inset-0 bg-gradient-to-br from-secondary/5 to-brand-gold/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <motion.div className="absolute inset-0 bg-gradient-to-br from-secondary/5 to-brand-gold/5 opacity-0 group-hover:opacity-100 transition-opacity duration-slow" />
 
                 <CardContent className="p-6 relative z-10">
                   <div className="flex items-start justify-between mb-4">
                     <motion.div
-                      className="w-14 h-14 bg-primary/10 rounded-xl flex items-center justify-center group-hover:bg-secondary/20 transition-colors duration-300"
+                      className="w-14 h-14 bg-primary/10 rounded-xl flex items-center justify-center group-hover:bg-secondary/20 transition-colors duration-base"
                       animate={hoveredIndex === index ? { rotate: [0, -10, 10, 0] } : {}}
                       transition={{ duration: 0.5 }}
                     >
-                      <service.icon className="w-7 h-7 text-primary group-hover:text-secondary transition-colors duration-300" />
+                      <service.icon className="w-7 h-7 text-primary group-hover:text-secondary transition-colors duration-base" />
                     </motion.div>
                     <motion.div
-                      className="opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                      className="opacity-0 group-hover:opacity-100 transition-opacity duration-base"
                       animate={hoveredIndex === index ? { x: [0, 4, 0] } : {}}
                       transition={{ duration: 1, repeat: Infinity }}
                     >
                       <ArrowUpRight className="w-5 h-5 text-secondary" />
                     </motion.div>
                   </div>
-                  <h3 className="font-heading text-xl font-semibold text-foreground mb-2 group-hover:text-secondary transition-colors duration-300">
+                  <h3 className="font-heading text-xl font-semibold text-foreground mb-2 group-hover:text-secondary transition-colors duration-base">
                     {service.title}
                   </h3>
                   <p className="text-muted-foreground mb-4">

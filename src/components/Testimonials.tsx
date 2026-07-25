@@ -202,7 +202,7 @@ const Testimonials = () => {
                   aria-label={`Show testimonial ${i + 1} of ${testimonials.length}`}
                   aria-current={i === activeIndex}
                   onClick={() => setActiveIndex(i)}
-                  className={`tap-area rounded-full transition-colors duration-300 ${i === activeIndex ? "w-8 h-2 bg-secondary" : "w-2 h-2 bg-muted-foreground/30 hover:bg-muted-foreground/50"}`}
+                  className={`tap-area rounded-full transition-colors duration-base ${i === activeIndex ? "w-8 h-2 bg-secondary" : "w-2 h-2 bg-muted-foreground/30 hover:bg-muted-foreground/50"}`}
                   whileHover={{ scale: 1.2 }}
                 />
               ))}
@@ -228,13 +228,13 @@ const Testimonials = () => {
           {visibleTestimonials.map((testimonial, index) => (
             <motion.div
               key={testimonial.name}
-              className="group relative bg-card rounded-2xl p-6 shadow-lg hover:shadow-2xl transition-shadow duration-500 border border-border/50"
+              className="group relative bg-card rounded-2xl p-6 shadow-lg hover:shadow-2xl transition-shadow duration-slow border border-border/50"
               variants={cardVariants}
               whileHover={{ y: -10, scale: 1.02 }}
             >
               {/* Quote icon */}
               <motion.div
-                className="absolute -top-3 -right-3 w-10 h-10 bg-gradient-to-br from-secondary to-brand-green rounded-full flex items-center justify-center shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                className="absolute -top-3 -right-3 w-10 h-10 bg-gradient-to-br from-secondary to-brand-green rounded-full flex items-center justify-center shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-base"
                 initial={{ rotate: 0 }}
                 whileHover={{ rotate: 180 }}
               >
@@ -276,7 +276,7 @@ const Testimonials = () => {
               </div>
 
               {/* Hover gradient effect */}
-              <motion.div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-secondary/5 to-brand-gold/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+              <motion.div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-secondary/5 to-brand-gold/5 opacity-0 group-hover:opacity-100 transition-opacity duration-slow pointer-events-none" />
             </motion.div>
           ))}
         </motion.div>
