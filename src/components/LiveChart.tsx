@@ -4,6 +4,8 @@ import { TrendingUp, TrendingDown, BarChart3, Activity, ArrowUpRight, ArrowDownR
 import { Card, CardContent } from "@/components/ui/card";
 import { useLiveMarket } from "@/hooks/useLiveMarket";
 import { supabase } from "@/integrations/supabase/client";
+import PriceChart from "@/components/charts/PriceChart";
+import { zipSeries } from "@/lib/chart-data";
 
 // Calculate SMA
 const calcSMA = (data: number[], period: number): (number | null)[] => {
@@ -500,14 +502,22 @@ const LiveChart = () => {
                       </button>
                     </div>
                   ) : (
-                    <InteractiveChart data={chartData} volumeData={volumeData} timestamps={timestamps} up={currentUp} large showIndicators={showIndicators} />
+                    <PriceChart
+                      data={zipSeries(chartData, volumeData, timestamps)}
+                      mode="area"
+                      height={200}
+                      smaPeriods={showIndicators ? [20, 50] : undefined}
+                      // Indices carry no traded volume, so the feed returns all
+                      // zeros for NIFTY and friends. An empty pane pinned at
+                      // zero is worse than no pane.
+                      showVolume={volumeData.some((v) => v > 0)}
+                    />
                   )}
                 </motion.div>
-                <div className="flex justify-between mt-2 text-[10px] text-muted-foreground">
-                  {(timeLabels[activeTimeframe] || timeLabels["1D"]).map((label, i) => (
-                    <span key={i}>{label}</span>
-                  ))}
-                </div>
+                {/* The hardcoded time-label row that used to sit here is gone.
+                    It existed because the SVG chart had no axis of its own, so
+                    the labels were fixed strings that never matched the data.
+                    The chart now renders a real IST time scale. */}
                 {/* Indicator legend */}
                 <div className="flex items-center justify-between mt-2 pt-2 border-t border-border/30">
                   <div className="flex items-center gap-3 flex-wrap">

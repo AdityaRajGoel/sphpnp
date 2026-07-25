@@ -77,3 +77,62 @@ export function toVolume(
     color: p.c >= p.o ? colors.up : colors.down,
   }));
 }
+
+/** One minute, in ms. Used only to space synthesised timestamps. */
+const MINUTE_MS = 60_000;
+
+/**
+ * Zip the parallel arrays LiveChart keeps (closes, volumes, timestamps) into
+ * chart points.
+ *
+ * Only closes are available on that path, so OHLC collapse onto the close.
+ * That is honest for an area/line rendering and never reaches a candlestick.
+ *
+ * Iteration stops at the shortest array: the feed can return fewer timestamps
+ * than closes, and reading past the end yields undefined times that become NaN
+ * and are dropped silently by the library rather than raising.
+ */
+export function zipSeries(
+  closes: readonly number[],
+  volumes: readonly number[],
+  timestamps: readonly number[],
+): ApiChartPoint[] {
+  if (closes.length === 0) return [];
+
+  // With no timestamps at all, space the points evenly. The values are only a
+  // carrier for ordering here; what matters is that they ascend strictly.
+  const haveTimes = timestamps.length > 0;
+  const count = haveTimes ? Math.min(closes.length, timestamps.length) : closes.length;
+  const base = Date.now() - count * MINUTE_MS;
+
+  const out: ApiChartPoint[] = [];
+  for (let i = 0; i < count; i++) {
+    const c = closes[i];
+    out.push({
+      t: haveTimes ? timestamps[i] : base + i * MINUTE_MS,
+      o: c,
+      h: c,
+      l: c,
+      c,
+      v: volumes[i] ?? 0,
+    });
+  }
+  return out;
+}
+
+/**
+ * Simple moving average, `null` until the trailing window is full.
+ *
+ * A period below 1 would divide by zero and make every point NaN, which
+ * renders as an empty or corrupt series rather than an error, so it reports
+ * "no average" instead.
+ */
+export function sma(values: readonly number[], period: number): (number | null)[] {
+  if (period < 1) return values.map(() => null);
+  return values.map((_, i) => {
+    if (i < period - 1) return null;
+    let sum = 0;
+    for (let j = i - period + 1; j <= i; j++) sum += values[j];
+    return sum / period;
+  });
+}

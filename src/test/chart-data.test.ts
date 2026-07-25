@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { toCandles, toVolume, type ApiChartPoint } from "@/lib/chart-data";
+import { toCandles, toVolume, zipSeries, sma, type ApiChartPoint } from "@/lib/chart-data";
 
 /** One trading day of ticks, in the shape the Supabase functions actually return. */
 const point = (tMs: number, o: number, h: number, l: number, c: number, v = 1000): ApiChartPoint =>
@@ -66,5 +66,54 @@ describe("toVolume", () => {
     const [bar] = toVolume([point(1_700_000_000_000, 1, 2, 1, 2, 5000)], { up: "#0a0", down: "#a00" });
     expect(bar.time).toBe(1_700_000_000);
     expect(bar.value).toBe(5000);
+  });
+});
+
+describe("zipSeries", () => {
+  it("zips the parallel arrays LiveChart holds into chart points", () => {
+    const pts = zipSeries([10, 11], [100, 200], [1_700_000_000_000, 1_700_003_600_000]);
+    expect(pts).toEqual([
+      { t: 1_700_000_000_000, o: 10, h: 10, l: 10, c: 10, v: 100 },
+      { t: 1_700_003_600_000, o: 11, h: 11, l: 11, c: 11, v: 200 },
+    ]);
+  });
+
+  it("stops at the shortest array rather than emitting undefined points", () => {
+    // The feed can return fewer timestamps than closes; zipping past the end
+    // would produce NaN times that the library silently drops.
+    expect(zipSeries([1, 2, 3], [1, 2, 3], [1_700_000_000_000])).toHaveLength(1);
+  });
+
+  it("synthesises evenly spaced times when none are supplied", () => {
+    // Some callers have closes but no timestamps. Spacing them keeps the series
+    // strictly ascending, which the library requires.
+    const pts = zipSeries([1, 2, 3], [0, 0, 0], []);
+    expect(pts).toHaveLength(3);
+    expect(pts[0].t).toBeLessThan(pts[1].t);
+    expect(pts[1].t).toBeLessThan(pts[2].t);
+  });
+
+  it("returns nothing when there are no closes", () => {
+    expect(zipSeries([], [], [])).toEqual([]);
+  });
+});
+
+describe("sma", () => {
+  it("averages over the trailing window", () => {
+    expect(sma([2, 4, 6, 8], 2)).toEqual([null, 3, 5, 7]);
+  });
+
+  it("leaves the leading positions null until the window fills", () => {
+    expect(sma([1, 2, 3], 3)).toEqual([null, null, 2]);
+  });
+
+  it("returns all nulls for a period below one", () => {
+    // A zero period divides by zero and yields NaN for every point, which
+    // reaches the renderer as an unusable series.
+    expect(sma([1, 2, 3], 0)).toEqual([null, null, null]);
+  });
+
+  it("returns all nulls when the period exceeds the data length", () => {
+    expect(sma([1, 2], 5)).toEqual([null, null]);
   });
 });
