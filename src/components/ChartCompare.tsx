@@ -6,19 +6,12 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Search, X, Plus, LineChart, Loader2, TrendingUp, TrendingDown, Activity } from "lucide-react";
 import { sma, rsi, rsiZone, rebase, periodReturnPct } from "@/lib/technicals";
+import ComparisonChart, { LINE_COLORS } from "@/components/charts/ComparisonChart";
 
 type ChartPoint = { t: number; c: number };
 type Series = { symbol: string; points: ChartPoint[] };
 
 export type CompareStock = { symbol: string; name: string };
-
-// One distinct brand-aligned colour per overlaid stock (max 4).
-const LINE_COLORS = [
-  "hsl(var(--brand-orange))",
-  "hsl(var(--secondary))",
-  "#3b82f6",
-  "hsl(var(--brand-gold))",
-];
 
 const TIMEFRAMES: { id: string; label: string; range: string }[] = [
   { id: "1M", label: "1M", range: "1mo" },
@@ -28,9 +21,9 @@ const TIMEFRAMES: { id: string; label: string; range: string }[] = [
 ];
 
 const MAX_STOCKS = 4;
-const W = 760;
-const H = 300;
-const PAD = 8;
+
+// The line palette moved into ComparisonChart along with the rendering. The
+// W/H/PAD viewBox constants are gone entirely: the chart sizes itself now.
 
 async function fetchSeries(symbol: string, range: string): Promise<ChartPoint[]> {
   const { data, error } = await supabase.functions.invoke("fetch-stock-chart", {
@@ -64,7 +57,6 @@ const ChartCompare = ({ stocks, selected, onChange }: ChartCompareProps) => {
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
-  const [hoverIdx, setHoverIdx] = useState<number | null>(null);
 
   // Cache fetched series by `${symbol}:${range}` so switching timeframe/stocks
   // never refetches something we already have.
@@ -120,58 +112,6 @@ const ChartCompare = ({ stocks, selected, onChange }: ChartCompareProps) => {
 
   const singleMode = selected.length === 1 && series.length === 1;
 
-  // Build rebased polylines + a shared time axis. All series are resampled onto
-  // the longest series' index so the x-axis lines up.
-  const chart = useMemo(() => {
-    const withData = series.filter((s) => s.points.length > 1);
-    if (withData.length === 0) return null;
-
-    const maxLen = Math.max(...withData.map((s) => s.points.length));
-    const innerW = W - PAD * 2;
-    const innerH = H - PAD * 2;
-
-    const rebasedSeries = withData.map((s) => {
-      const closes = s.points.map((p) => p.c);
-      return { symbol: s.symbol, values: rebase(closes), points: s.points };
-    });
-
-    const allVals = rebasedSeries.flatMap((s) => s.values);
-    const min = Math.min(...allVals);
-    const max = Math.max(...allVals);
-    const spread = max - min || 1;
-
-    const x = (i: number, len: number) => PAD + (len <= 1 ? 0 : (i / (len - 1)) * innerW);
-    const y = (v: number) => PAD + innerH - ((v - min) / spread) * innerH;
-
-    const lines = rebasedSeries.map((s, si) => ({
-      symbol: s.symbol,
-      color: LINE_COLORS[si % LINE_COLORS.length],
-      points: s.values.map((v, i) => `${x(i, s.values.length).toFixed(1)},${y(v).toFixed(1)}`).join(" "),
-    }));
-
-    // SMA overlays only in single-stock mode (multi-line SMAs are visual noise).
-    let smaLines: { points: string; color: string; label: string }[] = [];
-    if (singleMode && showSMA) {
-      const closes = withData[0].points.map((p) => p.c);
-      const rb = rebase(closes);
-      const first = closes.find((c) => c > 0) ?? closes[0];
-      const toRebased = (v: number | null) => (v == null || !first ? null : (v / first) * 100);
-      const sma20 = sma(closes, 20).map(toRebased);
-      const sma50 = sma(closes, 50).map(toRebased);
-      const buildLine = (arr: (number | null)[]) =>
-        arr
-          .map((v, i) => (v == null ? null : `${x(i, rb.length).toFixed(1)},${y(v).toFixed(1)}`))
-          .filter(Boolean)
-          .join(" ");
-      smaLines = [
-        { points: buildLine(sma20), color: "#8b5cf6", label: "SMA 20" },
-        { points: buildLine(sma50), color: "#ec4899", label: "SMA 50" },
-      ].filter((l) => l.points.length > 0);
-    }
-
-    const baseY = y(100);
-    return { lines, smaLines, baseY, maxLen, x, innerW };
-  }, [series, singleMode, showSMA]);
 
   // Per-stock technical readout for the legend.
   const stats = useMemo(() => {
@@ -274,40 +214,12 @@ const ChartCompare = ({ stocks, selected, onChange }: ChartCompareProps) => {
             <p className="font-semibold">Add stocks to compare their performance</p>
             <p className="text-sm">Overlaid price charts, rebased to 100, with SMA & RSI</p>
           </div>
-        ) : chart ? (
-          <svg
-            viewBox={`0 0 ${W} ${H}`}
-            className="w-full h-auto"
-            preserveAspectRatio="none"
-            onMouseMove={(e) => {
-              const rect = (e.currentTarget as SVGSVGElement).getBoundingClientRect();
-              const rel = (e.clientX - rect.left) / rect.width;
-              setHoverIdx(Math.max(0, Math.min(chart.maxLen - 1, Math.round(rel * (chart.maxLen - 1)))));
-            }}
-            onMouseLeave={() => setHoverIdx(null)}
-          >
-            {/* Baseline at 100 (the rebase origin) */}
-            <line x1={PAD} y1={chart.baseY} x2={W - PAD} y2={chart.baseY} stroke="hsl(var(--border))" strokeWidth="1" strokeDasharray="4 4" />
-            {/* SMA overlays behind price */}
-            {chart.smaLines.map((l) => (
-              <polyline key={l.label} points={l.points} fill="none" stroke={l.color} strokeWidth="1" strokeOpacity="0.7" strokeDasharray="3 3" />
-            ))}
-            {/* Price lines */}
-            {chart.lines.map((l) => (
-              <polyline key={l.symbol} points={l.points} fill="none" stroke={l.color} strokeWidth="1.75" strokeLinejoin="round" strokeLinecap="round" />
-            ))}
-            {hoverIdx != null && (
-              <line
-                x1={chart.x(hoverIdx, chart.maxLen)}
-                y1={PAD}
-                x2={chart.x(hoverIdx, chart.maxLen)}
-                y2={H - PAD}
-                stroke="hsl(var(--muted-foreground))"
-                strokeWidth="0.75"
-                strokeOpacity="0.5"
-              />
-            )}
-          </svg>
+        ) : series.some((s) => s.points.length > 1) ? (
+          <ComparisonChart
+            series={series.filter((s) => s.points.length > 1)}
+            height={300}
+            smaPeriods={showSMA ? [20, 50] : undefined}
+          />
         ) : (
           <div className="flex items-center justify-center py-20 text-sm text-muted-foreground">No chart data available for this selection.</div>
         )}
