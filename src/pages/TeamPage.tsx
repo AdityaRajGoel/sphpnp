@@ -100,7 +100,7 @@ const TeamMemberCard = ({ member, index }: { member: typeof teamMembers[0]; inde
 
   return (
     <motion.div
-      className="group bg-card rounded-2xl border border-border/50 hover:border-secondary/30 shadow-lg hover:shadow-2xl transition-[color,background-color,border-color,box-shadow] duration-500 relative overflow-hidden"
+      className="group bg-card rounded-2xl border border-border/50 hover:border-secondary/30 shadow-lg hover:shadow-2xl transition-[color,background-color,border-color,box-shadow] duration-slow relative overflow-hidden"
       initial={{ opacity: 0, y: 50 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-50px" }}
@@ -111,7 +111,7 @@ const TeamMemberCard = ({ member, index }: { member: typeof teamMembers[0]; inde
       <div className={`h-1.5 bg-gradient-to-r ${member.accent}`} />
 
       {/* Hover overlay */}
-      <motion.div className="absolute inset-0 bg-gradient-to-br from-secondary/5 to-brand-gold/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+      <motion.div className="absolute inset-0 bg-gradient-to-br from-secondary/5 to-brand-gold/5 opacity-0 group-hover:opacity-100 transition-opacity duration-slow" />
 
       <div className="relative z-10 p-8 sm:p-10">
         {/* Header row */}

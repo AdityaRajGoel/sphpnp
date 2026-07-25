@@ -194,7 +194,7 @@ const About = () => {
                       {item.num}
                     </motion.span>
                     <div>
-                      <div className="font-semibold group-hover:text-secondary transition-colors duration-200">{item.title}</div>
+                      <div className="font-semibold group-hover:text-secondary transition-colors duration-fast">{item.title}</div>
                       <div className="text-primary-foreground/70 text-sm">{item.desc}</div>
                     </div>
                   </motion.li>

@@ -130,7 +130,7 @@ const MobileApp = () => {
                 <Button
                   asChild
                   size="lg"
-                  className="bg-primary-foreground text-primary hover:bg-primary-foreground/90 font-semibold transition-colors duration-300"
+                  className="bg-primary-foreground text-primary hover:bg-primary-foreground/90 font-semibold transition-colors duration-base"
                 >
                   <a
                     href="https://play.google.com/store/apps/details?id=com.parasramindia.xts"
@@ -146,7 +146,7 @@ const MobileApp = () => {
                 <Button
                   asChild
                   size="lg"
-                  className="bg-primary-foreground text-primary hover:bg-primary-foreground/90 font-semibold transition-colors duration-300"
+                  className="bg-primary-foreground text-primary hover:bg-primary-foreground/90 font-semibold transition-colors duration-base"
                 >
                   <a
                     href="https://apps.apple.com/us/app/parasram-trade/id1564728869"

@@ -177,7 +177,7 @@ const GoogleReviews = () => {
           {googleReviews.map((review, index) => (
             <motion.div
               key={review.name}
-              className="group bg-card rounded-2xl p-6 shadow-md hover:shadow-xl transition-shadow duration-500 border border-border/50 relative"
+              className="group bg-card rounded-2xl p-6 shadow-md hover:shadow-xl transition-shadow duration-slow border border-border/50 relative"
               variants={cardVariants}
               whileHover={{ y: -8, scale: 1.02 }}
             >
@@ -232,7 +232,7 @@ const GoogleReviews = () => {
               </p>
 
               {/* Hover gradient */}
-              <motion.div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-brand-gold/5 to-secondary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+              <motion.div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-brand-gold/5 to-secondary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-slow pointer-events-none" />
             </motion.div>
           ))}
         </motion.div>

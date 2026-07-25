@@ -171,7 +171,7 @@ const MessageCard = ({ message, index }: { message: TelegramMessage; index: numb
       viewport={{ once: true }}
       transition={{ delay: Math.min(index * 0.06, 0.3), duration: 0.35 }}
     >
-      <Card className={`group overflow-hidden transition-[box-shadow,transform] ease-out duration-300 hover:shadow-xl ${config.glowColor} border ${config.borderColor} hover:scale-[1.01]`}>
+      <Card className={`group overflow-hidden transition-[box-shadow,transform] ease-out duration-base hover:shadow-xl ${config.glowColor} border ${config.borderColor} hover:scale-[1.01]`}>
         {/* Category accent - left border */}
         <div className="flex">
           <div className={`w-1.5 flex-shrink-0 ${config.bgColor}`}

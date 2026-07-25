@@ -46,14 +46,14 @@ const AwardsSection = () => {
           {awards.map((award, index) => (
             <motion.div
               key={index}
-              className="bg-card glass-card rounded-2xl p-6 text-center border-border/50 hover:border-brand-gold/50 shadow-sm hover:shadow-xl transition-[color,background-color,border-color,box-shadow] duration-300 group"
+              className="bg-card glass-card rounded-2xl p-6 text-center border-border/50 hover:border-brand-gold/50 shadow-sm hover:shadow-xl transition-[color,background-color,border-color,box-shadow] duration-base group"
               initial={{ opacity: 0, y: 24 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: index * 0.1, duration: 0.5 }}
               whileHover={{ y: -5 }}
             >
-              <div className="w-16 h-16 mx-auto mb-5 rounded-full bg-brand-gold/10 flex items-center justify-center group-hover:scale-110 group-hover:bg-brand-gold/20 transition-[transform,color,background-color,border-color] ease-out duration-300">
+              <div className="w-16 h-16 mx-auto mb-5 rounded-full bg-brand-gold/10 flex items-center justify-center group-hover:scale-110 group-hover:bg-brand-gold/20 transition-[transform,color,background-color,border-color] ease-out duration-base">
                 <award.icon className="w-8 h-8 text-brand-gold" />
               </div>
               <h3 className="font-heading font-bold text-lg text-foreground mb-1">{award.title}</h3>

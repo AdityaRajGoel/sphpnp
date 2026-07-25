@@ -8,18 +8,11 @@
  * required part of migrating a file.
  */
 
-/** Files still containing hardcoded `duration-<number>` Tailwind classes. */
-export const DURATION_ALLOWLIST: readonly string[] = [
-  "src/components/About.tsx",
-  "src/components/AwardsSection.tsx",
-  "src/components/GoogleReviews.tsx",
-  "src/components/MobileApp.tsx",
-  "src/components/TelegramChannel.tsx",
-  "src/pages/BrokerageCalculatorPage.tsx",
-  "src/pages/ContactPage.tsx",
-  "src/pages/DepositoryServicesPage.tsx",
-  "src/pages/TeamPage.tsx",
-];
+/**
+ * Files still containing hardcoded `duration-<number>` Tailwind classes.
+ * Empty: the duration sweep is complete.
+ */
+export const DURATION_ALLOWLIST: readonly string[] = [];
 
 /**
  * Files still hand-rolling `whileInView` reveals instead of using the presets.

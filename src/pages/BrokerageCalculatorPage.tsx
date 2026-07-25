@@ -288,7 +288,7 @@ const BrokerageCalculatorPage = () => {
             <button
               key={seg.key}
               onClick={() => setSegment(seg.key)}
-              className={`px-4 py-2 rounded-full text-sm font-medium transition-colors duration-200 ${
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-colors duration-fast ${
                 segment === seg.key
                   ? "bg-primary text-primary-foreground shadow-md scale-105"
                   : "bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground"

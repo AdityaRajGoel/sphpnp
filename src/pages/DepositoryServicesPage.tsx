@@ -147,7 +147,7 @@ const DepositoryServicesPage = () => {
               {features.map((feature, idx) => (
                 <motion.div 
                   key={feature.title}
-                  className="bg-muted/30 p-6 rounded-2xl border border-border/50 hover:bg-muted/60 hover:border-secondary/30 transition-[color,background-color,border-color,transform] ease-out duration-300 transform hover:-translate-y-1"
+                  className="bg-muted/30 p-6 rounded-2xl border border-border/50 hover:bg-muted/60 hover:border-secondary/30 transition-[color,background-color,border-color,transform] ease-out duration-base transform hover:-translate-y-1"
                   initial={{ opacity: 0, y: 24 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
