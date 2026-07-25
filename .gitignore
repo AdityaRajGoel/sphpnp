@@ -51,6 +51,12 @@ playwright-report/
 blob-report/
 coverage/
 
+# Vendored agent skills — ~9MB of third-party content, re-installable from
+# skills-lock.json (which is tracked). Don't bloat the repo with copies.
+.agents/
+.claude/skills/
+.github/skills/
+
 # graphify knowledge-graph output
 graphify-out/
 scripts/i18n-out.json
