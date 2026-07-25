@@ -1,6 +1,7 @@
 import { motion } from "motion/react";
 import { FileText, Download, TrendingUp, Newspaper, ArrowUpRight, BarChart2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { revealBar } from "@/lib/motion";
 
 const researchCards = [
   {
@@ -73,10 +74,7 @@ const DailyResearch = () => {
           </h2>
           <motion.div
             className="w-20 h-1 bg-gradient-to-r from-secondary to-brand-gold mx-auto rounded-full mb-4"
-            initial={{ width: 0 }}
-            whileInView={{ width: 80 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.3, duration: 0.6 }}
+            {...revealBar}
           />
           <p className="text-muted-foreground max-w-xl mx-auto">
             Access expert research reports, daily market insights, and trading ideas from our experienced analysts.

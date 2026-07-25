@@ -1,6 +1,7 @@
 import { motion } from "motion/react";
 import { Rocket, Shield, Users, Globe } from "lucide-react";
 import ScrollySteps, { ScrollyStep } from "@/components/ScrollySteps";
+import { revealBar } from "@/lib/motion";
 
 const steps: ScrollyStep[] = [
   { icon: Globe, title: "Visit Our Branch Or Call Us", desc: "Walk into our Panipat office at Shakuntala Complex, call us or fill out the form for us to contact you.", num: "01", accent: "pulse" },
@@ -33,10 +34,7 @@ const HowItWorks = () => {
           </h2>
           <motion.div
             className="w-20 h-1 bg-gradient-to-r from-secondary to-brand-gold mx-auto rounded-full"
-            initial={{ width: 0 }}
-            whileInView={{ width: 80 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.3, duration: 0.6 }}
+            {...revealBar}
           />
         </motion.div>
 

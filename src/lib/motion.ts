@@ -90,11 +90,16 @@ export const revealFade = {
  * layout pass on every frame, while the user is scrolling, on the busiest
  * pages. scaleX is visually identical on a solid bar and stays on the
  * compositor. Give the element its final width in CSS and let this scale it.
+ *
+ * The origin is centre, not left, because every one of these rules is
+ * `mx-auto`. Under the old `width: 0 -> 80` the auto margins re-centred the
+ * box on each frame, so it opened symmetrically from the middle; a left
+ * origin would have it wipe in from one side instead.
  */
 export const revealBar = {
   initial: { scaleX: 0 },
   whileInView: { scaleX: 1 },
   viewport: { once: true, amount: 0.5 },
   transition: { duration: DURATION.reveal, delay: 0.3, ease: EASE_OUT },
-  style: { transformOrigin: "left" },
+  style: { transformOrigin: "center" },
 } as const;

@@ -1,5 +1,6 @@
 import { motion } from "motion/react";
 import { Heart, Shield, Target, Lightbulb, Handshake, Scale } from "lucide-react";
+import { revealBar } from "@/lib/motion";
 
 const values = [
   { icon: Shield, title: "Trust & Integrity", desc: "Transparent dealings with every client. No hidden charges, no misleading advice.", color: "bg-primary/10 text-primary" },
@@ -32,10 +33,7 @@ const CompanyValues = () => {
           </h2>
           <motion.div
             className="w-20 h-1 bg-gradient-to-r from-brand-gold to-secondary mx-auto rounded-full"
-            initial={{ width: 0 }}
-            whileInView={{ width: 80 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.3, duration: 0.6 }}
+            {...revealBar}
           />
         </motion.div>
 

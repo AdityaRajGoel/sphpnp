@@ -8,6 +8,7 @@ import {
 import type { LucideIcon } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
+import { revealBar } from "\@/lib/motion";
 
 type IPO = {
   name: string;
@@ -195,7 +196,7 @@ const IPOTracker = () => {
           <p className="text-muted-foreground text-sm max-w-lg mx-auto">
             Track upcoming, open, and recently listed IPOs with GMP updates
           </p>
-          <motion.div className="w-20 h-1 bg-gradient-to-r from-brand-orange to-brand-gold mx-auto rounded-full mt-3" initial={{ width: 0 }} whileInView={{ width: 80 }} viewport={{ once: true }} transition={{ delay: 0.3, duration: 0.6 }} />
+          <motion.div className="w-20 h-1 bg-gradient-to-r from-brand-orange to-brand-gold mx-auto rounded-full mt-3" {...revealBar} />
           {fetchedAt && (
             <div className="flex items-center justify-center gap-2 mt-3 text-[10px] text-muted-foreground">
               <span>Last updated: {new Date(fetchedAt).toLocaleString("en-IN", { hour: "2-digit", minute: "2-digit", day: "numeric", month: "short" })}</span>

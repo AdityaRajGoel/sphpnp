@@ -6,6 +6,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { revealBar } from "\@/lib/motion";
 
 type FAQItem = { q: string; a: string };
 
@@ -39,10 +40,7 @@ const FAQ = ({ title = "Frequently Asked Questions", subtitle, items }: FAQProps
           {subtitle && <p className="text-muted-foreground max-w-xl mx-auto">{subtitle}</p>}
           <motion.div
             className="w-20 h-1 bg-gradient-to-r from-brand-orange to-brand-gold mx-auto rounded-full mt-4"
-            initial={{ width: 0 }}
-            whileInView={{ width: 80 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.3, duration: 0.6 }}
+            {...revealBar}
           />
         </motion.div>
 

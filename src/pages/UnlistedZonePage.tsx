@@ -11,6 +11,7 @@ import PageTransition from "@/components/PageTransition";
 import { motion } from "motion/react";
 import { Phone, Search, BadgeCheck, Vault, TrendingUp } from "lucide-react";
 import ScrollySteps, { ScrollyStep } from "@/components/ScrollySteps";
+import { revealBar } from "@/lib/motion";
 
 const unlistedSteps: ScrollyStep[] = [
   { icon: Search, title: "Browse Verified Companies", desc: "Explore 50+ verified unlisted & pre-IPO companies - NSE, Tata Capital, SBI Mutual Fund and more, with indicative prices.", num: "01", accent: "pulse" },
@@ -109,10 +110,7 @@ const UnlistedSpacePage = () => {
             </p>
             <motion.div
               className="w-20 h-1 bg-gradient-to-r from-secondary to-brand-gold mx-auto rounded-full"
-              initial={{ width: 0 }}
-              whileInView={{ width: 80 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.3, duration: 0.6 }}
+              {...revealBar}
             />
           </motion.div>
 

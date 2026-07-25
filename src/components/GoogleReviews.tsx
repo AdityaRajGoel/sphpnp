@@ -2,7 +2,7 @@ import { Star, ExternalLink, MessageSquare } from "lucide-react";
 import { motion, Variants, useScroll, useTransform } from "motion/react";
 import { Button } from "@/components/ui/button";
 import { useRef } from "react";
-import { EASE_OUT } from "@/lib/motion";
+import { EASE_OUT , revealBar } from "@/lib/motion";
 
 const googleReviews = [
   {
@@ -117,10 +117,7 @@ const GoogleReviews = () => {
           </h2>
           <motion.div
             className="w-20 h-1 bg-gradient-to-r from-brand-gold to-secondary mx-auto rounded-full mb-6"
-            initial={{ width: 0 }}
-            whileInView={{ width: 80 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.3, duration: 0.6 }}
+            {...revealBar}
           />
 
           {/* Rating summary */}

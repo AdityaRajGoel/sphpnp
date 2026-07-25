@@ -1,6 +1,7 @@
 import { motion } from "motion/react";
 import { ArrowRight, BookOpen, FileBarChart, Target, Lightbulb, LineChart, Shield } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
+import { revealBar } from "@/lib/motion";
 
 const tools = [
   {
@@ -77,10 +78,7 @@ const InvestmentTools = () => {
           </h2>
           <motion.div
             className="w-20 h-1 bg-gradient-to-r from-secondary to-brand-gold mx-auto rounded-full mb-4"
-            initial={{ width: 0 }}
-            whileInView={{ width: 80 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.3, duration: 0.6 }}
+            {...revealBar}
           />
           <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
             Everything you need to make informed investment decisions - like Kite & Groww, but with personal guidance

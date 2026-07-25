@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { Link } from "react-router-dom";
+import { revealBar } from "@/lib/motion";
 
 type TelegramMessage = {
   id: string;
@@ -402,10 +403,7 @@ const TelegramChannel = ({ limit = 10, showViewAll = false, showFilters = false 
           </h2>
           <motion.div
             className="w-20 h-1 bg-gradient-to-r from-[#229ED9] to-[#1a7aab] mx-auto rounded-full mb-4"
-            initial={{ width: 0 }}
-            whileInView={{ width: 80 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.3, duration: 0.6 }}
+            {...revealBar}
           />
           <p className="text-muted-foreground max-w-xl mx-auto">
             Latest stock picks and market updates from our research team, delivered in real-time.

@@ -4,7 +4,7 @@ import { motion, Variants, useScroll, useTransform } from "motion/react";
 import { useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { useT } from "@/i18n/LanguageContext";
-import { EASE_OUT } from "@/lib/motion";
+import { EASE_OUT , revealBar } from "@/lib/motion";
 
 // Every service links to the page that actually explains it - the cards show a
 // "go" arrow, so they must be real links.
@@ -170,10 +170,7 @@ const Services = () => {
           </h1>
           <motion.div
             className="w-20 h-1 bg-gradient-to-r from-secondary to-brand-gold mx-auto rounded-full mb-4"
-            initial={{ width: 0 }}
-            whileInView={{ width: 80 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.4, duration: 0.6 }}
+            {...revealBar}
           />
           <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
             Your one-stop financial supermarket - equity, F&O, commodities,

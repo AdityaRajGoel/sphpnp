@@ -51,6 +51,8 @@ describe("motion presets", () => {
     expect(revealBar.whileInView).not.toHaveProperty("width");
     expect(revealBar.initial.scaleX).toBe(0);
     expect(revealBar.whileInView.scaleX).toBe(1);
-    expect(revealBar.style.transformOrigin).toBe("left");
+    // Centre, not left: these rules are all mx-auto, and the width animation
+    // they replace opened symmetrically from the middle.
+    expect(revealBar.style.transformOrigin).toBe("center");
   });
 });

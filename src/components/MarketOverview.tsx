@@ -13,6 +13,7 @@ import {
 import type { LucideIcon } from "lucide-react";
 import { useLiveMarket } from "@/hooks/useLiveMarket";
 import { useCorporateActions, useMarketFlows, useMfNavs } from "@/hooks/useMarketFeed";
+import { revealBar } from "\@/lib/motion";
 
 type Stock = { name: string; price: string; change: string; up: boolean; volume?: string; high?: string; low?: string };
 
@@ -374,7 +375,7 @@ const MarketOverview = () => {
             Market Pulse
           </motion.span>
           <h2 className="font-heading text-3xl md:text-4xl font-bold text-foreground mb-4">Today's Market Overview</h2>
-          <motion.div className="w-20 h-1 bg-gradient-to-r from-brand-orange to-brand-gold mx-auto rounded-full" initial={{ width: 0 }} whileInView={{ width: 80 }} viewport={{ once: true }} transition={{ delay: 0.3, duration: 0.6 }} />
+          <motion.div className="w-20 h-1 bg-gradient-to-r from-brand-orange to-brand-gold mx-auto rounded-full" {...revealBar} />
           <p className="text-muted-foreground mt-3 max-w-xl mx-auto text-sm">
             Real-time market data across equities, derivatives, mutual funds & commodities
           </p>

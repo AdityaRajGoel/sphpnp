@@ -4,7 +4,7 @@ import {
   Shield, Smartphone, Award, PhoneCall, Percent,
   Headphones, MapPin, TrendingUp, MessageCircle
 } from "lucide-react";
-import { EASE_OUT } from "@/lib/motion";
+import { EASE_OUT , revealBar } from "@/lib/motion";
 
 const usps = [
   {
@@ -102,10 +102,7 @@ const WhyChooseUs = () => {
           </h2>
           <motion.div
             className="w-20 h-1 bg-gradient-to-r from-secondary to-brand-gold mx-auto rounded-full mb-4"
-            initial={{ width: 0 }}
-            whileInView={{ width: 80 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.3, duration: 0.6 }}
+            {...revealBar}
           />
           <p className="text-muted-foreground max-w-xl mx-auto">
             Panipat's most trusted investment partner - combining national-level expertise with personal, local service.
