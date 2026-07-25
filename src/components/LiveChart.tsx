@@ -5,42 +5,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useLiveMarket } from "@/hooks/useLiveMarket";
 import { supabase } from "@/integrations/supabase/client";
 
-const generateChartData = (trend: "up" | "down" | "mixed", points = 60, seed = 0, timeframe = "1D") => {
-  const data: number[] = [];
-  let value = 100 + ((seed * 17 + 31) % 25);
-
-  // Each timeframe has its own volatility and movement style
-  const tfConfig: Record<string, { vol: number; driftMul: number; freq1: number; freq2: number; amp1: number; amp2: number }> = {
-    "1D": { vol: 0.8,  driftMul: 0.04, freq1: 8.1,  freq2: 5.7,  amp1: 0.6, amp2: 0.4 }, // choppy intraday
-    "1W": { vol: 1.4,  driftMul: 0.08, freq1: 3.3,  freq2: 2.1,  amp1: 0.7, amp2: 0.5 }, // smoother weekly
-    "1M": { vol: 2.2,  driftMul: 0.10, freq1: 1.9,  freq2: 1.1,  amp1: 0.8, amp2: 0.6 }, // medium trend
-    "3M": { vol: 3.0,  driftMul: 0.12, freq1: 0.9,  freq2: 0.5,  amp1: 0.9, amp2: 0.5 }, // broader swings
-    "1Y": { vol: 4.0,  driftMul: 0.15, freq1: 0.4,  freq2: 0.25, amp1: 1.0, amp2: 0.7 }, // long-term trend
-  };
-
-  const cfg = tfConfig[timeframe] || tfConfig["1D"];
-  const drift = trend === "up" ? cfg.driftMul : trend === "down" ? -cfg.driftMul : 0;
-
-  for (let i = 0; i < points; i++) {
-    // Use drastically different seed multipliers per timeframe so shapes differ
-    const s = seed * 137 + i;
-    const pseudo = Math.sin(s * cfg.freq1) * cfg.amp1 + Math.cos(s * cfg.freq2 + seed * 29) * cfg.amp2;
-    value += (pseudo + drift) * cfg.vol;
-    value = Math.max(70, Math.min(140, value));
-    data.push(value);
-  }
-  return data;
-};
-
-const generateVolumeData = (points: number, seed: number) => {
-  const data: number[] = [];
-  for (let i = 0; i < points; i++) {
-    const pseudo = Math.abs(Math.sin(seed * 500 + i * 2.1)) * 0.7 + 0.3;
-    data.push(pseudo * 100);
-  }
-  return data;
-};
-
 // Calculate SMA
 const calcSMA = (data: number[], period: number): (number | null)[] => {
   // A period below 1 divides by zero and yields NaN for every point, which then
@@ -73,8 +37,6 @@ const calcRSI = (data: number[], period = 14): (number | null)[] => {
   return rsi;
 };
 
-const timeframePoints: Record<string, number> = { "1D": 60, "1W": 90, "1M": 120, "3M": 180, "1Y": 250 };
-const timeframeSeed: Record<string, number> = { "1D": 1, "1W": 2, "1M": 3, "3M": 4, "1Y": 5 };
 
 function formatVol(v: number) {
   if (v >= 10000000) return `${(v / 10000000).toFixed(2)}Cr`;
@@ -326,6 +288,11 @@ const LiveChart = () => {
   const [volumeData, setVolumeData] = useState<number[]>([]);
   const [timestamps, setTimestamps] = useState<number[]>([]);
   const [loadingChart, setLoadingChart] = useState(false);
+  // Set when the feed fails or returns nothing. The chart previously filled
+  // this case with a seeded random walk, which rendered as real NIFTY movement
+  // with no way for a visitor to tell. Showing nothing is the only honest
+  // option for a SEBI-registered broker quoting a named index.
+  const [chartError, setChartError] = useState(false);
   // Bumped on a timer so intraday charts extend to the current time instead of
   // freezing at the last session's 15:30 close when the page is left open.
   const [chartRefreshTick, setChartRefreshTick] = useState(0);
@@ -352,24 +319,19 @@ const LiveChart = () => {
           setChartData(data.dataPoints.map((dp: { c: number }) => dp.c));
           setVolumeData(data.dataPoints.map((dp: { v: number }) => dp.v));
           setTimestamps(data.dataPoints.map((dp: { t: number }) => dp.t));
+          setChartError(false);
         } else if (active) {
-          // fallback to generate if no data
-          const trend = currentUp ? "up" : "down";
-          const points = timeframePoints[activeTimeframe] || 60;
-          const seed = timeframeSeed[activeTimeframe] + idxPosition * 7;
-          setChartData(generateChartData(trend, points, seed, activeTimeframe));
-          setVolumeData(generateVolumeData(points, seed * 31));
+          setChartData([]);
+          setVolumeData([]);
           setTimestamps([]);
+          setChartError(true);
         }
       } catch (err) {
         if (active) {
-          // fallback to generate on error
-          const trend = currentUp ? "up" : "down";
-          const points = timeframePoints[activeTimeframe] || 60;
-          const seed = timeframeSeed[activeTimeframe] + idxPosition * 7;
-          setChartData(generateChartData(trend, points, seed, activeTimeframe));
-          setVolumeData(generateVolumeData(points, seed * 31));
+          setChartData([]);
+          setVolumeData([]);
           setTimestamps([]);
+          setChartError(true);
         }
       } finally {
         if (active) setLoadingChart(false);
@@ -514,13 +476,32 @@ const LiveChart = () => {
                   </div>
                 </div>
                 <motion.div key={`${activeIndexKey}-${activeTimeframe}`} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }} className="relative min-h-[160px]">
-                  {loadingChart || chartData.length === 0 ? (
+                  {loadingChart ? (
                     <div className="absolute inset-0 flex flex-col items-center justify-center bg-card/50 z-10 backdrop-blur-[2px] rounded-lg">
                       <div className="w-8 h-8 rounded-full border-2 border-brand-orange border-t-transparent animate-spin mb-2"></div>
                       <div className="text-xs text-muted-foreground font-medium animate-pulse">Fetching live data...</div>
                     </div>
                   ) : null}
-                  <InteractiveChart data={chartData.length > 0 ? chartData : [100, 100]} volumeData={volumeData.length > 0 ? volumeData : [0, 0]} timestamps={timestamps} up={currentUp} large showIndicators={showIndicators} />
+                  {/* No data means no chart. Never a placeholder series: a flat
+                      or generated line under a live index name reads as real
+                      market data to a visitor. */}
+                  {!loadingChart && (chartError || chartData.length === 0) ? (
+                    <div className="min-h-[160px] flex flex-col items-center justify-center gap-2 text-center px-4">
+                      <Activity className="w-5 h-5 text-muted-foreground/60" />
+                      <p className="text-sm font-medium text-foreground">Live data temporarily unavailable</p>
+                      <p className="text-xs text-muted-foreground max-w-xs">
+                        We could not reach the market feed for {activeIndexKey}. Prices are not shown rather than estimated.
+                      </p>
+                      <button
+                        onClick={() => setChartRefreshTick((t) => t + 1)}
+                        className="mt-1 text-xs font-semibold text-brand-orange hover:underline"
+                      >
+                        Retry
+                      </button>
+                    </div>
+                  ) : (
+                    <InteractiveChart data={chartData} volumeData={volumeData} timestamps={timestamps} up={currentUp} large showIndicators={showIndicators} />
+                  )}
                 </motion.div>
                 <div className="flex justify-between mt-2 text-[10px] text-muted-foreground">
                   {(timeLabels[activeTimeframe] || timeLabels["1D"]).map((label, i) => (
