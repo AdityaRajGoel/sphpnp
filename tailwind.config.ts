@@ -102,6 +102,7 @@ export default {
         fast: "var(--duration-fast)",
         base: "var(--duration-base)",
         slow: "var(--duration-slow)",
+        ambient: "var(--duration-ambient)",
       },
       keyframes: {
         "accordion-down": {

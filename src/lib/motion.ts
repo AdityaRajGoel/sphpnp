@@ -25,6 +25,8 @@ export const DURATION = {
   slow: 0.36,
   /** Section-scale entrances, which are allowed to be slower than UI feedback. */
   reveal: 0.5,
+  /** Decorative loops only — marquees, ambient pulses. Never UI feedback. */
+  ambient: 1,
 } as const;
 
 /**

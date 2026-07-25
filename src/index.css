@@ -74,6 +74,10 @@
     --duration-base: 240ms;
     --duration-slow: 360ms;
 
+    /* Decorative loops only — marquees, ambient pulses. Never UI feedback.
+       The capped UI scale above is deliberately too fast for these. */
+    --duration-ambient: 1000ms;
+
     /* Custom brand colors */
     --brand-navy: 210 100% 20%;
     --brand-green: 150 50% 40%;
