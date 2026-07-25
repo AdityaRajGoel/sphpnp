@@ -7,6 +7,7 @@ import logo80 from "@/assets/logo-80.webp";
 import logo160 from "@/assets/logo-160.webp";
 import appQr from "@/assets/app-qr.svg";
 
+import { revealItem, revealSection } from "@/lib/motion";
 type FooterLink = { label: string; href: string; external?: boolean; title?: string };
 
 const companyLinks: FooterLink[] = [
@@ -69,9 +70,7 @@ const FooterColumn = ({
   title, open, onToggle, delay, children,
 }: { title: string; open: boolean; onToggle: () => void; delay: number; children: ReactNode }) => (
   <motion.div
-    initial={{ opacity: 0, y: 24 }}
-    whileInView={{ opacity: 1, y: 0 }}
-    viewport={{ once: true }}
+    {...revealSection}
     transition={{ duration: 0.5, delay }}
   >
     <h4
@@ -134,10 +133,7 @@ const Footer = () => {
         <div className="container mx-auto px-4 py-6 md:py-8">
           <motion.div
             className="flex flex-col md:flex-row items-center justify-between gap-4"
-            initial={{ opacity: 0, y: 16 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5 }}
+            {...revealItem()}
           >
             <div className="text-center md:text-left">
               <h3 className="font-heading text-xl md:text-2xl font-bold">
@@ -170,10 +166,7 @@ const Footer = () => {
         <div className="grid md:grid-cols-2 lg:grid-cols-5 gap-4 md:gap-6 mb-6 md:mb-10">
           {/* Column 1 - Brand */}
           <motion.div
-            initial={{ opacity: 0, y: 24 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5 }}
+            {...revealSection}
           >
             <motion.img
               src={logo80}
@@ -272,9 +265,7 @@ const Footer = () => {
         {/* Compliance & Grievance */}
         <motion.div
           className="border-t border-primary-foreground/15 pt-6 mb-6"
-          initial={{ opacity: 0, y: 16 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
+          {...revealItem()}
           transition={{ duration: 0.5, delay: 0.3 }}
         >
           <div className="grid md:grid-cols-2 gap-6">

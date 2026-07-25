@@ -2,7 +2,7 @@ import { Star, ExternalLink, MessageSquare } from "lucide-react";
 import { motion, Variants, useScroll, useTransform } from "motion/react";
 import { Button } from "@/components/ui/button";
 import { useRef } from "react";
-import { EASE_OUT , revealBar } from "@/lib/motion";
+import { EASE_OUT, revealBar, revealSection } from "@/lib/motion";
 
 const googleReviews = [
   {
@@ -99,10 +99,7 @@ const GoogleReviews = () => {
         {/* Header */}
         <motion.div
           className="text-center mb-14"
-          initial={{ opacity: 0, y: 24 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
+          {...revealSection}
         >
           <motion.span
             className="inline-block text-secondary font-semibold text-sm uppercase tracking-wider mb-4"
@@ -237,9 +234,7 @@ const GoogleReviews = () => {
         {/* CTA */}
         <motion.div
           className="text-center flex flex-col sm:flex-row items-center justify-center gap-4"
-          initial={{ opacity: 0, y: 24 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
+          {...revealSection}
           transition={{ delay: 0.4 }}
         >
           <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.97 }}>

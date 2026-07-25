@@ -2,6 +2,7 @@ import { motion, useScroll, useTransform } from "motion/react";
 import { useRef } from "react";
 import { Trophy, Award, Star, ShieldCheck, HeartHandshake } from "lucide-react";
 
+import { revealSection } from "@/lib/motion";
 const awards = [
   { icon: Trophy, title: "Top Volume Broker", org: "", year: "2023-24", desc: "Recognized for driving massive trading volumes across multiple segments." },
   { icon: Star, title: "Star Performer", org: "", year: "2022-23", desc: "Awarded for exceptional depository growth and unyielding service quality." },
@@ -26,10 +27,7 @@ const AwardsSection = () => {
       <div className="container mx-auto px-4 relative z-10">
         <motion.div 
           className="text-center mb-16"
-          initial={{ opacity: 0, y: 24 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
+          {...revealSection}
         >
           <span className="inline-block text-secondary font-semibold text-sm uppercase tracking-wider mb-3">
             Trust & Recognition
@@ -47,9 +45,7 @@ const AwardsSection = () => {
             <motion.div
               key={index}
               className="bg-card glass-card rounded-2xl p-6 text-center border-border/50 hover:border-brand-gold/50 shadow-sm hover:shadow-xl transition-[color,background-color,border-color,box-shadow] duration-base group"
-              initial={{ opacity: 0, y: 24 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
+              {...revealSection}
               transition={{ delay: index * 0.1, duration: 0.5 }}
               whileHover={{ y: -5 }}
             >

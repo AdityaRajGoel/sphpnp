@@ -12,6 +12,7 @@ import VisibleBreadcrumbs from "@/components/VisibleBreadcrumbs";
 import PageTransition from "@/components/PageTransition";
 import { LEARN_ARTICLES } from "@/data/learnContent";
 
+import { revealSection } from "@/lib/motion";
 const difficultyColor: Record<string, string> = {
   Beginner: "bg-secondary/10 text-secondary border-secondary/20",
   Intermediate: "bg-brand-gold/10 text-brand-gold border-brand-gold/20",
@@ -146,9 +147,7 @@ const ArticlePage = () => {
 
           {/* CTA */}
           <motion.div
-            initial={{ opacity: 0, y: 24 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
+            {...revealSection}
             className="mt-10 bg-gradient-to-br from-brand-navy to-primary text-white rounded-2xl p-6 md:p-8 text-center"
           >
             <h2 className="font-heading text-xl md:text-2xl font-bold mb-2">Ready to start investing?</h2>

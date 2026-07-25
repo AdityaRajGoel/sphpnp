@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 
+import { revealSection } from "@/lib/motion";
 /*
  * Rendered both as the entire /sip-calculator page and as one section inside
  * /services. On the dedicated page its title is the document's main heading; in
@@ -47,9 +48,7 @@ const SIPCalculator = ({ headingLevel = 2 }: SIPCalculatorProps) => {
       <div className="container mx-auto px-4 relative z-10">
         <motion.div
           className="text-center mb-12"
-          initial={{ opacity: 0, y: 24 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
+          {...revealSection}
         >
           <motion.div
             className="inline-flex items-center gap-2 bg-secondary/10 border border-secondary/30 rounded-full px-5 py-2 mb-5"

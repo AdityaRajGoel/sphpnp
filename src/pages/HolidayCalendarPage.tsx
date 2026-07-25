@@ -11,6 +11,7 @@ import { CalendarDays, Building2, Clock, AlertCircle, PartyPopper } from "lucide
 import { useMemo } from "react";
 import PageTransition from "@/components/PageTransition";
 
+import { revealItem } from "@/lib/motion";
 type Holiday = {
   date: string;
   day: string;
@@ -186,9 +187,7 @@ const HolidayCalendarPage = () => {
             return (
               <motion.div
                 key={month}
-                initial={{ opacity: 0, y: 16 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
+                {...revealItem()}
                 transition={{ delay: mIdx * 0.03 }}
               >
                 <div className="flex items-center gap-2 mb-3">

@@ -10,6 +10,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { revealBar } from "\@/lib/motion";
 
+import { revealItem } from "@/lib/motion";
 type IPO = {
   name: string;
   price: string;
@@ -35,9 +36,7 @@ const tabs: { key: TabKey; label: string; icon: LucideIcon }[] = [
 const IPOCard = ({ ipo, index }: { ipo: IPO; index: number }) => (
   <motion.div
     className="bg-card border border-border/50 rounded-xl p-4 hover:shadow-lg hover:border-brand-orange/30 transition-[box-shadow,color,background-color,border-color] cursor-pointer group"
-    initial={{ opacity: 0, y: 16 }}
-    whileInView={{ opacity: 1, y: 0 }}
-    viewport={{ once: true }}
+    {...revealItem()}
     transition={{ delay: index * 0.06 }}
     whileHover={{ y: -3 }}
   >

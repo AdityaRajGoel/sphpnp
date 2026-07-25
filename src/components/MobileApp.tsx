@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { motion, useScroll, useTransform } from "motion/react";
 import { useRef } from "react";
 
+import { revealSection } from "@/lib/motion";
 const features = [
   { icon: Zap, text: "Lightning Fast Trading" },
   { icon: Shield, text: "Bank-Level Security" },
@@ -90,9 +91,7 @@ const MobileApp = () => {
                 <motion.div
                   key={feature.text}
                   className="flex items-center gap-3"
-                  initial={{ opacity: 0, y: 24 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
+                  {...revealSection}
                   transition={{ delay: index * 0.1, duration: 0.5 }}
                   whileHover={{ x: 5 }}
                 >

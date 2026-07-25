@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { RippleButton } from "@/components/ui/ripple-button";
 
+import { revealSection } from "@/lib/motion";
 const PHONE_REGEX = /^(\+?91)?[6-9]\d{9}$/;
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -100,9 +101,7 @@ const ContactForm = () => {
     <motion.form
       onSubmit={handleSubmit}
       className="bg-card border border-border/50 rounded-2xl p-6 md:p-8 shadow-lg space-y-4"
-      initial={{ opacity: 0, y: 24 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
+      {...revealSection}
     >
       <h3 className="font-heading text-xl font-bold text-foreground mb-1">Send Us a Message</h3>
       <p className="text-muted-foreground text-sm mb-4">Fill out the form and we'll get back to you within a business day.</p>

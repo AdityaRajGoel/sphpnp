@@ -1,7 +1,7 @@
 import { CheckCircle2, TrendingUp, Users, Award, BarChart2 } from "lucide-react";
 import { motion, Variants, useScroll, useTransform } from "motion/react";
 import { useRef } from "react";
-import { EASE_IN_OUT, EASE_OUT } from "@/lib/motion";
+import { EASE_IN_OUT, EASE_OUT, revealSection } from "@/lib/motion";
 
 const features = [
   "SEBI Registered Stock Broker",
@@ -64,10 +64,7 @@ const About = () => {
         {/* Stats strip */}
         <motion.div
           className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-20 bg-gradient-to-r from-primary/5 via-secondary/5 to-brand-gold/5 rounded-2xl p-8 border border-border/50"
-          initial={{ opacity: 0, y: 24 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
+          {...revealSection}
         >
           {[
             { icon: TrendingUp, value: "50+", label: "Years of Experience", color: "text-secondary" },
@@ -78,9 +75,7 @@ const About = () => {
             <motion.div
               key={stat.label}
               className="flex flex-col items-center text-center gap-3 group"
-              initial={{ opacity: 0, y: 24 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
+              {...revealSection}
               transition={{ delay: i * 0.1, duration: 0.5 }}
               whileHover={{ y: -4 }}
             >
@@ -113,9 +108,7 @@ const About = () => {
               Welcome to Parasram India
               <motion.span
                 className="block text-secondary mt-2"
-                initial={{ opacity: 0, y: 24 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
+                {...revealSection}
                 transition={{ delay: 0.3, duration: 0.5 }}
               >
                Panipat Branch Since 1997
@@ -231,10 +224,7 @@ const About = () => {
         {/* Pan-India network strip - borrows the parent group's scale for branch trust */}
         <motion.div
           className="mt-14 flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-6 text-center bg-muted/40 border border-border/40 rounded-2xl px-6 py-4"
-          initial={{ opacity: 0, y: 24 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.5 }}
+          {...revealSection}
         >
           <span className="text-sm font-semibold text-foreground">
             Part of the Shri Parasram Holdings network
@@ -249,10 +239,7 @@ const About = () => {
         <div className="mt-8 grid md:grid-cols-2 gap-6">
           <motion.div
             className="bg-card border border-border/50 rounded-2xl p-6 md:p-8 hover:border-secondary/40 hover:shadow-lg transition-[color,background-color,border-color,box-shadow]"
-            initial={{ opacity: 0, y: 24 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5 }}
+            {...revealSection}
           >
             <span className="inline-block text-secondary font-semibold text-xs uppercase tracking-[0.15em] mb-2">Our Vision</span>
             <p className="text-foreground/90 leading-relaxed">
@@ -263,9 +250,7 @@ const About = () => {
           </motion.div>
           <motion.div
             className="bg-card border border-border/50 rounded-2xl p-6 md:p-8 hover:border-brand-gold/40 hover:shadow-lg transition-[color,background-color,border-color,box-shadow]"
-            initial={{ opacity: 0, y: 24 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
+            {...revealSection}
             transition={{ duration: 0.5, delay: 0.1 }}
           >
             <span className="inline-block text-brand-gold font-semibold text-xs uppercase tracking-[0.15em] mb-2">Our Mission</span>

@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
+import { revealItem } from "@/lib/motion";
 const PHONE_REGEX = /^(\+?91)?[6-9]\d{9}$/;
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -118,9 +119,7 @@ const BecomePartner = () => {
                 <motion.div
                   key={b.text}
                   className="flex items-start gap-3"
-                  initial={{ opacity: 0, y: 16 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
+                  {...revealItem()}
                   transition={{ delay: 0.3 + i * 0.1 }}
                 >
                   <div className="w-9 h-9 bg-secondary/20 rounded-lg flex items-center justify-center flex-shrink-0">

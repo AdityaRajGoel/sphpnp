@@ -1,7 +1,7 @@
 import { motion, useScroll, useTransform } from "motion/react";
 import { useRef } from "react";
 import { Building2, TrendingUp, Award, Users, Globe, Landmark, Sparkles } from "lucide-react";
-import { revealBar } from "@/lib/motion";
+import { revealBar, revealSection } from "@/lib/motion";
 
 const milestones = [
   { year: "1970", title: "Foundation", desc: "Parasram begins serving investors, establishing a trusted name in financial services.", icon: Building2, color: "from-primary to-primary/80" },
@@ -33,9 +33,7 @@ const CompanyTimeline = () => {
       <div className="container mx-auto px-4 relative z-10">
         <motion.div
           className="text-center mb-16"
-          initial={{ opacity: 0, y: 24 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
+          {...revealSection}
         >
           <span className="inline-block text-brand-orange font-semibold text-sm uppercase tracking-wider mb-3">Our Journey</span>
           <h2 className="font-heading text-3xl md:text-4xl font-bold text-foreground mb-4">

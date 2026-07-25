@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { motion, useScroll, useTransform } from "motion/react";
 import { useRef } from "react";
 import brandImage from "@/assets/parasram-brand.jpeg";
-import { EASE_OUT } from "@/lib/motion";
+import { EASE_OUT, revealItem, revealSection } from "@/lib/motion";
 
 const contactItems = [
   {
@@ -88,10 +88,7 @@ const Contact = () => {
       <div className="container mx-auto px-4 relative z-10">
         <motion.div
           className="text-center mb-12"
-          initial={{ opacity: 0, y: 24 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
+          {...revealSection}
         >
           <motion.span
             className="inline-block text-secondary font-semibold text-sm uppercase tracking-wider mb-3"
@@ -113,9 +110,7 @@ const Contact = () => {
         {/* Brand Banner */}
         <motion.div
           className="mb-12 flex justify-center"
-          initial={{ opacity: 0, y: 24 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
+          {...revealSection}
           transition={{ duration: 0.7, ease: EASE_OUT }}
         >
           <motion.div
@@ -209,9 +204,7 @@ const Contact = () => {
             </motion.div>
 
             <motion.div
-              initial={{ opacity: 0, y: 24 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
+              {...revealSection}
               transition={{ delay: 0.2, duration: 0.6 }}
               whileHover={{ scale: 1.02 }}
             >
@@ -229,9 +222,7 @@ const Contact = () => {
                 <CardContent className="p-8 text-center relative z-10">
                   <motion.h3
                     className="font-heading text-2xl font-bold mb-3"
-                    initial={{ opacity: 0, y: 16 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
+                    {...revealItem()}
                     transition={{ delay: 0.3 }}
                   >
                     Ready to Start Investing?

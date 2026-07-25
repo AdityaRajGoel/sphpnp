@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/accordion";
 import { revealBar } from "\@/lib/motion";
 
+import { revealSection } from "@/lib/motion";
 type FAQItem = { q: string; a: string };
 
 type FAQProps = {
@@ -28,9 +29,7 @@ const FAQ = ({ title = "Frequently Asked Questions", subtitle, items }: FAQProps
       <div className="container mx-auto px-4 relative z-10">
         <motion.div
           className="text-center mb-12"
-          initial={{ opacity: 0, y: 24 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
+          {...revealSection}
         >
           <motion.span className="inline-flex items-center gap-1.5 bg-brand-orange/10 text-brand-orange text-xs font-bold uppercase tracking-wider px-3 py-1.5 rounded-full mb-3">
             <HelpCircle className="w-3.5 h-3.5" />
@@ -46,9 +45,7 @@ const FAQ = ({ title = "Frequently Asked Questions", subtitle, items }: FAQProps
 
         <motion.div
           className="max-w-3xl mx-auto"
-          initial={{ opacity: 0, y: 24 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
+          {...revealSection}
           transition={{ delay: 0.1 }}
         >
           <Accordion type="single" collapsible className="space-y-3">

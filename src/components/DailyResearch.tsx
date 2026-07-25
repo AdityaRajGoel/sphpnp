@@ -1,7 +1,7 @@
 import { motion } from "motion/react";
 import { FileText, Download, TrendingUp, Newspaper, ArrowUpRight, BarChart2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { revealBar } from "@/lib/motion";
+import { revealBar, revealSection } from "@/lib/motion";
 
 const researchCards = [
   {
@@ -55,10 +55,7 @@ const DailyResearch = () => {
       <div className="container mx-auto px-4 relative z-10">
         <motion.div
           className="text-center mb-12"
-          initial={{ opacity: 0, y: 24 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.5 }}
+          {...revealSection}
         >
           <motion.span
             className="inline-block text-secondary font-semibold text-sm uppercase tracking-wider mb-3"
@@ -89,9 +86,7 @@ const DailyResearch = () => {
               target="_blank"
               rel="noopener noreferrer"
               className="group relative overflow-hidden rounded-2xl bg-card border border-border/50 hover:border-transparent transition-[color,background-color,border-color,box-shadow] duration-base hover:shadow-2xl block"
-              initial={{ opacity: 0, y: 24 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
+              {...revealSection}
               transition={{ delay: i * 0.1, duration: 0.5 }}
               whileHover={{ y: -8 }}
             >

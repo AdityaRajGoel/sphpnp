@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { Link } from "react-router-dom";
-import { revealBar } from "@/lib/motion";
+import { revealBar, revealItem, revealSection } from "@/lib/motion";
 
 type TelegramMessage = {
   id: string;
@@ -167,9 +167,7 @@ const MessageCard = ({ message, index }: { message: TelegramMessage; index: numb
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 24 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
+      {...revealSection}
       transition={{ delay: Math.min(index * 0.06, 0.3), duration: 0.35 }}
     >
       <Card className={`group overflow-hidden transition-[box-shadow,transform] ease-out duration-base hover:shadow-xl ${config.glowColor} border ${config.borderColor} hover:scale-[1.01]`}>
@@ -383,10 +381,7 @@ const TelegramChannel = ({ limit = 10, showViewAll = false, showFilters = false 
         {/* Header */}
         <motion.div
           className="text-center mb-10"
-          initial={{ opacity: 0, y: 24 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.5 }}
+          {...revealSection}
         >
           <motion.span
             className="inline-flex items-center gap-2 text-[#229ED9] font-semibold text-sm uppercase tracking-wider mb-3"
@@ -552,9 +547,7 @@ const TelegramChannel = ({ limit = 10, showViewAll = false, showFilters = false 
         {showViewAll && messages.length > 0 && (
           <motion.div
             className="mt-8 flex justify-center"
-            initial={{ opacity: 0, y: 16 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
+            {...revealItem()}
             transition={{ delay: 0.3 }}
           >
             <Button asChild variant="outline" className="gap-2 text-[#229ED9] border-[#229ED9]/30 hover:bg-[#229ED9]/10">
@@ -583,9 +576,7 @@ const TelegramChannel = ({ limit = 10, showViewAll = false, showFilters = false 
         {/* ⚠️ SEBI Investment Disclaimer */}
         <motion.div
           className="mt-8 md:mt-12"
-          initial={{ opacity: 0, y: 16 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
+          {...revealItem()}
           transition={{ delay: 0.4, duration: 0.5 }}
         >
           <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 rounded-xl p-4 md:p-5">

@@ -4,7 +4,7 @@ import { motion, Variants, useScroll, useTransform } from "motion/react";
 import { useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { useT } from "@/i18n/LanguageContext";
-import { EASE_OUT , revealBar } from "@/lib/motion";
+import { EASE_OUT, revealBar, revealSection } from "@/lib/motion";
 
 // Every service links to the page that actually explains it - the cards show a
 // "go" arrow, so they must be real links.
@@ -151,10 +151,7 @@ const Services = () => {
       <div className="container mx-auto px-4 relative z-10">
         <motion.div
           className="text-center mb-16"
-          initial={{ opacity: 0, y: 24 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
+          {...revealSection}
         >
           <motion.span
             className="inline-block text-secondary font-semibold text-sm uppercase tracking-wider mb-4"
@@ -256,9 +253,7 @@ const Services = () => {
 
         <motion.div
           className="text-center mt-12"
-          initial={{ opacity: 0, y: 24 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
+          {...revealSection}
           transition={{ delay: 0.5 }}
         >
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">

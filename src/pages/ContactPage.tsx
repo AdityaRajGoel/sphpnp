@@ -13,6 +13,7 @@ import { MessageCircle, MapPin, Phone, Mail, Clock, ExternalLink, Instagram, Fac
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
+import { revealSection } from "@/lib/motion";
 const contactFAQs = [
   { q: "What are your office timings?", a: "Our Panipat branch is open Monday to Friday from 9:00 AM to 6:00 PM, and Saturday from 9:00 AM to 2:00 PM. We are closed on Sundays and market holidays." },
   { q: "Can I visit without an appointment?", a: "Yes! Walk-ins are welcome during office hours. However, for detailed portfolio consultations, we recommend calling ahead to schedule an appointment so our advisors can dedicate proper time to you." },
@@ -196,9 +197,7 @@ const ContactPage = () => {
         <div className="container mx-auto px-4">
           <motion.div
             className="rounded-2xl overflow-hidden border border-border/50 shadow-lg"
-            initial={{ opacity: 0, y: 24 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
+            {...revealSection}
           >
             <iframe
               src="https://maps.google.com/maps?q=29.394309972550538,76.96980579867602&t=m&z=17&output=embed&iwloc=near"

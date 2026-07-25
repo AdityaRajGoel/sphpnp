@@ -2,7 +2,7 @@ import { motion, Variants, useScroll, useTransform } from "motion/react";
 import { Star, Quote, ChevronLeft, ChevronRight } from "lucide-react";
 import { useRef, useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { EASE_OUT } from "@/lib/motion";
+import { EASE_OUT, revealSection } from "@/lib/motion";
 
 const testimonials = [
   {
@@ -120,10 +120,7 @@ const Testimonials = () => {
       <div className="container mx-auto px-4 relative z-10">
         <motion.div
           className="text-center mb-16"
-          initial={{ opacity: 0, y: 24 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
+          {...revealSection}
         >
           <motion.span
             className="inline-block text-secondary font-semibold text-sm uppercase tracking-wider mb-4"
@@ -144,9 +141,7 @@ const Testimonials = () => {
         {/* Featured testimonial */}
         <motion.div
           className="max-w-3xl mx-auto mb-16"
-          initial={{ opacity: 0, y: 24 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
+          {...revealSection}
         >
           <motion.div
             key={activeIndex}
@@ -284,9 +279,7 @@ const Testimonials = () => {
         {/* CTA */}
         <motion.div
           className="text-center mt-16"
-          initial={{ opacity: 0, y: 24 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
+          {...revealSection}
           transition={{ delay: 0.5 }}
         >
           <p className="text-muted-foreground mb-4">Ready to start your investment journey?</p>

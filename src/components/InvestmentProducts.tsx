@@ -5,7 +5,7 @@ import {
   LineChart, Activity, Sparkles, PiggyBank, Rocket,
   Gem, Landmark, Vault, ArrowRight, BadgeCheck,
 } from "lucide-react";
-import { EASE_IN_OUT, EASE_OUT } from "@/lib/motion";
+import { EASE_IN_OUT, EASE_OUT, revealSection } from "@/lib/motion";
 
 // Segmented product menu - the pattern both Motilal Oswal & Angel One lead
 // with. Each card links to an existing route and maps to the parent
@@ -90,10 +90,7 @@ const InvestmentProducts = () => {
         {/* Heading */}
         <motion.div
           className="text-center mb-10"
-          initial={{ opacity: 0, y: 24 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.5 }}
+          {...revealSection}
         >
           <span className="inline-block text-secondary font-semibold text-sm uppercase tracking-[0.15em] mb-3">
             One Platform · Every Investment
@@ -175,10 +172,7 @@ const InvestmentProducts = () => {
         {/* Trust strip + primary CTA - competitor pattern: funnel to account opening */}
         <motion.div
           className="mt-10 flex flex-col md:flex-row items-center justify-center gap-4 md:gap-6 text-center"
-          initial={{ opacity: 0, y: 24 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.5 }}
+          {...revealSection}
         >
           <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-sm">
             <span className="inline-flex items-center gap-1.5 font-semibold text-foreground">

@@ -4,7 +4,7 @@ import {
   Shield, Smartphone, Award, PhoneCall, Percent,
   Headphones, MapPin, TrendingUp, MessageCircle
 } from "lucide-react";
-import { EASE_OUT , revealBar } from "@/lib/motion";
+import { EASE_OUT, revealBar, revealSection } from "@/lib/motion";
 
 const usps = [
   {
@@ -83,10 +83,7 @@ const WhyChooseUs = () => {
       <div className="container mx-auto px-4 relative z-10">
         <motion.div
           className="text-center mb-12"
-          initial={{ opacity: 0, y: 24 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.5 }}
+          {...revealSection}
         >
           <motion.span
             className="inline-block text-secondary font-semibold text-sm uppercase tracking-wider mb-3"

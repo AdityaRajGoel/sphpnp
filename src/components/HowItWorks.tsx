@@ -1,7 +1,7 @@
 import { motion } from "motion/react";
 import { Rocket, Shield, Users, Globe } from "lucide-react";
 import ScrollySteps, { ScrollyStep } from "@/components/ScrollySteps";
-import { revealBar } from "@/lib/motion";
+import { revealBar, revealSection } from "@/lib/motion";
 
 const steps: ScrollyStep[] = [
   { icon: Globe, title: "Visit Our Branch Or Call Us", desc: "Walk into our Panipat office at Shakuntala Complex, call us or fill out the form for us to contact you.", num: "01", accent: "pulse" },
@@ -22,9 +22,7 @@ const HowItWorks = () => {
       <div className="container mx-auto px-4 relative z-10">
         <motion.div
           className="text-center mb-14"
-          initial={{ opacity: 0, y: 24 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
+          {...revealSection}
         >
           <span className="inline-block text-secondary font-semibold text-sm uppercase tracking-wider mb-3">
             Get Started

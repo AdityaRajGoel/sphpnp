@@ -17,7 +17,7 @@ import {
   MapPin, Calendar
 } from "lucide-react";
 import { useRef } from "react";
-import { EASE_OUT } from "@/lib/motion";
+import { EASE_OUT, revealSection } from "@/lib/motion";
 
 const teamMembers = [
   {
@@ -301,9 +301,7 @@ const TeamPage = () => {
               <motion.div
                 key={stat.label}
                 className="flex items-center gap-3 justify-center py-3"
-                initial={{ opacity: 0, y: 24 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
+                {...revealSection}
                 transition={{ delay: i * 0.1 }}
               >
                 <stat.icon className="w-5 h-5 text-secondary" />
@@ -350,9 +348,7 @@ const TeamPage = () => {
             ].map((item, i) => (
               <motion.div
                 key={item.title}
-                initial={{ opacity: 0, y: 24 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
+                {...revealSection}
                 transition={{ delay: i * 0.08 }}
               >
                 <Card className="p-5 h-full hover:shadow-md transition-shadow border-border/50 hover:border-secondary/30">
@@ -370,9 +366,7 @@ const TeamPage = () => {
       <section className="py-8 md:py-16 bg-background">
         <div className="container mx-auto px-4 text-center">
           <motion.div
-            initial={{ opacity: 0, y: 24 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
+            {...revealSection}
           >
             <h2 className="font-heading text-2xl md:text-3xl font-bold text-foreground mb-3">
               Ready to Start Your Investment Journey?

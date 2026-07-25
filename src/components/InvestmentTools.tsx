@@ -1,7 +1,7 @@
 import { motion } from "motion/react";
 import { ArrowRight, BookOpen, FileBarChart, Target, Lightbulb, LineChart, Shield } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
-import { revealBar } from "@/lib/motion";
+import { revealBar, revealSection } from "@/lib/motion";
 
 const tools = [
   {
@@ -60,9 +60,7 @@ const InvestmentTools = () => {
       <div className="container mx-auto px-4 relative z-10">
         <motion.div
           className="text-center mb-14"
-          initial={{ opacity: 0, y: 24 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
+          {...revealSection}
         >
           <motion.span
             className="inline-block text-secondary font-semibold text-sm uppercase tracking-wider mb-3"
@@ -89,9 +87,7 @@ const InvestmentTools = () => {
           {tools.map((tool, index) => (
             <motion.div
               key={tool.title}
-              initial={{ opacity: 0, y: 24 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
+              {...revealSection}
               transition={{ delay: index * 0.08, duration: 0.5 }}
               whileHover={{ y: -8 }}
             >
