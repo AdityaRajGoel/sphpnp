@@ -120,19 +120,6 @@ export function zipSeries(
   return out;
 }
 
-/**
- * Simple moving average, `null` until the trailing window is full.
- *
- * A period below 1 would divide by zero and make every point NaN, which
- * renders as an empty or corrupt series rather than an error, so it reports
- * "no average" instead.
- */
-export function sma(values: readonly number[], period: number): (number | null)[] {
-  if (period < 1) return values.map(() => null);
-  return values.map((_, i) => {
-    if (i < period - 1) return null;
-    let sum = 0;
-    for (let j = i - period + 1; j <= i; j++) sum += values[j];
-    return sum / period;
-  });
-}
+// `sma` deliberately lives in technicals.ts alongside rsi/ema/rebase.
+// Re-exported here so chart callers have one import for chart-shaped helpers.
+export { sma } from "./technicals";
