@@ -58,3 +58,43 @@ export const revealItem = (index = 0) =>
     viewport: { once: true, amount: 0.3 },
     transition: { duration: DURATION.reveal, delay: index * STAGGER, ease: EASE_OUT },
   }) as const;
+
+/**
+ * Horizontal counterpart to `revealItem`, for the two-column layouts where the
+ * halves arrive from opposite edges. Same distance as the vertical item reveal:
+ * a longer travel reads as a slide rather than a settle.
+ */
+export const revealItemX = (from: "left" | "right", index = 0) =>
+  ({
+    initial: { opacity: 0, x: from === "left" ? -REVEAL_Y.item : REVEAL_Y.item },
+    whileInView: { opacity: 1, x: 0 },
+    viewport: { once: true, amount: 0.3 },
+    transition: { duration: DURATION.reveal, delay: index * STAGGER, ease: EASE_OUT },
+  }) as const;
+
+/**
+ * Fade with no movement, for elements whose position is already meaningful —
+ * background art, overlays, anything where a lift would fight the layout.
+ */
+export const revealFade = {
+  initial: { opacity: 0 },
+  whileInView: { opacity: 1 },
+  viewport: { once: true, amount: 0.2 },
+  transition: { duration: DURATION.reveal, ease: EASE_OUT },
+} as const;
+
+/**
+ * The decorative rule that grows under a section heading.
+ *
+ * Animates scaleX, not width. Width is layout-bound: animating it forces a
+ * layout pass on every frame, while the user is scrolling, on the busiest
+ * pages. scaleX is visually identical on a solid bar and stays on the
+ * compositor. Give the element its final width in CSS and let this scale it.
+ */
+export const revealBar = {
+  initial: { scaleX: 0 },
+  whileInView: { scaleX: 1 },
+  viewport: { once: true, amount: 0.5 },
+  transition: { duration: DURATION.reveal, delay: 0.3, ease: EASE_OUT },
+  style: { transformOrigin: "left" },
+} as const;

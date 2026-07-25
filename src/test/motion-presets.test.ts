@@ -1,5 +1,13 @@
 import { describe, it, expect } from "vitest";
-import { DURATION, REVEAL_Y, STAGGER, revealItem } from "@/lib/motion";
+import {
+  DURATION,
+  REVEAL_Y,
+  STAGGER,
+  revealItem,
+  revealItemX,
+  revealFade,
+  revealBar,
+} from "@/lib/motion";
 
 describe("motion presets", () => {
   it("keeps every interactive duration under 250ms", () => {
@@ -20,5 +28,29 @@ describe("motion presets", () => {
 
   it("reveals items a shorter distance than whole sections", () => {
     expect(REVEAL_Y.item).toBeLessThan(REVEAL_Y.section);
+  });
+
+  it("reveals horizontally from either side", () => {
+    expect(revealItemX("left").initial.x).toBeLessThan(0);
+    expect(revealItemX("right").initial.x).toBeGreaterThan(0);
+    expect(revealItemX("left").whileInView.x).toBe(0);
+  });
+
+  it("fades without movement when there is nothing to move", () => {
+    expect(revealFade.initial).toEqual({ opacity: 0 });
+    expect(revealFade.whileInView).toEqual({ opacity: 1 });
+  });
+
+  /**
+   * The decorative rules under section headings used to animate `width` from 0,
+   * which forces layout on every frame while scrolling. scaleX is visually the
+   * same on a solid bar and stays on the compositor.
+   */
+  it("grows decorative rules on scaleX, never width", () => {
+    expect(revealBar.initial).not.toHaveProperty("width");
+    expect(revealBar.whileInView).not.toHaveProperty("width");
+    expect(revealBar.initial.scaleX).toBe(0);
+    expect(revealBar.whileInView.scaleX).toBe(1);
+    expect(revealBar.style.transformOrigin).toBe("left");
   });
 });
