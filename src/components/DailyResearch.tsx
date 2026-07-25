@@ -90,7 +90,7 @@ const DailyResearch = () => {
               href={card.href}
               target="_blank"
               rel="noopener noreferrer"
-              className="group relative overflow-hidden rounded-2xl bg-card border border-border/50 hover:border-transparent transition-[color,background-color,border-color,box-shadow] duration-300 hover:shadow-2xl block"
+              className="group relative overflow-hidden rounded-2xl bg-card border border-border/50 hover:border-transparent transition-[color,background-color,border-color,box-shadow] duration-base hover:shadow-2xl block"
               initial={{ opacity: 0, y: 24 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
@@ -101,15 +101,15 @@ const DailyResearch = () => {
               <div className={`h-1.5 bg-gradient-to-r ${card.color}`} />
 
               {/* Gradient background on hover */}
-              <div className={`absolute inset-0 bg-gradient-to-br ${card.color} opacity-0 group-hover:opacity-5 transition-opacity duration-500`} />
+              <div className={`absolute inset-0 bg-gradient-to-br ${card.color} opacity-0 group-hover:opacity-5 transition-opacity duration-slow`} />
 
               <div className="p-6 relative z-10">
                 <div className="flex items-start justify-between mb-4">
-                  <div className={`w-14 h-14 rounded-xl ${card.bgAccent} flex items-center justify-center group-hover:scale-110 transition-transform duration-300`}>
+                  <div className={`w-14 h-14 rounded-xl ${card.bgAccent} flex items-center justify-center group-hover:scale-110 transition-transform duration-base`}>
                     <card.icon className={`w-7 h-7 ${card.textColor}`} />
                   </div>
                   <motion.div
-                    className="opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                    className="opacity-0 group-hover:opacity-100 transition-opacity duration-base"
                     animate={{ x: [0, 3, 0] }}
                     transition={{ duration: 1.5, repeat: Infinity }}
                   >

@@ -199,7 +199,7 @@ const UnlistedShares = () => {
             <motion.div key={stocks.length} className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4" variants={containerVariants} initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-50px" }}>
               {stocks.map((stock, index) => (
                 <motion.div key={stock.name} variants={itemVariants}>
-                  <Card className="group cursor-pointer transition-[color,background-color,border-color,box-shadow] duration-300 border-border/50 hover:border-secondary/50 hover:shadow-xl hover:shadow-secondary/5"
+                  <Card className="group cursor-pointer transition-[color,background-color,border-color,box-shadow] duration-base border-border/50 hover:border-secondary/50 hover:shadow-xl hover:shadow-secondary/5"
                     onClick={() => setSelectedStock(stock)}>
                     <CardContent className="p-5">
                       <div className="flex items-start gap-4">

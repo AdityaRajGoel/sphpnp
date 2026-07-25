@@ -97,10 +97,10 @@ const InvestmentTools = () => {
               transition={{ delay: index * 0.08, duration: 0.5 }}
               whileHover={{ y: -8 }}
             >
-              <Card className="h-full bg-card border-border/50 hover:border-secondary/40 hover:shadow-2xl transition-[color,background-color,border-color,box-shadow] duration-300 group overflow-hidden relative">
+              <Card className="h-full bg-card border-border/50 hover:border-secondary/40 hover:shadow-2xl transition-[color,background-color,border-color,box-shadow] duration-base group overflow-hidden relative">
                 {/* Top gradient accent */}
                 <motion.div
-                  className={`h-1 bg-gradient-to-r ${tool.color} opacity-0 group-hover:opacity-100 transition-opacity duration-300`}
+                  className={`h-1 bg-gradient-to-r ${tool.color} opacity-0 group-hover:opacity-100 transition-opacity duration-base`}
                 />
                 <CardContent className="p-6">
                   <div className="flex items-start justify-between mb-4">

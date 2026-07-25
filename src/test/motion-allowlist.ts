@@ -10,23 +10,17 @@
 
 /** Files still containing hardcoded `duration-<number>` Tailwind classes. */
 export const DURATION_ALLOWLIST: readonly string[] = [
-  "src/components/AIAnalysisModal.tsx",
   "src/components/About.tsx",
   "src/components/AnnouncementBar.tsx",
   "src/components/AwardsSection.tsx",
   "src/components/BannerMessage.tsx",
   "src/components/ClientMarquee.tsx",
-  "src/components/DailyResearch.tsx",
   "src/components/FloatingActions.tsx",
   "src/components/GoogleReviews.tsx",
-  "src/components/InvestmentTools.tsx",
-  "src/components/MarketNews.tsx",
-  "src/components/MarketOverview.tsx",
   "src/components/MobileApp.tsx",
   "src/components/ScrollySteps.tsx",
   "src/components/TelegramChannel.tsx",
   "src/components/ThemeToggle.tsx",
-  "src/components/UnlistedShares.tsx",
   "src/components/WhatsAppButton.tsx",
   "src/pages/BrokerageCalculatorPage.tsx",
   "src/pages/ContactPage.tsx",
