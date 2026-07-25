@@ -192,10 +192,15 @@ Neither MCP is on the critical path. Neither quota can block the work.
 
 ## Success criteria
 
-- All 33 pages use the token motion scale; zero hardcoded `duration-N` remain.
-- Files hand-rolling motion drop from 51 to zero, except where a bespoke animation
-  genuinely cannot be expressed as a preset. Each exception carries a comment saying
-  why. "Preset didn't quite fit" is not a reason; the presets get extended instead.
+- Zero hardcoded `duration-N` remain (78 occurrences across 34 files today).
+- The 29 files containing hand-rolled scroll reveals migrate to the presets.
+  Exceptions carry a comment saying why; "preset didn't quite fit" is not a reason,
+  the presets get extended instead.
+
+  Corrected 2026-07-25 during planning: an earlier draft said "51 files → 0". Of the
+  51 files hand-rolling motion, only 29 contain `whileInView` reveals. The other 22
+  use `motion` for hover, layout or presence, where forcing a reveal preset would be
+  wrong. Those are out of scope.
 - All 8 forms validate against a shared schema derived from the server contract.
 - All 8 forms preserve honeypot and timestamp behaviour, manually verified.
 - `tsc --noEmit` and `npm run build` green at every phase boundary.
