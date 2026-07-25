@@ -10,7 +10,7 @@ const quickTestimonials = [
 ];
 
 const ReviewCard = ({ t }: { t: typeof quickTestimonials[0] }) => (
-  <div className="inline-flex items-start gap-3 bg-card border border-border/50 rounded-xl px-5 py-4 min-w-[300px] max-w-[340px] shadow-sm flex-shrink-0 mr-6 transition-[transform,box-shadow,color,background-color,border-color] ease-out duration-300 hover:-translate-y-1 hover:shadow-lg hover:border-secondary/40">
+  <div className="inline-flex items-start gap-3 bg-card border border-border/50 rounded-xl px-5 py-4 min-w-[300px] max-w-[340px] shadow-sm flex-shrink-0 mr-6 transition-[transform,box-shadow,color,background-color,border-color] ease-out duration-base hover:-translate-y-1 hover:shadow-lg hover:border-secondary/40">
     <Quote className="w-5 h-5 text-secondary/40 flex-shrink-0 mt-0.5" />
     <div className="whitespace-normal">
       <p className="text-sm text-foreground leading-snug mb-2">"{t.text}"</p>

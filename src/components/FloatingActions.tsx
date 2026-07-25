@@ -74,12 +74,12 @@ const FloatingActions = () => {
                 transition={{ delay: (actions.length - 1 - i) * 0.06, duration: 0.2 }}
               >
                 {/* Label tooltip */}
-                <span className="bg-card/95 backdrop-blur-md text-foreground text-sm font-medium px-3 py-1.5 rounded-lg shadow-lg whitespace-nowrap opacity-0 group-hover:opacity-100 translate-x-2 group-hover:translate-x-0 transition-[opacity,transform] ease-out duration-200">
+                <span className="bg-card/95 backdrop-blur-md text-foreground text-sm font-medium px-3 py-1.5 rounded-lg shadow-lg whitespace-nowrap opacity-0 group-hover:opacity-100 translate-x-2 group-hover:translate-x-0 transition-[opacity,transform] ease-out duration-fast">
                   {action.label}
                 </span>
 
                 {/* Icon button */}
-                <div className={`w-12 h-12 rounded-full flex items-center justify-center shadow-lg ${action.color} text-white transition-transform ease-out duration-200 hover:scale-110`}>
+                <div className={`w-12 h-12 rounded-full flex items-center justify-center shadow-lg ${action.color} text-white transition-transform ease-out duration-fast hover:scale-110`}>
                   <action.icon className="w-5 h-5" />
                 </div>
               </motion.a>
@@ -101,7 +101,7 @@ const FloatingActions = () => {
         )}
 
         <motion.div
-          className={`relative w-14 h-14 rounded-full flex items-center justify-center shadow-lg transition-colors duration-300 ${
+          className={`relative w-14 h-14 rounded-full flex items-center justify-center shadow-lg transition-colors duration-base ${
             expanded
               ? "bg-card text-foreground border border-border/50 hover:bg-accent"
               : "bg-green-500 hover:bg-green-600 text-white shadow-green-500/30"

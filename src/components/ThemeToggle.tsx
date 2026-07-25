@@ -26,7 +26,7 @@ const ThemeToggle = () => {
     <Button
       variant="ghost"
       size="icon"
-      className={`h-9 w-9 rounded-full overflow-hidden transition-colors duration-500 ${
+      className={`h-9 w-9 rounded-full overflow-hidden transition-colors duration-slow ${
         dark ? "text-brand-gold hover:bg-brand-gold/10" : "text-primary hover:bg-primary/10"
       }`}
       onClick={() => setDark((d) => !d)}

@@ -11,17 +11,10 @@
 /** Files still containing hardcoded `duration-<number>` Tailwind classes. */
 export const DURATION_ALLOWLIST: readonly string[] = [
   "src/components/About.tsx",
-  "src/components/AnnouncementBar.tsx",
   "src/components/AwardsSection.tsx",
-  "src/components/BannerMessage.tsx",
-  "src/components/ClientMarquee.tsx",
-  "src/components/FloatingActions.tsx",
   "src/components/GoogleReviews.tsx",
   "src/components/MobileApp.tsx",
-  "src/components/ScrollySteps.tsx",
   "src/components/TelegramChannel.tsx",
-  "src/components/ThemeToggle.tsx",
-  "src/components/WhatsAppButton.tsx",
   "src/pages/BrokerageCalculatorPage.tsx",
   "src/pages/ContactPage.tsx",
   "src/pages/DepositoryServicesPage.tsx",

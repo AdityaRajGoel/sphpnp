@@ -177,7 +177,7 @@ const ScrollySteps = ({ steps }: { steps: ScrollyStep[] }) => {
               transition={{ duration: 0.5, delay: i * 0.08 }}
             >
               <motion.div
-                className="w-14 h-14 rounded-2xl bg-card border-2 flex items-center justify-center flex-shrink-0 shadow-md relative z-10 transition-colors duration-300"
+                className="w-14 h-14 rounded-2xl bg-card border-2 flex items-center justify-center flex-shrink-0 shadow-md relative z-10 transition-colors duration-base"
                 animate={
                   prefersReducedMotion
                     ? undefined
@@ -188,7 +188,7 @@ const ScrollySteps = ({ steps }: { steps: ScrollyStep[] }) => {
                 <step.icon className="w-6 h-6 text-secondary" />
               </motion.div>
               <motion.div
-                className="bg-card border border-border/50 rounded-xl p-5 flex-1 shadow-sm transition-shadow duration-300"
+                className="bg-card border border-border/50 rounded-xl p-5 flex-1 shadow-sm transition-shadow duration-base"
                 animate={prefersReducedMotion ? undefined : { opacity: active >= 0 && !isActive ? 0.55 : 1, y: isActive ? -2 : 0 }}
                 transition={{ duration: 0.3 }}
               >
