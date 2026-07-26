@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from "motion/react";
-import { useRef, useState, useMemo, useCallback } from "react";
+import { useRef, useState, useMemo, useCallback, useEffect } from "react";
 import { Link } from "react-router-dom";
 import {
   TrendingUp, TrendingDown, Activity, Eye, ArrowUpRight, ArrowDownRight,
@@ -12,150 +12,43 @@ import {
 } from "@/components/ui/dialog";
 import type { LucideIcon } from "lucide-react";
 import { useLiveMarket } from "@/hooks/useLiveMarket";
+import { supabase } from "@/integrations/supabase/client";
+import PriceChart from "@/components/charts/PriceChart";
+import type { ApiChartPoint } from "@/lib/chart-data";
 import { useCorporateActions, useMarketFlows, useMfNavs } from "@/hooks/useMarketFeed";
-import { revealBar } from "\@/lib/motion";
+import { revealBar } from "@/lib/motion";
 
-type Stock = { name: string; price: string; change: string; up: boolean; volume?: string; high?: string; low?: string };
+/**
+ * `symbol` is the Yahoo ticker (e.g. "RELIANCE.NS") and is what makes a real
+ * chart possible. It is optional because the commodity rows have no tradable
+ * ticker, and because a deployment running an older fetch-stock-prices will
+ * not send it. Both cases fall through to "chart unavailable" rather than to
+ * a generated series.
+ */
+type Stock = {
+  symbol?: string;
+  name: string;
+  price: string;
+  change: string;
+  up: boolean;
+  volume?: string;
+  high?: string;
+  low?: string;
+};
 
-const fallbackTopGainers: Stock[] = [
-  { name: "TATA POWER", price: "₹432.50", change: "+4.8%", up: true, volume: "12.4M", high: "₹438.20", low: "₹415.60" },
-  { name: "ADANI GREEN", price: "₹1,892.30", change: "+3.9%", up: true, volume: "8.2M", high: "₹1,905.00", low: "₹1,820.50" },
-  { name: "ZOMATO", price: "₹178.60", change: "+3.5%", up: true, volume: "22.1M", high: "₹180.40", low: "₹171.20" },
-  { name: "BHARTI AIRTEL", price: "₹1,245.60", change: "+2.1%", up: true, volume: "5.6M", high: "₹1,252.00", low: "₹1,218.30" },
-  { name: "INFOSYS", price: "₹1,523.40", change: "+3.1%", up: true, volume: "9.8M", high: "₹1,535.80", low: "₹1,478.90" },
-  { name: "RELIANCE", price: "₹2,890.50", change: "+1.8%", up: true, volume: "15.3M", high: "₹2,910.00", low: "₹2,845.20" },
-  { name: "HDFCLIFE", price: "₹678.40", change: "+2.6%", up: true, volume: "4.1M", high: "₹685.00", low: "₹660.30" },
-];
-
-const fallbackTopLosers: Stock[] = [
-  { name: "PAYTM", price: "₹412.80", change: "-3.2%", up: false, volume: "18.5M", high: "₹428.60", low: "₹408.10" },
-  { name: "BAJAJ FIN", price: "₹6,892.30", change: "-1.2%", up: false, volume: "3.4M", high: "₹7,010.00", low: "₹6,850.00" },
-  { name: "HDFC BANK", price: "₹1,678.25", change: "-0.8%", up: false, volume: "11.2M", high: "₹1,698.50", low: "₹1,670.00" },
-  { name: "WIPRO", price: "₹478.90", change: "-0.6%", up: false, volume: "7.8M", high: "₹485.20", low: "₹475.00" },
-  { name: "COAL INDIA", price: "₹425.30", change: "-1.5%", up: false, volume: "6.2M", high: "₹434.80", low: "₹422.10" },
-  { name: "HINDALCO", price: "₹542.60", change: "-2.1%", up: false, volume: "5.9M", high: "₹558.40", low: "₹538.20" },
-  { name: "TECHM", price: "₹1,245.80", change: "-1.8%", up: false, volume: "4.5M", high: "₹1,272.00", low: "₹1,238.50" },
-];
-
-const mostActive: Stock[] = [
-  { name: "TATA STEEL", price: "₹145.80", change: "+1.2%", up: true, volume: "45.2M", high: "₹148.50", low: "₹142.30" },
-  { name: "SBIN", price: "₹812.40", change: "-0.5%", up: false, volume: "32.8M", high: "₹820.00", low: "₹808.60" },
-  { name: "ITC", price: "₹465.20", change: "+0.8%", up: true, volume: "28.4M", high: "₹468.90", low: "₹460.10" },
-  { name: "TATAMOTORS", price: "₹985.60", change: "+2.4%", up: true, volume: "25.1M", high: "₹992.00", low: "₹962.30" },
-  { name: "ICICIBANK", price: "₹1,125.80", change: "-0.3%", up: false, volume: "22.6M", high: "₹1,132.40", low: "₹1,118.50" },
-  { name: "MARUTI", price: "₹12,450.00", change: "+1.5%", up: true, volume: "1.8M", high: "₹12,520.00", low: "₹12,280.00" },
-];
-
-const fallbackCommodities: Stock[] = [
-  { name: "GOLD", price: "$2,345.60/oz", change: "+0.45%", up: true, volume: "182K", high: "$2,358.40", low: "$2,330.20" },
-  { name: "SILVER", price: "$29.82/oz", change: "+1.20%", up: true, volume: "95K", high: "$30.10", low: "$29.45" },
-  { name: "CRUDE OIL", price: "$78.45/bbl", change: "-0.65%", up: false, volume: "245K", high: "$79.20", low: "$77.80" },
-  { name: "NAT GAS", price: "$2.34/MMBtu", change: "-1.10%", up: false, volume: "128K", high: "$2.42", low: "$2.30" },
-  { name: "COPPER", price: "$4.52/lb", change: "+0.80%", up: true, volume: "67K", high: "$4.56", low: "$4.48" },
-  { name: "ALUMINIUM", price: "$2.28/lb", change: "+0.60%", up: true, volume: "43K", high: "$2.30", low: "$2.25" },
-  { name: "WHEAT", price: "$5.82/bu", change: "-0.35%", up: false, volume: "54K", high: "$5.90", low: "$5.78" },
-  { name: "USD/INR", price: "₹83.42", change: "+0.05%", up: true, volume: "-", high: "₹83.55", low: "₹83.30" },
-  { name: "EUR/INR", price: "₹90.15", change: "-0.12%", up: false, volume: "-", high: "₹90.40", low: "₹89.95" },
-];
+/** Label shown on the toggle, and the range string fetch-stock-chart expects. */
+const RANGES = [
+  { label: "1D", range: "1d" },
+  { label: "1W", range: "5d" },
+  { label: "1M", range: "1mo" },
+  { label: "3M", range: "3mo" },
+] as const;
 
 // Corporate actions come from the admin-fed corporate_actions table
 // (useCorporateActions). No fabricated fallback events - an empty feed
 // shows an honest empty state instead.
 
 // marketStats is now computed dynamically inside the component using live data
-
-// Generate realistic chart data
-const generateChartData = (up: boolean, points = 60) => {
-  const data: number[] = [];
-  let value = 100 + Math.random() * 20;
-  for (let i = 0; i < points; i++) {
-    const drift = up ? 0.12 : -0.12;
-    value += (Math.random() - 0.5 + drift) * 2;
-    value = Math.max(75, Math.min(135, value));
-    data.push(value);
-  }
-  return data;
-};
-
-// Interactive full chart for the dialog
-const FullChart = ({ stock, data, up }: { stock: Stock; data: number[]; up: boolean }) => {
-  const [hoverIdx, setHoverIdx] = useState<number | null>(null);
-  const min = Math.min(...data);
-  const max = Math.max(...data);
-  const range = max - min || 1;
-  const h = 220;
-  const w = 600;
-
-  const coords = useMemo(() => data.map((v, i) => ({
-    x: (i / (data.length - 1)) * w,
-    y: h - ((v - min) / range) * (h - 20) - 10,
-    val: v,
-  })), [data, w, h, min, range]);
-
-  const points = coords.map(c => `${c.x},${c.y}`).join(" ");
-  const areaPoints = `0,${h} ${points} ${w},${h}`;
-  const color = up ? "hsl(145, 70%, 40%)" : "hsl(0, 84%, 60%)";
-
-  const handleMouseMove = useCallback((e: React.MouseEvent<SVGSVGElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = ((e.clientX - rect.left) / rect.width) * w;
-    let closest = 0;
-    let closestDist = Infinity;
-    coords.forEach((c, i) => {
-      const d = Math.abs(c.x - x);
-      if (d < closestDist) { closestDist = d; closest = i; }
-    });
-    // Use RAF to batch the state update and avoid forced reflow
-    requestAnimationFrame(() => setHoverIdx(closest));
-  }, [w, coords]);
-
-  const basePrice = parseFloat(stock.price.replace(/[₹,/a-z]/gi, '')) || 100;
-
-  return (
-    <div className="relative">
-      <svg
-        viewBox={`0 0 ${w} ${h}`}
-        className="w-full h-[220px] cursor-crosshair"
-        preserveAspectRatio="none"
-        onMouseMove={handleMouseMove}
-        onMouseLeave={() => setHoverIdx(null)}
-      >
-        <defs>
-          <linearGradient id="full-chart-grad" x1="0" x2="0" y1="0" y2="1">
-            <stop offset="0%" stopColor={color} stopOpacity="0.25" />
-            <stop offset="100%" stopColor={color} stopOpacity="0.02" />
-          </linearGradient>
-        </defs>
-        {/* Grid lines */}
-        {[0, 1, 2, 3, 4].map(i => (
-          <line key={i} x1={0} y1={(h / 4) * i} x2={w} y2={(h / 4) * i} stroke="hsl(var(--border))" strokeWidth="0.5" strokeDasharray="4 4" opacity="0.4" />
-        ))}
-        <polygon points={areaPoints} fill="url(#full-chart-grad)" />
-        <polyline points={points} fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-        {hoverIdx !== null && coords[hoverIdx] && (
-          <>
-            <line x1={coords[hoverIdx].x} y1={0} x2={coords[hoverIdx].x} y2={h} stroke={color} strokeWidth="1" strokeDasharray="4 3" opacity="0.5" />
-            <line x1={0} y1={coords[hoverIdx].y} x2={w} y2={coords[hoverIdx].y} stroke={color} strokeWidth="0.5" strokeDasharray="4 3" opacity="0.3" />
-            <circle cx={coords[hoverIdx].x} cy={coords[hoverIdx].y} r="5" fill={color} stroke="hsl(var(--background))" strokeWidth="2.5" />
-          </>
-        )}
-      </svg>
-      {hoverIdx !== null && coords[hoverIdx] && (
-        <div
-          className="absolute top-2 bg-card border border-border rounded-xl px-4 py-2 shadow-xl pointer-events-none text-xs z-10"
-          style={{ left: `${Math.min(Math.max((coords[hoverIdx].x / w) * 100, 10), 90)}%`, transform: "translateX(-50%)" }}
-        >
-          <div className="font-bold text-foreground text-sm">₹{(basePrice * (coords[hoverIdx].val / 100)).toFixed(2)}</div>
-          <div className="text-muted-foreground">{`${9 + Math.floor(hoverIdx / 10)}:${String((hoverIdx % 10) * 6).padStart(2, "0")} IST`}</div>
-        </div>
-      )}
-      <div className="flex justify-between mt-1 text-[10px] text-muted-foreground px-1">
-        <span>09:15</span><span>10:30</span><span>11:45</span><span>13:00</span><span>14:15</span><span>15:30</span>
-      </div>
-    </div>
-  );
-};
-
 // Mini sparkline for table rows
 const MiniSparkline = ({ up, onClick }: { up: boolean; onClick?: () => void }) => {
   const points = up
@@ -254,7 +147,10 @@ const MarketOverview = () => {
   const sectionRef = useRef<HTMLDivElement>(null);
   const [activeTab, setActiveTab] = useState<TabKey>("gainers");
   const [selectedStock, setSelectedStock] = useState<Stock | null>(null);
-  const [chartData] = useState(() => new Map<string, number[]>());
+  const [chartPoints, setChartPoints] = useState<ApiChartPoint[]>([]);
+  const [chartLoading, setChartLoading] = useState(false);
+  const [chartError, setChartError] = useState(false);
+  const [chartRange, setChartRange] = useState("1d");
   const { marketOverview: liveData, commodities: liveCommodities, vix, fetchedAt } = useLiveMarket();
   const { actions: corpActions } = useCorporateActions();
   const { flows } = useMarketFlows();
@@ -277,7 +173,7 @@ const MarketOverview = () => {
   );
 
   const liveCommodityStocks: Stock[] = useMemo(() => {
-    if (!liveCommodities?.length) return fallbackCommodities;
+    if (!liveCommodities?.length) return [];
     return liveCommodities
       .filter(c => c.name !== "INDIA VIX")
       .map(c => ({
@@ -305,9 +201,12 @@ const MarketOverview = () => {
   // Merge live data with fallbacks
   const dynamicTabConfig = useMemo(() => {
     const cfg: { key: TabKey; label: string; icon: LucideIcon; data: Stock[] | CalendarAction[] }[] = [
-      { key: "gainers", label: "Top Gainers", icon: TrendingUp, data: liveData?.gainers?.length ? liveData.gainers as Stock[] : fallbackTopGainers },
-      { key: "losers", label: "Top Losers", icon: TrendingDown, data: liveData?.losers?.length ? liveData.losers as Stock[] : fallbackTopLosers },
-      { key: "active", label: "Most Active", icon: Activity, data: liveData?.mostActive?.length ? liveData.mostActive as Stock[] : mostActive },
+      // No hardcoded fallbacks. These arrays used to hold invented prices
+      // ("TATA POWER ₹432.50 +4.8%") that rendered identically to live rows
+      // whenever the feed was down. An empty tab states the truth instead.
+      { key: "gainers", label: "Top Gainers", icon: TrendingUp, data: (liveData?.gainers ?? []) as Stock[] },
+      { key: "losers", label: "Top Losers", icon: TrendingDown, data: (liveData?.losers ?? []) as Stock[] },
+      { key: "active", label: "Most Active", icon: Activity, data: (liveData?.mostActive ?? []) as Stock[] },
       ...(mfStocks.length > 0
         ? [{ key: "mf" as TabKey, label: "Mutual Funds", icon: PieChart, data: mfStocks }]
         : []),
@@ -325,7 +224,7 @@ const MarketOverview = () => {
   const totalStocks = liveAdvances + liveDeclines + liveUnchanged;
 
   const liveVix = vix?.price ?? "13.45";
-  const liveMostActive = liveData?.mostActive?.[0]?.name ?? "TATA STEEL";
+  const liveMostActive = liveData?.mostActive?.[0]?.name ?? "—";
 
   // FII/DII from the admin-fed market_flows table; "—" until published.
   const fmtFlow = (cat: string) => {
@@ -349,12 +248,41 @@ const MarketOverview = () => {
     { icon: Percent, label: "DII Flow", value: diiFlow?.value ?? "—", color: diiFlow ? (diiFlow.up ? "text-secondary" : "text-destructive") : "text-muted-foreground", bgColor: diiFlow ? (diiFlow.up ? "bg-secondary/10" : "bg-destructive/10") : "bg-muted/40" },
   ], [liveAdvances, liveDeclines, liveUnchanged, liveMostActive, liveVix, fiiFlow, diiFlow, breadthPct]);
 
-  const getChartData = useCallback((stock: Stock) => {
-    if (!chartData.has(stock.name)) {
-      chartData.set(stock.name, generateChartData(stock.up));
+  // Real history for the selected scrip. Previously this component generated a
+  // Math.random() walk per stock name and cached it, so a visitor clicking
+  // RELIANCE saw an invented price series beside that stock's real quote.
+  useEffect(() => {
+    if (!selectedStock?.symbol) {
+      setChartPoints([]);
+      setChartError(!!selectedStock);
+      return;
     }
-    return chartData.get(stock.name)!;
-  }, [chartData]);
+    let active = true;
+    setChartLoading(true);
+    setChartError(false);
+    supabase.functions
+      .invoke("fetch-stock-chart", { body: { symbol: selectedStock.symbol, range: chartRange } })
+      .then(({ data }) => {
+        if (!active) return;
+        if (data?.success && data.dataPoints?.length > 0) {
+          setChartPoints(data.dataPoints);
+        } else {
+          setChartPoints([]);
+          setChartError(true);
+        }
+      })
+      .catch(() => {
+        if (!active) return;
+        setChartPoints([]);
+        setChartError(true);
+      })
+      .finally(() => {
+        if (active) setChartLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [selectedStock, chartRange]);
 
   const handleChartClick = useCallback((stock: Stock) => {
     setSelectedStock(stock);
@@ -434,9 +362,14 @@ const MarketOverview = () => {
 
             <AnimatePresence mode="wait">
               <motion.div key={activeTab} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.2 }} className="p-1 sm:p-2">
-                {activeTab === "calendar" && activeConfig.data.length === 0 ? (
+                {activeConfig.data.length === 0 ? (
+                  /* Any tab can be legitimately empty now that the hardcoded
+                     price rows are gone. Saying so is the honest outcome when
+                     the feed is unreachable. */
                   <div className="py-8 text-center text-sm text-muted-foreground">
-                    No upcoming corporate actions listed right now - check back soon.
+                    {activeTab === "calendar"
+                      ? "No upcoming corporate actions listed right now - check back soon."
+                      : "Live market data is temporarily unavailable. Figures are not shown rather than estimated."}
                   </div>
                 ) : (
                   activeConfig.data.map((item, i) => (
@@ -524,14 +457,46 @@ const MarketOverview = () => {
               {/* Interactive chart */}
               <div className="bg-muted/30 rounded-xl p-3 border border-border/30">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-[10px] text-muted-foreground font-medium">Intraday Price Chart</span>
+                  <span className="text-[10px] text-muted-foreground font-medium">Price Chart</span>
                   <div className="flex gap-1">
-                    {["1D", "1W", "1M", "3M"].map(tf => (
-                      <button key={tf} className="px-2 py-0.5 text-[10px] font-medium rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors first:bg-muted first:text-foreground">{tf}</button>
+                    {/* These used to be inert, with the active state hardcoded
+                        onto the first one via `first:bg-muted`. They now drive
+                        the range the chart actually fetches. */}
+                    {RANGES.map(({ label, range }) => (
+                      <button
+                        key={range}
+                        onClick={() => setChartRange(range)}
+                        aria-pressed={chartRange === range}
+                        className={`px-2 py-0.5 text-[10px] font-medium rounded-md transition-colors ${
+                          chartRange === range
+                            ? "bg-muted text-foreground"
+                            : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                        }`}
+                      >
+                        {label}
+                      </button>
                     ))}
                   </div>
                 </div>
-                <FullChart stock={selectedStock} data={getChartData(selectedStock)} up={selectedStock.up} />
+
+                {chartLoading ? (
+                  <div className="h-[220px] flex items-center justify-center">
+                    <div className="w-6 h-6 rounded-full border-2 border-brand-orange border-t-transparent animate-spin" />
+                  </div>
+                ) : chartError || chartPoints.length < 2 ? (
+                  /* No history means no chart. Never a generated series: under a
+                     real scrip name and a real quote it is indistinguishable
+                     from live data. */
+                  <div className="h-[220px] flex flex-col items-center justify-center gap-2 text-center px-4">
+                    <Activity className="w-5 h-5 text-muted-foreground/60" />
+                    <p className="text-sm font-medium text-foreground">Price history unavailable</p>
+                    <p className="text-xs text-muted-foreground max-w-xs">
+                      We could not load history for {selectedStock.name}. Prices are not shown rather than estimated.
+                    </p>
+                  </div>
+                ) : (
+                  <PriceChart data={chartPoints} mode="area" height={220} />
+                )}
               </div>
             </>
           )}

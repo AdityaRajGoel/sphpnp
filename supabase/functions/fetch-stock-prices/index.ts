@@ -327,6 +327,10 @@ Deno.serve(async (req) => {
         const q = await fetchYahooQuote(stock.symbol);
         if (!q) return null;
         return {
+          // The Yahoo symbol is carried through so the client can fetch a real
+          // chart for this scrip. Without it MarketOverview had no way to ask
+          // for history and drew a generated series instead.
+          symbol: stock.symbol,
           name: stock.name,
           price: `₹${formatPrice(q.price)}`,
           change: `${q.changePercent >= 0 ? '+' : ''}${q.changePercent.toFixed(2)}%`,
