@@ -16,6 +16,13 @@ function toYahoo(symbol: string): string {
   
   // Handle special characters
   const cleaned = symbol.replace("&", "%26");
+
+  // Idempotent: callers may pass a bare NSE code ("WIPRO") or a symbol that is
+  // already Yahoo-shaped. fetch-stock-prices now forwards the latter, and
+  // appending unconditionally produced "HDFCLIFE.NS.NS", which Yahoo answers
+  // with a 404.
+  if (/^\^/.test(cleaned) || /\.(NS|BO)$/i.test(cleaned)) return cleaned;
+
   return `${cleaned}.NS`;
 }
 
