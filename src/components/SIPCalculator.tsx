@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 
-import { revealSection } from "@/lib/motion";
+import { revealItemX, revealSection } from "@/lib/motion";
 /*
  * Rendered both as the entire /sip-calculator page and as one section inside
  * /services. On the dedicated page its title is the document's main heading; in
@@ -70,10 +70,7 @@ const SIPCalculator = ({ headingLevel = 2 }: SIPCalculatorProps) => {
           {/* Sliders */}
           <motion.div
             className="space-y-8"
-            initial={{ opacity: 0, x: -30 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5 }}
+            {...revealItemX("left")}
           >
             {/* Monthly Investment */}
             <div>
@@ -171,10 +168,7 @@ const SIPCalculator = ({ headingLevel = 2 }: SIPCalculatorProps) => {
 
           {/* Results */}
           <motion.div
-            initial={{ opacity: 0, x: 30 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5 }}
+            {...revealItemX("right")}
           >
             <Card className="border-secondary/20 overflow-hidden">
               <div className="bg-hero p-6 text-primary-foreground">

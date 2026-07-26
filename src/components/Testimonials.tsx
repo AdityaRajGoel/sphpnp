@@ -2,7 +2,7 @@ import { motion, Variants, useScroll, useTransform } from "motion/react";
 import { Star, Quote, ChevronLeft, ChevronRight } from "lucide-react";
 import { useRef, useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { EASE_OUT, revealSection } from "@/lib/motion";
+import { EASE_OUT, revealFade, revealSection } from "@/lib/motion";
 
 const testimonials = [
   {
@@ -124,9 +124,7 @@ const Testimonials = () => {
         >
           <motion.span
             className="inline-block text-secondary font-semibold text-sm uppercase tracking-wider mb-4"
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            viewport={{ once: true }}
+            {...revealFade}
           >
             Client Stories
           </motion.span>

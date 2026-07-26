@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useLiveMarket } from "@/hooks/useLiveMarket";
 import { supabase } from "@/integrations/supabase/client";
 
+import { revealItemX, revealSection } from "@/lib/motion";
 const generateChartData = (trend: "up" | "down" | "mixed", points = 60, seed = 0, timeframe = "1D") => {
   const data: number[] = [];
   let value = 100 + ((seed * 17 + 31) % 25);
@@ -433,7 +434,7 @@ const LiveChart = () => {
         <div className="absolute inset-0 opacity-[0.02]" style={{ backgroundImage: `linear-gradient(hsl(var(--foreground)) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--foreground)) 1px, transparent 1px)`, backgroundSize: '40px 40px' }} />
       </div>
       <div className="container mx-auto px-4 relative z-10">
-        <motion.div className="flex items-center flex-wrap gap-2 mb-6" initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
+        <motion.div className="flex items-center flex-wrap gap-2 mb-6" {...revealSection}>
           <div className="w-8 h-8 rounded-lg bg-brand-orange/10 flex items-center justify-center">
             <BarChart3 className="w-4 h-4 text-brand-orange" />
           </div>
@@ -463,7 +464,7 @@ const LiveChart = () => {
         </motion.div>
 
         <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6">
-          <motion.div className="flex lg:flex-col gap-2 overflow-x-auto lg:overflow-visible pb-2 lg:pb-0 -mx-4 px-4 lg:mx-0 lg:px-0 snap-x snap-mandatory lg:snap-none" initial={{ opacity: 0, x: -20 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }}>
+          <motion.div className="flex lg:flex-col gap-2 overflow-x-auto lg:overflow-visible pb-2 lg:pb-0 -mx-4 px-4 lg:mx-0 lg:px-0 snap-x snap-mandatory lg:snap-none" {...revealItemX("left")}>
             {indices.map((idx) => {
               const isActive = activeIndexKey === idx.key;
               return (

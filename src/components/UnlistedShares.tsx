@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { motion, Variants, AnimatePresence } from "motion/react";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { EASE_OUT } from "@/lib/motion";
+import { EASE_OUT, revealFade, revealSection } from "@/lib/motion";
 
 type StockItem = {
   name: string; short: string; tag: string; tagColor: string; price: string;
@@ -172,7 +172,7 @@ const UnlistedShares = () => {
       {/* Stock Cards */}
       <section className="py-8 md:py-16 bg-background relative">
         <div className="container mx-auto px-4">
-          <motion.div className="text-center mb-10" initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
+          <motion.div className="text-center mb-10" {...revealSection}>
             <h2 className="font-heading text-2xl md:text-3xl font-bold text-foreground mb-2">Available <span className="text-secondary">Unlisted Shares</span></h2>
             <p className="text-muted-foreground">Contact us for live pricing & availability</p>
           </motion.div>
@@ -239,7 +239,7 @@ const UnlistedShares = () => {
             </motion.div>
           )}
 
-          <motion.p className="text-center text-muted-foreground mt-8 text-base" initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }}>
+          <motion.p className="text-center text-muted-foreground mt-8 text-base" {...revealFade}>
             ...and many more! <span className="text-secondary font-semibold">Contact us for pricing & availability.</span>
           </motion.p>
         </div>
@@ -349,7 +349,7 @@ const UnlistedShares = () => {
       {/* How it works */}
       <section className="py-8 md:py-16 bg-background">
         <div className="container mx-auto px-4">
-          <motion.div className="text-center mb-12" initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
+          <motion.div className="text-center mb-12" {...revealSection}>
             <h2 className="font-heading text-2xl md:text-3xl font-bold text-foreground mb-2">How It <span className="text-secondary">Works</span></h2>
             <p className="text-muted-foreground">Simple 4-step process to start investing in unlisted shares</p>
           </motion.div>
@@ -373,7 +373,7 @@ const UnlistedShares = () => {
       {/* Disclaimer */}
       <section className="py-8 bg-muted/20">
         <div className="container mx-auto px-4">
-          <motion.div className="bg-destructive/5 border border-destructive/20 rounded-2xl p-6 md:p-8" initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
+          <motion.div className="bg-destructive/5 border border-destructive/20 rounded-2xl p-6 md:p-8" {...revealSection}>
             <div className="flex items-start gap-4">
               <div className="w-12 h-12 bg-destructive/10 rounded-xl flex items-center justify-center shrink-0">
                 <AlertTriangle className="w-6 h-6 text-destructive" />

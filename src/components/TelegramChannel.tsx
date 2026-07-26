@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { Link } from "react-router-dom";
-import { revealBar, revealItem, revealSection } from "@/lib/motion";
+import { revealBar, revealFade, revealItem, revealSection } from "@/lib/motion";
 
 type TelegramMessage = {
   id: string;
@@ -408,9 +408,7 @@ const TelegramChannel = ({ limit = 10, showViewAll = false, showFilters = false 
         {/* Refresh button */}
         <motion.div
           className="flex justify-end mb-4"
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          viewport={{ once: true }}
+          {...revealFade}
         >
           <Button
             variant="ghost"
@@ -563,9 +561,7 @@ const TelegramChannel = ({ limit = 10, showViewAll = false, showFilters = false 
         {messages.length > 0 && (
           <motion.p
             className="text-center text-xs text-muted-foreground/50 mt-6"
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            viewport={{ once: true }}
+            {...revealFade}
             transition={{ delay: 0.5 }}
           >
             <Send className="w-3 h-3 inline mr-1" />

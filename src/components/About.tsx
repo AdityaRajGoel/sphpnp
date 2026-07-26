@@ -1,7 +1,7 @@
 import { CheckCircle2, TrendingUp, Users, Award, BarChart2 } from "lucide-react";
 import { motion, Variants, useScroll, useTransform } from "motion/react";
 import { useRef } from "react";
-import { EASE_IN_OUT, EASE_OUT, revealSection } from "@/lib/motion";
+import { EASE_IN_OUT, EASE_OUT, revealItemX, revealSection } from "@/lib/motion";
 
 const features = [
   "SEBI Registered Stock Broker",
@@ -173,10 +173,7 @@ const About = () => {
                   <motion.li
                     key={item.num}
                     className="flex gap-4 group"
-                    initial={{ opacity: 0, x: 30 }}
-                    whileInView={{ opacity: 1, x: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: 0.3 + index * 0.15, duration: 0.5 }}
+                    {...revealItemX("right")}
                     whileHover={{ x: 4 }}
                   >
                     <motion.span

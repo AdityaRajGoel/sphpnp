@@ -17,7 +17,7 @@ import {
   MapPin, Calendar
 } from "lucide-react";
 import { useRef } from "react";
-import { EASE_OUT, revealSection } from "@/lib/motion";
+import { EASE_OUT, revealFade, revealSection } from "@/lib/motion";
 
 const teamMembers = [
   {
@@ -331,9 +331,7 @@ const TeamPage = () => {
         <div className="container mx-auto px-4">
           <motion.h2
             className="font-heading text-2xl md:text-3xl font-bold text-foreground text-center mb-10"
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            viewport={{ once: true }}
+            {...revealFade}
           >
             Why Families Trust <span className="text-secondary">Our Team</span>
           </motion.h2>

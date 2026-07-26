@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { motion, useScroll, useTransform } from "motion/react";
 import { useRef } from "react";
 
-import { revealSection } from "@/lib/motion";
+import { revealItemX, revealSection } from "@/lib/motion";
 const features = [
   { icon: Zap, text: "Lightning Fast Trading" },
   { icon: Shield, text: "Bank-Level Security" },
@@ -54,10 +54,7 @@ const MobileApp = () => {
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           {/* Content */}
           <motion.div
-            initial={{ opacity: 0, x: -30 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
+            {...revealItemX("left")}
             style={{ x: contentX }}
           >
             <motion.div
@@ -113,10 +110,7 @@ const MobileApp = () => {
                 <motion.div
                   key={item}
                   className="flex items-center gap-2 text-primary-foreground/80 text-sm"
-                  initial={{ opacity: 0, x: -20 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: 0.5 + i * 0.1 }}
+                  {...revealItemX("left")}
                 >
                   <Check className="w-4 h-4 text-secondary flex-shrink-0" />
                   {item}
@@ -163,10 +157,7 @@ const MobileApp = () => {
           {/* Phone mockup */}
           <motion.div
             className="relative flex justify-center"
-            initial={{ opacity: 0, x: 30 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6, delay: 0.2 }}
+            {...revealItemX("right")}
             style={{ y: phoneY, rotate: phoneRotate }}
           >
             <div className="relative">
@@ -253,9 +244,7 @@ const MobileApp = () => {
               {/* New floating notification */}
               <motion.div
                 className="absolute top-1/3 -left-16 bg-card/90 backdrop-blur-sm text-foreground rounded-xl px-3 py-2 text-xs shadow-lg border border-border/50"
-                initial={{ opacity: 0, x: 20 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
+                {...revealItemX("right")}
                 animate={{ y: [0, -8, 0] }}
                 transition={{ duration: 4, repeat: Infinity, delay: 1 }}
               >

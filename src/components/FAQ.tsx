@@ -6,9 +6,8 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { revealBar } from "\@/lib/motion";
 
-import { revealSection } from "@/lib/motion";
+import { revealBar, revealSection } from "@/lib/motion";
 type FAQItem = { q: string; a: string };
 
 type FAQProps = {

@@ -7,7 +7,7 @@ import logo80 from "@/assets/logo-80.webp";
 import logo160 from "@/assets/logo-160.webp";
 import appQr from "@/assets/app-qr.svg";
 
-import { revealItem, revealSection } from "@/lib/motion";
+import { revealFade, revealItem, revealSection } from "@/lib/motion";
 type FooterLink = { label: string; href: string; external?: boolean; title?: string };
 
 const companyLinks: FooterLink[] = [
@@ -304,9 +304,7 @@ const Footer = () => {
         {/* Registration badges */}
         <motion.div
           className="flex flex-wrap justify-center gap-2 mb-6"
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          viewport={{ once: true }}
+          {...revealFade}
           transition={{ duration: 0.5, delay: 0.35 }}
         >
           {regBadges.map((badge) => (

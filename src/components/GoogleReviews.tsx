@@ -2,7 +2,7 @@ import { Star, ExternalLink, MessageSquare } from "lucide-react";
 import { motion, Variants, useScroll, useTransform } from "motion/react";
 import { Button } from "@/components/ui/button";
 import { useRef } from "react";
-import { EASE_OUT, revealBar, revealSection } from "@/lib/motion";
+import { EASE_OUT, revealBar, revealFade, revealSection } from "@/lib/motion";
 
 const googleReviews = [
   {
@@ -103,9 +103,7 @@ const GoogleReviews = () => {
         >
           <motion.span
             className="inline-block text-secondary font-semibold text-sm uppercase tracking-wider mb-4"
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            viewport={{ once: true }}
+            {...revealFade}
           >
             Google Reviews
           </motion.span>

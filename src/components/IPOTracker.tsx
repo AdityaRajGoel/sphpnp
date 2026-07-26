@@ -8,9 +8,8 @@ import {
 import type { LucideIcon } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
-import { revealBar } from "\@/lib/motion";
 
-import { revealItem } from "@/lib/motion";
+import { revealBar, revealItem, revealSection } from "@/lib/motion";
 type IPO = {
   name: string;
   price: string;
@@ -186,7 +185,7 @@ const IPOTracker = () => {
       </div>
 
       <div className="container mx-auto px-4 relative z-10">
-        <motion.div className="text-center mb-10" initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
+        <motion.div className="text-center mb-10" {...revealSection}>
           <motion.span className="inline-flex items-center gap-1.5 bg-brand-orange/10 text-brand-orange text-xs font-bold uppercase tracking-wider px-3 py-1.5 rounded-full mb-3">
             <Rocket className="w-3.5 h-3.5" />
             IPO Central
@@ -287,7 +286,7 @@ const IPOTracker = () => {
         </motion.div>
 
         {/* CTA */}
-        <motion.div className="mt-8 text-center" initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
+        <motion.div className="mt-8 text-center" {...revealItem()}>
           <p className="text-sm text-muted-foreground mb-3">
             Want to apply for IPOs? Open your Demat account with Parasram India today.
           </p>

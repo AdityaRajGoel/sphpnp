@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { motion, useScroll, useTransform } from "motion/react";
 import { useRef } from "react";
 import brandImage from "@/assets/parasram-brand.jpeg";
-import { EASE_OUT, revealItem, revealSection } from "@/lib/motion";
+import { EASE_OUT, revealFade, revealItem, revealItemX, revealSection } from "@/lib/motion";
 
 const contactItems = [
   {
@@ -92,9 +92,7 @@ const Contact = () => {
         >
           <motion.span
             className="inline-block text-secondary font-semibold text-sm uppercase tracking-wider mb-3"
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            viewport={{ once: true }}
+            {...revealFade}
             transition={{ delay: 0.2 }}
           >
             Get In Touch
@@ -135,10 +133,7 @@ const Contact = () => {
             {contactItems.map((item, index) => (
               <motion.div
                 key={item.title}
-                initial={{ opacity: 0, x: -40 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: index * 0.1, duration: 0.5, ease: EASE_OUT }}
+                {...revealItemX("left")}
                 whileHover={{ x: 6 }}
               >
                 <Card className="bg-card border-border/50 hover:shadow-xl hover:border-secondary/40 transition-[box-shadow,color,background-color,border-color] duration-base group">

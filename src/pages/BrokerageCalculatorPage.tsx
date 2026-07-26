@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { IndianRupee, ArrowRight, TrendingUp, TrendingDown, Info, Calculator, BarChart3, ExternalLink, ChevronDown, ChevronUp } from "lucide-react";
 import PageTransition from "@/components/PageTransition";
 
+import { revealFade } from "@/lib/motion";
 /* ─── Parasram Brokerage & Statutory Rates (as of April 2026) ─── */
 
 type SegmentConfig = {
@@ -585,9 +586,7 @@ const BrokerageCalculatorPage = () => {
 
         {/* ─── Disclaimer ─── */}
         <motion.div
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          viewport={{ once: true }}
+          {...revealFade}
           transition={{ delay: 0.3 }}
         >
           <Card className="mt-10 p-5 bg-muted/20 border-muted/50">

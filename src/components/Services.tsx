@@ -4,7 +4,7 @@ import { motion, Variants, useScroll, useTransform } from "motion/react";
 import { useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { useT } from "@/i18n/LanguageContext";
-import { EASE_OUT, revealBar, revealSection } from "@/lib/motion";
+import { EASE_OUT, revealBar, revealFade, revealSection } from "@/lib/motion";
 
 // Every service links to the page that actually explains it - the cards show a
 // "go" arrow, so they must be real links.
@@ -228,9 +228,7 @@ const Services = () => {
                   {/* Stat badge */}
                   <motion.div
                     className="inline-flex items-center gap-2 bg-muted rounded-lg px-3 py-1.5"
-                    initial={{ opacity: 0 }}
-                    whileInView={{ opacity: 1 }}
-                    viewport={{ once: true }}
+                    {...revealFade}
                     transition={{ delay: 0.3 + index * 0.05 }}
                   >
                     <span className="text-secondary font-bold text-sm">{service.stat}</span>
