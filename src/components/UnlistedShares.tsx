@@ -13,11 +13,6 @@ type StockItem = {
   foundedYear?: string | null; headquarters?: string | null;
 };
 
-const unlistedStocks: StockItem[] = [
-  { name: "National Stock Exchange Ltd (NSE)", short: "NSE", tag: "Most Bought", tagColor: "bg-secondary/10 text-secondary", price: "₹2,060", buyPrice: "₹2,100", sellPrice: "₹2,020", minQty: "1 Share", color: "from-indigo-600 to-indigo-800" },
-  { name: "Chennai Super Kings Cricket Ltd (CSK)", short: "CSK", tag: "Hot Right Now", tagColor: "bg-destructive/10 text-destructive", price: "₹265", buyPrice: "₹270", sellPrice: "₹260", minQty: "1 Share", color: "from-yellow-500 to-amber-600" },
-];
-
 const benefits = [
   { icon: TrendingUp, title: "High Growth Potential", desc: "Invest early in companies before they go public for maximum returns.", stat: "300%+", statLabel: "Avg. Pre-IPO Returns" },
   { icon: ShieldCheck, title: "100% Verified", desc: "We deal only in thoroughly vetted and verified unlisted companies.", stat: "50+", statLabel: "Companies Listed" },
@@ -34,32 +29,6 @@ const howItWorks = [
 const containerVariants: Variants = { hidden: { opacity: 0 }, visible: { opacity: 1, transition: { staggerChildren: 0.1 } } };
 const itemVariants: Variants = { hidden: { opacity: 0, y: 30 }, visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: EASE_OUT } } };
 
-// Mini price chart SVG
-const MiniPriceChart = ({ trend = "up" }: { trend?: "up" | "down" | "mixed" }) => {
-  const data: number[] = [];
-  let v = 50;
-  for (let i = 0; i < 30; i++) {
-    const drift = trend === "up" ? 0.3 : trend === "down" ? -0.3 : 0;
-    v += (Math.random() - 0.5 + drift) * 4;
-    v = Math.max(10, Math.min(90, v));
-    data.push(v);
-  }
-  const points = data.map((val, i) => `${(i / 29) * 200},${100 - val}`).join(" ");
-  const color = trend === "down" ? "hsl(0 84% 60%)" : "hsl(145 70% 40%)";
-  return (
-    <svg viewBox="0 0 200 100" className="w-full h-16" preserveAspectRatio="none">
-      <defs>
-        <linearGradient id={`pg-${trend}`} x1="0" x2="0" y1="0" y2="1">
-          <stop offset="0%" stopColor={color} stopOpacity="0.2" />
-          <stop offset="100%" stopColor={color} stopOpacity="0" />
-        </linearGradient>
-      </defs>
-      <polygon points={`0,100 ${points} 200,100`} fill={`url(#pg-${trend})`} />
-      <polyline points={points} fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" />
-    </svg>
-  );
-};
-
 const UnlistedShares = () => {
   const [stocks, setStocks] = useState<StockItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -74,7 +43,7 @@ const UnlistedShares = () => {
         
         if (error) {
           console.error('Error fetching unlisted shares:', error);
-          setStocks(unlistedStocks); // fallback to hardcoded on error
+          setStocks([]); // never serve stale hardcoded quotes as current
           return;
         }
         
@@ -99,14 +68,14 @@ const UnlistedShares = () => {
               headquarters: s.headquarters,
             })));
           } else {
-            setStocks(unlistedStocks); // fallback if DB is empty
+            setStocks([]);
           }
         } else {
-          setStocks(unlistedStocks); // fallback on unexpected response
+          setStocks([]);
         }
       } catch (err) {
         console.error('Failed to fetch unlisted shares:', err);
-        setStocks(unlistedStocks); // fallback on exception
+        setStocks([]);
       } finally {
         setIsLoading(false);
       }
@@ -195,6 +164,17 @@ const UnlistedShares = () => {
                 </Card>
               ))}
             </div>
+          ) : stocks.length === 0 ? (
+            /* The hardcoded quote table that used to back this case held prices
+               from whenever it was last edited. Unlisted quotes move, and a
+               stale number presented as current is the same problem as an
+               invented one. */
+            <div className="py-10 text-center">
+              <p className="text-sm font-medium text-foreground">Live quotes are temporarily unavailable</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Unlisted share prices change frequently. Please call us for current buy and sell levels.
+              </p>
+            </div>
           ) : (
             <motion.div key={stocks.length} className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4" variants={containerVariants} initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-50px" }}>
               {stocks.map((stock, index) => (
@@ -228,10 +208,11 @@ const UnlistedShares = () => {
                         </div>
                         <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-secondary transition-colors shrink-0 mt-4" />
                       </div>
-                      {/* Mini chart */}
-                      <div className="mt-3 -mx-1">
-                        <MiniPriceChart trend={index % 3 === 1 ? "down" : index % 3 === 2 ? "mixed" : "up"} />
-                      </div>
+                      {/* A price chart used to sit here. It was a Math.random()
+                          walk whose direction came from `index % 3`, so every
+                          third card trended down regardless of the scrip. The
+                          quoted price is real and admin-maintained; there is no
+                          price history behind it to plot. */}
                     </CardContent>
                   </Card>
                 </motion.div>
@@ -283,10 +264,15 @@ const UnlistedShares = () => {
                 <div className="bg-muted/30 rounded-xl p-4 mb-5">
                   <div className="flex items-center gap-2 mb-2">
                     <BarChart3 className="w-4 h-4 text-secondary" />
-                    <span className="text-sm font-semibold text-foreground">Price Trend (Indicative)</span>
+                    <span className="text-sm font-semibold text-foreground">Price History</span>
                   </div>
-                  <MiniPriceChart trend="up" />
-                  <p className="text-[10px] text-muted-foreground mt-1">* Chart is indicative only. Contact us for actual pricing history.</p>
+                  {/* The "indicative" chart here was a random walk hardcoded to
+                      trend upward. A disclaimer under an invented rising line
+                      still leaves the impression of a rising price. */}
+                  <p className="text-xs text-muted-foreground">
+                    Unlisted shares trade off-exchange, so there is no public price history to chart.
+                    Contact us for indicative pricing and past transaction levels.
+                  </p>
                 </div>
 
                 {/* Company Info */}
