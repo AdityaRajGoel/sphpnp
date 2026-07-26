@@ -2,7 +2,7 @@ import { motion, Variants, useScroll, useTransform } from "motion/react";
 import { Star, Quote, ChevronLeft, ChevronRight } from "lucide-react";
 import { useRef, useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { EASE_OUT, revealFade, revealSection } from "@/lib/motion";
+import { EASE_OUT, revealFade, revealPop, revealSection } from "@/lib/motion";
 
 const testimonials = [
   {
@@ -239,10 +239,7 @@ const Testimonials = () => {
                 {[...Array(testimonial.rating)].map((_, i) => (
                   <motion.div
                     key={i}
-                    initial={{ opacity: 0, scale: 0 }}
-                    whileInView={{ opacity: 1, scale: 1 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: 0.1 * i }}
+                    {...revealPop()}
                   >
                     <Star className="w-4 h-4 fill-brand-gold text-brand-gold" />
                   </motion.div>

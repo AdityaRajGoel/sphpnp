@@ -39,6 +39,8 @@ const FeaturedSparkline = () => (
       stroke="url(#spark-stroke)"
       strokeWidth="2.5"
       strokeLinecap="round"
+      /* motion-exempt: SVG pathLength draw-on. No transform reproduces a stroke
+         revealing along its own length, so there is no preset equivalent. */
       initial={{ pathLength: 0 }}
       whileInView={{ pathLength: 1 }}
       viewport={{ once: true, margin: "-60px" }}
@@ -47,6 +49,8 @@ const FeaturedSparkline = () => (
     <motion.circle
       cx="218" cy="6" r="3.5"
       fill="hsl(var(--brand-gold))"
+      /* motion-exempt: three-step keyframe overshoot on the path's end cap. The
+         presets are all two-state by design; a keyframe array is a different shape. */
       initial={{ scale: 0, opacity: 0 }}
       whileInView={{ scale: [0, 1.4, 1], opacity: 1 }}
       viewport={{ once: true, margin: "-60px" }}

@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
-import { revealItem, revealItemX } from "@/lib/motion";
+import { revealItem, revealItemX, revealTracking } from "@/lib/motion";
 const PHONE_REGEX = /^(\+?91)?[6-9]\d{9}$/;
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -94,10 +94,7 @@ const BecomePartner = () => {
           >
             <motion.span
               className="inline-block text-secondary font-semibold text-sm uppercase tracking-wider mb-3"
-              initial={{ opacity: 0, letterSpacing: "0em" }}
-              whileInView={{ opacity: 1, letterSpacing: "0.15em" }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.2, duration: 0.8 }}
+              {...revealTracking}
             >
               Partner With Us
             </motion.span>

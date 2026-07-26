@@ -1,7 +1,7 @@
 import { motion, useScroll, useTransform } from "motion/react";
 import { useRef } from "react";
 import { Building2, TrendingUp, Award, Users, Globe, Landmark, Sparkles } from "lucide-react";
-import { revealBar, revealSection } from "@/lib/motion";
+import { revealBar, revealItemX, revealSection } from "@/lib/motion";
 
 const milestones = [
   { year: "1970", title: "Foundation", desc: "Parasram begins serving investors, establishing a trusted name in financial services.", icon: Building2, color: "from-primary to-primary/80" },
@@ -61,14 +61,13 @@ const CompanyTimeline = () => {
                 <motion.div
                   key={m.year}
                   className={`relative flex items-center gap-6 ${isLeft ? "md:flex-row" : "md:flex-row-reverse"} flex-row`}
-                  initial={{ opacity: 0, x: isLeft ? -40 : 40 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  viewport={{ once: true, margin: "-50px" }}
-                  transition={{ delay: i * 0.08, duration: 0.5 }}
+                  {...revealItemX(isLeft ? "left" : "right")}
                 >
                   {/* Timeline dot */}
                   <motion.div
                     className={`absolute left-6 md:left-1/2 -translate-x-1/2 w-12 h-12 rounded-full bg-gradient-to-br ${m.color} flex items-center justify-center shadow-lg z-10 border-4 border-background`}
+                    /* motion-exempt: keyframe overshoot on the timeline dot, deliberately punchier
+                       than revealPop because it marks a position rather than delivering content. */
                     whileInView={{ scale: [0, 1.2, 1] }}
                     viewport={{ once: true }}
                     transition={{ delay: i * 0.08 + 0.2, type: "spring" }}

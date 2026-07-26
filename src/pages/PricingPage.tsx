@@ -91,10 +91,7 @@ const faqs = [
 const ChargesTable = ({ title, rows, cols }: { title: string; rows: { [k: string]: string | boolean | undefined }[]; cols: [string, string] }) => (
   <motion.div
     className="bg-card border border-border/50 rounded-2xl overflow-hidden"
-    initial={{ opacity: 0, y: 24 }}
-    whileInView={{ opacity: 1, y: 0 }}
-    viewport={{ once: true, margin: "-40px" }}
-    transition={{ duration: 0.5 }}
+    {...revealSection}
   >
     <h2 className="font-heading text-lg font-bold text-foreground px-5 py-4 bg-muted/40 border-b border-border/50">
       {title}

@@ -1,7 +1,7 @@
 import { CheckCircle2, TrendingUp, Users, Award, BarChart2 } from "lucide-react";
 import { motion, Variants, useScroll, useTransform } from "motion/react";
 import { useRef } from "react";
-import { EASE_IN_OUT, EASE_OUT, revealItemX, revealSection } from "@/lib/motion";
+import { EASE_IN_OUT, EASE_OUT, revealItemX, revealPop, revealSection } from "@/lib/motion";
 
 const features = [
   "SEBI Registered Stock Broker",
@@ -138,6 +138,8 @@ const About = () => {
                   transition={{ type: "spring", stiffness: 300 }}
                 >
                   <motion.div
+                    /* motion-exempt: bare scale with no opacity, on a decorative ring that has no
+                       content to fade. revealPop would add an opacity channel that does nothing here. */
                     initial={{ scale: 0 }}
                     whileInView={{ scale: 1 }}
                     viewport={{ once: true }}
@@ -195,18 +197,12 @@ const About = () => {
             {/* Decorative elements */}
             <motion.div
               className="absolute -bottom-4 -right-4 w-24 h-24 bg-secondary/20 rounded-2xl -z-10"
-              initial={{ opacity: 0, scale: 0 }}
-              whileInView={{ opacity: 1, scale: 1 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.5, duration: 0.5 }}
+              {...revealPop()}
               animate={{ rotate: [0, 5, -5, 0] }}
             />
             <motion.div
               className="absolute -top-4 -left-4 w-16 h-16 bg-brand-gold/20 rounded-xl -z-10"
-              initial={{ opacity: 0, scale: 0 }}
-              whileInView={{ opacity: 1, scale: 1 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.6, duration: 0.5 }}
+              {...revealPop()}
               animate={{ rotate: [0, -8, 8, 0] }}
             />
             {/* Extra floating dot */}

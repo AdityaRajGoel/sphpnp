@@ -1,7 +1,7 @@
 import { motion } from "motion/react";
 import { FileText, Download, TrendingUp, Newspaper, ArrowUpRight, BarChart2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { revealBar, revealSection } from "@/lib/motion";
+import { revealBar, revealSection, revealTracking } from "@/lib/motion";
 
 const researchCards = [
   {
@@ -59,10 +59,7 @@ const DailyResearch = () => {
         >
           <motion.span
             className="inline-block text-secondary font-semibold text-sm uppercase tracking-wider mb-3"
-            initial={{ opacity: 0, letterSpacing: "0em" }}
-            whileInView={{ opacity: 1, letterSpacing: "0.15em" }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.2, duration: 0.8 }}
+            {...revealTracking}
           >
             Research & Reports
           </motion.span>

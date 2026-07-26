@@ -3,7 +3,7 @@ import { useRef } from "react";
 import { Shield, Award, Clock, Users, Building, Briefcase, Globe, Headphones } from "lucide-react";
 import { useCountUp } from "@/hooks/useCountUp";
 
-import { revealSection } from "@/lib/motion";
+import { revealPop, revealSection } from "@/lib/motion";
 const badges = [
   { icon: Shield, label: "SEBI Registered", desc: "INZ000220838", color: "text-secondary", bg: "bg-secondary/10" },
   // INZ000220838 is the SEBI registration covering NSE, BSE, MCX and MSEI — it
@@ -47,10 +47,7 @@ const TrustBadges = () => {
             <motion.div
               key={badge.label}
               className="flex items-center gap-3 bg-card border border-border/50 rounded-xl px-5 py-3 shadow-sm group cursor-default"
-              initial={{ opacity: 0, y: 20, scale: 0.9 }}
-              whileInView={{ opacity: 1, y: 0, scale: 1 }}
-              viewport={{ once: true }}
-              transition={{ delay: i * 0.06, duration: 0.4 }}
+              {...revealPop()}
               whileHover={{ y: -4, scale: 1.05, boxShadow: "0 10px 30px -10px hsl(145 70% 40% / 0.2)" }}
             >
               <motion.div

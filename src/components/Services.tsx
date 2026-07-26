@@ -4,7 +4,7 @@ import { motion, Variants, useScroll, useTransform } from "motion/react";
 import { useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { useT } from "@/i18n/LanguageContext";
-import { EASE_OUT, revealBar, revealFade, revealSection } from "@/lib/motion";
+import { EASE_OUT, revealBar, revealFade, revealSection, revealTracking } from "@/lib/motion";
 
 // Every service links to the page that actually explains it - the cards show a
 // "go" arrow, so they must be real links.
@@ -155,10 +155,7 @@ const Services = () => {
         >
           <motion.span
             className="inline-block text-secondary font-semibold text-sm uppercase tracking-wider mb-4"
-            initial={{ opacity: 0, letterSpacing: "0em" }}
-            whileInView={{ opacity: 1, letterSpacing: "0.15em" }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.2, duration: 0.8 }}
+            {...revealTracking}
           >
             {t("services.eyebrow")}
           </motion.span>

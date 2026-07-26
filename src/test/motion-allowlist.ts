@@ -26,24 +26,4 @@ export const DURATION_ALLOWLIST: readonly string[] = [];
  * membership is decided per-occurrence, never per-import.
  */
 export const REVEAL_ALLOWLIST: readonly string[] = [
-  "src/components/About.tsx",
-  "src/components/BecomePartner.tsx",
-  "src/components/CompanyTimeline.tsx",
-  "src/components/Contact.tsx",
-  "src/components/DailyResearch.tsx",
-  "src/components/GoogleReviews.tsx",
-  "src/components/InvestmentProducts.tsx",
-  "src/components/InvestmentTools.tsx",
-  "src/components/SIPCalculator.tsx",
-  "src/components/ScrollySteps.tsx",
-  "src/components/Services.tsx",
-  "src/components/TelegramChannel.tsx",
-  "src/components/Testimonials.tsx",
-  "src/components/TrustBadges.tsx",
-  "src/components/UnlistedShares.tsx",
-  "src/components/WhyChooseUs.tsx",
-  "src/pages/PricingPage.tsx",
-  "src/pages/ProductsPage.tsx",
-  "src/pages/ReportsPage.tsx",
-  "src/pages/TeamPage.tsx",
 ];

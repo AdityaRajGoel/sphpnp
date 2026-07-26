@@ -103,3 +103,50 @@ export const revealBar = {
   transition: { duration: DURATION.reveal, delay: 0.3, ease: EASE_OUT },
   style: { transformOrigin: "center" },
 } as const;
+
+/**
+ * Reveal for elements that arrive by growing rather than lifting - badges,
+ * pill cards, anything whose position on the page is already settled.
+ *
+ * Scale starts at 0.94, not lower. Below about 0.9 the growth stops reading
+ * as an arrival and starts reading as a bounce, which is a louder gesture
+ * than a reveal should be and fights the restraint of the rest of the scale.
+ */
+export const revealPop = (index = 0) =>
+  ({
+    initial: { opacity: 0, scale: 0.94 },
+    whileInView: { opacity: 1, scale: 1 },
+    viewport: { once: true, amount: 0.3 },
+    transition: { duration: DURATION.reveal, delay: index * STAGGER, ease: EASE_OUT },
+  }) as const;
+
+/**
+ * Eyebrow labels that settle their tracking as they arrive.
+ *
+ * letterSpacing is layout-bound, so this forces a text re-layout every frame.
+ * It is kept because the widening tracking is the effect, and there is no
+ * transform that reproduces it; scaleX would distort the glyphs. Reserved for
+ * short single-line labels, where the reflow cost is a few words rather than
+ * a paragraph. Never use it on body copy.
+ */
+export const revealTracking = {
+  initial: { opacity: 0, letterSpacing: "0em" },
+  whileInView: { opacity: 1, letterSpacing: "0.15em" },
+  viewport: { once: true, amount: 0.5 },
+  transition: { duration: DURATION.reveal, delay: 0.2, ease: EASE_OUT },
+} as const;
+
+/**
+ * Icon badges that spin into place - rating stars and award marks.
+ *
+ * Deliberately louder than the rest of the scale, and deliberately rare: it
+ * exists for a handful of decorative marks, not for content. Both transforms
+ * are compositor-friendly, so the cost is only visual attention.
+ */
+export const revealSpin = (index = 0) =>
+  ({
+    initial: { opacity: 0, scale: 0, rotate: -180 },
+    whileInView: { opacity: 1, scale: 1, rotate: 0 },
+    viewport: { once: true, amount: 0.5 },
+    transition: { duration: DURATION.reveal, delay: index * STAGGER, ease: EASE_OUT },
+  }) as const;

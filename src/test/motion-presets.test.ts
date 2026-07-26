@@ -7,6 +7,7 @@ import {
   revealItemX,
   revealFade,
   revealBar,
+  revealPop,
 } from "@/lib/motion";
 
 describe("motion presets", () => {
@@ -54,5 +55,21 @@ describe("motion presets", () => {
     // Centre, not left: these rules are all mx-auto, and the width animation
     // they replace opened symmetrically from the middle.
     expect(revealBar.style.transformOrigin).toBe("center");
+  });
+
+  /**
+   * Cards and badges that arrive by growing slightly rather than lifting.
+   * Scale never starts below 0.9: a smaller start reads as a bounce, which
+   * is a different and much louder gesture than a reveal.
+   */
+  it("pops in from a restrained scale, never from zero", () => {
+    expect(revealPop(0).initial.scale).toBeGreaterThanOrEqual(0.9);
+    expect(revealPop(0).initial.scale).toBeLessThan(1);
+    expect(revealPop(0).whileInView.scale).toBe(1);
+    expect(revealPop(0).initial.opacity).toBe(0);
+  });
+
+  it("staggers pops on the same cadence as other item reveals", () => {
+    expect(revealPop(3).transition.delay).toBeCloseTo(3 * STAGGER);
   });
 });

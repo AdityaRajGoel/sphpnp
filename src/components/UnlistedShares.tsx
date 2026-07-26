@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { motion, Variants, AnimatePresence } from "motion/react";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { EASE_OUT, revealFade, revealSection } from "@/lib/motion";
+import { EASE_OUT, revealFade, revealPop, revealSection } from "@/lib/motion";
 
 type StockItem = {
   name: string; short: string; tag: string; tagColor: string; price: string;
@@ -402,7 +402,7 @@ const UnlistedShares = () => {
       {/* CTA */}
       <section className="py-8 md:py-16">
         <div className="container mx-auto px-4">
-          <motion.div className="bg-hero rounded-3xl p-10 md:p-16 text-center text-primary-foreground relative overflow-hidden" initial={{ opacity: 0, scale: 0.95 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }}>
+          <motion.div className="bg-hero rounded-3xl p-10 md:p-16 text-center text-primary-foreground relative overflow-hidden" {...revealPop()}>
             <div className="relative z-10">
               <h3 className="font-heading text-2xl md:text-3xl font-bold mb-4">Interested in Unlisted Shares?</h3>
               <p className="text-primary-foreground/80 text-lg mb-8 max-w-xl mx-auto">Contact us now to explore premium unlisted share opportunities.</p>

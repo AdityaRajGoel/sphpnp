@@ -4,7 +4,7 @@ import {
   Shield, Smartphone, Award, PhoneCall, Percent,
   Headphones, MapPin, TrendingUp, MessageCircle
 } from "lucide-react";
-import { EASE_OUT, revealBar, revealSection } from "@/lib/motion";
+import { EASE_OUT, revealBar, revealSection, revealTracking } from "@/lib/motion";
 
 const usps = [
   {
@@ -87,10 +87,7 @@ const WhyChooseUs = () => {
         >
           <motion.span
             className="inline-block text-secondary font-semibold text-sm uppercase tracking-wider mb-3"
-            initial={{ opacity: 0, letterSpacing: "0em" }}
-            whileInView={{ opacity: 1, letterSpacing: "0.15em" }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.2, duration: 0.8 }}
+            {...revealTracking}
           >
             Why Parasram Panipat
           </motion.span>

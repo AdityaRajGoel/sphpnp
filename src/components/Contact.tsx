@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { motion, useScroll, useTransform } from "motion/react";
 import { useRef } from "react";
 import brandImage from "@/assets/parasram-brand.jpeg";
-import { EASE_OUT, revealFade, revealItem, revealItemX, revealSection } from "@/lib/motion";
+import { EASE_OUT, revealFade, revealItem, revealItemX, revealPop, revealSection } from "@/lib/motion";
 
 const contactItems = [
   {
@@ -170,10 +170,7 @@ const Contact = () => {
           <motion.div className="space-y-6" style={{ y: mapY }}>
             <motion.div
               className="rounded-2xl overflow-hidden border border-border/50 shadow-lg"
-              initial={{ opacity: 0, scale: 0.95 }}
-              whileInView={{ opacity: 1, scale: 1 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6 }}
+              {...revealPop()}
               whileHover={{ scale: 1.01, boxShadow: "0 20px 40px -10px hsl(145 70% 40% / 0.2)" }}
             >
               <iframe

@@ -1,7 +1,7 @@
 import { motion } from "motion/react";
 import { ArrowRight, BookOpen, FileBarChart, Target, Lightbulb, LineChart, Shield } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
-import { revealBar, revealSection } from "@/lib/motion";
+import { revealBar, revealSection, revealTracking } from "@/lib/motion";
 
 const tools = [
   {
@@ -64,10 +64,7 @@ const InvestmentTools = () => {
         >
           <motion.span
             className="inline-block text-secondary font-semibold text-sm uppercase tracking-wider mb-3"
-            initial={{ letterSpacing: "0em" }}
-            whileInView={{ letterSpacing: "0.15em" }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.8 }}
+            {...revealTracking}
           >
             Powerful Tools
           </motion.span>

@@ -10,6 +10,7 @@ import { Link } from "react-router-dom";
 import WhatsAppButton from "@/components/WhatsAppButton";
 import ScrollProgress from "@/components/ScrollProgress";
 
+import { revealSection } from "@/lib/motion";
 const products = [
   {
     icon: Building2,
@@ -112,9 +113,7 @@ const ProductsPage = () => {
                 <motion.div 
                   key={product.title}
                   className="bg-card glass-card p-8 md:p-10 rounded-3xl border border-border/50 shadow-sm relative overflow-hidden group hover:border-brand-gold/50 transition-colors"
-                  initial={{ opacity: 0, y: 24 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true, margin: "-100px" }}
+                  {...revealSection}
                   transition={{ delay: idx * 0.1, duration: 0.5 }}
                 >
                   <div className="flex flex-col md:flex-row gap-8 items-start">

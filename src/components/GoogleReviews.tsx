@@ -2,7 +2,7 @@ import { Star, ExternalLink, MessageSquare } from "lucide-react";
 import { motion, Variants, useScroll, useTransform } from "motion/react";
 import { Button } from "@/components/ui/button";
 import { useRef } from "react";
-import { EASE_OUT, revealBar, revealFade, revealSection } from "@/lib/motion";
+import { EASE_OUT, revealBar, revealFade, revealPop, revealSection, revealSpin } from "@/lib/motion";
 
 const googleReviews = [
   {
@@ -118,10 +118,7 @@ const GoogleReviews = () => {
           {/* Rating summary */}
           <motion.div
             className="inline-flex items-center gap-4 bg-card border border-border rounded-2xl px-8 py-4 shadow-lg"
-            initial={{ opacity: 0, scale: 0.9 }}
-            whileInView={{ opacity: 1, scale: 1 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.2 }}
+            {...revealPop()}
             whileHover={{ scale: 1.03, boxShadow: "0 20px 40px -10px hsl(45 90% 50% / 0.15)" }}
           >
             <motion.div
@@ -136,10 +133,7 @@ const GoogleReviews = () => {
                 {[...Array(5)].map((_, i) => (
                   <motion.div
                     key={i}
-                    initial={{ opacity: 0, scale: 0, rotate: -180 }}
-                    whileInView={{ opacity: 1, scale: 1, rotate: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: 0.3 + i * 0.1 }}
+                    {...revealSpin()}
                   >
                     <Star className="w-5 h-5 fill-brand-gold text-brand-gold" />
                   </motion.div>
@@ -176,10 +170,7 @@ const GoogleReviews = () => {
               {/* Google icon badge */}
               <motion.div
                 className="absolute -top-2 -right-2 w-8 h-8 bg-card rounded-full border border-border shadow-md flex items-center justify-center"
-                initial={{ scale: 0, rotate: -180 }}
-                whileInView={{ scale: 1, rotate: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: 0.3 + index * 0.1, type: "spring" }}
+                {...revealSpin()}
               >
                 <svg viewBox="0 0 24 24" className="w-4 h-4">
                   <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/>
@@ -208,10 +199,7 @@ const GoogleReviews = () => {
                 {[...Array(review.rating)].map((_, i) => (
                   <motion.div
                     key={i}
-                    initial={{ opacity: 0, scale: 0, rotate: -180 }}
-                    whileInView={{ opacity: 1, scale: 1, rotate: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: 0.05 * i + index * 0.05 }}
+                    {...revealSpin()}
                   >
                     <Star className="w-4 h-4 fill-brand-gold text-brand-gold" />
                   </motion.div>

@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { Link } from "react-router-dom";
-import { revealBar, revealFade, revealItem, revealSection } from "@/lib/motion";
+import { revealBar, revealFade, revealItem, revealSection, revealTracking } from "@/lib/motion";
 
 type TelegramMessage = {
   id: string;
@@ -385,10 +385,7 @@ const TelegramChannel = ({ limit = 10, showViewAll = false, showFilters = false 
         >
           <motion.span
             className="inline-flex items-center gap-2 text-[#229ED9] font-semibold text-sm uppercase tracking-wider mb-3"
-            initial={{ opacity: 0, letterSpacing: "0em" }}
-            whileInView={{ opacity: 1, letterSpacing: "0.15em" }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.2, duration: 0.8 }}
+            {...revealTracking}
           >
             <Send className="w-4 h-4" />
             Live Updates

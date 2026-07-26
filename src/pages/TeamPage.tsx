@@ -17,7 +17,7 @@ import {
   MapPin, Calendar
 } from "lucide-react";
 import { useRef } from "react";
-import { EASE_OUT, revealFade, revealSection } from "@/lib/motion";
+import { EASE_OUT, revealFade, revealPop, revealSection } from "@/lib/motion";
 
 const teamMembers = [
   {
@@ -101,10 +101,7 @@ const TeamMemberCard = ({ member, index }: { member: typeof teamMembers[0]; inde
   return (
     <motion.div
       className="group bg-card rounded-2xl border border-border/50 hover:border-secondary/30 shadow-lg hover:shadow-2xl transition-[color,background-color,border-color,box-shadow] duration-slow relative overflow-hidden"
-      initial={{ opacity: 0, y: 50 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-50px" }}
-      transition={{ delay: index * 0.12, duration: 0.6, ease: EASE_OUT }}
+      {...revealSection}
       whileHover={{ y: -6 }}
     >
       {/* Top gradient bar */}
@@ -162,10 +159,7 @@ const TeamMemberCard = ({ member, index }: { member: typeof teamMembers[0]; inde
       {/* Corner accent */}
       <motion.div
         className="absolute bottom-0 right-0 w-20 h-20 bg-gradient-to-tl from-secondary/8 to-transparent rounded-tl-3xl"
-        initial={{ opacity: 0, scale: 0 }}
-        whileInView={{ opacity: 1, scale: 1 }}
-        viewport={{ once: true }}
-        transition={{ delay: 0.5 + index * 0.1 }}
+        {...revealPop()}
       />
     </motion.div>
   );

@@ -196,6 +196,8 @@ const SIPCalculator = ({ headingLevel = 2 }: SIPCalculatorProps) => {
                         strokeWidth="12"
                         strokeDasharray={`${investedPercent * 2.51} ${251 - investedPercent * 2.51}`}
                         strokeLinecap="round"
+                        /* motion-exempt: strokeDasharray sweep on the donut. The target value is
+                           computed from the split being charted, so it cannot be a static preset. */
                         initial={{ strokeDasharray: "0 251" }}
                         whileInView={{ strokeDasharray: `${investedPercent * 2.51} ${251 - investedPercent * 2.51}` }}
                         viewport={{ once: true }}
