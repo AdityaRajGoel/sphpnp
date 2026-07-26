@@ -619,13 +619,13 @@ const MarketDashboard = () => {
                   <span className="text-[10px] text-brand-orange font-semibold">Live NSE</span>
                 </div>
                 <div className="space-y-2">
-                  {(marketOverview?.gainers?.slice(0, 5) || [
-                    { name: "TATA POWER", change: "+4.8%", up: true, price: "₹452" },
-                    { name: "ZOMATO", change: "+3.5%", up: true, price: "₹218" },
-                    { name: "ADANI GREEN", change: "+3.9%", up: true, price: "₹1,842" },
-                    { name: "IREDA", change: "+2.8%", up: true, price: "₹187" },
-                    { name: "NHPC", change: "+2.1%", up: true, price: "₹82" },
-                  ]).map((s: { name: string; change: string; up: boolean; price?: string }, i: number) => (
+                  {/* No hardcoded rows. These used to fall back to invented
+                      prices under the "Live NSE" badge above, which is the
+                      worst possible framing for fabricated data. */}
+                  {!marketOverview?.gainers?.length && (
+                    <p className="text-xs text-muted-foreground py-3">Live data unavailable right now.</p>
+                  )}
+                  {(marketOverview?.gainers?.slice(0, 5) ?? []).map((s: { name: string; change: string; up: boolean; price?: string }, i: number) => (
                     <div key={i} className="flex items-center justify-between py-1.5 border-b border-border/20 last:border-0">
                       <span className="text-xs font-semibold text-foreground">{s.name}</span>
                       <div className="text-right">
@@ -650,13 +650,10 @@ const MarketDashboard = () => {
                   <span className="text-[10px] text-brand-orange font-semibold">Live NSE</span>
                 </div>
                 <div className="space-y-2">
-                  {(marketOverview?.losers?.slice(0, 5) || [
-                    { name: "PAYTM", change: "-3.2%", up: false, price: "₹368" },
-                    { name: "COAL INDIA", change: "-1.5%", up: false, price: "₹412" },
-                    { name: "ONGC", change: "-2.1%", up: false, price: "₹264" },
-                    { name: "BHEL", change: "-1.8%", up: false, price: "₹218" },
-                    { name: "MTNL", change: "-2.9%", up: false, price: "₹43" },
-                  ]).map((s: { name: string; change: string; up: boolean; price?: string }, i: number) => (
+                  {!marketOverview?.losers?.length && (
+                    <p className="text-xs text-muted-foreground py-3">Live data unavailable right now.</p>
+                  )}
+                  {(marketOverview?.losers?.slice(0, 5) ?? []).map((s: { name: string; change: string; up: boolean; price?: string }, i: number) => (
                     <div key={i} className="flex items-center justify-between py-1.5 border-b border-border/20 last:border-0">
                       <span className="text-xs font-semibold text-foreground">{s.name}</span>
                       <div className="text-right">
@@ -682,12 +679,14 @@ const MarketDashboard = () => {
                 </div>
                 <div className="space-y-3">
                   {[
-                    { name: "GOLD", unit: "10g", val: commodities.find(c => c.name.toUpperCase().includes("GOLD")), fallback: { price: "₹72,450", change: "+0.8%", up: true } },
-                    { name: "SILVER", unit: "kg", val: commodities.find(c => c.name.toUpperCase().includes("SILVER")), fallback: { price: "₹86,200", change: "+1.2%", up: true } },
-                    { name: "CRUDE OIL", unit: "bbl", val: commodities.find(c => c.name.toUpperCase().includes("CRUDE")), fallback: { price: "₹6,820", change: "-0.5%", up: false } },
-                    { name: "NAT GAS", unit: "mmBtu", val: commodities.find(c => c.name.toUpperCase().includes("NAT")), fallback: { price: "₹210", change: "+2.1%", up: true } },
-                  ].map(({ name, unit, val, fallback }) => {
-                    const d = val || fallback;
+                    { name: "GOLD", unit: "10g", val: commodities.find(c => c.name.toUpperCase().includes("GOLD")) },
+                    { name: "SILVER", unit: "kg", val: commodities.find(c => c.name.toUpperCase().includes("SILVER")) },
+                    { name: "CRUDE OIL", unit: "bbl", val: commodities.find(c => c.name.toUpperCase().includes("CRUDE")) },
+                    { name: "NAT GAS", unit: "mmBtu", val: commodities.find(c => c.name.toUpperCase().includes("NAT")) },
+                  ].map(({ name, unit, val }) => {
+                    // No invented fallback price. An em dash says "we don't
+                    // know"; a plausible number says something false.
+                    const d = val;
                     return (
                       <div key={name} className="flex items-center justify-between p-2.5 bg-muted/30 rounded-lg">
                         <div>
@@ -695,10 +694,10 @@ const MarketDashboard = () => {
                           <div className="text-[9px] text-muted-foreground">per {unit}</div>
                         </div>
                         <div className="text-right">
-                          <div className="text-sm font-bold text-foreground">{d.price}</div>
-                          <div className={`text-[10px] font-bold flex items-center justify-end gap-0.5 ${d.up ? "text-secondary" : "text-destructive"}`}>
-                            {d.up ? <ArrowUpRight className="w-2.5 h-2.5" /> : <ArrowDownRight className="w-2.5 h-2.5" />}
-                            {d.change}
+                          <div className="text-sm font-bold text-foreground">{d?.price ?? "—"}</div>
+                          <div className={`text-[10px] font-bold flex items-center justify-end gap-0.5 ${!d ? "text-muted-foreground" : d.up ? "text-secondary" : "text-destructive"}`}>
+                            {d && (d.up ? <ArrowUpRight className="w-2.5 h-2.5" /> : <ArrowDownRight className="w-2.5 h-2.5" />)}
+                            {d?.change ?? "—"}
                           </div>
                         </div>
                       </div>

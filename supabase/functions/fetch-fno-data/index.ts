@@ -45,41 +45,6 @@ async function setCachedData(symbol: string, expiry: string | undefined, payload
   } catch { /* ignore */ }
 }
 
-// ── Yahoo Finance approach (reliable from cloud servers) ──
-
-function yahooSymbol(symbol: string): string {
-  const map: Record<string, string> = {
-    NIFTY: "^NSEI",
-    BANKNIFTY: "^NSEBANK",
-    FINNIFTY: "NIFTY_FIN_SERVICE.NS",
-    MIDCPNIFTY: "^NSEI",
-  };
-  return map[symbol] || `${symbol}.NS`;
-}
-
-async function fetchYahooSpot(symbol: string): Promise<number> {
-  const ySymbol = yahooSymbol(symbol);
-  try {
-    const res = await fetch(
-      `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ySymbol)}?interval=1d&range=1d`,
-      {
-        headers: {
-          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-          Accept: "application/json",
-        },
-      }
-    );
-    if (res.ok) {
-      const json = await res.json();
-      const meta = json?.chart?.result?.[0]?.meta;
-      return meta?.regularMarketPrice || meta?.previousClose || 0;
-    }
-  } catch (e) {
-    console.error("Yahoo spot fetch error:", e);
-  }
-  return 0;
-}
-
 // ── NSE Data Fetching with improved cookie handling ──
 
 const NSE_HEADERS = {
@@ -155,103 +120,6 @@ async function fetchNSEOptionChain(symbol: string, cookies: string) {
     throw new Error(`NSE API returned ${res.status}: ${text.substring(0, 200)}`);
   }
   return await res.json();
-}
-
-// ── Generate synthetic but realistic option chain data ──
-
-function generateRealisticOptionChain(symbol: string, spot: number, selectedExpiry?: string) {
-  const stepSize = symbol === "BANKNIFTY" ? 100 : symbol === "FINNIFTY" ? 50 : 50;
-  const atmStrike = Math.round(spot / stepSize) * stepSize;
-  const numStrikes = 15;
-
-  // Generate expiry dates (next 4 Thursdays)
-  const expiries: { timestamp: string; label: string }[] = [];
-  const now = new Date();
-  const d = new Date(now);
-  for (let i = 0; i < 4; i++) {
-    // Find next Thursday
-    while (d.getDay() !== 4) d.setDate(d.getDate() + 1);
-    const label = d.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
-    expiries.push({ timestamp: d.toISOString().split("T")[0], label });
-    d.setDate(d.getDate() + 1);
-  }
-
-  const activeExpiry = selectedExpiry || expiries[0]?.timestamp;
-
-  // Days to expiry affects IV and pricing
-  const expiryDate = new Date(activeExpiry);
-  const dte = Math.max(1, Math.ceil((expiryDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
-
-  const chain: OptionRow[] = [];
-  const baseIV = symbol === "BANKNIFTY" ? 18 : symbol === "FINNIFTY" ? 16 : 14;
-
-  for (let i = -numStrikes; i <= numStrikes; i++) {
-    const strike = atmStrike + i * stepSize;
-    const moneyness = (strike - spot) / spot;
-    const distFromATM = Math.abs(i);
-
-    // IV smile: higher at wings
-    const ivSkew = baseIV + distFromATM * 0.8 + (moneyness < 0 ? 2 : 0);
-    const callIV = Math.max(8, ivSkew + (Math.random() - 0.5) * 2);
-    const putIV = Math.max(8, ivSkew + 1 + (Math.random() - 0.5) * 2);
-
-    // OI distribution: peaks at round numbers away from ATM
-    const callOIPeak = strike > spot ? Math.exp(-distFromATM * 0.15) : Math.exp(-distFromATM * 0.25);
-    const putOIPeak = strike < spot ? Math.exp(-distFromATM * 0.15) : Math.exp(-distFromATM * 0.25);
-
-    // Bigger OI at round numbers (000s and 500s)
-    const roundBonus = strike % 1000 === 0 ? 2.5 : strike % 500 === 0 ? 1.5 : 1;
-
-    const baseOI = symbol === "BANKNIFTY" ? 800000 : symbol === "FINNIFTY" ? 400000 : 1200000;
-    const callOI = Math.round(baseOI * callOIPeak * roundBonus * (0.7 + Math.random() * 0.6));
-    const putOI = Math.round(baseOI * putOIPeak * roundBonus * (0.7 + Math.random() * 0.6));
-
-    // OI change: mix of positive and negative
-    const callChange = Math.round(callOI * (Math.random() - 0.45) * 0.15);
-    const putChange = Math.round(putOI * (Math.random() - 0.45) * 0.15);
-
-    // LTP: approximate Black-Scholes-like pricing
-    const intrinsicCall = Math.max(0, spot - strike);
-    const intrinsicPut = Math.max(0, strike - spot);
-    const timeValue = spot * (callIV / 100) * Math.sqrt(dte / 365) * 0.4;
-    const callLTP = Math.max(0.05, intrinsicCall + timeValue * Math.exp(-distFromATM * 0.3));
-    const putLTP = Math.max(0.05, intrinsicPut + timeValue * Math.exp(-distFromATM * 0.3));
-
-    // Volume
-    const callVolume = Math.round(callOI * (0.05 + Math.random() * 0.15));
-    const putVolume = Math.round(putOI * (0.05 + Math.random() * 0.15));
-
-    chain.push({
-      strike,
-      callOI,
-      callChange,
-      callLTP: Math.round(callLTP * 100) / 100,
-      callIV: Math.round(callIV * 10) / 10,
-      callVolume,
-      putOI,
-      putChange,
-      putLTP: Math.round(putLTP * 100) / 100,
-      putIV: Math.round(putIV * 10) / 10,
-      putVolume,
-    });
-  }
-
-  // Calculate metrics
-  const totalCallOI = chain.reduce((s, r) => s + r.callOI, 0);
-  const totalPutOI = chain.reduce((s, r) => s + r.putOI, 0);
-  const pcr = totalCallOI > 0 ? totalPutOI / totalCallOI : 0;
-  const maxPain = calculateMaxPain(chain);
-
-  return {
-    spot,
-    chain,
-    expiries,
-    currentExpiry: activeExpiry,
-    maxPain,
-    pcr,
-    totalCallOI,
-    totalPutOI,
-  };
 }
 
 // ── Process real NSE data ──
@@ -382,27 +250,20 @@ serve(async (req) => {
       console.warn("NSE direct fetch failed:", nseErr);
     }
 
-    // Strategy 2: If NSE fails, generate realistic data using real spot price
-    if (!processed) {
-      try {
-        console.log("Falling back to generated data with Yahoo spot price");
-        const spot = await fetchYahooSpot(symbol);
-        const fallbackSpot =
-          spot > 0
-            ? spot
-            : symbol === "BANKNIFTY"
-            ? 54400
-            : symbol === "FINNIFTY"
-            ? 25800
-            : 23400;
-        processed = generateRealisticOptionChain(symbol, fallbackSpot, selectedExpiry);
-      } catch (genErr) {
-        console.error("Generation fallback also failed:", genErr);
-      }
-    }
+    // There is deliberately no generated fallback here.
+    //
+    // This previously synthesised a whole option chain - strikes, premiums,
+    // open interest and an IV smile seeded with Math.random() - on top of a
+    // hardcoded spot price whenever NSE was unreachable. The payload carried
+    // no marker, so the client could not tell it from real NSE data, and the
+    // result was written to market_cache and re-served afterwards.
+    //
+    // Option OI and IV are what F&O traders position against. Inventing them
+    // is categorically different from an empty panel, so the chain now falls
+    // through to genuinely stale-but-real data, and then to an error.
 
     if (!processed) {
-      // Last resort: try stale cache
+      // Last resort: real data from cache, explicitly flagged stale.
       const sb = getSupabase();
       const key = cacheKey(symbol, selectedExpiry);
       const { data: stale } = await sb.from("market_cache").select("*").eq("id", key).single();
