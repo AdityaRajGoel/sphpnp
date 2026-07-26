@@ -1,7 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync, readdirSync } from "node:fs";
 import { join, posix } from "node:path";
-import { DURATION_ALLOWLIST, REVEAL_ALLOWLIST } from "./motion-allowlist";
 
 /** Vitest runs from the repo root, so cwd is the right anchor. */
 const ROOT = process.cwd();
@@ -108,30 +107,22 @@ describe("exemption marker", () => {
   });
 });
 
+/**
+ * Zero tolerance. The allowlists that carried this sweep are gone, so there is
+ * no longer a place to record a new violation - the only ways past this are to
+ * use a preset from `@/lib/motion`, extend that vocabulary, or write a
+ * `motion-exempt:` reason that a reviewer will read.
+ *
+ * If a preset "almost fits", the preset is what should change. That is the
+ * whole point: the site had four different ease-out curves and ~90 unspecified
+ * easings before this vocabulary existed.
+ */
 describe("motion token ratchet", () => {
-  it("has no hardcoded durations outside the allowlist", () => {
-    const unexpected = violating(HARDCODED_DURATION).filter(
-      (f) => !DURATION_ALLOWLIST.includes(f),
-    );
-    expect(unexpected).toEqual([]);
+  it("has no hardcoded durations anywhere in src", () => {
+    expect(violating(HARDCODED_DURATION)).toEqual([]);
   });
 
-  it("has no stale entries in the duration allowlist", () => {
-    const actual = violating(HARDCODED_DURATION);
-    const stale = DURATION_ALLOWLIST.filter((f) => !actual.includes(f));
-    expect(stale).toEqual([]);
-  });
-
-  it("has no hand-rolled reveals outside the allowlist", () => {
-    const unexpected = revealViolators().filter(
-      (f) => !REVEAL_ALLOWLIST.includes(f),
-    );
-    expect(unexpected).toEqual([]);
-  });
-
-  it("has no stale entries in the reveal allowlist", () => {
-    const actual = revealViolators();
-    const stale = REVEAL_ALLOWLIST.filter((f) => !actual.includes(f));
-    expect(stale).toEqual([]);
+  it("has no unexempted hand-rolled reveals anywhere in src", () => {
+    expect(revealViolators()).toEqual([]);
   });
 });
