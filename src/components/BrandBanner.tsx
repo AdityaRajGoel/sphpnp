@@ -2,7 +2,7 @@ import { motion, useScroll, useTransform } from "motion/react";
 import { useRef } from "react";
 import { Phone, Instagram, Facebook, MapPin } from "lucide-react";
 import brandImage from "@/assets/parasram-brand.jpeg";
-import { EASE_OUT } from "@/lib/motion";
+import { EASE_OUT, revealSection } from "@/lib/motion";
 
 const BrandBanner = () => {
   const ref = useRef<HTMLDivElement>(null);
@@ -35,9 +35,7 @@ const BrandBanner = () => {
           {/* Brand card with image */}
           <motion.div
             className="bg-card rounded-3xl shadow-2xl border border-border/50 overflow-hidden max-w-2xl w-full"
-            initial={{ opacity: 0, y: 24 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
+            {...revealSection}
             transition={{ duration: 0.7, ease: EASE_OUT }}
             whileHover={{ boxShadow: "0 30px 60px -15px hsl(213 80% 25% / 0.25)" }}
           >
@@ -53,9 +51,7 @@ const BrandBanner = () => {
           {/* Quick contact strip below */}
           <motion.div
             className="flex flex-col sm:flex-row flex-wrap items-center justify-center gap-3 sm:gap-6 mt-6 sm:mt-8 text-xs sm:text-sm text-muted-foreground"
-            initial={{ opacity: 0, y: 24 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
+            {...revealSection}
             transition={{ delay: 0.3, duration: 0.5 }}
           >
             <motion.a

@@ -14,6 +14,7 @@ import type { LucideIcon } from "lucide-react";
 import { useLiveMarket } from "@/hooks/useLiveMarket";
 import { useCorporateActions, useMarketFlows, useMfNavs } from "@/hooks/useMarketFeed";
 
+import { revealBar, revealItemX, revealSection } from "@/lib/motion";
 type Stock = { name: string; price: string; change: string; up: boolean; volume?: string; high?: string; low?: string };
 
 const fallbackTopGainers: Stock[] = [
@@ -182,8 +183,8 @@ const MiniSparkline = ({ up, onClick }: { up: boolean; onClick?: () => void }) =
 
 const StockRow = ({ stock, index, onChartClick }: { stock: Stock; index: number; onChartClick: (stock: Stock) => void }) => (
   <motion.div
-    className="flex items-center justify-between py-3 px-3 sm:px-4 rounded-xl hover:bg-muted/50 transition-colors duration-200 cursor-pointer group border-b border-border/30 last:border-0"
-    initial={{ opacity: 0, x: -10 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ delay: index * 0.04 }}
+    className="flex items-center justify-between py-3 px-3 sm:px-4 rounded-xl hover:bg-muted/50 transition-colors duration-fast cursor-pointer group border-b border-border/30 last:border-0"
+    {...revealItemX("left")}
     whileHover={{ x: 4 }}
     onClick={() => onChartClick(stock)}
   >
@@ -224,8 +225,8 @@ type CalendarAction = { date: string; symbol: string; eventName: string; details
 
 const CalendarRow = ({ action, index }: { action: CalendarAction; index: number }) => (
   <motion.div
-    className="flex items-center justify-between py-3 px-3 sm:px-4 rounded-xl hover:bg-muted/50 transition-colors duration-200 cursor-default group border-b border-border/30 last:border-0"
-    initial={{ opacity: 0, x: -10 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ delay: index * 0.04 }}
+    className="flex items-center justify-between py-3 px-3 sm:px-4 rounded-xl hover:bg-muted/50 transition-colors duration-fast cursor-default group border-b border-border/30 last:border-0"
+    {...revealItemX("left")}
     whileHover={{ x: 4 }}
   >
     <div className="flex items-center gap-3 min-w-0 flex-1">
@@ -368,20 +369,20 @@ const MarketOverview = () => {
 
       <div className="container mx-auto px-4 relative z-10">
         {/* Header */}
-        <motion.div className="text-center mb-12" initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
+        <motion.div className="text-center mb-12" {...revealSection}>
           <motion.span className="inline-flex items-center gap-1.5 bg-brand-orange/10 text-brand-orange font-semibold text-sm uppercase tracking-wider px-3 py-1.5 rounded-full mb-3">
             <BarChart3 className="w-3.5 h-3.5" />
             Market Pulse
           </motion.span>
           <h2 className="font-heading text-3xl md:text-4xl font-bold text-foreground mb-4">Today's Market Overview</h2>
-          <motion.div className="w-20 h-1 bg-gradient-to-r from-brand-orange to-brand-gold mx-auto rounded-full" initial={{ width: 0 }} whileInView={{ width: 80 }} viewport={{ once: true }} transition={{ delay: 0.3, duration: 0.6 }} />
+          <motion.div className="w-20 h-1 bg-gradient-to-r from-brand-orange to-brand-gold mx-auto rounded-full" {...revealBar} />
           <p className="text-muted-foreground mt-3 max-w-xl mx-auto text-sm">
             Real-time market data across equities, derivatives, mutual funds & commodities
           </p>
         </motion.div>
 
         {/* Stats strip */}
-        <motion.div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3 mb-12" initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
+        <motion.div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3 mb-12" {...revealSection}>
           {marketStats.map((stat, i) => (
             <motion.div key={stat.label} className={`bg-card border border-border/50 rounded-xl p-3 text-center group cursor-pointer ${i >= 4 ? 'hidden sm:block' : ''}`} whileHover={{ scale: 1.05, y: -4 }} transition={{ type: "spring", stiffness: 300 }}>
               <div className={`w-9 h-9 mx-auto mb-1.5 rounded-xl flex items-center justify-center ${stat.bgColor}`}>
@@ -400,7 +401,7 @@ const MarketOverview = () => {
               const Icon = tab.icon;
               return (
                 <button key={tab.key} onClick={() => setActiveTab(tab.key)}
-                  className={`flex items-center gap-1.5 px-2.5 sm:px-3.5 py-2 min-h-[44px] min-w-[44px] shrink-0 justify-center rounded-lg text-[11px] sm:text-xs font-semibold transition-colors duration-200 whitespace-nowrap ${
+                  className={`flex items-center gap-1.5 px-2.5 sm:px-3.5 py-2 min-h-[44px] min-w-[44px] shrink-0 justify-center rounded-lg text-[11px] sm:text-xs font-semibold transition-colors duration-fast whitespace-nowrap ${
                     activeTab === tab.key
                       ? tab.key === "losers" ? "bg-destructive/10 text-destructive shadow-sm" : "bg-secondary/10 text-secondary shadow-sm"
                       : "text-muted-foreground hover:text-foreground hover:bg-muted"
@@ -462,7 +463,7 @@ const MarketOverview = () => {
         </Card>
 
         {/* Market Breadth Bar */}
-        <motion.div className="mt-8 bg-card border border-border/50 rounded-xl p-5" initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
+        <motion.div className="mt-8 bg-card border border-border/50 rounded-xl p-5" {...revealSection}>
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-bold text-foreground">Market Breadth</h3>
             <span className="text-[10px] text-muted-foreground">NSE</span>

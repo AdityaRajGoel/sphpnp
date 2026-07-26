@@ -2,7 +2,7 @@ import { motion, Variants, useScroll, useTransform } from "motion/react";
 import { Star, Quote, ChevronLeft, ChevronRight } from "lucide-react";
 import { useRef, useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { EASE_OUT } from "@/lib/motion";
+import { EASE_OUT, revealFade, revealPop, revealSection } from "@/lib/motion";
 
 const testimonials = [
   {
@@ -120,16 +120,11 @@ const Testimonials = () => {
       <div className="container mx-auto px-4 relative z-10">
         <motion.div
           className="text-center mb-16"
-          initial={{ opacity: 0, y: 24 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
+          {...revealSection}
         >
           <motion.span
             className="inline-block text-secondary font-semibold text-sm uppercase tracking-wider mb-4"
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            viewport={{ once: true }}
+            {...revealFade}
           >
             Client Stories
           </motion.span>
@@ -144,9 +139,7 @@ const Testimonials = () => {
         {/* Featured testimonial */}
         <motion.div
           className="max-w-3xl mx-auto mb-16"
-          initial={{ opacity: 0, y: 24 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
+          {...revealSection}
         >
           <motion.div
             key={activeIndex}
@@ -202,7 +195,7 @@ const Testimonials = () => {
                   aria-label={`Show testimonial ${i + 1} of ${testimonials.length}`}
                   aria-current={i === activeIndex}
                   onClick={() => setActiveIndex(i)}
-                  className={`tap-area rounded-full transition-colors duration-300 ${i === activeIndex ? "w-8 h-2 bg-secondary" : "w-2 h-2 bg-muted-foreground/30 hover:bg-muted-foreground/50"}`}
+                  className={`tap-area rounded-full transition-colors duration-base ${i === activeIndex ? "w-8 h-2 bg-secondary" : "w-2 h-2 bg-muted-foreground/30 hover:bg-muted-foreground/50"}`}
                   whileHover={{ scale: 1.2 }}
                 />
               ))}
@@ -228,13 +221,13 @@ const Testimonials = () => {
           {visibleTestimonials.map((testimonial, index) => (
             <motion.div
               key={testimonial.name}
-              className="group relative bg-card rounded-2xl p-6 shadow-lg hover:shadow-2xl transition-shadow duration-500 border border-border/50"
+              className="group relative bg-card rounded-2xl p-6 shadow-lg hover:shadow-2xl transition-shadow duration-slow border border-border/50"
               variants={cardVariants}
               whileHover={{ y: -10, scale: 1.02 }}
             >
               {/* Quote icon */}
               <motion.div
-                className="absolute -top-3 -right-3 w-10 h-10 bg-gradient-to-br from-secondary to-brand-green rounded-full flex items-center justify-center shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                className="absolute -top-3 -right-3 w-10 h-10 bg-gradient-to-br from-secondary to-brand-green rounded-full flex items-center justify-center shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-base"
                 initial={{ rotate: 0 }}
                 whileHover={{ rotate: 180 }}
               >
@@ -246,10 +239,7 @@ const Testimonials = () => {
                 {[...Array(testimonial.rating)].map((_, i) => (
                   <motion.div
                     key={i}
-                    initial={{ opacity: 0, scale: 0 }}
-                    whileInView={{ opacity: 1, scale: 1 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: 0.1 * i }}
+                    {...revealPop()}
                   >
                     <Star className="w-4 h-4 fill-brand-gold text-brand-gold" />
                   </motion.div>
@@ -276,7 +266,7 @@ const Testimonials = () => {
               </div>
 
               {/* Hover gradient effect */}
-              <motion.div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-secondary/5 to-brand-gold/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+              <motion.div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-secondary/5 to-brand-gold/5 opacity-0 group-hover:opacity-100 transition-opacity duration-slow pointer-events-none" />
             </motion.div>
           ))}
         </motion.div>
@@ -284,9 +274,7 @@ const Testimonials = () => {
         {/* CTA */}
         <motion.div
           className="text-center mt-16"
-          initial={{ opacity: 0, y: 24 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
+          {...revealSection}
           transition={{ delay: 0.5 }}
         >
           <p className="text-muted-foreground mb-4">Ready to start your investment journey?</p>

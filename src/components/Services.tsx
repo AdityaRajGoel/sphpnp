@@ -4,7 +4,7 @@ import { motion, Variants, useScroll, useTransform } from "motion/react";
 import { useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { useT } from "@/i18n/LanguageContext";
-import { EASE_OUT } from "@/lib/motion";
+import { EASE_OUT, revealBar, revealFade, revealSection, revealTracking } from "@/lib/motion";
 
 // Every service links to the page that actually explains it - the cards show a
 // "go" arrow, so they must be real links.
@@ -151,17 +151,11 @@ const Services = () => {
       <div className="container mx-auto px-4 relative z-10">
         <motion.div
           className="text-center mb-16"
-          initial={{ opacity: 0, y: 24 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
+          {...revealSection}
         >
           <motion.span
             className="inline-block text-secondary font-semibold text-sm uppercase tracking-wider mb-4"
-            initial={{ opacity: 0, letterSpacing: "0em" }}
-            whileInView={{ opacity: 1, letterSpacing: "0.15em" }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.2, duration: 0.8 }}
+            {...revealTracking}
           >
             {t("services.eyebrow")}
           </motion.span>
@@ -170,10 +164,7 @@ const Services = () => {
           </h1>
           <motion.div
             className="w-20 h-1 bg-gradient-to-r from-secondary to-brand-gold mx-auto rounded-full mb-4"
-            initial={{ width: 0 }}
-            whileInView={{ width: 80 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.4, duration: 0.6 }}
+            {...revealBar}
           />
           <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
             Your one-stop financial supermarket - equity, F&O, commodities,
@@ -204,28 +195,28 @@ const Services = () => {
                 aria-label={`${service.title} - learn more`}
                 className="block h-full rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-2"
               >
-              <Card className="group bg-card hover:shadow-2xl transition-[box-shadow,color,background-color,border-color] duration-300 border-border/50 hover:border-secondary/50 overflow-hidden h-full relative">
+              <Card className="group bg-card hover:shadow-2xl transition-[box-shadow,color,background-color,border-color] duration-base border-border/50 hover:border-secondary/50 overflow-hidden h-full relative">
                 {/* Gradient overlay on hover */}
-                <motion.div className="absolute inset-0 bg-gradient-to-br from-secondary/5 to-brand-gold/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <motion.div className="absolute inset-0 bg-gradient-to-br from-secondary/5 to-brand-gold/5 opacity-0 group-hover:opacity-100 transition-opacity duration-slow" />
 
                 <CardContent className="p-6 relative z-10">
                   <div className="flex items-start justify-between mb-4">
                     <motion.div
-                      className="w-14 h-14 bg-primary/10 rounded-xl flex items-center justify-center group-hover:bg-secondary/20 transition-colors duration-300"
+                      className="w-14 h-14 bg-primary/10 rounded-xl flex items-center justify-center group-hover:bg-secondary/20 transition-colors duration-base"
                       animate={hoveredIndex === index ? { rotate: [0, -10, 10, 0] } : {}}
                       transition={{ duration: 0.5 }}
                     >
-                      <service.icon className="w-7 h-7 text-primary group-hover:text-secondary transition-colors duration-300" />
+                      <service.icon className="w-7 h-7 text-primary group-hover:text-secondary transition-colors duration-base" />
                     </motion.div>
                     <motion.div
-                      className="opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                      className="opacity-0 group-hover:opacity-100 transition-opacity duration-base"
                       animate={hoveredIndex === index ? { x: [0, 4, 0] } : {}}
                       transition={{ duration: 1, repeat: Infinity }}
                     >
                       <ArrowUpRight className="w-5 h-5 text-secondary" />
                     </motion.div>
                   </div>
-                  <h3 className="font-heading text-xl font-semibold text-foreground mb-2 group-hover:text-secondary transition-colors duration-300">
+                  <h3 className="font-heading text-xl font-semibold text-foreground mb-2 group-hover:text-secondary transition-colors duration-base">
                     {service.title}
                   </h3>
                   <p className="text-muted-foreground mb-4">
@@ -234,9 +225,7 @@ const Services = () => {
                   {/* Stat badge */}
                   <motion.div
                     className="inline-flex items-center gap-2 bg-muted rounded-lg px-3 py-1.5"
-                    initial={{ opacity: 0 }}
-                    whileInView={{ opacity: 1 }}
-                    viewport={{ once: true }}
+                    {...revealFade}
                     transition={{ delay: 0.3 + index * 0.05 }}
                   >
                     <span className="text-secondary font-bold text-sm">{service.stat}</span>
@@ -259,9 +248,7 @@ const Services = () => {
 
         <motion.div
           className="text-center mt-12"
-          initial={{ opacity: 0, y: 24 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
+          {...revealSection}
           transition={{ delay: 0.5 }}
         >
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">

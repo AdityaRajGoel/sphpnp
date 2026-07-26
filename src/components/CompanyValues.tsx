@@ -1,5 +1,6 @@
 import { motion } from "motion/react";
 import { Heart, Shield, Target, Lightbulb, Handshake, Scale } from "lucide-react";
+import { revealBar, revealSection } from "@/lib/motion";
 
 const values = [
   { icon: Shield, title: "Trust & Integrity", desc: "Transparent dealings with every client. No hidden charges, no misleading advice.", color: "bg-primary/10 text-primary" },
@@ -22,9 +23,7 @@ const CompanyValues = () => {
       <div className="container mx-auto px-4 relative z-10">
         <motion.div
           className="text-center mb-12"
-          initial={{ opacity: 0, y: 24 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
+          {...revealSection}
         >
           <span className="inline-block text-brand-gold font-semibold text-sm uppercase tracking-wider mb-3">What We Stand For</span>
           <h2 className="font-heading text-3xl md:text-4xl font-bold text-foreground mb-4">
@@ -32,10 +31,7 @@ const CompanyValues = () => {
           </h2>
           <motion.div
             className="w-20 h-1 bg-gradient-to-r from-brand-gold to-secondary mx-auto rounded-full"
-            initial={{ width: 0 }}
-            whileInView={{ width: 80 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.3, duration: 0.6 }}
+            {...revealBar}
           />
         </motion.div>
 
@@ -44,9 +40,7 @@ const CompanyValues = () => {
             <motion.div
               key={v.title}
               className="bg-card border border-border/50 rounded-xl p-6 hover:shadow-xl hover:border-secondary/30 transition-[box-shadow,color,background-color,border-color] group"
-              initial={{ opacity: 0, y: 24 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
+              {...revealSection}
               transition={{ delay: i * 0.08 }}
               whileHover={{ y: -6 }}
             >

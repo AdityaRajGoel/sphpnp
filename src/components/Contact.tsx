@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { motion, useScroll, useTransform } from "motion/react";
 import { useRef } from "react";
 import brandImage from "@/assets/parasram-brand.jpeg";
-import { EASE_OUT } from "@/lib/motion";
+import { EASE_OUT, revealFade, revealItem, revealItemX, revealPop, revealSection } from "@/lib/motion";
 
 const contactItems = [
   {
@@ -88,16 +88,11 @@ const Contact = () => {
       <div className="container mx-auto px-4 relative z-10">
         <motion.div
           className="text-center mb-12"
-          initial={{ opacity: 0, y: 24 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
+          {...revealSection}
         >
           <motion.span
             className="inline-block text-secondary font-semibold text-sm uppercase tracking-wider mb-3"
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            viewport={{ once: true }}
+            {...revealFade}
             transition={{ delay: 0.2 }}
           >
             Get In Touch
@@ -113,9 +108,7 @@ const Contact = () => {
         {/* Brand Banner */}
         <motion.div
           className="mb-12 flex justify-center"
-          initial={{ opacity: 0, y: 24 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
+          {...revealSection}
           transition={{ duration: 0.7, ease: EASE_OUT }}
         >
           <motion.div
@@ -140,24 +133,21 @@ const Contact = () => {
             {contactItems.map((item, index) => (
               <motion.div
                 key={item.title}
-                initial={{ opacity: 0, x: -40 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: index * 0.1, duration: 0.5, ease: EASE_OUT }}
+                {...revealItemX("left")}
                 whileHover={{ x: 6 }}
               >
-                <Card className="bg-card border-border/50 hover:shadow-xl hover:border-secondary/40 transition-[box-shadow,color,background-color,border-color] duration-300 group">
+                <Card className="bg-card border-border/50 hover:shadow-xl hover:border-secondary/40 transition-[box-shadow,color,background-color,border-color] duration-base group">
                   <CardContent className="p-5">
                     <div className="flex gap-4 items-start">
                       <motion.div
-                        className="w-11 h-11 bg-primary/10 group-hover:bg-secondary/20 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors duration-300"
+                        className="w-11 h-11 bg-primary/10 group-hover:bg-secondary/20 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors duration-base"
                         whileHover={{ rotate: [0, -12, 12, 0] }}
                         transition={{ duration: 0.5 }}
                       >
-                        <item.icon className="w-5 h-5 text-primary group-hover:text-secondary transition-colors duration-300" />
+                        <item.icon className="w-5 h-5 text-primary group-hover:text-secondary transition-colors duration-base" />
                       </motion.div>
                       <div>
-                        <h3 className="font-heading font-semibold text-foreground mb-1 group-hover:text-secondary transition-colors duration-300">
+                        <h3 className="font-heading font-semibold text-foreground mb-1 group-hover:text-secondary transition-colors duration-base">
                           {item.title}
                         </h3>
                         <p className="text-muted-foreground text-sm leading-relaxed">{item.content}</p>
@@ -180,10 +170,7 @@ const Contact = () => {
           <motion.div className="space-y-6" style={{ y: mapY }}>
             <motion.div
               className="rounded-2xl overflow-hidden border border-border/50 shadow-lg"
-              initial={{ opacity: 0, scale: 0.95 }}
-              whileInView={{ opacity: 1, scale: 1 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6 }}
+              {...revealPop()}
               whileHover={{ scale: 1.01, boxShadow: "0 20px 40px -10px hsl(145 70% 40% / 0.2)" }}
             >
               <iframe
@@ -199,7 +186,7 @@ const Contact = () => {
               />
               <div className="bg-card p-4 flex items-center justify-between">
                 <p className="text-sm text-muted-foreground">Shakuntala Complex, Palika Bazaar, Panipat</p>
-                <Button asChild variant="outline" size="sm" className="border-primary text-primary hover:bg-primary hover:text-primary-foreground transition-colors duration-300">
+                <Button asChild variant="outline" size="sm" className="border-primary text-primary hover:bg-primary hover:text-primary-foreground transition-colors duration-base">
                   <a href="https://maps.app.goo.gl/g9hDv9cKfdz28Hhx6" target="_blank" rel="noopener noreferrer">
                     Open in Maps
                     <ExternalLink className="ml-2 w-4 h-4" />
@@ -209,9 +196,7 @@ const Contact = () => {
             </motion.div>
 
             <motion.div
-              initial={{ opacity: 0, y: 24 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
+              {...revealSection}
               transition={{ delay: 0.2, duration: 0.6 }}
               whileHover={{ scale: 1.02 }}
             >
@@ -229,9 +214,7 @@ const Contact = () => {
                 <CardContent className="p-8 text-center relative z-10">
                   <motion.h3
                     className="font-heading text-2xl font-bold mb-3"
-                    initial={{ opacity: 0, y: 16 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
+                    {...revealItem()}
                     transition={{ delay: 0.3 }}
                   >
                     Ready to Start Investing?
@@ -243,7 +226,7 @@ const Contact = () => {
                     <Button
                       asChild
                       size="lg"
-                      className="bg-secondary hover:bg-secondary/90 text-secondary-foreground font-semibold w-full transition-colors duration-300 group"
+                      className="bg-secondary hover:bg-secondary/90 text-secondary-foreground font-semibold w-full transition-colors duration-base group"
                     >
                       <a href="https://parasramindia.com" target="_blank" rel="noopener noreferrer">
                         Open Account Now

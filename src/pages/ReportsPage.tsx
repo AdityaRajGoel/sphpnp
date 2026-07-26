@@ -14,6 +14,7 @@ import {
 import { useBhavcopy } from "@/hooks/useBhavcopy";
 import { downloadCsv } from "@/lib/exportData";
 
+import { revealSection } from "@/lib/motion";
 type LinkItem = {
   label: string;
   desc: string;
@@ -199,9 +200,7 @@ const ReportsPage = () => {
             <motion.section
               key={section.title}
               className="mb-12 last:mb-0"
-              initial={{ opacity: 0, y: 24 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-60px" }}
+              {...revealSection}
               transition={{ duration: 0.5, delay: si * 0.05 }}
             >
               <div className="flex items-center gap-3 mb-1.5">

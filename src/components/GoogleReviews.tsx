@@ -2,7 +2,7 @@ import { Star, ExternalLink, MessageSquare } from "lucide-react";
 import { motion, Variants, useScroll, useTransform } from "motion/react";
 import { Button } from "@/components/ui/button";
 import { useRef } from "react";
-import { EASE_OUT } from "@/lib/motion";
+import { EASE_OUT, revealBar, revealFade, revealPop, revealSection, revealSpin } from "@/lib/motion";
 
 const googleReviews = [
   {
@@ -99,16 +99,11 @@ const GoogleReviews = () => {
         {/* Header */}
         <motion.div
           className="text-center mb-14"
-          initial={{ opacity: 0, y: 24 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
+          {...revealSection}
         >
           <motion.span
             className="inline-block text-secondary font-semibold text-sm uppercase tracking-wider mb-4"
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            viewport={{ once: true }}
+            {...revealFade}
           >
             Google Reviews
           </motion.span>
@@ -117,19 +112,13 @@ const GoogleReviews = () => {
           </h2>
           <motion.div
             className="w-20 h-1 bg-gradient-to-r from-brand-gold to-secondary mx-auto rounded-full mb-6"
-            initial={{ width: 0 }}
-            whileInView={{ width: 80 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.3, duration: 0.6 }}
+            {...revealBar}
           />
 
           {/* Rating summary */}
           <motion.div
             className="inline-flex items-center gap-4 bg-card border border-border rounded-2xl px-8 py-4 shadow-lg"
-            initial={{ opacity: 0, scale: 0.9 }}
-            whileInView={{ opacity: 1, scale: 1 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.2 }}
+            {...revealPop()}
             whileHover={{ scale: 1.03, boxShadow: "0 20px 40px -10px hsl(45 90% 50% / 0.15)" }}
           >
             <motion.div
@@ -144,10 +133,7 @@ const GoogleReviews = () => {
                 {[...Array(5)].map((_, i) => (
                   <motion.div
                     key={i}
-                    initial={{ opacity: 0, scale: 0, rotate: -180 }}
-                    whileInView={{ opacity: 1, scale: 1, rotate: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: 0.3 + i * 0.1 }}
+                    {...revealSpin()}
                   >
                     <Star className="w-5 h-5 fill-brand-gold text-brand-gold" />
                   </motion.div>
@@ -177,17 +163,14 @@ const GoogleReviews = () => {
           {googleReviews.map((review, index) => (
             <motion.div
               key={review.name}
-              className="group bg-card rounded-2xl p-6 shadow-md hover:shadow-xl transition-shadow duration-500 border border-border/50 relative"
+              className="group bg-card rounded-2xl p-6 shadow-md hover:shadow-xl transition-shadow duration-slow border border-border/50 relative"
               variants={cardVariants}
               whileHover={{ y: -8, scale: 1.02 }}
             >
               {/* Google icon badge */}
               <motion.div
                 className="absolute -top-2 -right-2 w-8 h-8 bg-card rounded-full border border-border shadow-md flex items-center justify-center"
-                initial={{ scale: 0, rotate: -180 }}
-                whileInView={{ scale: 1, rotate: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: 0.3 + index * 0.1, type: "spring" }}
+                {...revealSpin()}
               >
                 <svg viewBox="0 0 24 24" className="w-4 h-4">
                   <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/>
@@ -216,10 +199,7 @@ const GoogleReviews = () => {
                 {[...Array(review.rating)].map((_, i) => (
                   <motion.div
                     key={i}
-                    initial={{ opacity: 0, scale: 0, rotate: -180 }}
-                    whileInView={{ opacity: 1, scale: 1, rotate: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: 0.05 * i + index * 0.05 }}
+                    {...revealSpin()}
                   >
                     <Star className="w-4 h-4 fill-brand-gold text-brand-gold" />
                   </motion.div>
@@ -232,7 +212,7 @@ const GoogleReviews = () => {
               </p>
 
               {/* Hover gradient */}
-              <motion.div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-brand-gold/5 to-secondary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+              <motion.div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-brand-gold/5 to-secondary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-slow pointer-events-none" />
             </motion.div>
           ))}
         </motion.div>
@@ -240,9 +220,7 @@ const GoogleReviews = () => {
         {/* CTA */}
         <motion.div
           className="text-center flex flex-col sm:flex-row items-center justify-center gap-4"
-          initial={{ opacity: 0, y: 24 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
+          {...revealSection}
           transition={{ delay: 0.4 }}
         >
           <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.97 }}>

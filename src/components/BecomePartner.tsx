@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
+import { revealItem, revealItemX, revealTracking } from "@/lib/motion";
 const PHONE_REGEX = /^(\+?91)?[6-9]\d{9}$/;
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -89,17 +90,11 @@ const BecomePartner = () => {
         <div className="grid lg:grid-cols-2 gap-10 items-center">
           {/* Left - Content */}
           <motion.div
-            initial={{ opacity: 0, x: -30 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
+            {...revealItemX("left")}
           >
             <motion.span
               className="inline-block text-secondary font-semibold text-sm uppercase tracking-wider mb-3"
-              initial={{ opacity: 0, letterSpacing: "0em" }}
-              whileInView={{ opacity: 1, letterSpacing: "0.15em" }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.2, duration: 0.8 }}
+              {...revealTracking}
             >
               Partner With Us
             </motion.span>
@@ -118,9 +113,7 @@ const BecomePartner = () => {
                 <motion.div
                   key={b.text}
                   className="flex items-start gap-3"
-                  initial={{ opacity: 0, y: 16 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
+                  {...revealItem()}
                   transition={{ delay: 0.3 + i * 0.1 }}
                 >
                   <div className="w-9 h-9 bg-secondary/20 rounded-lg flex items-center justify-center flex-shrink-0">
@@ -134,10 +127,7 @@ const BecomePartner = () => {
 
           {/* Right - Form */}
           <motion.div
-            initial={{ opacity: 0, x: 30 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6, delay: 0.2 }}
+            {...revealItemX("right")}
           >
             {submitted ? (
               <motion.div

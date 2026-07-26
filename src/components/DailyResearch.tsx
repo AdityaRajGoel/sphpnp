@@ -1,6 +1,7 @@
 import { motion } from "motion/react";
 import { FileText, Download, TrendingUp, Newspaper, ArrowUpRight, BarChart2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { revealBar, revealSection, revealTracking } from "@/lib/motion";
 
 const researchCards = [
   {
@@ -54,17 +55,11 @@ const DailyResearch = () => {
       <div className="container mx-auto px-4 relative z-10">
         <motion.div
           className="text-center mb-12"
-          initial={{ opacity: 0, y: 24 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.5 }}
+          {...revealSection}
         >
           <motion.span
             className="inline-block text-secondary font-semibold text-sm uppercase tracking-wider mb-3"
-            initial={{ opacity: 0, letterSpacing: "0em" }}
-            whileInView={{ opacity: 1, letterSpacing: "0.15em" }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.2, duration: 0.8 }}
+            {...revealTracking}
           >
             Research & Reports
           </motion.span>
@@ -73,10 +68,7 @@ const DailyResearch = () => {
           </h2>
           <motion.div
             className="w-20 h-1 bg-gradient-to-r from-secondary to-brand-gold mx-auto rounded-full mb-4"
-            initial={{ width: 0 }}
-            whileInView={{ width: 80 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.3, duration: 0.6 }}
+            {...revealBar}
           />
           <p className="text-muted-foreground max-w-xl mx-auto">
             Access expert research reports, daily market insights, and trading ideas from our experienced analysts.
@@ -90,10 +82,8 @@ const DailyResearch = () => {
               href={card.href}
               target="_blank"
               rel="noopener noreferrer"
-              className="group relative overflow-hidden rounded-2xl bg-card border border-border/50 hover:border-transparent transition-[color,background-color,border-color,box-shadow] duration-300 hover:shadow-2xl block"
-              initial={{ opacity: 0, y: 24 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
+              className="group relative overflow-hidden rounded-2xl bg-card border border-border/50 hover:border-transparent transition-[color,background-color,border-color,box-shadow] duration-base hover:shadow-2xl block"
+              {...revealSection}
               transition={{ delay: i * 0.1, duration: 0.5 }}
               whileHover={{ y: -8 }}
             >
@@ -101,15 +91,15 @@ const DailyResearch = () => {
               <div className={`h-1.5 bg-gradient-to-r ${card.color}`} />
 
               {/* Gradient background on hover */}
-              <div className={`absolute inset-0 bg-gradient-to-br ${card.color} opacity-0 group-hover:opacity-5 transition-opacity duration-500`} />
+              <div className={`absolute inset-0 bg-gradient-to-br ${card.color} opacity-0 group-hover:opacity-5 transition-opacity duration-slow`} />
 
               <div className="p-6 relative z-10">
                 <div className="flex items-start justify-between mb-4">
-                  <div className={`w-14 h-14 rounded-xl ${card.bgAccent} flex items-center justify-center group-hover:scale-110 transition-transform duration-300`}>
+                  <div className={`w-14 h-14 rounded-xl ${card.bgAccent} flex items-center justify-center group-hover:scale-110 transition-transform duration-base`}>
                     <card.icon className={`w-7 h-7 ${card.textColor}`} />
                   </div>
                   <motion.div
-                    className="opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                    className="opacity-0 group-hover:opacity-100 transition-opacity duration-base"
                     animate={{ x: [0, 3, 0] }}
                     transition={{ duration: 1.5, repeat: Infinity }}
                   >

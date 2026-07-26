@@ -21,6 +21,7 @@ import ScrollProgress from "@/components/ScrollProgress";
 import WhatsAppButton from "@/components/WhatsAppButton";
 import { RippleButton } from "@/components/ui/ripple-button";
 
+import { revealItem, revealItemX } from "@/lib/motion";
 const benefits = [
   { icon: Shield, title: "SEBI Registered", desc: "Trade with a trusted, regulation-compliant broker" },
   { icon: TrendingUp, title: "Multi-Exchange Access", desc: "NSE, BSE, MCX - all platforms under one roof" },
@@ -236,7 +237,7 @@ const OpenAccountPage = () => {
         <div className="container mx-auto px-4">
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {benefits.map((b, i) => (
-              <motion.div key={b.title} className="flex items-start gap-3 bg-card border border-border/50 rounded-xl p-4" initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.08 }}>
+              <motion.div key={b.title} className="flex items-start gap-3 bg-card border border-border/50 rounded-xl p-4" {...revealItem(i)}>
                 <div className="w-10 h-10 rounded-lg bg-brand-orange/10 flex items-center justify-center shrink-0"><b.icon className="w-5 h-5 text-brand-orange" /></div>
                 <div><h3 className="text-sm font-bold text-foreground">{b.title}</h3><p className="text-xs text-muted-foreground mt-0.5">{b.desc}</p></div>
               </motion.div>
@@ -248,7 +249,7 @@ const OpenAccountPage = () => {
       <section className="py-8 md:py-16">
         <div className="container mx-auto px-4">
           <div className="grid lg:grid-cols-5 gap-10">
-            <motion.div className="lg:col-span-3" initial={{ opacity: 0, x: -30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }}>
+            <motion.div className="lg:col-span-3" {...revealItemX("left")}>
               <h2 className="font-heading text-2xl md:text-3xl font-bold text-foreground mb-2">Fill Your Details</h2>
               <p className="text-sm text-muted-foreground mb-8">Our team will get in touch with you to complete the account opening process.</p>
 
@@ -300,7 +301,7 @@ const OpenAccountPage = () => {
               </form>
             </motion.div>
 
-            <motion.div className="lg:col-span-2" initial={{ opacity: 0, x: 30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }}>
+            <motion.div className="lg:col-span-2" {...revealItemX("right")}>
               <div className="bg-gradient-to-br from-brand-charcoal to-brand-navy rounded-2xl p-6 text-primary-foreground sticky top-24">
                 <h3 className="font-heading text-xl font-bold mb-6">Visit Our Branch</h3>
                 <div className="space-y-5">

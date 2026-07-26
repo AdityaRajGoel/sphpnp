@@ -657,7 +657,7 @@ export const AIAnalysisModal = ({ isOpen, onClose, stock }: AIAnalysisModalProps
                         animate={{ opacity: done || active ? 1 : 0.45, x: 0 }}
                         transition={{ delay: idx * 0.07 }}
                       >
-                        <div className={`relative w-8 h-8 rounded-lg flex items-center justify-center shrink-0 border transition-colors duration-300 ${
+                        <div className={`relative w-8 h-8 rounded-lg flex items-center justify-center shrink-0 border transition-colors duration-base ${
                           done ? "bg-secondary/10 border-secondary/30"
                           : active ? "bg-brand-orange/10 border-brand-orange/40"
                           : "bg-muted/40 border-border/50"
@@ -667,7 +667,7 @@ export const AIAnalysisModal = ({ isOpen, onClose, stock }: AIAnalysisModalProps
                             : <StepIcon className={`w-4 h-4 ${active ? "text-brand-orange" : "text-muted-foreground/60"}`} />}
                           {active && <span className="absolute inset-0 rounded-lg border border-brand-orange/50 animate-ping" />}
                         </div>
-                        <span className={`text-sm transition-colors duration-300 ${
+                        <span className={`text-sm transition-colors duration-base ${
                           active ? "text-foreground font-semibold"
                           : done ? "text-foreground/70"
                           : "text-muted-foreground/50"

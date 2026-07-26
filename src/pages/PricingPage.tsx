@@ -9,6 +9,7 @@ import { motion } from "motion/react";
 import { Link } from "react-router-dom";
 import { IndianRupee, BadgeCheck, Calculator, ArrowRight, Phone, Info, Percent, Scale, PhoneCall, FileText } from "lucide-react";
 
+import { revealItem, revealSection } from "@/lib/motion";
 // Published tariff for Shri Parasram Holdings (as listed on broker-data
 // aggregators sourced from the firm's tariff sheet). Keep in sync with the
 // branch's current schedule - update here when rates change.
@@ -90,10 +91,7 @@ const faqs = [
 const ChargesTable = ({ title, rows, cols }: { title: string; rows: { [k: string]: string | boolean | undefined }[]; cols: [string, string] }) => (
   <motion.div
     className="bg-card border border-border/50 rounded-2xl overflow-hidden"
-    initial={{ opacity: 0, y: 24 }}
-    whileInView={{ opacity: 1, y: 0 }}
-    viewport={{ once: true, margin: "-40px" }}
-    transition={{ duration: 0.5 }}
+    {...revealSection}
   >
     <h2 className="font-heading text-lg font-bold text-foreground px-5 py-4 bg-muted/40 border-b border-border/50">
       {title}
@@ -171,9 +169,7 @@ const PricingPage = () => {
           <section className="mt-12">
             <motion.div
               className="text-center mb-8"
-              initial={{ opacity: 0, y: 24 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
+              {...revealSection}
             >
               <h2 className="font-heading text-2xl md:text-3xl font-bold text-foreground mb-2">
                 What Sets Us <span className="text-secondary">Apart</span>
@@ -210,9 +206,7 @@ const PricingPage = () => {
 
             <motion.div
               className="mt-5 border-beam bg-gradient-to-br from-secondary/5 to-brand-gold/5 border border-secondary/20 rounded-2xl px-6 py-5 text-center"
-              initial={{ opacity: 0, y: 16 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
+              {...revealItem()}
             >
               <p className="text-sm text-muted-foreground mb-3">
                 …and the dozens of small tasks a real branch quietly handles for you -
@@ -230,9 +224,7 @@ const PricingPage = () => {
           {/* Calculator cross-links */}
           <motion.div
             className="mt-10 grid sm:grid-cols-2 gap-4"
-            initial={{ opacity: 0, y: 24 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
+            {...revealSection}
           >
             <Link to="/brokerage-calculator" className="group flex items-center gap-3 bg-card border border-border/50 rounded-xl p-4 hover:border-secondary/40 hover:shadow-lg transition-[color,background-color,border-color,box-shadow]">
               <div className="w-10 h-10 rounded-lg bg-secondary/10 flex items-center justify-center">
@@ -264,9 +256,7 @@ const PricingPage = () => {
                 <motion.details
                   key={f.q}
                   className="group bg-card border border-border/50 rounded-xl px-5 py-4 open:border-secondary/40 transition-colors"
-                  initial={{ opacity: 0, y: 16 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
+                  {...revealItem()}
                   transition={{ delay: i * 0.06 }}
                 >
                   <summary className="font-semibold text-sm text-foreground cursor-pointer list-none flex items-center justify-between min-h-[44px] md:min-h-0">
@@ -293,9 +283,7 @@ const PricingPage = () => {
           {/* CTA */}
           <motion.div
             className="mt-12 bg-gradient-to-br from-brand-navy to-primary text-white rounded-2xl p-6 md:p-8 text-center"
-            initial={{ opacity: 0, y: 24 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
+            {...revealSection}
           >
             <h2 className="font-heading text-xl md:text-2xl font-bold mb-2">Ready to invest at these rates?</h2>
             <p className="text-white/80 text-sm mb-5 max-w-md mx-auto">

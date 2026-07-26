@@ -8,6 +8,7 @@ import { Vault, Share2, FileDigit, Link as LinkIcon, ShieldAlert } from "lucide-
 import WhatsAppButton from "@/components/WhatsAppButton";
 import ScrollProgress from "@/components/ScrollProgress";
 
+import { revealSection } from "@/lib/motion";
 const features = [
   { icon: Vault, title: "Secure Account Maintenance", desc: "Safe keeping of your securities in electronic form fully backed by CDSL/NSDL." },
   { icon: Share2, title: "Seamless Transfers", desc: "Instantly transfer shares seamlessly without the hassles of physical share certificates." },
@@ -123,9 +124,7 @@ const DepositoryServicesPage = () => {
             
             <motion.div 
               className="mb-16 bg-card glass-card p-8 md:p-12 rounded-3xl border border-border overflow-hidden relative"
-              initial={{ opacity: 0, y: 24 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
+              {...revealSection}
             >
               {/* Decorative Circle */}
               <div className="absolute -top-32 -right-32 w-64 h-64 bg-brand-gold/10 rounded-full blur-3xl"></div>
@@ -147,10 +146,8 @@ const DepositoryServicesPage = () => {
               {features.map((feature, idx) => (
                 <motion.div 
                   key={feature.title}
-                  className="bg-muted/30 p-6 rounded-2xl border border-border/50 hover:bg-muted/60 hover:border-secondary/30 transition-[color,background-color,border-color,transform] ease-out duration-300 transform hover:-translate-y-1"
-                  initial={{ opacity: 0, y: 24 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
+                  className="bg-muted/30 p-6 rounded-2xl border border-border/50 hover:bg-muted/60 hover:border-secondary/30 transition-[color,background-color,border-color,transform] ease-out duration-base transform hover:-translate-y-1"
+                  {...revealSection}
                   transition={{ delay: idx * 0.1 }}
                 >
                   <div className="w-12 h-12 bg-secondary/10 rounded-xl flex items-center justify-center mb-4 text-secondary">

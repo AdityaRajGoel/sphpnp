@@ -1,7 +1,7 @@
 import { motion, AnimatePresence, useScroll, useMotionValueEvent, useReducedMotion } from "motion/react";
 import { useRef, useState } from "react";
 import type { LucideIcon } from "lucide-react";
-import { EASE_OUT } from "@/lib/motion";
+import { EASE_OUT, revealItemX } from "@/lib/motion";
 
 // Scrollytelling steps: on desktop a sticky visual panel morphs as the user
 // scrolls through the steps beside it; on mobile it degrades to stacked cards.
@@ -171,13 +171,10 @@ const ScrollySteps = ({ steps }: { steps: ScrollyStep[] }) => {
             <motion.div
               key={step.num}
               className="flex items-start gap-5 group"
-              initial={{ opacity: 0, x: 30 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true, margin: "-60px" }}
-              transition={{ duration: 0.5, delay: i * 0.08 }}
+              {...revealItemX("right")}
             >
               <motion.div
-                className="w-14 h-14 rounded-2xl bg-card border-2 flex items-center justify-center flex-shrink-0 shadow-md relative z-10 transition-colors duration-300"
+                className="w-14 h-14 rounded-2xl bg-card border-2 flex items-center justify-center flex-shrink-0 shadow-md relative z-10 transition-colors duration-base"
                 animate={
                   prefersReducedMotion
                     ? undefined
@@ -188,7 +185,7 @@ const ScrollySteps = ({ steps }: { steps: ScrollyStep[] }) => {
                 <step.icon className="w-6 h-6 text-secondary" />
               </motion.div>
               <motion.div
-                className="bg-card border border-border/50 rounded-xl p-5 flex-1 shadow-sm transition-shadow duration-300"
+                className="bg-card border border-border/50 rounded-xl p-5 flex-1 shadow-sm transition-shadow duration-base"
                 animate={prefersReducedMotion ? undefined : { opacity: active >= 0 && !isActive ? 0.55 : 1, y: isActive ? -2 : 0 }}
                 transition={{ duration: 0.3 }}
               >

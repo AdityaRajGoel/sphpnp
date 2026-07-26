@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { IndianRupee, ArrowRight, TrendingUp, TrendingDown, Info, Calculator, BarChart3, ExternalLink, ChevronDown, ChevronUp } from "lucide-react";
 import PageTransition from "@/components/PageTransition";
 
+import { revealFade } from "@/lib/motion";
 /* ─── Parasram Brokerage & Statutory Rates (as of April 2026) ─── */
 
 type SegmentConfig = {
@@ -288,7 +289,7 @@ const BrokerageCalculatorPage = () => {
             <button
               key={seg.key}
               onClick={() => setSegment(seg.key)}
-              className={`px-4 py-2 rounded-full text-sm font-medium transition-colors duration-200 ${
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-colors duration-fast ${
                 segment === seg.key
                   ? "bg-primary text-primary-foreground shadow-md scale-105"
                   : "bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground"
@@ -585,9 +586,7 @@ const BrokerageCalculatorPage = () => {
 
         {/* ─── Disclaimer ─── */}
         <motion.div
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          viewport={{ once: true }}
+          {...revealFade}
           transition={{ delay: 0.3 }}
         >
           <Card className="mt-10 p-5 bg-muted/20 border-muted/50">

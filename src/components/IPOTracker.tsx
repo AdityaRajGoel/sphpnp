@@ -9,6 +9,7 @@ import type { LucideIcon } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 
+import { revealBar, revealItem, revealSection } from "@/lib/motion";
 type IPO = {
   name: string;
   price: string;
@@ -34,9 +35,7 @@ const tabs: { key: TabKey; label: string; icon: LucideIcon }[] = [
 const IPOCard = ({ ipo, index }: { ipo: IPO; index: number }) => (
   <motion.div
     className="bg-card border border-border/50 rounded-xl p-4 hover:shadow-lg hover:border-brand-orange/30 transition-[box-shadow,color,background-color,border-color] cursor-pointer group"
-    initial={{ opacity: 0, y: 16 }}
-    whileInView={{ opacity: 1, y: 0 }}
-    viewport={{ once: true }}
+    {...revealItem()}
     transition={{ delay: index * 0.06 }}
     whileHover={{ y: -3 }}
   >
@@ -186,7 +185,7 @@ const IPOTracker = () => {
       </div>
 
       <div className="container mx-auto px-4 relative z-10">
-        <motion.div className="text-center mb-10" initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
+        <motion.div className="text-center mb-10" {...revealSection}>
           <motion.span className="inline-flex items-center gap-1.5 bg-brand-orange/10 text-brand-orange text-xs font-bold uppercase tracking-wider px-3 py-1.5 rounded-full mb-3">
             <Rocket className="w-3.5 h-3.5" />
             IPO Central
@@ -195,7 +194,7 @@ const IPOTracker = () => {
           <p className="text-muted-foreground text-sm max-w-lg mx-auto">
             Track upcoming, open, and recently listed IPOs with GMP updates
           </p>
-          <motion.div className="w-20 h-1 bg-gradient-to-r from-brand-orange to-brand-gold mx-auto rounded-full mt-3" initial={{ width: 0 }} whileInView={{ width: 80 }} viewport={{ once: true }} transition={{ delay: 0.3, duration: 0.6 }} />
+          <motion.div className="w-20 h-1 bg-gradient-to-r from-brand-orange to-brand-gold mx-auto rounded-full mt-3" {...revealBar} />
           {fetchedAt && (
             <div className="flex items-center justify-center gap-2 mt-3 text-[10px] text-muted-foreground">
               <span>Last updated: {new Date(fetchedAt).toLocaleString("en-IN", { hour: "2-digit", minute: "2-digit", day: "numeric", month: "short" })}</span>
@@ -287,7 +286,7 @@ const IPOTracker = () => {
         </motion.div>
 
         {/* CTA */}
-        <motion.div className="mt-8 text-center" initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
+        <motion.div className="mt-8 text-center" {...revealItem()}>
           <p className="text-sm text-muted-foreground mb-3">
             Want to apply for IPOs? Open your Demat account with Parasram India today.
           </p>

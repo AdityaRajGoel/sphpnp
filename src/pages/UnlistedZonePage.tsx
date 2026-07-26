@@ -11,6 +11,7 @@ import PageTransition from "@/components/PageTransition";
 import { motion } from "motion/react";
 import { Phone, Search, BadgeCheck, Vault, TrendingUp } from "lucide-react";
 import ScrollySteps, { ScrollyStep } from "@/components/ScrollySteps";
+import { revealBar, revealItemX, revealSection } from "@/lib/motion";
 
 const unlistedSteps: ScrollyStep[] = [
   { icon: Search, title: "Browse Verified Companies", desc: "Explore 50+ verified unlisted & pre-IPO companies - NSE, Tata Capital, SBI Mutual Fund and more, with indicative prices.", num: "01", accent: "pulse" },
@@ -91,9 +92,7 @@ const UnlistedSpacePage = () => {
         <div className="container mx-auto px-4">
           <motion.div
             className="text-center mb-14"
-            initial={{ opacity: 0, y: 24 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
+            {...revealSection}
           >
             <span className="inline-block text-secondary font-semibold text-sm uppercase tracking-wider mb-3">
               Simple & Secure
@@ -109,10 +108,7 @@ const UnlistedSpacePage = () => {
             </p>
             <motion.div
               className="w-20 h-1 bg-gradient-to-r from-secondary to-brand-gold mx-auto rounded-full"
-              initial={{ width: 0 }}
-              whileInView={{ width: 80 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.3, duration: 0.6 }}
+              {...revealBar}
             />
           </motion.div>
 
@@ -125,9 +121,7 @@ const UnlistedSpacePage = () => {
         <div className="container mx-auto px-4">
           <div className="grid lg:grid-cols-2 gap-8 max-w-5xl mx-auto items-start">
             <motion.div
-              initial={{ opacity: 0, x: -30 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
+              {...revealItemX("left")}
             >
               <h2 className="font-heading text-2xl md:text-3xl font-bold text-foreground mb-4">
                 Interested in <span className="text-secondary">Unlisted Shares?</span>

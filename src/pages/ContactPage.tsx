@@ -13,6 +13,7 @@ import { MessageCircle, MapPin, Phone, Mail, Clock, ExternalLink, Instagram, Fac
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
+import { revealItemX, revealSection } from "@/lib/motion";
 const contactFAQs = [
   { q: "What are your office timings?", a: "Our Panipat branch is open Monday to Friday from 9:00 AM to 6:00 PM, and Saturday from 9:00 AM to 2:00 PM. We are closed on Sundays and market holidays." },
   { q: "Can I visit without an appointment?", a: "Yes! Walk-ins are welcome during office hours. However, for detailed portfolio consultations, we recommend calling ahead to schedule an appointment so our advisors can dedicate proper time to you." },
@@ -104,7 +105,7 @@ const ContactPage = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.1 * i, duration: 0.5 }}
               >
-                <Card className="bg-card border-border/50 shadow-lg hover:shadow-xl hover:border-secondary/30 transition-[box-shadow,color,background-color,border-color] duration-300 group h-full">
+                <Card className="bg-card border-border/50 shadow-lg hover:shadow-xl hover:border-secondary/30 transition-[box-shadow,color,background-color,border-color] duration-base group h-full">
                   <CardContent className="p-4 md:p-5 text-center">
                     <div className="w-10 h-10 bg-secondary/10 group-hover:bg-secondary/20 rounded-xl flex items-center justify-center mx-auto mb-3 transition-colors">
                       <item.icon className="w-5 h-5 text-secondary" />
@@ -137,7 +138,7 @@ const ContactPage = () => {
             {/* Sidebar info */}
             <div className="lg:col-span-2 space-y-5">
               {/* Phone numbers */}
-              <motion.div initial={{ opacity: 0, x: 20 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }}>
+              <motion.div {...revealItemX("right")}>
                 <Card className="bg-card border-border/50">
                   <CardContent className="p-5">
                     <h3 className="font-heading font-semibold text-foreground mb-3 flex items-center gap-2">
@@ -155,7 +156,7 @@ const ContactPage = () => {
               </motion.div>
 
               {/* Social links */}
-              <motion.div initial={{ opacity: 0, x: 20 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ delay: 0.1 }}>
+              <motion.div {...revealItemX("right")}>
                 <Card className="bg-card border-border/50">
                   <CardContent className="p-5">
                     <h3 className="font-heading font-semibold text-foreground mb-3">Follow Us</h3>
@@ -172,7 +173,7 @@ const ContactPage = () => {
               </motion.div>
 
               {/* CTA card */}
-              <motion.div initial={{ opacity: 0, x: 20 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ delay: 0.2 }}>
+              <motion.div {...revealItemX("right")}>
                 <Card className="bg-hero text-primary-foreground overflow-hidden relative">
                   <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: "radial-gradient(circle, hsl(145 70% 40%) 1px, transparent 1px)", backgroundSize: "20px 20px" }} />
                   <CardContent className="p-6 relative z-10 text-center">
@@ -196,9 +197,7 @@ const ContactPage = () => {
         <div className="container mx-auto px-4">
           <motion.div
             className="rounded-2xl overflow-hidden border border-border/50 shadow-lg"
-            initial={{ opacity: 0, y: 24 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
+            {...revealSection}
           >
             <iframe
               src="https://maps.google.com/maps?q=29.394309972550538,76.96980579867602&t=m&z=17&output=embed&iwloc=near"

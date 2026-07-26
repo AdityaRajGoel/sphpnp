@@ -1,7 +1,7 @@
 import { CheckCircle2, TrendingUp, Users, Award, BarChart2 } from "lucide-react";
 import { motion, Variants, useScroll, useTransform } from "motion/react";
 import { useRef } from "react";
-import { EASE_IN_OUT, EASE_OUT } from "@/lib/motion";
+import { EASE_IN_OUT, EASE_OUT, revealItemX, revealPop, revealSection } from "@/lib/motion";
 
 const features = [
   "SEBI Registered Stock Broker",
@@ -64,10 +64,7 @@ const About = () => {
         {/* Stats strip */}
         <motion.div
           className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-20 bg-gradient-to-r from-primary/5 via-secondary/5 to-brand-gold/5 rounded-2xl p-8 border border-border/50"
-          initial={{ opacity: 0, y: 24 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
+          {...revealSection}
         >
           {[
             { icon: TrendingUp, value: "50+", label: "Years of Experience", color: "text-secondary" },
@@ -78,9 +75,7 @@ const About = () => {
             <motion.div
               key={stat.label}
               className="flex flex-col items-center text-center gap-3 group"
-              initial={{ opacity: 0, y: 24 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
+              {...revealSection}
               transition={{ delay: i * 0.1, duration: 0.5 }}
               whileHover={{ y: -4 }}
             >
@@ -113,9 +108,7 @@ const About = () => {
               Welcome to Parasram India
               <motion.span
                 className="block text-secondary mt-2"
-                initial={{ opacity: 0, y: 24 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
+                {...revealSection}
                 transition={{ delay: 0.3, duration: 0.5 }}
               >
                Panipat Branch Since 1997
@@ -145,6 +138,8 @@ const About = () => {
                   transition={{ type: "spring", stiffness: 300 }}
                 >
                   <motion.div
+                    /* motion-exempt: bare scale with no opacity, on a decorative ring that has no
+                       content to fade. revealPop would add an opacity channel that does nothing here. */
                     initial={{ scale: 0 }}
                     whileInView={{ scale: 1 }}
                     viewport={{ once: true }}
@@ -180,10 +175,7 @@ const About = () => {
                   <motion.li
                     key={item.num}
                     className="flex gap-4 group"
-                    initial={{ opacity: 0, x: 30 }}
-                    whileInView={{ opacity: 1, x: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: 0.3 + index * 0.15, duration: 0.5 }}
+                    {...revealItemX("right")}
                     whileHover={{ x: 4 }}
                   >
                     <motion.span
@@ -194,7 +186,7 @@ const About = () => {
                       {item.num}
                     </motion.span>
                     <div>
-                      <div className="font-semibold group-hover:text-secondary transition-colors duration-200">{item.title}</div>
+                      <div className="font-semibold group-hover:text-secondary transition-colors duration-fast">{item.title}</div>
                       <div className="text-primary-foreground/70 text-sm">{item.desc}</div>
                     </div>
                   </motion.li>
@@ -205,18 +197,12 @@ const About = () => {
             {/* Decorative elements */}
             <motion.div
               className="absolute -bottom-4 -right-4 w-24 h-24 bg-secondary/20 rounded-2xl -z-10"
-              initial={{ opacity: 0, scale: 0 }}
-              whileInView={{ opacity: 1, scale: 1 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.5, duration: 0.5 }}
+              {...revealPop()}
               animate={{ rotate: [0, 5, -5, 0] }}
             />
             <motion.div
               className="absolute -top-4 -left-4 w-16 h-16 bg-brand-gold/20 rounded-xl -z-10"
-              initial={{ opacity: 0, scale: 0 }}
-              whileInView={{ opacity: 1, scale: 1 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.6, duration: 0.5 }}
+              {...revealPop()}
               animate={{ rotate: [0, -8, 8, 0] }}
             />
             {/* Extra floating dot */}
@@ -231,10 +217,7 @@ const About = () => {
         {/* Pan-India network strip - borrows the parent group's scale for branch trust */}
         <motion.div
           className="mt-14 flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-6 text-center bg-muted/40 border border-border/40 rounded-2xl px-6 py-4"
-          initial={{ opacity: 0, y: 24 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.5 }}
+          {...revealSection}
         >
           <span className="text-sm font-semibold text-foreground">
             Part of the Shri Parasram Holdings network
@@ -249,10 +232,7 @@ const About = () => {
         <div className="mt-8 grid md:grid-cols-2 gap-6">
           <motion.div
             className="bg-card border border-border/50 rounded-2xl p-6 md:p-8 hover:border-secondary/40 hover:shadow-lg transition-[color,background-color,border-color,box-shadow]"
-            initial={{ opacity: 0, y: 24 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5 }}
+            {...revealSection}
           >
             <span className="inline-block text-secondary font-semibold text-xs uppercase tracking-[0.15em] mb-2">Our Vision</span>
             <p className="text-foreground/90 leading-relaxed">
@@ -263,9 +243,7 @@ const About = () => {
           </motion.div>
           <motion.div
             className="bg-card border border-border/50 rounded-2xl p-6 md:p-8 hover:border-brand-gold/40 hover:shadow-lg transition-[color,background-color,border-color,box-shadow]"
-            initial={{ opacity: 0, y: 24 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
+            {...revealSection}
             transition={{ duration: 0.5, delay: 0.1 }}
           >
             <span className="inline-block text-brand-gold font-semibold text-xs uppercase tracking-[0.15em] mb-2">Our Mission</span>

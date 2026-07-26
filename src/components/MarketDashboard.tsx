@@ -12,6 +12,7 @@ import { useT } from "@/i18n/LanguageContext";
 import { useLiveMarket } from "@/hooks/useLiveMarket";
 import { useMarketFlows } from "@/hooks/useMarketFeed";
 
+import { revealItem, revealSection } from "@/lib/motion";
 const sectorIcons: Record<string, LucideIcon> = {
   IT: Cpu, Banks: Landmark, Pharma: Pill, Auto: Factory,
   Energy: Fuel, FMCG: ShoppingCart, Realty: Building2, Metal: Pickaxe,
@@ -554,7 +555,7 @@ const MarketDashboard = () => {
       </div>
 
       <div className="container mx-auto px-4 relative z-10">
-        <motion.div className="text-center mb-10" initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
+        <motion.div className="text-center mb-10" {...revealSection}>
           <motion.span className="inline-flex items-center gap-1.5 bg-brand-orange/10 text-brand-orange text-xs font-bold uppercase tracking-wider px-3 py-1.5 rounded-full mb-3">
             <BarChart3 className="w-3.5 h-3.5" />
             {t("mi.eyebrow")}
@@ -568,7 +569,7 @@ const MarketDashboard = () => {
           </div>
         </motion.div>
 
-        <motion.div className="mb-6" initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
+        <motion.div className="mb-6" {...revealItem()}>
           <TrendingStocks />
         </motion.div>
 
@@ -608,7 +609,7 @@ const MarketDashboard = () => {
             )}
             {activeTab === "movers" && (
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <motion.div initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.6 }}>
+          <motion.div {...revealSection} transition={{ delay: 0.6 }}>
             <Card className="border-border/50 overflow-hidden h-full">
               <CardContent className="p-5">
                 <div className="flex items-center justify-between mb-4">
@@ -639,7 +640,7 @@ const MarketDashboard = () => {
             </Card>
           </motion.div>
 
-          <motion.div initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.7 }}>
+          <motion.div {...revealSection} transition={{ delay: 0.7 }}>
             <Card className="border-border/50 overflow-hidden h-full">
               <CardContent className="p-5">
                 <div className="flex items-center justify-between mb-4">
@@ -670,7 +671,7 @@ const MarketDashboard = () => {
             </Card>
           </motion.div>
 
-          <motion.div initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.8 }}>
+          <motion.div {...revealSection} transition={{ delay: 0.8 }}>
             <Card className="border-border/50 overflow-hidden h-full">
               <CardContent className="p-5">
                 <div className="flex items-center justify-between mb-4">

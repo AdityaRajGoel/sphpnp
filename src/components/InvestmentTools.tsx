@@ -1,6 +1,7 @@
 import { motion } from "motion/react";
 import { ArrowRight, BookOpen, FileBarChart, Target, Lightbulb, LineChart, Shield } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
+import { revealBar, revealSection, revealTracking } from "@/lib/motion";
 
 const tools = [
   {
@@ -59,16 +60,11 @@ const InvestmentTools = () => {
       <div className="container mx-auto px-4 relative z-10">
         <motion.div
           className="text-center mb-14"
-          initial={{ opacity: 0, y: 24 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
+          {...revealSection}
         >
           <motion.span
             className="inline-block text-secondary font-semibold text-sm uppercase tracking-wider mb-3"
-            initial={{ letterSpacing: "0em" }}
-            whileInView={{ letterSpacing: "0.15em" }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.8 }}
+            {...revealTracking}
           >
             Powerful Tools
           </motion.span>
@@ -77,10 +73,7 @@ const InvestmentTools = () => {
           </h2>
           <motion.div
             className="w-20 h-1 bg-gradient-to-r from-secondary to-brand-gold mx-auto rounded-full mb-4"
-            initial={{ width: 0 }}
-            whileInView={{ width: 80 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.3, duration: 0.6 }}
+            {...revealBar}
           />
           <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
             Everything you need to make informed investment decisions - like Kite & Groww, but with personal guidance
@@ -91,16 +84,14 @@ const InvestmentTools = () => {
           {tools.map((tool, index) => (
             <motion.div
               key={tool.title}
-              initial={{ opacity: 0, y: 24 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
+              {...revealSection}
               transition={{ delay: index * 0.08, duration: 0.5 }}
               whileHover={{ y: -8 }}
             >
-              <Card className="h-full bg-card border-border/50 hover:border-secondary/40 hover:shadow-2xl transition-[color,background-color,border-color,box-shadow] duration-300 group overflow-hidden relative">
+              <Card className="h-full bg-card border-border/50 hover:border-secondary/40 hover:shadow-2xl transition-[color,background-color,border-color,box-shadow] duration-base group overflow-hidden relative">
                 {/* Top gradient accent */}
                 <motion.div
-                  className={`h-1 bg-gradient-to-r ${tool.color} opacity-0 group-hover:opacity-100 transition-opacity duration-300`}
+                  className={`h-1 bg-gradient-to-r ${tool.color} opacity-0 group-hover:opacity-100 transition-opacity duration-base`}
                 />
                 <CardContent className="p-6">
                   <div className="flex items-start justify-between mb-4">

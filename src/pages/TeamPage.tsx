@@ -17,7 +17,7 @@ import {
   MapPin, Calendar
 } from "lucide-react";
 import { useRef } from "react";
-import { EASE_OUT } from "@/lib/motion";
+import { EASE_OUT, revealFade, revealPop, revealSection } from "@/lib/motion";
 
 const teamMembers = [
   {
@@ -100,18 +100,15 @@ const TeamMemberCard = ({ member, index }: { member: typeof teamMembers[0]; inde
 
   return (
     <motion.div
-      className="group bg-card rounded-2xl border border-border/50 hover:border-secondary/30 shadow-lg hover:shadow-2xl transition-[color,background-color,border-color,box-shadow] duration-500 relative overflow-hidden"
-      initial={{ opacity: 0, y: 50 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-50px" }}
-      transition={{ delay: index * 0.12, duration: 0.6, ease: EASE_OUT }}
+      className="group bg-card rounded-2xl border border-border/50 hover:border-secondary/30 shadow-lg hover:shadow-2xl transition-[color,background-color,border-color,box-shadow] duration-slow relative overflow-hidden"
+      {...revealSection}
       whileHover={{ y: -6 }}
     >
       {/* Top gradient bar */}
       <div className={`h-1.5 bg-gradient-to-r ${member.accent}`} />
 
       {/* Hover overlay */}
-      <motion.div className="absolute inset-0 bg-gradient-to-br from-secondary/5 to-brand-gold/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+      <motion.div className="absolute inset-0 bg-gradient-to-br from-secondary/5 to-brand-gold/5 opacity-0 group-hover:opacity-100 transition-opacity duration-slow" />
 
       <div className="relative z-10 p-8 sm:p-10">
         {/* Header row */}
@@ -162,10 +159,7 @@ const TeamMemberCard = ({ member, index }: { member: typeof teamMembers[0]; inde
       {/* Corner accent */}
       <motion.div
         className="absolute bottom-0 right-0 w-20 h-20 bg-gradient-to-tl from-secondary/8 to-transparent rounded-tl-3xl"
-        initial={{ opacity: 0, scale: 0 }}
-        whileInView={{ opacity: 1, scale: 1 }}
-        viewport={{ once: true }}
-        transition={{ delay: 0.5 + index * 0.1 }}
+        {...revealPop()}
       />
     </motion.div>
   );
@@ -301,9 +295,7 @@ const TeamPage = () => {
               <motion.div
                 key={stat.label}
                 className="flex items-center gap-3 justify-center py-3"
-                initial={{ opacity: 0, y: 24 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
+                {...revealSection}
                 transition={{ delay: i * 0.1 }}
               >
                 <stat.icon className="w-5 h-5 text-secondary" />
@@ -333,9 +325,7 @@ const TeamPage = () => {
         <div className="container mx-auto px-4">
           <motion.h2
             className="font-heading text-2xl md:text-3xl font-bold text-foreground text-center mb-10"
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            viewport={{ once: true }}
+            {...revealFade}
           >
             Why Families Trust <span className="text-secondary">Our Team</span>
           </motion.h2>
@@ -350,9 +340,7 @@ const TeamPage = () => {
             ].map((item, i) => (
               <motion.div
                 key={item.title}
-                initial={{ opacity: 0, y: 24 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
+                {...revealSection}
                 transition={{ delay: i * 0.08 }}
               >
                 <Card className="p-5 h-full hover:shadow-md transition-shadow border-border/50 hover:border-secondary/30">
@@ -370,9 +358,7 @@ const TeamPage = () => {
       <section className="py-8 md:py-16 bg-background">
         <div className="container mx-auto px-4 text-center">
           <motion.div
-            initial={{ opacity: 0, y: 24 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
+            {...revealSection}
           >
             <h2 className="font-heading text-2xl md:text-3xl font-bold text-foreground mb-3">
               Ready to Start Your Investment Journey?
