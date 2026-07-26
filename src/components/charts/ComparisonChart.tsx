@@ -107,9 +107,20 @@ const ComparisonChart = ({ series, height = 300, smaPeriods }: ComparisonChartPr
     });
 
     chartRef.current = chart;
+
+    // Capture the Map instance rather than reading seriesRefs.current during
+    // cleanup. It is created once by useRef and only ever mutated, never
+    // reassigned, so this is the same Map the series effect populates.
+    // smaRefs is different - the series effect swaps its array wholesale - but
+    // the line below assigns to it rather than reading it, so there is nothing
+    // stale to capture.
+    const seriesBySymbol = seriesRefs.current;
+
     return () => {
       chartRef.current = null;
-      seriesRefs.current.clear();
+      // chart.remove() disposes every series with it; clearing these only stops
+      // the data effect reaching a disposed handle before it sees chartRef null.
+      seriesBySymbol.clear();
       smaRefs.current = [];
       chart.remove();
     };
