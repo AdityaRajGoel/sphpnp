@@ -18,7 +18,7 @@ const researchCards = [
   {
     title: "Daily Newsletter",
     subtitle: "Market Insights & Picks",
-    description: "Comprehensive daily newsletter with market outlook, stock picks, sectoral analysis, and trading ideas by our research team.",
+    description: "Daily newsletter with market outlook, stock picks, sectoral analysis, and trading ideas by our research team.",
     icon: Newspaper,
     color: "from-primary to-brand-navy",
     bgAccent: "bg-primary/10",

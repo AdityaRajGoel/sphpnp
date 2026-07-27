@@ -69,7 +69,7 @@ const PrivacyPolicyPage = () => {
 
                 <h3 className="text-xl font-bold text-foreground mt-8 mb-4">4. Data Protection and Security</h3>
                 <p className="text-muted-foreground leading-relaxed">
-                  We employ robust, state-of-the-art security measures to protect your personal and financial data against unauthorized access, alteration, or disclosure. All sensitive data transactions occur over secure, encrypted channels.
+                  We employ security measures to protect your personal and financial data against unauthorized access, alteration, or disclosure. All sensitive data transactions occur over secure, encrypted channels.
                 </p>
 
                 <h3 className="text-xl font-bold text-foreground mt-8 mb-4">5. Sharing of Information</h3>

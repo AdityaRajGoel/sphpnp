@@ -22,7 +22,7 @@ const benefits = [
 const howItWorks = [
   { step: "01", title: "Choose a Share", desc: "Browse our curated list of pre-IPO and unlisted shares." },
   { step: "02", title: "Contact Us", desc: "Call or WhatsApp for live pricing and availability." },
-  { step: "03", title: "Complete KYC", desc: "Quick KYC verification for a seamless process." },
+  { step: "03", title: "Complete KYC", desc: "Quick, simple KYC verification." },
   { step: "04", title: "Start Investing", desc: "Get shares transferred to your Demat account." },
 ];
 

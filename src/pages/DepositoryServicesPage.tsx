@@ -11,9 +11,9 @@ import ScrollProgress from "@/components/ScrollProgress";
 import { revealSection } from "@/lib/motion";
 const features = [
   { icon: Vault, title: "Secure Account Maintenance", desc: "Safe keeping of your securities in electronic form fully backed by CDSL/NSDL." },
-  { icon: Share2, title: "Seamless Transfers", desc: "Instantly transfer shares seamlessly without the hassles of physical share certificates." },
+  { icon: Share2, title: "Fast Transfers", desc: "Transfer shares instantly, without the hassle of physical share certificates." },
   { icon: FileDigit, title: "Corporate Action Tracking", desc: "Automatic credit of bonuses, splits, and tracking of dividend payments directly to your linked bank account." },
-  { icon: LinkIcon, title: "Easy Pledging (Margin)", desc: "Pledge your existing holdings electronically to acquire trading margin seamlessly without selling." },
+  { icon: LinkIcon, title: "Easy Pledging (Margin)", desc: "Pledge your existing holdings electronically to get trading margin without selling." },
   { icon: ShieldAlert, title: "SMS Alerts", desc: "Real-time automated alerts for all depository transactions ensuring highest transparency." },
 ];
 
@@ -113,7 +113,7 @@ const DepositoryServicesPage = () => {
               animate={{ opacity: 1 }}
               transition={{ delay: 0.2 }}
             >
-              A robust foundation for your wealth. Hold, transfer, and manage your electronic securities with absolute peace of mind.
+              Hold, transfer, and manage your electronic securities safely and simply.
             </motion.p>
           </div>
         </section>

@@ -78,9 +78,8 @@ const MobileApp = () => {
             </h2>
 
             <p className="text-primary-foreground/80 text-lg mb-8">
-              Download our powerful mobile app to access markets on the go. 
-              Experience seamless trading with real-time data, advanced charts, 
-              and instant order execution.
+              Download our mobile app to trade on the go, with real-time data,
+              advanced charts, and instant order execution.
             </p>
 
             <div className="grid grid-cols-2 gap-4 mb-8">

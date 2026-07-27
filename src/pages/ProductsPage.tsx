@@ -37,11 +37,11 @@ const products = [
   {
     icon: ShieldCheck,
     title: "Insurance Services",
-    desc: "Protect your family and assets with our comprehensive life and general insurance solutions tailored for your unique needs.",
+    desc: "Life and general insurance solutions to protect your family and assets.",
     benefits: [
       "Life, Health, and Wealth protection plans",
       "Unbiased advisory linking proper risk coverage",
-      "Seamless claim support and policy issuance",
+      "Claim support and policy issuance",
       "Partnered with leading insurance providers"
     ]
   }
@@ -100,7 +100,7 @@ const ProductsPage = () => {
               animate={{ opacity: 1 }}
               transition={{ delay: 0.2, duration: 0.6 }}
             >
-              Beyond the stock market. Build a robust portfolio with our top-tier fixed income and protection solutions.
+              Beyond the stock market: fixed income and protection solutions to round out your portfolio.
             </motion.p>
           </div>
         </section>

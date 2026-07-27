@@ -45,7 +45,7 @@ const sections: Section[] = [
   },
   {
     title: "Our Market Tools",
-    subtitle: "Screen, analyse and export data on our own dashboards — no login needed.",
+    subtitle: "Screen, analyse and export data on our own dashboards, no login needed.",
     icon: BarChart3,
     items: [
       { label: "Stock Screener", desc: "Filter NSE/BSE stocks by fundamentals and technicals. CSV export built in.", href: "/screener" },
