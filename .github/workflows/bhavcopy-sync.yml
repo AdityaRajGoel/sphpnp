@@ -13,6 +13,11 @@ on:
     - cron: "0 16 * * 1-5"
   workflow_dispatch: {}
 
+# This workflow only calls the Supabase edge function via curl - it never
+# checks out the repo or touches the GitHub API, so GITHUB_TOKEN needs no
+# permissions at all.
+permissions: {}
+
 jobs:
   sync:
     runs-on: ubuntu-latest

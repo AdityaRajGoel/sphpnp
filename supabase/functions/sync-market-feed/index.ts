@@ -281,6 +281,7 @@ Deno.serve(async (req) => {
       flows = await fetchFlowsFromNiftytrader();
       report.flows_source = "niftytrader (net-only fallback)";
       report.flows_nse_error = String(nseErr);
+      console.error("sync-market-feed: NSE flows fetch failed, using niftytrader fallback:", nseErr);
     }
     // FII F&O rides on the same trading date as the cash figures
     try {
@@ -288,6 +289,7 @@ Deno.serve(async (req) => {
       report.fii_fno = "ok";
     } catch (e) {
       report.fii_fno_error = String(e);
+      console.error("sync-market-feed: FII F&O flow fetch failed:", e);
     }
     const { error } = await supabase
       .from("market_flows")
@@ -297,6 +299,7 @@ Deno.serve(async (req) => {
     report.flows_date = flows[0]?.activity_date;
   } catch (e) {
     report.flows_error = String(e);
+    console.error("sync-market-feed: flows sync failed:", e);
   }
 
   // ── Mutual fund NAVs (AMFI) ────────────────────────────────────
@@ -321,6 +324,7 @@ Deno.serve(async (req) => {
     report.mf_navs_upserted = rows.length;
   } catch (e) {
     report.mf_navs_error = String(e);
+    console.error("sync-market-feed: MF NAV sync failed:", e);
   }
 
   // ── Corporate actions + upcoming results calendar ──────────────
@@ -341,6 +345,7 @@ Deno.serve(async (req) => {
     report.results_calendar_upserted = results.length;
   } catch (e) {
     report.corp_actions_error = String(e);
+    console.error("sync-market-feed: corporate actions sync failed:", e);
   }
 
   const failed = report.flows_error && report.corp_actions_error;

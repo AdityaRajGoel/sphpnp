@@ -287,6 +287,7 @@ Deno.serve(async (req) => {
       { headers: { ...cors, "Content-Type": "application/json" } },
     );
   } catch (e) {
+    console.error("sync-bhavcopy: sync failed:", e);
     return new Response(
       JSON.stringify({ success: false, error: e instanceof Error ? e.message : String(e) }),
       { status: 500, headers: { ...cors, "Content-Type": "application/json" } },
