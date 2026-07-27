@@ -45,8 +45,8 @@ TanStack Query · Recharts · Zod
 Requires **Node.js 22+**.
 
 ```sh
-git clone https://github.com/AdityaRajGoel/panipat-investments-hub
-cd panipat-investments-hub
+git clone https://github.com/AdityaRajGoel/sphpnp
+cd sphpnp
 npm install
 cp .env.example .env    # then fill in your Supabase values
 npm run dev
