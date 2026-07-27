@@ -17,7 +17,20 @@ type IPOEntry = {
   rating?: number;
 };
 
-const cleanText = (s: string) => s.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
+// Strips tags to a fixed point (not just one pass) so a malformed/nested
+// fragment like "<<script>script>" can't leave a live tag behind after a
+// single regex sweep.
+const stripTags = (s: string): string => {
+  let prev: string;
+  let out = s;
+  do {
+    prev = out;
+    out = out.replace(/<[^>]*>/g, '');
+  } while (out !== prev);
+  return out;
+};
+
+const cleanText = (s: string) => stripTags(s).replace(/\s+/g, ' ').trim();
 
 // Source 1: ipowatch.in - reliable, server-rendered HTML with markdown-friendly tables
 async function fetchFromIPOWatch(): Promise<IPOEntry[] | null> {

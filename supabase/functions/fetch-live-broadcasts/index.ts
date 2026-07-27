@@ -35,13 +35,15 @@ const CHANNELS: ChannelConfig[] = [
   },
 ];
 
+// "&amp;" is decoded last so a double-encoded entity (e.g. "&amp;lt;") isn't
+// unescaped twice in one pass.
 const decodeXml = (value: string) =>
   value
-    .replaceAll('&amp;', '&')
     .replaceAll('&lt;', '<')
     .replaceAll('&gt;', '>')
     .replaceAll('&quot;', '"')
-    .replaceAll('&#39;', "'");
+    .replaceAll('&#39;', "'")
+    .replaceAll('&amp;', '&');
 
 const extractTag = (xml: string, tagName: string) => {
   const match = xml.match(new RegExp(`<${tagName}>([\\s\\S]*?)<\\/${tagName}>`));

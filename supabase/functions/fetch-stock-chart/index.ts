@@ -15,7 +15,7 @@ function toYahoo(symbol: string): string {
   if (symbol === "FINNIFTY" || symbol === "NIFTY FIN" || symbol === "NIFTYFIN") return "NIFTY_FIN_SERVICE.NS";
   
   // Handle special characters
-  const cleaned = symbol.replace("&", "%26");
+  const cleaned = symbol.replaceAll("&", "%26");
 
   // Idempotent: callers may pass a bare NSE code ("WIPRO") or a symbol that is
   // already Yahoo-shaped. fetch-stock-prices now forwards the latter, and

@@ -675,14 +675,30 @@ async function fetchYahooFundamentals(symbol: string) {
 // ─────────────────────────────────────────────────────────────
 type NewsHeadline = { title: string; publisher: string; ageDays: number | null; link: string };
 
+// Strips tags to a fixed point (not just one pass) so a malformed/nested
+// fragment like "<<script>script>" can't leave a live tag behind after a
+// single regex sweep.
+function stripTags(s: string): string {
+  let prev: string;
+  let out = s;
+  do {
+    prev = out;
+    out = out.replace(/<[^>]+>/g, "");
+  } while (out !== prev);
+  return out;
+}
+
 function decodeEntities(s: string): string {
-  return s
+  // Decode entities before stripping tags, so an entity-encoded "<script>" can't
+  // survive the tag strip and reappear as a live tag. "&amp;" is decoded last so
+  // a double-encoded entity (e.g. "&amp;lt;") isn't unescaped twice in one pass.
+  const decoded = s
     .replace(/<!\[CDATA\[|\]\]>/g, "")
-    .replace(/<[^>]+>/g, "")
-    .replace(/&amp;/g, "&").replace(/&quot;/g, '"').replace(/&#39;|&apos;/g, "'")
+    .replace(/&quot;/g, '"').replace(/&#39;|&apos;/g, "'")
     .replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&nbsp;/g, " ")
     .replace(/&#(\d+);/g, (_, d) => String.fromCharCode(+d))
-    .trim();
+    .replace(/&amp;/g, "&");
+  return stripTags(decoded).trim();
 }
 
 // Recent per-symbol news headlines via Google News RSS (India edition).

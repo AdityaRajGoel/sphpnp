@@ -3,6 +3,19 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
+// Strips tags to a fixed point (not just one pass) so a malformed/nested
+// fragment like "<<script>script>" can't leave a live tag behind after a
+// single regex sweep.
+function stripTags(s: string): string {
+  let prev: string;
+  let out = s;
+  do {
+    prev = out;
+    out = out.replace(/<[^>]+>/g, '');
+  } while (out !== prev);
+  return out;
+}
+
 async function fetchRss(url: string, sourceName: string, defaultCategory: string) {
   try {
     const res = await fetch(url);
@@ -26,12 +39,15 @@ async function fetchRss(url: string, sourceName: string, defaultCategory: string
       const rawUrl = linkMatch ? linkMatch[1].trim() : "";
       const url = /^https?:\/\//i.test(rawUrl) ? rawUrl : "";
 
-      const title = titleMatch ? titleMatch[1].replace(/<[^>]+>/g, '').trim() : "Market Update";
-      let summary = descMatch ? descMatch[1].replace(/<[^>]+>/g, '').trim() : "Click to read more details about this market event.";
-      
-      // Decode basic HTML entities
+      const title = titleMatch ? stripTags(titleMatch[1]).trim() : "Market Update";
+      let summary = descMatch ? descMatch[1] : "Click to read more details about this market event.";
+
+      // Decode basic HTML entities before stripping tags, so an entity-encoded
+      // "<script>" can't survive the strip and reappear as a live tag. "&amp;"
+      // is decoded last so a double-encoded entity isn't unescaped twice.
       summary = summary.replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&amp;/g, '&');
-      
+      summary = stripTags(summary).trim();
+
       if (summary.length > 150) summary = summary.substring(0, 147) + "...";
       if (!summary) summary = title; // fallback
 
