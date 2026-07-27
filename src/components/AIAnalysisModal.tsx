@@ -550,7 +550,7 @@ export const AIAnalysisModal = ({ isOpen, onClose, stock }: AIAnalysisModalProps
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-2xl p-0 overflow-hidden border border-brand-orange/30 bg-background max-h-[90vh] flex flex-col">
+      <DialogContent hideClose className="w-[calc(100%-2rem)] sm:max-w-2xl lg:max-w-4xl xl:max-w-5xl p-0 overflow-hidden border border-brand-orange/30 bg-background max-h-[90vh] flex flex-col">
         
         {/* Header */}
         <div className="px-5 py-4 border-b border-border/50 bg-muted/40 backdrop-blur-md flex items-center justify-between z-10">

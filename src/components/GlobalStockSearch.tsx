@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useCallback, useMemo, lazy, Suspense } fro
 import { motion, AnimatePresence } from "motion/react";
 import { Search, X, TrendingUp, TrendingDown, Loader2, CandlestickChart, LineChart, Bot } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -300,14 +300,14 @@ const GlobalStockSearch = ({ className }: Props) => {
 
       {/* Stock Detail Dialog */}
       <Dialog open={!!selected} onOpenChange={open => { if (!open) setSelected(null); }}>
-        <DialogContent className="max-w-2xl bg-background/95 backdrop-blur-xl border-border/50 shadow-2xl p-0 overflow-hidden">
+        <DialogContent hideClose className="w-[calc(100%-2rem)] max-w-2xl lg:max-w-4xl bg-background/95 backdrop-blur-xl border-border/50 shadow-2xl p-0 overflow-hidden">
           {selected && (
             <div className="flex flex-col h-full max-h-[90vh]">
               {/* Premium Header */}
               <div className="p-6 pb-4 border-b border-border/20 bg-gradient-to-br from-muted/50 to-transparent">
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-3">
-                    <span className="text-2xl font-black tracking-tight text-foreground">{selected.symbol}</span>
+                    <DialogTitle className="text-2xl font-black tracking-tight text-foreground">{selected.symbol}</DialogTitle>
                     <Badge variant="secondary" className="bg-brand-orange/10 text-brand-orange border-brand-orange/20 text-[10px] font-bold uppercase tracking-wider">
                       {selected.sector}
                     </Badge>
@@ -341,20 +341,20 @@ const GlobalStockSearch = ({ className }: Props) => {
               <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
                 {/* Chart Section */}
                 <Card className="p-4 bg-muted/20 border-border/30 shadow-none">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-1 bg-background/50 p-1 rounded-lg border border-border/20">
+                  <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
+                    <div className="flex items-center gap-1 bg-background/50 p-1 rounded-lg border border-border/20 overflow-x-auto no-scrollbar max-w-full">
                       {TIME_RANGES.map(({ key, label }) => (
                         <Button key={key} variant={chartRange === key ? "secondary" : "ghost"} size="sm"
-                          className={`h-7 px-3 text-[10px] font-bold transition-[color,background-color,border-color,box-shadow] ${chartRange === key ? "shadow-sm" : ""}`} onClick={() => setChartRange(key)}>
+                          className={`h-7 px-3 text-[10px] font-bold shrink-0 transition-[color,background-color,border-color,box-shadow] ${chartRange === key ? "shadow-sm" : ""}`} onClick={() => setChartRange(key)}>
                           {label}
                         </Button>
                       ))}
                     </div>
-                    
+
                     <div className="flex items-center gap-2">
-                       <Button 
-                        variant="default" 
-                        size="sm" 
+                       <Button
+                        variant="default"
+                        size="sm"
                         className="bg-brand-orange hover:bg-brand-orange/90 text-white text-[10px] font-bold h-7 px-4 shadow-lg shadow-brand-orange/20"
                         onClick={() => setAnalyzingStock(selected)}
                       >
