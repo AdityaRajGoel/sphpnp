@@ -51,27 +51,9 @@ const DepositoryServicesPage = () => {
               "addressRegion": "Haryana",
               "postalCode": "132103",
               "addressCountry": "IN"
-            },
-            "aggregateRating": {
-              "@type": "AggregateRating",
-              "ratingValue": 4.8,
-              "reviewCount": 95,
-              "bestRating": 5,
-              "worstRating": 1
-            },
-            "review": {
-              "@type": "Review",
-              "reviewRating": {
-                "@type": "Rating",
-                "ratingValue": 5,
-                "bestRating": 5
-              },
-              "author": {
-                "@type": "Person",
-                "name": "Verified Client"
-              },
-              "reviewBody": "Excellent depository services. The Demat account opening was hassle-free and seamless transfers are very reliable."
             }
+            // aggregateRating + review removed: self-authored, and not rendered
+            // on the page - both barred by Google's review-snippet policy.
           },
           "areaServed": {
             "@type": "City",

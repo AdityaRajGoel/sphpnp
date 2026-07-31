@@ -101,7 +101,7 @@ const OpenAccountPage = () => {
         <div className="min-h-screen bg-background">
         <SEOHead
           title="Open Free Demat Account in Panipat | Parasram India"
-          description="Open a free Demat & trading account with Parasram India Panipat. Zero account opening charges. Start investing in stocks, mutual funds and IPOs. SEBI registered."
+          description="Open a free Demat & trading account with Parasram India Panipat. Zero account opening charges. Invest in stocks, mutual funds and IPOs. SEBI registered."
           breadcrumbs={[
             { name: "Home", url: "/" },
             { name: "Open Demat Account" },
@@ -137,7 +137,7 @@ const OpenAccountPage = () => {
       <div className="min-h-screen bg-background">
       <SEOHead
         title="Open Free Demat Account in Panipat | Parasram India"
-        description="Open a free Demat & trading account with Parasram India Panipat. Zero account opening charges. Start investing in stocks, mutual funds and IPOs. SEBI registered."
+        description="Open a free Demat & trading account with Parasram India Panipat. Zero account opening charges. Invest in stocks, mutual funds and IPOs. SEBI registered."
         breadcrumbs={[
           { name: "Home", url: "/" },
           { name: "Open Demat Account" },
@@ -158,28 +158,9 @@ const OpenAccountPage = () => {
             "@type": "FinancialService",
             "name": "Shri Parasram Holdings Panipat",
             "url": "https://www.sphpnp.com",
-            "telephone": "+919416400314",
-            "aggregateRating": {
-              "@type": "AggregateRating",
-              "ratingValue": 4.9,
-              "reviewCount": 350,
-              "bestRating": 5,
-              "worstRating": 1
-            },
-            "review": [
-              {
-                "@type": "Review",
-                "reviewRating": { "@type": "Rating", "ratingValue": 5, "bestRating": 5 },
-                "author": { "@type": "Person", "name": "Vikram Singh" },
-                "reviewBody": "Opened my Demat account within 24 hours with zero fees. The team was extremely helpful throughout the process."
-              },
-              {
-                "@type": "Review",
-                "reviewRating": { "@type": "Rating", "ratingValue": 5, "bestRating": 5 },
-                "author": { "@type": "Person", "name": "Neha Gupta" },
-                "reviewBody": "Quick and paperless Demat account opening. Very impressed with the service and support from Parasram India Panipat."
-              }
-            ]
+            "telephone": "+919416400314"
+            // aggregateRating + review removed: self-authored, and not rendered
+            // on the page - both barred by Google's review-snippet policy.
           },
           "offers": {
             "@type": "Offer",

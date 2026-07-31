@@ -5,7 +5,6 @@ import About from "@/components/About";
 import HowItWorks from "@/components/HowItWorks";
 import CompanyTimeline from "@/components/CompanyTimeline";
 import GoogleReviews from "@/components/GoogleReviews";
-import Testimonials from "@/components/Testimonials";
 import ClientMarquee from "@/components/ClientMarquee";
 import WhatsAppButton from "@/components/WhatsAppButton";
 import ScrollProgress from "@/components/ScrollProgress";
@@ -57,28 +56,10 @@ const AboutPage = () => {
               "postalCode": "132103",
               "addressCountry": "IN"
             },
-            "areaServed": "Panipat, Haryana",
-            "aggregateRating": {
-              "@type": "AggregateRating",
-              "ratingValue": 4.9,
-              "reviewCount": 200,
-              "bestRating": 5,
-              "worstRating": 1
-            },
-            "review": [
-              {
-                "@type": "Review",
-                "reviewRating": { "@type": "Rating", "ratingValue": 5, "bestRating": 5 },
-                "author": { "@type": "Person", "name": "Amit Bansal" },
-                "reviewBody": "Parasram India Panipat is the most trusted broker I've worked with. 20 years of relationship and they've always been transparent and reliable."
-              },
-              {
-                "@type": "Review",
-                "reviewRating": { "@type": "Rating", "ratingValue": 5, "bestRating": 5 },
-                "author": { "@type": "Person", "name": "Priya Arora" },
-                "reviewBody": "Excellent financial guidance for over a decade. The team genuinely cares about growing client wealth responsibly."
-              }
-            ]
+            "areaServed": "Panipat, Haryana"
+            // aggregateRating + review removed: Google bars a business from
+            // marking up its own reviews, and bars markup for content not
+            // rendered on the page. These were both.
           }
         }}
       />
@@ -89,7 +70,10 @@ const AboutPage = () => {
       <CompanyTimeline />
       <HowItWorks />
       <ClientMarquee />
-      <Testimonials />
+      {/* The old <Testimonials /> block was six invented client stories with
+          invented names, roles and performance claims. Removed rather than
+          rewritten - the GoogleReviews section below already carries real,
+          attributable social proof from the live Business Profile. */}
       <GoogleReviews />
       <FAQ
         title="About Parasram India"

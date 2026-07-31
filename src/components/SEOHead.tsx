@@ -98,13 +98,10 @@ const SEOHead = ({
     "email": "parasrampnp@gmail.com",
     "currenciesAccepted": "INR",
     "paymentAccepted": "Bank Transfer, UPI, Cheque",
-    "aggregateRating": {
-      "@type": "AggregateRating",
-      "ratingValue": 4.9,
-      "reviewCount": 200,
-      "bestRating": 5,
-      "worstRating": 1
-    },
+    // No aggregateRating here on purpose. Google's review-snippet policy bars a
+    // business from marking up its own aggregate rating, and bars markup for
+    // content not visible on the page - this block was both. Real Google reviews
+    // are surfaced in the local panel from GBP without any markup on our side.
     "sameAs": [
       "https://www.facebook.com/ParasramGroup/",
       "https://www.instagram.com/parasrampanipat/",

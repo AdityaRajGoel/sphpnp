@@ -197,28 +197,9 @@ const TeamPage = () => {
               "@type": "Organization",
               "name": "Shri Parasram Holdings Panipat"
             }
-          })),
-          "aggregateRating": {
-            "@type": "AggregateRating",
-            "ratingValue": 4.9,
-            "reviewCount": 200,
-            "bestRating": 5,
-            "worstRating": 1
-          },
-          "review": [
-            {
-              "@type": "Review",
-              "reviewRating": { "@type": "Rating", "ratingValue": 5, "bestRating": 5 },
-              "author": { "@type": "Person", "name": "Rajesh Sharma" },
-              "reviewBody": "Excellent team of advisors. Anil Kumar Goel's 35 years of market expertise has helped me grow my portfolio significantly. Highly recommended!"
-            },
-            {
-              "@type": "Review",
-              "reviewRating": { "@type": "Rating", "ratingValue": 5, "bestRating": 5 },
-              "author": { "@type": "Person", "name": "Sunita Verma" },
-              "reviewBody": "Been investing with Parasram Panipat for 15 years. The team is always available and provides honest, unbiased advice."
-            }
-          ]
+          }))
+          // aggregateRating + review removed: self-authored, and not rendered
+          // on the page - both barred by Google's review-snippet policy.
         }}
       />
       <ScrollProgress />

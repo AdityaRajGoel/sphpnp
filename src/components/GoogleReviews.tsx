@@ -1,49 +1,60 @@
 import { Star, ExternalLink, MessageSquare } from "lucide-react";
 import { motion, Variants, useScroll, useTransform } from "motion/react";
 import { Button } from "@/components/ui/button";
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { EASE_OUT, revealBar, revealFade, revealPop, revealSection, revealSpin } from "@/lib/motion";
 
-const googleReviews = [
-  {
-    name: "Mohit Sharma",
-    rating: 5,
-    time: "2 months ago",
-    content: "Excellent service and very professional team. They guided me through the entire trading process. Highly recommended for anyone looking to invest in the stock market.",
-    avatar: "M",
-  },
-  {
-    name: "Ankit Gupta",
-    rating: 5,
-    time: "3 months ago",
-    content: "Best stock broker in Panipat. Very knowledgeable staff and they provide great research tips. Been trading with them for 2 years now.",
-    avatar: "A",
-  },
-  {
-    name: "Rakesh Verma",
-    rating: 5,
-    time: "4 months ago",
-    content: "Very trustworthy and reliable. The Parasram team is always available to help with any queries. Great brokerage rates too!",
-    avatar: "R",
-  },
-  {
-    name: "Pradeep Kumar",
-    rating: 5,
-    time: "5 months ago",
-    content: "Outstanding experience! They offer both online and offline trading options. The staff is very helpful and explains everything clearly.",
-    avatar: "P",
-  },
-  {
-    name: "Sunil Jain",
-    rating: 5,
-    time: "6 months ago",
-    content: "Legacy brokers with modern facilities. Very happy with their service. They have been in the business for decades and it shows in their expertise.",
-    avatar: "S",
-  },
-];
+// Reviews come from the live Google Business Profile via the google-reviews
+// edge function. This component previously shipped a hardcoded array of
+// invented 5-star testimonials with invented author names - a false claim shown
+// to real users, and an advertising-code exposure for a SEBI-registered
+// intermediary. There is deliberately NO placeholder fallback: if the feed is
+// unavailable we render the section without the grid and without a rating,
+// never with substitute content.
+type Review = {
+  name: string;
+  photo: string;
+  profileUrl: string;
+  rating: number;
+  time: string;
+  content: string;
+};
+
+type ReviewFeed = {
+  rating: number | null;
+  totalReviews: number | null;
+  mapsUrl: string;
+  reviews: Review[];
+};
 
 const GoogleReviews = () => {
   const sectionRef = useRef<HTMLDivElement>(null);
+  const [feed, setFeed] = useState<ReviewFeed | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    supabase.functions
+      .invoke("google-reviews")
+      .then(({ data, error }) => {
+        if (!active) return;
+        if (error) {
+          console.error("Google reviews unavailable:", error.message);
+          return;
+        }
+        setFeed(data as ReviewFeed);
+      })
+      .catch((err) => {
+        if (active) console.error("Google reviews request failed:", err);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const reviews = feed?.reviews ?? [];
+  const rating = feed?.rating ?? null;
+  const totalReviews = feed?.totalReviews ?? null;
   const { scrollYProgress } = useScroll({
     target: sectionRef,
     offset: ["start end", "end start"],
@@ -115,7 +126,10 @@ const GoogleReviews = () => {
             {...revealBar}
           />
 
-          {/* Rating summary */}
+          {/* Rating summary - only rendered once real GBP numbers have loaded.
+              Never render a placeholder score: a hardcoded rating drifts from
+              the real profile and reads as an unverifiable claim. */}
+          {rating !== null && (
           <motion.div
             className="inline-flex items-center gap-4 bg-card border border-border rounded-2xl px-8 py-4 shadow-lg"
             {...revealPop()}
@@ -126,7 +140,7 @@ const GoogleReviews = () => {
               animate={{ scale: [1, 1.05, 1] }}
               transition={{ duration: 3, repeat: Infinity }}
             >
-              5.0
+              {rating.toFixed(1)}
             </motion.div>
             <div className="text-left">
               <div className="flex gap-0.5 mb-1">
@@ -135,11 +149,17 @@ const GoogleReviews = () => {
                     key={i}
                     {...revealSpin()}
                   >
-                    <Star className="w-5 h-5 fill-brand-gold text-brand-gold" />
+                    <Star
+                      className={`w-5 h-5 ${i < Math.round(rating) ? "fill-brand-gold text-brand-gold" : "text-muted-foreground/40"}`}
+                    />
                   </motion.div>
                 ))}
               </div>
-              <div className="text-sm text-muted-foreground">Based on 5 Google Reviews</div>
+              <div className="text-sm text-muted-foreground">
+                {totalReviews !== null
+                  ? `Based on ${totalReviews.toLocaleString("en-IN")} Google review${totalReviews === 1 ? "" : "s"}`
+                  : "From our Google Business Profile"}
+              </div>
             </div>
             <img
               src="https://www.google.com/images/branding/googlelogo/2x/googlelogo_color_92x30dp.png"
@@ -150,9 +170,12 @@ const GoogleReviews = () => {
               className="h-6 ml-2 opacity-70"
             />
           </motion.div>
+          )}
         </motion.div>
 
-        {/* Reviews grid */}
+        {/* Reviews grid - omitted entirely when the feed has nothing to show,
+            rather than falling back to sample content. */}
+        {reviews.length > 0 && (
         <motion.div
           className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12"
           variants={containerVariants}
@@ -160,9 +183,9 @@ const GoogleReviews = () => {
           whileInView="visible"
           viewport={{ once: true, margin: "-80px" }}
         >
-          {googleReviews.map((review, index) => (
+          {reviews.map((review) => (
             <motion.div
-              key={review.name}
+              key={`${review.name}-${review.time}`}
               className="group bg-card rounded-2xl p-6 shadow-md hover:shadow-xl transition-shadow duration-slow border border-border/50 relative"
               variants={cardVariants}
               whileHover={{ y: -8, scale: 1.02 }}
@@ -183,10 +206,21 @@ const GoogleReviews = () => {
               {/* Author row */}
               <div className="flex items-center gap-3 mb-4">
                 <motion.div
-                  className="w-10 h-10 rounded-full bg-gradient-to-br from-secondary to-brand-green flex items-center justify-center text-white font-bold text-sm"
+                  className="w-10 h-10 rounded-full bg-gradient-to-br from-secondary to-brand-green flex items-center justify-center text-white font-bold text-sm overflow-hidden shrink-0"
                   whileHover={{ scale: 1.15, rotate: 10 }}
                 >
-                  {review.avatar}
+                  {review.photo ? (
+                    <img
+                      src={review.photo}
+                      alt=""
+                      loading="lazy"
+                      width={40}
+                      height={40}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    review.name.charAt(0).toUpperCase()
+                  )}
                 </motion.div>
                 <div>
                   <div className="font-semibold text-foreground text-sm">{review.name}</div>
@@ -216,6 +250,7 @@ const GoogleReviews = () => {
             </motion.div>
           ))}
         </motion.div>
+        )}
 
         {/* CTA */}
         <motion.div

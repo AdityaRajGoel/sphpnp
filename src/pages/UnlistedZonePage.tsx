@@ -60,26 +60,8 @@ const UnlistedSpacePage = () => {
               "telephone": "+919416400314",
             },
           },
-          "aggregateRating": {
-            "@type": "AggregateRating",
-            "ratingValue": 4.8,
-            "reviewCount": 120,
-            "bestRating": 5,
-            "worstRating": 1,
-          },
-          "review": {
-            "@type": "Review",
-            "reviewRating": {
-              "@type": "Rating",
-              "ratingValue": 5,
-              "bestRating": 5,
-            },
-            "author": {
-              "@type": "Person",
-              "name": "Verified Investor",
-            },
-            "reviewBody": "Excellent service for unlisted shares. Seamless Demat transfers and competitive pricing for pre-IPO investments.",
-          },
+          // aggregateRating + review removed: self-authored, and not rendered
+          // on the page - both barred by Google's review-snippet policy.
         }}
       />
       <ScrollProgress />
