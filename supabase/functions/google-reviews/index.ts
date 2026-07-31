@@ -21,7 +21,14 @@ const corsHeaders = {
 };
 
 // The Panipat branch listing. Same profile the "write a review" CTA points at.
-const PLACE_ID = "ChIJ6zHm2Pzb0TkRJ_5hCPHVKaw";
+//
+// This was "ChIJ6zHm2Pzb0TkRJ_5hCPHVKaw" (an O where a D belongs), inherited
+// from the CTA link. A place ID base64-encodes two fixed64s - the feature ID
+// and the CID - and in the broken value only the CID half survived: it decoded
+// to 0x39d1dbfcd8e631eb:0xac29d5f10861fe27, while the listing both Maps links
+// on the site resolve to is 0x390ddbfcd8e631eb:0xac29d5f10861fe27. A malformed
+// place ID is a 404 from Places, which this function reports as a 502.
+const PLACE_ID = "ChIJ6zHm2PzbDTkRJ_5hCPHVKaw";
 
 // Places charges per call. Reviews move slowly, so let the CDN and browser hold
 // the response for 6h; stale-while-revalidate keeps the section instant on a
@@ -74,9 +81,21 @@ Deno.serve(async (req) => {
     });
 
     if (!res.ok) {
-      const detail = await res.text();
-      console.error(`Places API ${res.status}: ${detail}`);
-      return json({ error: "Upstream review lookup failed" }, 502, { "Cache-Control": "no-store" });
+      const body = await res.text();
+      console.error(`Places API ${res.status}: ${body}`);
+      // Echo Google's status enum (NOT_FOUND, PERMISSION_DENIED, SERVICE_DISABLED...)
+      // so a failure is diagnosable from the response instead of needing a
+      // redeploy to add logging. The enum carries no secret; the free-text
+      // message stays in the logs.
+      let status: string | undefined;
+      try {
+        status = (JSON.parse(body) as { error?: { status?: string } }).error?.status;
+      } catch {
+        /* non-JSON upstream error - the log line above is the record */
+      }
+      return json({ error: "Upstream review lookup failed", detail: status ?? res.status }, 502, {
+        "Cache-Control": "no-store",
+      });
     }
 
     const place = (await res.json()) as PlacesResponse;
