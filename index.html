@@ -73,8 +73,11 @@
        "noindex, nofollow" and relied on Google picking the stricter directive. -->
 
   <!-- Geo & language targeting -->
-  <link rel="alternate" hreflang="en-IN" href="https://www.sphpnp.com/" />
-  <link rel="alternate" hreflang="x-default" href="https://www.sphpnp.com/" />
+  <!-- No static hreflang here on purpose. Helmet emits a per-page pair (SEOHead.tsx)
+       and link tags are additive, not replaced - a hardcoded pair pointing at "/"
+       shipped alongside it on every prerendered page, so each URL declared
+       hreflang="en-IN" for two different targets. Conflicting return tags make
+       Google discard the whole hreflang cluster. -->
   <meta name="geo.region" content="IN-HR" />
   <meta name="geo.placename" content="Panipat" />
   <meta name="geo.position" content="29.3909;76.9635" />
@@ -97,26 +100,11 @@
   <!-- Bing Webmaster verification -->
   <meta name="msvalidate.01" content="87203ED3921993C83F2A456716D1ABAF" />
   <link rel="sitemap" type="application/xml" title="Sitemap" href="https://www.sphpnp.com/sitemap.xml" />
-  <!-- Static WebSite schema for Googlebot pre-hydration -->
-  <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@type": "WebSite",
-    "name": "Shri Parasram Holdings Panipat",
-    "alternateName": ["Shri Parasram Holdings Pvt. Ltd.", "Parasram India"],
-    "url": "https://www.sphpnp.com",
-    "description": "Best stock broker in Panipat, Haryana. SEBI registered since 1970.",
-    "inLanguage": "en-IN",
-    "potentialAction": {
-      "@type": "SearchAction",
-      "target": {
-        "@type": "EntryPoint",
-        "urlTemplate": "https://www.sphpnp.com/screener?q={search_term_string}"
-      },
-      "query-input": "required name=search_term_string"
-    }
-  }
-  </script>
+  <!-- No static WebSite schema here on purpose: SEOHead emits a richer one
+       (sameAs, description) on the homepage and the prerenderer bakes it into the
+       shipped HTML, so a hardcoded copy is not replaced - it is appended. The
+       homepage was serving two competing WebSite entities, which splits the
+       Sitelinks/SearchAction signal instead of reinforcing it. -->
 </head>
 
 <body>

@@ -154,7 +154,7 @@ const ReportsPage = () => {
     <PageTransition>
       <SEOHead
         title="Market Reports & Data Downloads | Parasram India Panipat"
-        description="Download NSE, BSE & MCX bhavcopy and end-of-day reports, track FII/DII activity and corporate actions, and export option-chain and screener data - all from Parasram India Panipat."
+        description="Download NSE, BSE & MCX bhavcopy and end-of-day reports, track FII/DII activity and corporate actions, and export option-chain data. Parasram India Panipat."
         canonical="https://www.sphpnp.com/reports"
         breadcrumbs={[{ name: "Home", url: "/" }, { name: "Reports & Downloads" }]}
         jsonLd={{

@@ -123,7 +123,7 @@ const PricingPage = () => {
       <div className="min-h-screen bg-background">
         <SEOHead
           title="Brokerage Charges & Pricing | Parasram India Panipat"
-          description="Transparent brokerage: free Demat account opening, 0.15% equity delivery, 0.02% intraday & futures, ₹30/lot options. Full charge sheet for Parasram India Panipat."
+          description="Transparent brokerage: free Demat account opening, 0.15% equity delivery, 0.02% intraday & futures, ₹30/lot options. Full charge sheet from Parasram India."
           canonical="https://www.sphpnp.com/pricing"
           breadcrumbs={[{ name: "Home", url: "/" }, { name: "Pricing & Charges" }]}
           faqItems={faqs.map((f) => ({ question: f.q, answer: f.a }))}

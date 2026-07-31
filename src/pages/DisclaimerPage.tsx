@@ -13,7 +13,7 @@ const DisclaimerPage = () => {
     <PageTransition>
       <SEOHead
         title="Disclaimer | Parasram India Panipat"
-        description="Disclaimer for the sphpnp.com website of Shri Parasram Holdings (Panipat Branch) - information accuracy, investment risk, warranty and liability limitations, and third-party links."
+        description="Disclaimer for the Shri Parasram Holdings Panipat website - information accuracy, investment risk, warranty and liability limitations, and third-party links."
         canonical="https://www.sphpnp.com/disclaimer"
         breadcrumbs={[
           { name: "Home", url: "/" },

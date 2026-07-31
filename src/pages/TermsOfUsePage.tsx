@@ -13,7 +13,7 @@ const TermsOfUsePage = () => {
     <PageTransition>
       <SEOHead
         title="Terms of Use | Parasram India Panipat"
-        description="Terms of Use governing the sphpnp.com website of Shri Parasram Holdings (Panipat Branch) - eligibility, account obligations, brokerage, market-risk disclosure, liability and grievance redressal."
+        description="Terms of Use for the Shri Parasram Holdings Panipat website - eligibility, account obligations, brokerage, market-risk disclosure and grievance redressal."
         canonical="https://www.sphpnp.com/terms"
         breadcrumbs={[
           { name: "Home", url: "/" },

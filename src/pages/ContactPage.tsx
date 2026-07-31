@@ -41,16 +41,11 @@ const ContactPage = () => {
           { name: "Home", url: "/" },
           { name: "Contact" },
         ]}
+        // No page-level LocalBusiness jsonLd here: SEOHead already emits a richer
+        // FinancialService+LocalBusiness for the same entity on every page.
+        // A second, barer copy with no shared @id read as two different
+        // businesses at the same address.
         faqItems={contactFAQs.map(f => ({ question: f.q, answer: f.a }))}
-        jsonLd={{
-          "@type": "LocalBusiness",
-          "name": "Shri Parasram Holdings Panipat",
-          "telephone": "+919416400314",
-          "email": "parasrampnp@gmail.com",
-          "address": { "@type": "PostalAddress", "streetAddress": "Shakuntala Complex, Palika Bazaar", "addressLocality": "Panipat", "addressRegion": "Haryana", "postalCode": "132103", "addressCountry": "IN" },
-          "openingHours": ["Mo-Fr 09:00-18:00", "Sa 09:00-14:00"],
-          "geo": { "@type": "GeoCoordinates", "latitude": "29.3909", "longitude": "76.9635" },
-        }}
       />
       <ScrollProgress />
       <Header />

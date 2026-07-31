@@ -112,8 +112,8 @@ const InvestorCornerPage = () => {
   return (
     <PageTransition>
       <SEOHead
-        title="Investor Corner - Compliance & Investor Protection | Parasram India Panipat"
-        description="SEBI-mandated investor protection information from Shri Parasram Holdings (Panipat): derivatives risk disclosure, investor advisories, do's & don'ts, account freezing, grievance redressal, SCORES and SMART ODR."
+        title="Investor Corner - Compliance & Protection | Parasram India"
+        description="SEBI-mandated investor protection from Shri Parasram Holdings Panipat: derivatives risk disclosure, advisories, do's & don'ts, grievance redressal and SCORES."
         canonical="https://www.sphpnp.com/investor-corner"
         breadcrumbs={[
           { name: "Home", url: "/" },

@@ -11,8 +11,8 @@ const SIPCalculatorPage = () => (
   <PageTransition>
     <div className="min-h-screen bg-background flex flex-col">
       <SEOHead
-        title="SIP Calculator — Plan Your Mutual Fund SIP Returns"
-        description="Use Parasram India's free SIP calculator to estimate future value of your monthly mutual fund investments. Calculate wealth growth, total invested, and expected returns."
+        title="SIP Calculator - Mutual Fund SIP Returns | Parasram India"
+        description="Free SIP calculator to estimate the future value of your monthly mutual fund investments. Calculate wealth growth, total invested and expected returns."
         canonical="https://www.sphpnp.com/sip-calculator"
         breadcrumbs={[
           { name: "Home", url: "/" },

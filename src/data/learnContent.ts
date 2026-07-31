@@ -451,7 +451,7 @@ For occasional investors, the fee gap is small in absolute terms - what matters 
     slug: "tax-on-share-market-income",
     title: "Tax on Share Market Income in India: STCG, LTCG & F&O Explained",
     metaDescription:
-      "How share market income is taxed in India: 20% STCG, 12.5% LTCG above ₹1.25 lakh, F&O as business income, intraday as speculative income, plus STT and TDS rules.",
+      "How share market income is taxed in India: 20% STCG, 12.5% LTCG above ₹1.25 lakh, F&O as business income, intraday as speculative income, plus STT and TDS.",
     category: "investing",
     difficulty: "Intermediate",
     readTime: 8,
@@ -517,7 +517,7 @@ Securities Transaction Tax is deducted automatically on every trade:
     slug: "how-to-buy-unlisted-shares",
     title: "How to Buy Unlisted Shares in India: Process, Risks & Taxation",
     metaDescription:
-      "Step-by-step guide to buying unlisted and pre-IPO shares in India: how off-market transfers work, minimum lots, the 6-month lock-in, risks, and how gains are taxed.",
+      "Step-by-step guide to buying unlisted and pre-IPO shares in India: how off-market transfers work, minimum lots, the 6-month lock-in, risks and taxation.",
     category: "investing",
     difficulty: "Intermediate",
     readTime: 7,
@@ -574,7 +574,7 @@ The unlisted market has no SEBI order-matching protections - your counterparty *
     slug: "fno-basics",
     title: "Futures and Options (F&O) Basics: A Beginner's Guide for India",
     metaDescription:
-      "Understand F&O trading in India: what futures and options are, lots and expiry, SPAN margins, premiums, CE/PE, hedging vs speculation - and the risks SEBI warns about.",
+      "Understand F&O trading in India: futures and options explained, lots and expiry, SPAN margins, premiums, CE/PE, hedging vs speculation, and the risks involved.",
     category: "trading",
     difficulty: "Intermediate",
     readTime: 8,
@@ -632,7 +632,7 @@ F&O income is **non-speculative business income** - see our [tax guide](/learn/t
     slug: "margin-trading-facility-mtf",
     title: "What is MTF? Margin Trading Facility in India Explained Simply",
     metaDescription:
-      "MTF lets you buy delivery stocks by paying part of the value while your broker funds the rest. How margins, pledging, interest and square-offs work - and when MTF makes sense.",
+      "MTF lets you buy delivery stocks by paying part of the value while your broker funds the rest. How margins, pledging, interest and square-offs work in India.",
     category: "trading",
     difficulty: "Intermediate",
     readTime: 6,
