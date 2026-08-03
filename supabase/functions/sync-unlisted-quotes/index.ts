@@ -35,6 +35,12 @@ interface Quote {
   source_url: string;
   price: number;
   sector: string | null;
+  /** Minimum dealable lot, where the dealer publishes one. */
+  lot_size: number | null;
+  /** The dealer's own stamp on the quote, not our collection time. */
+  as_of: string | null;
+  /** Deep link to that company's page, so a reader can verify one number. */
+  quote_url: string | null;
 }
 
 /**
@@ -69,35 +75,82 @@ async function getHtml(url: string): Promise<string> {
   return res.text();
 }
 
-/** UnlistedZone: share list is escaped JSON inside the RSC flight payload. */
+/**
+ * UnlistedZone ships its share list as escaped JSON inside the Next.js RSC
+ * flight payload, so the array is extracted and parsed rather than scraped.
+ *
+ * An earlier version matched `"name"` then read the other fields from a fixed
+ * window after it. That silently misattributed data: `slug` precedes `name` in
+ * each object, so the window ran into the *next* company and picked up its slug
+ * and sector — Hindustan Power Exchange was being labelled "Renewable Energy",
+ * which is Onix's sector. Parsing the real array removes that whole class of
+ * bug, and picks up entries the regex was dropping.
+ */
+function extractShares(html: string): Array<Record<string, unknown>> {
+  const marker = '\\"shares\\":[';
+  const start = html.indexOf(marker);
+  if (start < 0) return [];
+
+  // Walk the escaped source counting brackets, skipping string contents so a
+  // bracket inside a company name cannot terminate the array early.
+  let depth = 0;
+  let inStr = false;
+  let end = -1;
+  for (let i = start + marker.length - 1; i < html.length; i++) {
+    const c = html[i];
+    if (inStr) {
+      if (c === "\\" && html.slice(i, i + 2) === '\\"') { i++; inStr = false; }
+      continue;
+    }
+    if (c === "\\" && html.slice(i, i + 2) === '\\"') { i++; inStr = true; continue; }
+    if (c === "[") depth++;
+    else if (c === "]") { depth--; if (depth === 0) { end = i; break; } }
+  }
+  if (end < 0) return [];
+
+  const raw = html
+    .slice(start + marker.length - 1, end + 1)
+    .replace(/\\"/g, '"')
+    .replace(/\\u0026/g, "&")
+    .replace(/\\\\/g, "\\");
+
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
 async function unlistedZone(): Promise<Quote[]> {
   const html = await getHtml("https://www.unlistedzone.com/shares");
   const out: Quote[] = [];
   const seen = new Set<string>();
 
-  const re =
-    /\\"name\\":\\"([^"\\]{3,120})\\"[\s\S]{0,400}?\\"price\\":([0-9]+(?:\.[0-9]+)?)/g;
-
-  for (const m of html.matchAll(re)) {
-    const name = m[1].replace(/\\u0026/g, "&").trim();
-    const price = Number(m[2]);
+  for (const share of extractShares(html)) {
+    const name = typeof share.name === "string" ? share.name.trim() : "";
+    const price = Number(share.price);
     // Companies are published at 0 until a rate is set. Zero is not a price.
-    if (!Number.isFinite(price) || price <= 0) continue;
+    if (!name || !Number.isFinite(price) || price <= 0) continue;
 
     const key = matchKey(name);
     if (!key || seen.has(key)) continue;
     seen.add(key);
 
-    const sector = html
-      .slice(m.index, m.index + 400)
-      .match(/\\"sector\\":\\"([^"\\]{0,60})\\"/)?.[1]
-      ?.replace(/\\u0026/g, "&") ?? null;
+    const asOf = typeof share.as_of === "string" ? share.as_of : null;
+    const slug = typeof share.slug === "string" ? share.slug : null;
+    const lot = Number(share.lot_size);
 
     out.push({
       match_key: key,
       company_name: name,
       price,
-      sector,
+      sector: typeof share.sector === "string" ? share.sector : null,
+      lot_size: Number.isFinite(lot) && lot > 0 ? lot : null,
+      // Kept only when it parses as a real date; a malformed value would
+      // otherwise be shown to readers as the quote's age.
+      as_of: asOf && !Number.isNaN(Date.parse(asOf)) ? asOf.slice(0, 10) : null,
+      quote_url: slug ? `https://www.unlistedzone.com/shares/${slug}` : null,
       source: "UnlistedZone",
       source_url: "https://www.unlistedzone.com/shares",
     });
@@ -131,7 +184,12 @@ async function stockify(): Promise<Quote[]> {
       match_key: key,
       company_name: `${name} Unlisted Shares`,
       price,
+      // The index page carries name and price only. Left null rather than
+      // guessed - an invented lot size is worse than an absent one.
       sector: null,
+      lot_size: null,
+      as_of: null,
+      quote_url: null,
       source: "Stockify",
       source_url: "https://stockify.net.in/unlisted-shares/",
     });
