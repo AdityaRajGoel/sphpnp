@@ -1,6 +1,6 @@
 import { useState, ReactNode } from "react";
 import { useT } from "@/i18n/LanguageContext";
-import { ExternalLink, Instagram, Phone, Mail, Facebook, ArrowUp, Twitter, Shield, AlertCircle, ChevronDown, ArrowRight, BadgeCheck } from "lucide-react";
+import { ExternalLink, Instagram, Phone, Mail, Facebook, ArrowUp, Twitter, Github, Shield, AlertCircle, ChevronDown, ArrowRight, BadgeCheck } from "lucide-react";
 import { motion } from "motion/react";
 import { Link } from "react-router-dom";
 import logo80 from "@/assets/logo-80.webp";
@@ -63,6 +63,9 @@ const socialLinks = [
   { href: "mailto:parasrampnp@gmail.com", icon: Mail, label: "Email" },
   { href: "https://www.facebook.com/share/18B5W5rZaT/", icon: Facebook, label: "Facebook" },
   { href: "https://x.com/ParasramPanipat", icon: Twitter, label: "X" },
+  // Source for this site. Not a social profile, but it shares the icon row
+  // because it is the same kind of "go read more about us elsewhere" link.
+  { href: "https://github.com/AdityaRajGoel/sphpnp", icon: Github, label: "Source code on GitHub" },
 ];
 
 // Collapsible on mobile, always open on md+
@@ -181,7 +184,7 @@ const Footer = () => {
             <p className="text-primary-foreground/70 text-sm mb-4">
               Science of Investment - Your trusted partner for wealth creation since 1970.
             </p>
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3">
               {socialLinks.map((item) => (
                 <a
                   key={item.label}
