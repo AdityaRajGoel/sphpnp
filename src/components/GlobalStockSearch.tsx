@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback, useMemo, lazy, Suspense } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Search, X, TrendingUp, TrendingDown, Loader2, CandlestickChart, LineChart, Bot } from "lucide-react";
+import { Search, X, TrendingUp, TrendingDown, Loader2, CandlestickChart, LineChart, Bot, SlidersHorizontal } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
@@ -10,6 +10,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import PriceChart from "@/components/charts/PriceChart";
 const AIAnalysisModal = lazy(() => import("@/components/AIAnalysisModal"));
+// Split out: KLineChart is browser-only and ~40kB, and most visitors never open
+// the advanced view. Lazy here keeps it off the critical path for everyone else.
+const AdvancedChart = lazy(() => import("@/components/charts/AdvancedChart"));
 
 type StockResult = {
   symbol: string;
@@ -32,7 +35,7 @@ type StockResult = {
 
 type ChartPoint = { t: number; o: number; h: number; l: number; c: number; v: number };
 type TimeRange = "1d" | "5d" | "1mo" | "3mo" | "6mo" | "1y" | "5y";
-type ChartMode = "candle" | "line";
+type ChartMode = "candle" | "line" | "advanced";
 
 const TIME_RANGES: { key: TimeRange; label: string }[] = [
   { key: "1d", label: "1D" },
@@ -365,14 +368,26 @@ const GlobalStockSearch = ({ className }: Props) => {
                         <button
                           className={`p-1 rounded ${chartMode === "candle" ? "bg-secondary text-secondary-foreground" : "text-muted-foreground"}`}
                           onClick={() => setChartMode("candle")}
+                          aria-label="Candlestick chart"
+                          aria-pressed={chartMode === "candle"}
                         >
                           <CandlestickChart className="w-3.5 h-3.5" />
                         </button>
                         <button
                           className={`p-1 rounded ${chartMode === "line" ? "bg-secondary text-secondary-foreground" : "text-muted-foreground"}`}
                           onClick={() => setChartMode("line")}
+                          aria-label="Line chart"
+                          aria-pressed={chartMode === "line"}
                         >
                           <LineChart className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          className={`p-1 rounded ${chartMode === "advanced" ? "bg-secondary text-secondary-foreground" : "text-muted-foreground"}`}
+                          onClick={() => setChartMode("advanced")}
+                          aria-label="Advanced chart with indicators and drawing tools"
+                          aria-pressed={chartMode === "advanced"}
+                        >
+                          <SlidersHorizontal className="w-3.5 h-3.5" />
                         </button>
                       </div>
                     </div>
@@ -384,11 +399,22 @@ const GlobalStockSearch = ({ className }: Props) => {
                         <Loader2 className="h-6 w-6 animate-spin text-brand-orange opacity-50" />
                       </div>
                     ) : chartData.length > 1 ? (
-                      <PriceChart
-                        data={chartData}
-                        mode={chartMode === "candle" ? "candle" : "area"}
-                        height={220}
-                      />
+                      chartMode === "advanced" ? (
+                        <Suspense fallback={<div className="h-[300px] w-full flex items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-brand-orange opacity-50" /></div>}>
+                          <AdvancedChart
+                            data={chartData}
+                            ticker={selected.symbol}
+                            height={300}
+                            defaultIndicators={["VOL", "MA"]}
+                          />
+                        </Suspense>
+                      ) : (
+                        <PriceChart
+                          data={chartData}
+                          mode={chartMode === "candle" ? "candle" : "area"}
+                          height={220}
+                        />
+                      )
                     ) : (
                       <div className="h-[220px] flex items-center justify-center text-xs text-muted-foreground font-medium">
                         Live technical data unavailable for this range

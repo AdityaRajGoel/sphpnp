@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { toCandles, toVolume, zipSeries, sma, type ApiChartPoint } from "@/lib/chart-data";
+import { toCandles, toKLineData, toVolume, zipSeries, sma, type ApiChartPoint } from "@/lib/chart-data";
 
 /** One trading day of ticks, in the shape the Supabase functions actually return. */
 const point = (tMs: number, o: number, h: number, l: number, c: number, v = 1000): ApiChartPoint =>
@@ -49,6 +49,35 @@ describe("toCandles", () => {
 
   it("returns an empty array for no input", () => {
     expect(toCandles([])).toEqual([]);
+  });
+});
+
+describe("toKLineData", () => {
+  it("keeps timestamps in milliseconds, unlike the lightweight-charts path", () => {
+    // KLineChart expects ms, which is already what the feed emits. Dividing by
+    // 1000 here would be the same class of bug toCandles exists to avoid, only
+    // in the opposite direction.
+    const [bar] = toKLineData([point(1_700_000_000_000, 1, 2, 0.5, 1.5)]);
+    expect(bar.timestamp).toBe(1_700_000_000_000);
+  });
+
+  it("maps OHLCV onto the bar shape", () => {
+    const [bar] = toKLineData([point(1_700_000_000_000, 1, 2, 0.5, 1.5, 42)]);
+    expect(bar).toEqual({ timestamp: 1_700_000_000_000, open: 1, high: 2, low: 0.5, close: 1.5, volume: 42 });
+  });
+
+  it("sorts ascending and drops unusable points, as the renderer requires", () => {
+    const bars = toKLineData([
+      point(3_000, 3, 3, 3, 3),
+      point(1_000, 1, 1, 1, 1),
+      point(2_000, 2, 2, 2, NaN),
+    ]);
+    expect(bars.map((b) => b.timestamp)).toEqual([1_000, 3_000]);
+  });
+
+  it("substitutes zero for a non-finite volume rather than emitting NaN", () => {
+    const [bar] = toKLineData([point(1_000, 1, 1, 1, 1, NaN)]);
+    expect(bar.volume).toBe(0);
   });
 });
 

@@ -120,6 +120,42 @@ export function zipSeries(
   return out;
 }
 
+/**
+ * Bars for KLineChart, which backs the advanced chart.
+ *
+ * Note the absence of a unit conversion: KLineChart timestamps are
+ * milliseconds, which is already what the feed emits, so unlike the
+ * lightweight-charts path above there is nothing to divide by 1000. Getting
+ * this backwards is the failure the module header describes — the chart still
+ * renders, just with every bar placed decades away — so it is worth stating
+ * plainly rather than leaving the reader to infer it from the absence of code.
+ *
+ * Runs through the same `normalise` as the candlestick adapter: KLineChart also
+ * expects strictly ascending unique timestamps.
+ */
+export interface KLineBar {
+  timestamp: number;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume: number;
+  /** KLineChart's own `KLineData` carries an index signature for user fields.
+   *  Without a matching one here the bars are not assignable to it. */
+  [key: string]: unknown;
+}
+
+export function toKLineData(points: readonly ApiChartPoint[]): KLineBar[] {
+  return normalise(points).map((p) => ({
+    timestamp: p.t,
+    open: p.o,
+    high: p.h,
+    low: p.l,
+    close: p.c,
+    volume: Number.isFinite(p.v) ? p.v : 0,
+  }));
+}
+
 // `sma` deliberately lives in technicals.ts alongside rsi/ema/rebase.
 // Re-exported here so chart callers have one import for chart-shaped helpers.
 export { sma } from "./technicals";
