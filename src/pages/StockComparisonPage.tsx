@@ -10,11 +10,21 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { GitCompareArrows, Search, X, TrendingUp, TrendingDown, Star, Bot, Share2, Zap } from "lucide-react";
+import { GitCompareArrows, Search, X, TrendingUp, TrendingDown, Star, Bot, Share2, Zap, Maximize2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import type { StockForAnalysis } from "@/components/AIAnalysisModal";
 import PageTransition from "@/components/PageTransition";
 import { EASE_OUT } from "@/lib/motion";
+import AdvancedChartDialog from "@/components/charts/AdvancedChartDialog";
+import type { ApiChartPoint } from "@/lib/chart-data";
+
+/** Ranges offered in the advanced window, and what fetch-stock-chart expects. */
+const CHART_RANGES = [
+  { label: "1M", range: "1mo" },
+  { label: "3M", range: "3mo" },
+  { label: "6M", range: "6mo" },
+  { label: "1Y", range: "1y" },
+] as const;
 const AIAnalysisModal = lazy(() => import("@/components/AIAnalysisModal"));
 
 type Stock = {
@@ -68,6 +78,12 @@ function RangeBar({ price, low, high }: { price: number | null; low: number | nu
 const StockComparisonPage = () => {
   const [allStocks, setAllStocks] = useState<Stock[]>([]);
   const [selected, setSelected] = useState<Stock[]>([]);
+  // This page compares fundamentals and holds no price history, so the advanced
+  // window fetches OHLC for the one symbol it is opened on.
+  const [advStock, setAdvStock] = useState<Stock | null>(null);
+  const [advRange, setAdvRange] = useState<string>("6mo");
+  const [advPoints, setAdvPoints] = useState<ApiChartPoint[]>([]);
+  const [advLoading, setAdvLoading] = useState(false);
   const [search, setSearch] = useState("");
   const [searchOpen, setSearchOpen] = useState<number | null>(null);
   const [analyzingStock, setAnalyzingStock] = useState<StockForAnalysis | null>(null);
@@ -97,6 +113,21 @@ const StockComparisonPage = () => {
   const removeStock = useCallback((symbol: string) => {
     setSelected(prev => prev.filter(s => s.symbol !== symbol));
   }, []);
+
+  useEffect(() => {
+    if (!advStock) return;
+    let cancelled = false;
+    setAdvLoading(true);
+    supabase.functions
+      .invoke("fetch-stock-chart", { body: { symbol: advStock.symbol, range: advRange } })
+      .then(({ data }) => {
+        if (!cancelled) setAdvPoints(Array.isArray(data?.dataPoints) ? data.dataPoints : []);
+      })
+      .finally(() => {
+        if (!cancelled) setAdvLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [advStock, advRange]);
 
   const loadPreset = useCallback((symbols: string[]) => {
     const matched = symbols.map(sym => allStocks.find(s => s.symbol === sym)).filter(Boolean) as Stock[];
@@ -267,6 +298,13 @@ const StockComparisonPage = () => {
                   <span className={`w-2.5 h-2.5 rounded-full ${["bg-brand-orange", "bg-secondary", "bg-blue-500"][i]}`} />
                   {selected[i].symbol}
                   {overallWinner === i && <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />}
+                  <button
+                    onClick={() => setAdvStock(selected[i])}
+                    aria-label={`Open the advanced chart for ${selected[i].symbol}`}
+                    className="hover:text-secondary ml-1"
+                  >
+                    <Maximize2 className="w-3.5 h-3.5" />
+                  </button>
                   <button onClick={() => removeStock(selected[i].symbol)} className="hover:text-destructive ml-1">
                     <X className="w-3.5 h-3.5" />
                   </button>
@@ -428,6 +466,28 @@ const StockComparisonPage = () => {
         </AnimatePresence>
       </main>
       <Footer />
+      <AdvancedChartDialog
+        open={advStock !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setAdvStock(null);
+            // Cleared on close so a different symbol cannot briefly show the
+            // previous one's history while its own fetch is in flight.
+            setAdvPoints([]);
+          }
+        }}
+        data={advPoints}
+        ticker={advStock?.symbol ?? ""}
+        title={advStock?.symbol ?? ""}
+        subtitle={advStock?.name}
+        price={advStock?.price != null ? `₹${advStock.price.toLocaleString("en-IN")}` : undefined}
+        change={advStock?.change != null ? `${advStock.change >= 0 ? "+" : ""}${advStock.change.toFixed(2)}%` : undefined}
+        up={(advStock?.change ?? 0) >= 0}
+        ranges={CHART_RANGES}
+        activeRange={advRange}
+        onRangeChange={setAdvRange}
+        loading={advLoading}
+      />
       <WhatsAppButton />
 
       {/* Lazy: recharts only downloads when an analysis is opened */}

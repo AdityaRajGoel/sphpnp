@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { Chart } from "klinecharts";
+import type { Chart, PeriodType } from "klinecharts";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toKLineData, type ApiChartPoint, type KLineBar } from "@/lib/chart-data";
 
@@ -110,6 +110,37 @@ function chartStyles() {
 }
 
 /**
+ * Infer the bar period from the data rather than assuming daily.
+ *
+ * KLineChart formats the time axis from the period it is told, so a 1D
+ * intraday series declared as `day` renders every label as the same date -
+ * "2026-08-03" repeated across the axis, which is what this fixes.
+ *
+ * The median gap is used, not the mean: an overnight or weekend hole between
+ * two sessions would drag a mean far enough to turn minute bars into hours.
+ */
+function inferPeriod(bars: readonly KLineBar[]): { type: PeriodType; span: number } {
+  if (bars.length < 3) return { type: "day", span: 1 };
+
+  const gaps: number[] = [];
+  for (let i = 1; i < bars.length; i++) {
+    const d = bars[i].timestamp - bars[i - 1].timestamp;
+    if (d > 0) gaps.push(d);
+  }
+  if (gaps.length === 0) return { type: "day", span: 1 };
+
+  gaps.sort((a, b) => a - b);
+  const median = gaps[Math.floor(gaps.length / 2)];
+  const MIN = 60_000;
+
+  if (median < 60 * MIN) return { type: "minute", span: Math.max(1, Math.round(median / MIN)) };
+  if (median < 20 * 60 * MIN) return { type: "hour", span: Math.max(1, Math.round(median / (60 * MIN))) };
+  if (median < 6 * 24 * 60 * MIN) return { type: "day", span: 1 };
+  if (median < 27 * 24 * 60 * MIN) return { type: "week", span: 1 };
+  return { type: "month", span: 1 };
+}
+
+/**
  * Add one indicator.
  *
  * Shared by the initial render and the chips so they cannot disagree. They did
@@ -165,6 +196,7 @@ const AdvancedChart = ({
   // — writing a ref mid-render is a side effect in a phase that must stay pure.
   const bars = useMemo(() => toKLineData(data), [data]);
   const barsRef = useRef(bars);
+  const hasVolume = useMemo(() => bars.some((b) => b.volume > 0), [bars]);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -187,11 +219,17 @@ const AdvancedChart = ({
       if (!chart) return;
 
       chart.setSymbol({ ticker, pricePrecision, volumePrecision: 0 });
-      chart.setPeriod({ type: "day", span: 1 });
+      chart.setPeriod(inferPeriod(barsRef.current));
       chart.setDataLoader(makeLoader(barsRef));
 
-      // Draw whatever the chips already claim is on.
-      for (const name of initialIndicators.current) addIndicator(chart, name);
+      // Draw whatever the chips already claim is on, minus VOL when there is no
+      // volume to draw. Indices carry none, so the feed returns all zeros and
+      // the pane renders as a flat line at zero - the same reason PriceChart
+      // takes a `showVolume` prop.
+      for (const name of initialIndicators.current) {
+        if (name === "VOL" && !barsRef.current.some((b) => b.volume > 0)) continue;
+        addIndicator(chart, name);
+      }
 
       chartRef.current = chart;
       setReady(true);
@@ -280,7 +318,9 @@ const AdvancedChart = ({
           <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mr-1">
             Indicators
           </span>
-          {[...OVERLAY_INDICATORS, ...PANE_INDICATORS].map((name) => (
+          {[...OVERLAY_INDICATORS, ...PANE_INDICATORS]
+            .filter((name) => name !== "VOL" || hasVolume)
+            .map((name) => (
             <button
               key={name}
               type="button"

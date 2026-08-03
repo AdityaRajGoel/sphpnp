@@ -4,9 +4,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, X, Plus, LineChart, Loader2, TrendingUp, TrendingDown, Activity } from "lucide-react";
+import { Search, X, Plus, LineChart, Loader2, TrendingUp, TrendingDown, Activity, Maximize2 } from "lucide-react";
 import { sma, rsi, rsiZone, rebase, periodReturnPct } from "@/lib/technicals";
 import ComparisonChart, { LINE_COLORS } from "@/components/charts/ComparisonChart";
+import AdvancedChartDialog from "@/components/charts/AdvancedChartDialog";
+import type { ApiChartPoint } from "@/lib/chart-data";
 
 type ChartPoint = { t: number; c: number };
 type Series = { symbol: string; points: ChartPoint[] };
@@ -57,6 +59,15 @@ const ChartCompare = ({ stocks, selected, onChange }: ChartCompareProps) => {
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
+  /**
+   * The comparison itself keeps closes only, because it rebases every series to
+   * 100. Candlesticks drawn from close-only data would render as a wall of flat
+   * doji, which looks like real information and is not, so opening the advanced
+   * view refetches full OHLC for that one symbol.
+   */
+  const [advSymbol, setAdvSymbol] = useState<string | null>(null);
+  const [advPoints, setAdvPoints] = useState<ApiChartPoint[]>([]);
+  const [advLoading, setAdvLoading] = useState(false);
 
   // Cache fetched series by `${symbol}:${range}` so switching timeframe/stocks
   // never refetches something we already have.
@@ -88,6 +99,24 @@ const ChartCompare = ({ stocks, selected, onChange }: ChartCompareProps) => {
     load();
     return () => { cancelled = true; };
   }, [selected, range]);
+
+  useEffect(() => {
+    if (!advSymbol) return;
+    let cancelled = false;
+    setAdvLoading(true);
+    supabase.functions
+      .invoke("fetch-stock-chart", { body: { symbol: advSymbol, range } })
+      .then(({ data }) => {
+        if (cancelled) return;
+        setAdvPoints(Array.isArray(data?.dataPoints) ? data.dataPoints : []);
+      })
+      .finally(() => {
+        if (!cancelled) setAdvLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [advSymbol, range]);
 
   const nameOf = useCallback(
     (symbol: string) => stocks.find((s) => s.symbol === symbol)?.name ?? symbol,
@@ -236,6 +265,13 @@ const ChartCompare = ({ stocks, selected, onChange }: ChartCompareProps) => {
                 <div className="flex items-center gap-1.5 mb-1.5">
                   <span className="w-2.5 h-2.5 rounded-full" style={{ background: LINE_COLORS[i % LINE_COLORS.length] }} />
                   <span className="font-semibold text-sm text-foreground">{st.symbol}</span>
+                  <button
+                    onClick={() => setAdvSymbol(st.symbol)}
+                    aria-label={`Open the advanced chart for ${st.symbol}`}
+                    className="ml-auto text-muted-foreground hover:text-secondary transition-colors"
+                  >
+                    <Maximize2 className="w-3.5 h-3.5" />
+                  </button>
                 </div>
                 <div className="text-[11px] text-muted-foreground truncate mb-2">{nameOf(st.symbol)}</div>
                 <div className="flex items-center justify-between text-xs">
@@ -259,6 +295,26 @@ const ChartCompare = ({ stocks, selected, onChange }: ChartCompareProps) => {
       <p className="text-[11px] text-muted-foreground mt-3 text-center">
         Lines rebased to 100 at period start for like-for-like comparison. RSI &gt;70 overbought, &lt;30 oversold. Educational use only — not investment advice.
       </p>
+
+      <AdvancedChartDialog
+        open={advSymbol !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setAdvSymbol(null);
+            // Cleared on close so reopening a different symbol cannot flash the
+            // previous one's history before its own fetch lands.
+            setAdvPoints([]);
+          }
+        }}
+        data={advPoints}
+        ticker={advSymbol ?? ""}
+        title={advSymbol ?? ""}
+        subtitle={advSymbol ? nameOf(advSymbol) : undefined}
+        ranges={TIMEFRAMES.map((t) => ({ label: t.label, range: t.id }))}
+        activeRange={timeframe}
+        onRangeChange={setTimeframe}
+        loading={advLoading}
+      />
     </Card>
   );
 };

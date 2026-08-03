@@ -1,12 +1,16 @@
 import { motion } from "motion/react";
 import { useState, useMemo, useCallback, useEffect, memo } from "react";
-import { TrendingUp, TrendingDown, BarChart3, Activity, ArrowUpRight, ArrowDownRight, Clock, Layers, Gauge, LineChart } from "lucide-react";
+import { TrendingUp, TrendingDown, BarChart3, Activity, ArrowUpRight, ArrowDownRight, Clock, Layers, Gauge, LineChart, Maximize2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { useLiveMarket } from "@/hooks/useLiveMarket";
 import { supabase } from "@/integrations/supabase/client";
 import { revealItemX, revealSection } from "@/lib/motion";
 import PriceChart from "@/components/charts/PriceChart";
+import AdvancedChartDialog from "@/components/charts/AdvancedChartDialog";
 import { zipSeries } from "@/lib/chart-data";
+
+/** Ranges the index feed is fetched on, reused by the advanced window. */
+const TIMEFRAMES = ["1D", "1W", "1M", "3M", "1Y"] as const;
 
 // Calculate SMA
 const calcSMA = (data: number[], period: number): (number | null)[] => {
@@ -280,6 +284,7 @@ const LiveChart = () => {
   const [activeIndexKey, setActiveIndexKey] = useState("NIFTY");
   const [activeTimeframe, setActiveTimeframe] = useState("1D");
   const [showIndicators, setShowIndicators] = useState(true);
+  const [advancedOpen, setAdvancedOpen] = useState(false);
   const nextOpenCountdown = useCountdown(nextMarketOpen);
   const closeCountdown = useCountdown(marketClose);
 
@@ -470,8 +475,17 @@ const LiveChart = () => {
                       <LineChart className="w-3 h-3" />
                       <span className="hidden sm:inline">Indicators</span>
                     </button>
+                    <button
+                      onClick={() => setAdvancedOpen(true)}
+                      disabled={chartError || chartData.length < 2}
+                      aria-label={`Open the advanced chart for ${activeIndexKey}`}
+                      className="flex items-center gap-1 px-2 py-1 text-[10px] font-medium rounded-md transition-colors whitespace-nowrap text-muted-foreground hover:bg-muted/80 hover:text-foreground disabled:opacity-40 disabled:hover:bg-transparent"
+                    >
+                      <Maximize2 className="w-3 h-3" />
+                      <span className="hidden sm:inline">Advanced</span>
+                    </button>
                     <div className="flex gap-1">
-                      {["1D", "1W", "1M", "3M", "1Y"].map((tf) => (
+                      {TIMEFRAMES.map((tf) => (
                         <button key={tf} onClick={() => setActiveTimeframe(tf)}
                           className={`px-2 sm:px-2.5 py-1 text-xs font-medium rounded-md transition-colors whitespace-nowrap ${activeTimeframe === tf ? "bg-brand-orange/10 text-brand-orange border border-brand-orange/30" : "text-muted-foreground hover:bg-muted/80 hover:text-foreground"}`}>{tf}</button>
                       ))}
@@ -515,6 +529,22 @@ const LiveChart = () => {
                     />
                   )}
                 </motion.div>
+                <AdvancedChartDialog
+                  open={advancedOpen}
+                  onOpenChange={setAdvancedOpen}
+                  data={zipSeries(chartData, volumeData, timestamps)}
+                  ticker={activeIndexKey}
+                  title={activeIndex?.name ?? activeIndexKey}
+                  subtitle="NSE index"
+                  price={activeIndex?.price}
+                  change={activeIndex?.change}
+                  up={activeIndex?.up ?? true}
+                  ranges={TIMEFRAMES.map((tf) => ({ label: tf, range: tf }))}
+                  activeRange={activeTimeframe}
+                  onRangeChange={setActiveTimeframe}
+                  loading={loadingChart}
+                />
+
                 {/* The hardcoded time-label row that used to sit here is gone.
                     It existed because the SVG chart had no axis of its own, so
                     the labels were fixed strings that never matched the data.

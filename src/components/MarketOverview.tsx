@@ -14,6 +14,7 @@ import type { LucideIcon } from "lucide-react";
 import { useLiveMarket } from "@/hooks/useLiveMarket";
 import { supabase } from "@/integrations/supabase/client";
 import PriceChart from "@/components/charts/PriceChart";
+import AdvancedChartDialog from "@/components/charts/AdvancedChartDialog";
 import type { ApiChartPoint } from "@/lib/chart-data";
 import { useCorporateActions, useMarketFlows, useMfNavs } from "@/hooks/useMarketFeed";
 import { revealBar, revealItemX, revealSection } from "@/lib/motion";
@@ -151,6 +152,7 @@ const MarketOverview = () => {
   const [chartLoading, setChartLoading] = useState(false);
   const [chartError, setChartError] = useState(false);
   const [chartRange, setChartRange] = useState("1d");
+  const [advancedOpen, setAdvancedOpen] = useState(false);
   const { marketOverview: liveData, commodities: liveCommodities, vix, fetchedAt } = useLiveMarket();
   const { actions: corpActions } = useCorporateActions();
   const { flows } = useMarketFlows();
@@ -457,7 +459,17 @@ const MarketOverview = () => {
               {/* Interactive chart */}
               <div className="bg-muted/30 rounded-xl p-3 border border-border/30">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-[10px] text-muted-foreground font-medium">Price Chart</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] text-muted-foreground font-medium">Price Chart</span>
+                    <button
+                      onClick={() => setAdvancedOpen(true)}
+                      disabled={chartLoading || chartError || chartPoints.length < 2}
+                      aria-label={`Open the advanced chart for ${selectedStock.name}`}
+                      className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-medium rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors disabled:opacity-40 disabled:hover:bg-transparent"
+                    >
+                      <Maximize2 className="w-3 h-3" /> Advanced
+                    </button>
+                  </div>
                   <div className="flex gap-1">
                     {/* These used to be inert, with the active state hardcoded
                         onto the first one via `first:bg-muted`. They now drive
@@ -497,6 +509,21 @@ const MarketOverview = () => {
                 ) : (
                   <PriceChart data={chartPoints} mode="area" height={220} />
                 )}
+                <AdvancedChartDialog
+                  open={advancedOpen}
+                  onOpenChange={setAdvancedOpen}
+                  data={chartPoints}
+                  ticker={selectedStock.symbol ?? selectedStock.name}
+                  title={selectedStock.name}
+                  subtitle={selectedStock.symbol ? "NSE" : undefined}
+                  price={selectedStock.price}
+                  change={selectedStock.change}
+                  up={selectedStock.up}
+                  ranges={RANGES}
+                  activeRange={chartRange}
+                  onRangeChange={setChartRange}
+                  loading={chartLoading}
+                />
               </div>
             </>
           )}
