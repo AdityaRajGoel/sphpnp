@@ -1,8 +1,8 @@
-import { Phone, TrendingUp, TrendingDown, ShieldCheck, Handshake, ArrowRight, Sparkles, Star, ChevronRight, BadgeCheck, Clock, AlertTriangle, Building2, MapPin, Calendar, BarChart3 } from "lucide-react";
+import { Search, Phone, TrendingUp, TrendingDown, ShieldCheck, Handshake, ArrowRight, Sparkles, Star, ChevronRight, BadgeCheck, Clock, AlertTriangle, Building2, MapPin, Calendar, BarChart3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { motion, Variants, AnimatePresence } from "motion/react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { EASE_OUT, revealFade, revealPop, revealSection } from "@/lib/motion";
 
@@ -29,10 +29,26 @@ const howItWorks = [
 const containerVariants: Variants = { hidden: { opacity: 0 }, visible: { opacity: 1, transition: { staggerChildren: 0.1 } } };
 const itemVariants: Variants = { hidden: { opacity: 0, y: 30 }, visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: EASE_OUT } } };
 
+type SortKey = "name" | "price-asc" | "price-desc";
+
+/**
+ * Quoted prices arrive as display strings ("₹1,250", "1,250.50"), not numbers,
+ * so sorting by value needs the digits pulled back out. Anything unparseable
+ * sorts last rather than being treated as zero, which would put it at the top
+ * of an ascending sort and read as the cheapest share on offer.
+ */
+const priceValue = (raw: string): number => {
+  const n = Number(String(raw).replace(/[^0-9.]/g, ""));
+  return Number.isFinite(n) && n > 0 ? n : Number.POSITIVE_INFINITY;
+};
+
 const UnlistedShares = () => {
   const [stocks, setStocks] = useState<StockItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedStock, setSelectedStock] = useState<StockItem | null>(null);
+  const [query, setQuery] = useState("");
+  const [sector, setSector] = useState<string>("all");
+  const [sort, setSort] = useState<SortKey>("name");
 
   useEffect(() => {
     const fetchShares = async () => {
@@ -100,6 +116,37 @@ const UnlistedShares = () => {
     };
   }, []);
 
+  const sectors = useMemo(
+    () => [...new Set(stocks.map((s) => s.sector || "General"))].sort(),
+    [stocks],
+  );
+
+  /**
+   * The catalogue runs to 50+ companies in one flat grid. Without a way to
+   * narrow it, finding a specific name means scrolling the whole list, which is
+   * the difference between a browsable catalogue and a wall.
+   */
+  const visibleStocks = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    const filtered = stocks.filter((s) => {
+      const matchesSector = sector === "all" || (s.sector || "General") === sector;
+      const matchesQuery =
+        !q ||
+        s.name.toLowerCase().includes(q) ||
+        s.short.toLowerCase().includes(q) ||
+        (s.sector ?? "").toLowerCase().includes(q);
+      return matchesSector && matchesQuery;
+    });
+
+    // Copied before sorting: sort mutates, and mutating the state array in a
+    // memo would reorder `stocks` itself behind React's back.
+    return [...filtered].sort((a, b) => {
+      if (sort === "price-asc") return priceValue(a.price) - priceValue(b.price);
+      if (sort === "price-desc") return priceValue(b.price) - priceValue(a.price);
+      return a.name.localeCompare(b.name);
+    });
+  }, [stocks, query, sector, sort]);
+
   // Escape key to close stock detail modal
   useEffect(() => {
     if (!selectedStock) return;
@@ -146,6 +193,53 @@ const UnlistedShares = () => {
             <p className="text-muted-foreground">Contact us for live pricing & availability</p>
           </motion.div>
 
+          {/* Catalogue controls. Rendered only once there is something to
+              narrow: showing a disabled search box over a skeleton or over the
+              "quotes unavailable" state suggests the list is empty because of
+              a filter, which would be misleading. */}
+          {!isLoading && stocks.length > 0 && (
+            <div className="flex flex-col sm:flex-row gap-3 mb-6 max-w-3xl mx-auto">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                <input
+                  type="search"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Search company or sector..."
+                  aria-label="Search unlisted shares"
+                  className="w-full h-10 pl-10 pr-3 rounded-lg border border-border bg-card text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-secondary/40"
+                />
+              </div>
+              <select
+                value={sector}
+                onChange={(e) => setSector(e.target.value)}
+                aria-label="Filter by sector"
+                className="h-10 px-3 rounded-lg border border-border bg-card text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-secondary/40"
+              >
+                <option value="all">All sectors</option>
+                {sectors.map((sec) => (
+                  <option key={sec} value={sec}>{sec}</option>
+                ))}
+              </select>
+              <select
+                value={sort}
+                onChange={(e) => setSort(e.target.value as SortKey)}
+                aria-label="Sort shares"
+                className="h-10 px-3 rounded-lg border border-border bg-card text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-secondary/40"
+              >
+                <option value="name">Name (A-Z)</option>
+                <option value="price-asc">Price (low to high)</option>
+                <option value="price-desc">Price (high to low)</option>
+              </select>
+            </div>
+          )}
+
+          {!isLoading && stocks.length > 0 && (
+            <p className="text-center text-xs text-muted-foreground mb-6" aria-live="polite">
+              Showing {visibleStocks.length} of {stocks.length} companies
+            </p>
+          )}
+
           {isLoading ? (
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {[1, 2, 3].map((i) => (
@@ -176,8 +270,20 @@ const UnlistedShares = () => {
               </p>
             </div>
           ) : (
-            <motion.div key={stocks.length} className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4" variants={containerVariants} initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-50px" }}>
-              {stocks.map((stock, index) => (
+            visibleStocks.length === 0 ? (
+              <div className="py-10 text-center">
+                <p className="text-sm font-medium text-foreground">No companies match your filters</p>
+                <button
+                  type="button"
+                  onClick={() => { setQuery(""); setSector("all"); }}
+                  className="text-xs text-secondary font-semibold hover:underline mt-1"
+                >
+                  Clear filters
+                </button>
+              </div>
+            ) : (
+            <motion.div key={`${sector}-${sort}-${visibleStocks.length}`} className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4" variants={containerVariants} initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-50px" }}>
+              {visibleStocks.map((stock, index) => (
                 <motion.div key={stock.name} variants={itemVariants}>
                   <Card className="group cursor-pointer transition-[color,background-color,border-color,box-shadow] duration-base border-border/50 hover:border-secondary/50 hover:shadow-xl hover:shadow-secondary/5"
                     onClick={() => setSelectedStock(stock)}>
@@ -218,6 +324,7 @@ const UnlistedShares = () => {
                 </motion.div>
               ))}
             </motion.div>
+            )
           )}
 
           <motion.p className="text-center text-muted-foreground mt-8 text-base" {...revealFade}>

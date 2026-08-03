@@ -1,0 +1,37 @@
+# Daily refresh of other dealers' indicative unlisted-share prices, feeding the
+# rate-comparison block on /unlisted-space.
+#
+# The scraping lives in the sync-unlisted-quotes edge function, not here, so the
+# service-role key stays a Supabase secret. Same repo secrets as the other syncs:
+#   SUPABASE_ANON_KEY   - the project's anon/publishable key (passes the edge gateway)
+#   MARKET_SYNC_SECRET  - must match the SYNC_SECRET set on the edge function
+#
+# These are indicative rates that move slowly and are not exchange-traded, so
+# once a day well before the desk opens is enough.
+name: Unlisted Quotes Sync
+
+on:
+  schedule:
+    # 02:30 UTC = 08:00 IST, daily
+    - cron: "30 2 * * *"
+  workflow_dispatch: {}
+
+# Only calls the Supabase edge function via curl - never checks out the repo or
+# touches the GitHub API, so GITHUB_TOKEN needs no permissions at all.
+permissions: {}
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger sync-unlisted-quotes
+        run: |
+          resp=$(curl -sS -w "\n%{http_code}" --max-time 180 \
+            -X POST "https://zbkjbbujsdlpujotgltm.supabase.co/functions/v1/sync-unlisted-quotes" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "x-sync-secret: ${{ secrets.MARKET_SYNC_SECRET }}")
+          body=$(echo "$resp" | sed '$d'); code=$(echo "$resp" | tail -1)
+          echo "$body"
+          # A partial parse returns 500 with a failures[] list: a source whose
+          # markup changed must fail the run rather than quietly freeze the block.
+          [ "$code" = "200" ] || exit 1

@@ -2,6 +2,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import VisibleBreadcrumbs from "@/components/VisibleBreadcrumbs";
 import UnlistedShares from "@/components/UnlistedShares";
+import UnlistedPriceComparison from "@/components/UnlistedPriceComparison";
 import ContactForm from "@/components/ContactForm";
 import WhatsAppButton from "@/components/WhatsAppButton";
 import ScrollProgress from "@/components/ScrollProgress";
@@ -68,6 +69,7 @@ const UnlistedSpacePage = () => {
       <Header />
       <VisibleBreadcrumbs items={[{ name: "Home", url: "/" }, { name: "Unlisted Space" }]} />
       <UnlistedShares />
+      <UnlistedPriceComparison />
 
       {/* How unlisted investing works - scrollytelling */}
       <section className="py-10 md:py-20 bg-background relative overflow-hidden" aria-labelledby="unlisted-how-heading">
