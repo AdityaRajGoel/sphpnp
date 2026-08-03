@@ -5,11 +5,27 @@ import VisibleBreadcrumbs from "@/components/VisibleBreadcrumbs";
 import PageTransition from "@/components/PageTransition";
 import ScrollProgress from "@/components/ScrollProgress";
 import WhatsAppButton from "@/components/WhatsAppButton";
+import { motion } from "motion/react";
 import {
   ShieldCheck, AlertTriangle, Scale, CheckCircle2, XCircle, Snowflake,
   ExternalLink, FileText, Landmark, Vote, MessagesSquare, KeyRound, Phone, Mail,
   Building2, Users, Banknote, Printer,
 } from "lucide-react";
+import { DURATION, EASE_OUT, revealSection } from "@/lib/motion";
+import { useScrollSpy } from "@/hooks/useScrollSpy";
+
+/** Anchor targets, in document order. Module scope so the observer in
+ *  useScrollSpy is built once rather than on every render. */
+const SECTIONS = [
+  ["risk", "Derivatives Risk"],
+  ["advisory", "Investor Advisory"],
+  ["dos-donts", "Do's & Don'ts"],
+  ["freeze", "Freeze Account"],
+  ["grievance", "Grievances"],
+  ["links", "Official Links"],
+] as const;
+
+const SECTION_IDS = SECTIONS.map(([id]) => id);
 
 // SEBI-mandated standard Risk Disclosure on Derivatives (verbatim per
 // SEBI/HO/MIRSD/MIRSD-PoD-1/P/CIR/2023/73 - must be displayed by brokers).
@@ -97,7 +113,12 @@ const OFFICIAL_LINKS: { label: string; desc: string; href: string; icon: typeof 
 ];
 
 const SectionCard = ({ id, icon: Icon, title, children }: { id: string; icon: typeof Scale; title: string; children: React.ReactNode }) => (
-  <section id={id} aria-labelledby={`${id}-h`} className="bg-card p-6 md:p-8 rounded-2xl border border-border shadow-sm scroll-mt-24">
+  <motion.section
+    id={id}
+    aria-labelledby={`${id}-h`}
+    className="bg-card p-6 md:p-8 rounded-2xl border border-border shadow-sm scroll-mt-24"
+    {...revealSection}
+  >
     <div className="flex items-center gap-3 mb-5">
       <div className="w-10 h-10 bg-secondary/10 rounded-xl flex items-center justify-center text-secondary shrink-0">
         <Icon className="w-5 h-5" />
@@ -105,8 +126,49 @@ const SectionCard = ({ id, icon: Icon, title, children }: { id: string; icon: ty
       <h2 id={`${id}-h`} className="text-xl md:text-2xl font-heading font-bold text-foreground">{title}</h2>
     </div>
     {children}
-  </section>
+  </motion.section>
 );
+
+/**
+ * Anchor nav that tracks reading position.
+ *
+ * The highlight is one shared `layoutId` element rather than a background on
+ * each pill, so Motion moves a single node between them. That keeps it on
+ * transform — no width/left animation, no layout pass per frame — and gives
+ * the page the sense of being live without costing anything on scroll.
+ */
+const SectionNav = () => {
+  const activeId = useScrollSpy(SECTION_IDS);
+
+  return (
+    <nav aria-label="Investor corner sections" className="flex flex-wrap gap-2 mb-10">
+      {SECTIONS.map(([id, label]) => {
+        const isActive = activeId === id;
+        return (
+          <a
+            key={id}
+            href={`#${id}`}
+            aria-current={isActive ? "true" : undefined}
+            className={`relative text-xs font-semibold px-3.5 py-1.5 rounded-full border transition-colors ${
+              isActive
+                ? "border-transparent text-foreground"
+                : "border-border bg-card text-muted-foreground hover:text-foreground hover:border-secondary/40"
+            }`}
+          >
+            {isActive && (
+              <motion.span
+                layoutId="investor-nav-active"
+                className="absolute inset-0 rounded-full bg-secondary/10 border border-secondary/40"
+                transition={{ duration: DURATION.base, ease: [...EASE_OUT] }}
+              />
+            )}
+            <span className="relative">{label}</span>
+          </a>
+        );
+      })}
+    </nav>
+  );
+};
 
 const InvestorCornerPage = () => {
   return (
@@ -147,14 +209,8 @@ const InvestorCornerPage = () => {
               the official versions on parasramindia.com.
             </p>
 
-            {/* Quick anchors */}
-            <nav aria-label="Investor corner sections" className="flex flex-wrap gap-2 mb-10">
-              {[["risk", "Derivatives Risk"], ["advisory", "Investor Advisory"], ["dos-donts", "Do's & Don'ts"], ["freeze", "Freeze Account"], ["grievance", "Grievances"], ["links", "Official Links"]].map(([id, label]) => (
-                <a key={id} href={`#${id}`} className="text-xs font-semibold px-3.5 py-1.5 rounded-full border border-border bg-card text-muted-foreground hover:text-foreground hover:border-secondary/40 transition-colors">
-                  {label}
-                </a>
-              ))}
-            </nav>
+            {/* Quick anchors, highlighting whichever section is on screen */}
+            <SectionNav />
 
             <div className="space-y-8">
               {/* SEBI derivatives risk disclosure */}

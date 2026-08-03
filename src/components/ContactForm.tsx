@@ -1,4 +1,4 @@
-import { motion } from "motion/react";
+import { AnimatePresence, motion } from "motion/react";
 import { useState, useRef } from "react";
 import { Send, Loader2, CheckCircle2, User, Phone, Mail, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -8,7 +8,35 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { RippleButton } from "@/components/ui/ripple-button";
 
-import { revealSection } from "@/lib/motion";
+import { DURATION, EASE_OUT, revealSection } from "@/lib/motion";
+
+/**
+ * Validation messages used to appear and vanish instantly, which shifts every
+ * field below them by a line with no bridge — the classic teleporting-state
+ * problem, and worst on the field you are still typing in.
+ *
+ * Height is animated here rather than transformed. That is normally the wrong
+ * call, but the point of the motion is to open the gap the text will occupy,
+ * and a transform cannot reserve layout space. The cost is one line of text in
+ * a form that is idle between keystrokes, and `role="alert"` keeps the message
+ * announced the moment it renders rather than when the animation finishes.
+ */
+const FieldError = ({ message }: { message?: string }) => (
+  <AnimatePresence initial={false}>
+    {message && (
+      <motion.p
+        role="alert"
+        className="text-destructive text-xs mt-1 overflow-hidden"
+        initial={{ opacity: 0, height: 0 }}
+        animate={{ opacity: 1, height: "auto" }}
+        exit={{ opacity: 0, height: 0 }}
+        transition={{ duration: DURATION.fast, ease: [...EASE_OUT] }}
+      >
+        {message}
+      </motion.p>
+    )}
+  </AnimatePresence>
+);
 const PHONE_REGEX = /^(\+?91)?[6-9]\d{9}$/;
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -117,14 +145,14 @@ const ContactForm = () => {
             <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input name="name" aria-label="Your Name" placeholder="Your Name *" value={form.name} onChange={handleChange} className="pl-10" maxLength={100} required />
           </div>
-          {errors.name && <p className="text-destructive text-xs mt-1">{errors.name}</p>}
+          <FieldError message={errors.name} />
         </div>
         <div>
           <div className="relative">
             <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input name="phone" aria-label="Phone Number" placeholder="Phone Number *" value={form.phone} onChange={handleChange} className="pl-10" maxLength={15} required />
           </div>
-          {errors.phone && <p className="text-destructive text-xs mt-1">{errors.phone}</p>}
+          <FieldError message={errors.phone} />
         </div>
       </div>
 
@@ -133,7 +161,7 @@ const ContactForm = () => {
           <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input name="email" aria-label="Email Address" type="email" placeholder="Email (optional)" value={form.email} onChange={handleChange} className="pl-10" maxLength={255} />
         </div>
-        {errors.email && <p className="text-destructive text-xs mt-1">{errors.email}</p>}
+        <FieldError message={errors.email} />
       </div>
 
       <div>
@@ -141,7 +169,7 @@ const ContactForm = () => {
           <MessageSquare className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
           <Textarea name="message" aria-label="Your Message" placeholder="Your message..." value={form.message} onChange={handleChange} className="pl-10 min-h-[100px]" maxLength={1000} />
         </div>
-        {errors.message && <p className="text-destructive text-xs mt-1">{errors.message}</p>}
+        <FieldError message={errors.message} />
         <p className="text-muted-foreground text-[10px] mt-1 text-right">{form.message.length}/1000</p>
       </div>
 

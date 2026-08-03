@@ -525,3 +525,27 @@ input[type="range"]::-moz-range-thumb {
   0%, 100% { transform: scale(1); opacity: 0.15; }
   50% { transform: scale(1.3); opacity: 0.3; }
 }
+
+/* ========================================================================= */
+/* PRINT SAFETY                                                              */
+/* ========================================================================= */
+/*
+ * Scroll reveals start at opacity: 0 and only settle once the element enters
+ * the viewport. Printing does not scroll, so any section the reader never
+ * reached would otherwise come out blank — including the SEBI disclosures on
+ * Investor Corner, which ships an explicit "Print / Save PDF" button.
+ *
+ * `!important` is required here: Motion writes opacity as an inline style, and
+ * only an important declaration outranks it. Transforms are deliberately left
+ * alone — a reveal's leftover 24px offset is invisible on paper, whereas
+ * clearing every transform would break elements centred with translate.
+ */
+@media print {
+  *,
+  ::before,
+  ::after {
+    opacity: 1 !important;
+    animation: none !important;
+    transition: none !important;
+  }
+}
