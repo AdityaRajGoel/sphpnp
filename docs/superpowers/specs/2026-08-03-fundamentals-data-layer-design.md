@@ -61,40 +61,47 @@ non-negotiable rather than nice-to-have.
 
 ### Context resolution is the correctness trap
 
-A single Ind-AS filing contains 46 XBRL contexts, and the same financial tag
-appears under several of them. Reading `RevenueFromOperations` out of the
-Reliance Q3 FY25 filing by tag name alone returns four values. Resolving their
-`contextRef` to the declared period shows why:
+A single Ind-AS filing contains 46 XBRL contexts and repeats the same tag across
+them. In the Reliance Q3 FY25 filing, `RevenueFromOperations` appears twice:
 
-| contextRef | Period | Value |
-| --- | --- | --- |
-| `OneD` | 2024-10-01 to 2024-12-31 | ₹1,28,260 Cr (standalone) |
-| `FourD` | 2024-10-01 to 2024-12-31 | ₹3,96,645 Cr (consolidated) |
+| contextRef | Declared period | Value | Actually |
+| --- | --- | --- | --- |
+| `OneD` | 2024-10-01 to 2024-12-31 | ₹1,28,260 Cr | Current quarter |
+| `FourD` | 2024-10-01 to 2024-12-31 | ₹3,96,645 Cr | Nine-month year-to-date |
 
-**Both cover the identical period.** The context does not disambiguate quarter
-from year here — it disambiguates standalone from consolidated, and the two
-differ by roughly three times. A parser that takes the first matching tag
-publishes a standalone figure on a page labelled consolidated, or the reverse.
-On a stock page a retail investor acts on, that is a wrong number presented
-authoritatively.
+**Two rules follow, and both are counter-intuitive.**
+
+**1. The declared period cannot be trusted.** Both contexts above declare the
+identical three-month period, yet `FourD` holds the nine-month cumulative — it
+is the April-to-December figure carrying a October-to-December label. A parser
+that reads `<xbrli:period>` and believes it will store year-to-date revenue as
+a quarter, overstating the quarter roughly threefold.
+
+The reliable signal is the context id prefix, which encodes the *column* of the
+standard Indian results table: `One` = current quarter, `Four` = year to date.
+Only these two appear in this filing; longer prefixes such as
+`OneReportableSegmentRevenue01` are dimensional breakdowns of segments and
+operating expenses, not headline figures. A trailing `D` marks a duration
+context, `I` an instant.
+
+**2. Consolidation is a property of the filing, not the context.** The filing
+carries `NatureOfReportStandaloneConsolidated = Standalone` against *both*
+contexts. Standalone and consolidated are filed as separate documents — the
+registry for Reliance holds 84 non-consolidated and 46 consolidated filings.
+The basis therefore comes from the `consolidated` field of the
+`corporates-financial-results` response, never from parsing contexts.
 
 Therefore the parser MUST:
 
-1. Build a `contextRef` to (period, consolidation basis) map before reading any
-   fact, never match on tag name alone.
-2. Store the resolved basis explicitly in `is_consolidated`, and treat
-   standalone and consolidated as separate rows rather than one preferred
-   value.
-3. Reject a filing whose facts cannot be resolved to a known context, recording
-   `parse_status = 'failed'`, rather than guessing.
+1. Select headline facts by exact `contextRef` equal to `OneD`, never by tag
+   name alone and never by reading the declared period.
+2. Ignore `FourD` and every dimensional sub-context for headline figures.
+3. Take `is_consolidated` from the filing registry metadata, not the document.
+4. Reject a filing with no resolvable `OneD` context, recording
+   `parse_status = 'failed'`, rather than falling back to another context.
 
-Filings also carry both nine-month cumulative and three-month figures in other
-contexts, so the same discipline prevents a year-to-date number being stored as
-a quarter.
-
-`dgunning/edgartools` solves the equivalent problem for SEC filings; its
-context-resolution approach is the conceptual model, though the code is Python
-and US-specific.
+`dgunning/edgartools` solves the analogous problem for SEC filings, but its
+model assumes trustworthy context periods and so does not transfer directly.
 
 ### The regulatory gap
 
