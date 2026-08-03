@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { EASE_OUT, revealBar, revealFade, revealPop, revealSection, revealSpin } from "@/lib/motion";
+import { GOOGLE_REVIEWS_SNAPSHOT } from "@/data/googleReviewsSnapshot";
 
 // Reviews come from the live Google Business Profile via the google-reviews
 // edge function. This component previously shipped a hardcoded array of
@@ -53,8 +54,14 @@ const GoogleReviews = () => {
   }, []);
 
   const reviews = feed?.reviews ?? [];
-  const rating = feed?.rating ?? null;
-  const totalReviews = feed?.totalReviews ?? null;
+
+  // Fall back to the verified snapshot only for the headline figures, and only
+  // when the feed did not supply them. The snapshot carries no review text, so
+  // the grid below still renders nothing rather than substitute content - the
+  // rule this component was rewritten around is unchanged.
+  const usingSnapshot = feed?.rating == null;
+  const rating = feed?.rating ?? GOOGLE_REVIEWS_SNAPSHOT.rating;
+  const totalReviews = feed?.totalReviews ?? GOOGLE_REVIEWS_SNAPSHOT.totalReviews;
   const { scrollYProgress } = useScroll({
     target: sectionRef,
     offset: ["start end", "end start"],
@@ -126,10 +133,10 @@ const GoogleReviews = () => {
             {...revealBar}
           />
 
-          {/* Rating summary - only rendered once real GBP numbers have loaded.
-              Never render a placeholder score: a hardcoded rating drifts from
-              the real profile and reads as an unverifiable claim. */}
-          {rating !== null && (
+          {/* Rating summary. The figures are either live from the GBP feed or,
+              when that fails, the verified snapshot - which is dated on screen
+              below so a stale number is never passed off as today's. */}
+          {(
           <motion.div
             className="inline-flex items-center gap-4 bg-card border border-border rounded-2xl px-8 py-4 shadow-lg"
             {...revealPop()}
@@ -156,9 +163,20 @@ const GoogleReviews = () => {
                 ))}
               </div>
               <div className="text-sm text-muted-foreground">
-                {totalReviews !== null
-                  ? `Based on ${totalReviews.toLocaleString("en-IN")} Google review${totalReviews === 1 ? "" : "s"}`
-                  : "From our Google Business Profile"}
+                {`Based on ${totalReviews.toLocaleString("en-IN")} Google review${totalReviews === 1 ? "" : "s"}`}
+                {usingSnapshot && (
+                  <>
+                    {" "}
+                    <span className="whitespace-nowrap">
+                      (as of{" "}
+                      {new Date(GOOGLE_REVIEWS_SNAPSHOT.capturedOn).toLocaleDateString("en-IN", {
+                        month: "short",
+                        year: "numeric",
+                      })}
+                      )
+                    </span>
+                  </>
+                )}
               </div>
             </div>
             <img
