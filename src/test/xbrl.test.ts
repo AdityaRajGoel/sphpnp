@@ -54,3 +54,45 @@ describe("parseContexts", () => {
     expect(ctx.get("OneD")!.endDate).toBe("2024-12-31");
   });
 });
+
+import { parseIncomeStatement } from "../../supabase/functions/_shared/xbrl";
+
+describe("parseIncomeStatement", () => {
+  it("reads the current quarter, not the year to date", () => {
+    const s = parseIncomeStatement(xml)!;
+    // The FourD year-to-date value is 3966450000000. Returning that would mean
+    // the parser trusted the declared period instead of the column prefix.
+    expect(s.revenue).toBe(1282600000000);
+  });
+
+  it("extracts the rest of the headline figures", () => {
+    const s = parseIncomeStatement(xml)!;
+    expect(s.otherIncome).toBe(32140000000);
+    expect(s.totalIncome).toBe(1314740000000);
+    expect(s.totalExpenses).toBe(1198770000000);
+    expect(s.profitBeforeTax).toBe(115970000000);
+    expect(s.profitAfterTax).toBe(87210000000);
+    expect(s.basicEps).toBe(6.44);
+    expect(s.dilutedEps).toBe(6.44);
+  });
+
+  it("takes the quarter's EPS, not the year to date", () => {
+    // FourD carries 17.77 for the nine months. 6.44 is the quarter.
+    expect(parseIncomeStatement(xml)!.basicEps).toBe(6.44);
+  });
+
+  it("reports the period end from the headline context", () => {
+    expect(parseIncomeStatement(xml)!.periodEnd).toBe("2024-12-31");
+  });
+
+  it("returns null when the headline context is absent", () => {
+    expect(parseIncomeStatement("<xbrli:xbrl></xbrli:xbrl>")).toBeNull();
+  });
+
+  it("ignores segment breakdowns that share the column prefix", () => {
+    const s = parseIncomeStatement(xml)!;
+    // SegmentRevenueFromOperations under OneD is 1341330000000; picking it up
+    // would mean matching on tag substring rather than exact tag name.
+    expect(s.revenue).not.toBe(1341330000000);
+  });
+});
