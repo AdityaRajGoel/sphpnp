@@ -33,15 +33,24 @@ export type XbrlContext = {
   endDate: string | null;
 };
 
-const CONTEXT_RE = /<xbrli:context id="([^"]+)">([\s\S]*?)<\/xbrli:context>/g;
+// The opening tag's attribute list is captured as a blob rather than assuming
+// `id` is the only (or first) attribute — real filers and XBRL exporters vary
+// attribute order and sometimes add extras (e.g. xml:lang). Matching only
+// `id="..."` immediately before `>` would silently drop any context whose tag
+// doesn't happen to look exactly like that, with no error to signal the loss.
+const CONTEXT_RE = /<xbrli:context\b([^>]*)>([\s\S]*?)<\/xbrli:context>/g;
+const ID_ATTR_RE = /\bid="([^"]+)"/;
 const START_RE = /<xbrli:startDate>([^<]+)<\/xbrli:startDate>/;
 const END_RE = /<xbrli:endDate>([^<]+)<\/xbrli:endDate>/;
 const INSTANT_RE = /<xbrli:instant>([^<]+)<\/xbrli:instant>/;
 
 /**
  * Split a context id into its column prefix. "OneD" and "OneI" are both column
- * One; "OneReportableSegmentRevenue01D" is a dimensional breakdown of it and
- * must not be mistaken for a headline figure.
+ * One; "OneReportableSegmentRevenue01D" is ALSO column One by this function —
+ * `columnOf` only identifies the results-table column, it does not identify
+ * headline vs. dimensional-breakdown facts. Headline selection is exact-id
+ * equality against `HEADLINE_CONTEXT`, done by the caller; never derive it
+ * from `column`.
  */
 function columnOf(id: string): string {
   const m = /^(One|Two|Three|Four|Five|Six)/.exec(id);
@@ -54,7 +63,10 @@ export function parseContexts(xml: string): Map<string, XbrlContext> {
   let m: RegExpExecArray | null;
 
   while ((m = CONTEXT_RE.exec(xml)) !== null) {
-    const [, id, body] = m;
+    const [, attrs, body] = m;
+    const idMatch = ID_ATTR_RE.exec(attrs);
+    if (!idMatch) continue;
+    const id = idMatch[1];
     const instant = INSTANT_RE.exec(body);
     out.set(id, {
       id,
