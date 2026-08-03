@@ -31,3 +31,15 @@ Two naming traps confirmed against this file:
 The same file's `FourD` context holds the nine-month year-to-date figures —
 revenue 3966450000000 (₹3,96,645 Cr) and EPS 17.77 — while declaring the
 identical three-month period. That trap is the reason these tests exist.
+
+## Provenance
+
+**Source:** https://nsearchives.nseindia.com/corporate/xbrl/INDAS_117298_1348254_16012025082021.xml
+
+**Fetched:** 2026-08-03
+
+**SHA-256:** `7a4376e20bcff469a6674116f0e45a76233d6358517d082a0a714ba78e6c2e96`
+
+**Size:** 57,588 bytes
+
+NSE archives implement rate-limiting on automated fetches. Re-fetching this filing may fail transiently with HTTP/2 or timeout errors. The SHA-256 hash above is how to confirm that any replacement file is the same filing.
