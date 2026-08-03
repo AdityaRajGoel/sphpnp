@@ -266,6 +266,35 @@ const AdvancedChart = ({
   }, [ready]);
 
   /**
+   * Keep the canvas in step with its container.
+   *
+   * KLineChart sizes the canvas once at init and does not watch the element, so
+   * on a phone every later size change left it stale — rotating to landscape,
+   * the browser chrome collapsing on scroll, or the dialog re-laying out kept
+   * the old width and the plot either overflowed its box or stranded blank
+   * space beside it. A ResizeObserver is what makes the chart usable at a size
+   * that was not known at mount.
+   */
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!ready || !container || typeof ResizeObserver === "undefined") return;
+
+    // rAF-debounced: ResizeObserver can fire many times per frame during an
+    // orientation change, and resize() forces a synchronous re-render each time.
+    let frame = 0;
+    const observer = new ResizeObserver(() => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => chartRef.current?.resize());
+    });
+    observer.observe(container);
+
+    return () => {
+      cancelAnimationFrame(frame);
+      observer.disconnect();
+    };
+  }, [ready]);
+
+  /**
    * Chart mutation happens here, not inside the setState updater it used to
    * live in. React invokes updaters twice under StrictMode, so a remove ran and
    * the next invocation immediately re-created the indicator. Updaters must be
@@ -305,17 +334,24 @@ const AdvancedChart = ({
     setTool(null);
   }, []);
 
+  // shrink-0 keeps chips at their natural width inside the scrolling rows below
+  // instead of being squeezed to illegible slivers. The min-height is a touch
+  // target: at the previous py-1 these were ~24px tall, well under what a thumb
+  // can reliably hit.
   const chipBase =
-    "text-xs font-semibold px-2.5 py-1 rounded-lg border transition-colors duration-fast";
+    "shrink-0 inline-flex items-center justify-center min-h-[36px] sm:min-h-0 text-xs font-semibold px-3 py-1.5 sm:py-1 rounded-lg border transition-colors duration-fast";
   const chipOff =
     "border-border bg-card text-muted-foreground hover:text-foreground hover:border-secondary/40";
   const chipOn = "border-secondary/50 bg-secondary/10 text-secondary";
 
   return (
     <div className={className}>
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mb-3">
-        <div className="flex flex-wrap items-center gap-1.5">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mr-1">
+      {/* Sixteen chips wrap into a wall on a phone — tall enough that the chart
+          itself was pushed off screen. Below sm each group is a single
+          swipeable row instead; from sm up they wrap as before. */}
+      <div className="space-y-2 mb-3 sm:flex sm:flex-wrap sm:items-center sm:gap-x-4 sm:gap-y-2 sm:space-y-0">
+        <div className="flex items-center gap-1.5 overflow-x-auto -mx-1 px-1 pb-1 sm:mx-0 sm:px-0 sm:pb-0 sm:flex-wrap sm:overflow-visible [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <span className="shrink-0 text-[10px] font-bold uppercase tracking-wider text-muted-foreground mr-1">
             Indicators
           </span>
           {[...OVERLAY_INDICATORS, ...PANE_INDICATORS]
@@ -334,8 +370,8 @@ const AdvancedChart = ({
           ))}
         </div>
 
-        <div className="flex flex-wrap items-center gap-1.5">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mr-1">
+        <div className="flex items-center gap-1.5 overflow-x-auto -mx-1 px-1 pb-1 sm:mx-0 sm:px-0 sm:pb-0 sm:flex-wrap sm:overflow-visible [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <span className="shrink-0 text-[10px] font-bold uppercase tracking-wider text-muted-foreground mr-1">
             Draw
           </span>
           {DRAWING_TOOLS.map(({ name, label }) => (
