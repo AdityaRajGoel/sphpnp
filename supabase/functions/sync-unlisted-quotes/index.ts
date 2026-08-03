@@ -2,7 +2,7 @@
 // dealers, powering the "How our rates compare" block on /unlisted-space.
 //
 //   sources: https://www.unlistedzone.com/shares   (Next.js RSC payload, JSON)
-//            https://stockify.net.in/unlisted-shares/  (server-rendered text)
+//            https://stockify.net.in/unlisted-shares-price-list-india/  (server-rendered text)
 //
 // Trigger: GitHub Actions cron (.github/workflows/unlisted-quotes.yml).
 // Protected by SYNC_SECRET; writes use the service-role key. Safe to re-run.
@@ -66,12 +66,30 @@ function matchKey(name: string): string {
     .replace(/\s+/g, "-");
 }
 
-async function getHtml(url: string): Promise<string> {
+/**
+ * One retry on a 5xx, because the alternative is crying wolf.
+ *
+ * A source that stops parsing must fail the run loudly - that is the whole
+ * point of the failure policy. But a dealer's server returning a momentary 502
+ * is not that, and a red build for every blip trains people to ignore red
+ * builds. Retried once, briefly; anything still failing after that is real.
+ *
+ * 4xx is not retried: a 404 or 403 means the URL or our access changed, and
+ * asking again will not fix it.
+ */
+async function getHtml(url: string, attempt = 0): Promise<string> {
   const res = await fetch(url, {
     headers: { "User-Agent": USER_AGENT, Accept: "text/html" },
     signal: AbortSignal.timeout(30_000),
   });
-  if (!res.ok) throw new Error(`${url} returned HTTP ${res.status}`);
+
+  if (!res.ok) {
+    if (res.status >= 500 && attempt === 0) {
+      await new Promise((r) => setTimeout(r, 3_000));
+      return getHtml(url, attempt + 1);
+    }
+    throw new Error(`${url} returned HTTP ${res.status}`);
+  }
   return res.text();
 }
 
@@ -160,7 +178,7 @@ async function unlistedZone(): Promise<Quote[]> {
 
 /** Stockify: server-rendered as "<company> Unlisted Shares ₹1,234.56". */
 async function stockify(): Promise<Quote[]> {
-  const html = await getHtml("https://stockify.net.in/unlisted-shares/");
+  const html = await getHtml("https://stockify.net.in/unlisted-shares-price-list-india/");
   const text = html
     .replace(/<[^>]+>/g, " ")
     .replace(/&amp;/g, "&")
@@ -191,7 +209,7 @@ async function stockify(): Promise<Quote[]> {
       as_of: null,
       quote_url: null,
       source: "Stockify",
-      source_url: "https://stockify.net.in/unlisted-shares/",
+      source_url: "https://stockify.net.in/unlisted-shares-price-list-india/",
     });
   }
   return out;
