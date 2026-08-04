@@ -67,7 +67,23 @@ Deno.serve(async (req) => {
   const { data: cursorRow } = await supabase
     .from("sync_cursors").select("cursor").eq("job", JOB).maybeSingle();
 
-  const start = cursorRow?.cursor ? symbols.indexOf(cursorRow.cursor) + 1 : 0;
+  let start = 0;
+  if (cursorRow?.cursor) {
+    const idx = symbols.indexOf(cursorRow.cursor);
+    if (idx === -1) {
+      // The stored cursor symbol is no longer in the universe (delisted or
+      // renamed out of screener_stocks). Restarting from the top is the
+      // deliberate, safe choice - but it costs a full extra pass over NSE's
+      // public endpoints, so it must show up in the logs rather than being
+      // indistinguishable from an ordinary batch boundary.
+      console.error(
+        `cursor symbol ${cursorRow.cursor} no longer in universe; restarting from the top`,
+      );
+      start = 0;
+    } else {
+      start = idx + 1;
+    }
+  }
   const batch = symbols.slice(Math.max(0, start), Math.max(0, start) + BATCH_SIZE);
   const summary = { symbols: batch.length, filings: 0, parsed: 0, failed: 0 };
 
@@ -107,8 +123,17 @@ Deno.serve(async (req) => {
       if (existing?.content_hash === hash && existing?.parse_status === "parsed") continue;
 
       const statement = parseIncomeStatement(xml);
-      const status = statement ? "parsed" : "failed";
 
+      // fundamentals_income.filing_id references fundamentals_filings.id, so the
+      // filing row has to exist (and therefore be upserted) before the income
+      // write can happen - the two writes cannot be reordered outright. What CAN
+      // be controlled is when the row is allowed to read "parsed": that flip is
+      // deferred to a second, later write that only happens once the income
+      // upsert has actually succeeded. Until then the row carries a non-terminal
+      // status, so a crash or a failed income write leaves content_hash paired
+      // with something other than "parsed" - the skip check at the top of this
+      // loop will not treat it as done, and the next run retries it instead of
+      // silently losing the row forever.
       const { data: filingRow, error: fErr } = await supabase
         .from("fundamentals_filings")
         .upsert({
@@ -121,7 +146,7 @@ Deno.serve(async (req) => {
           xbrl_url: f.xbrlUrl,
           filing_date: f.filingDate,
           content_hash: hash,
-          parse_status: status,
+          parse_status: statement ? "pending" : "failed",
           parse_error: statement ? null : "no OneD headline context",
           fetched_at: new Date().toISOString(),
         }, { onConflict: "symbol,from_date,to_date,is_consolidated" })
@@ -153,8 +178,39 @@ Deno.serve(async (req) => {
         fetched_at: new Date().toISOString(),
       }, { onConflict: "symbol,period_end,is_consolidated" });
 
-      if (iErr) console.error("income upsert:", iErr.message);
-      else summary.parsed++;
+      if (iErr) {
+        // The filing must not be left in "pending" silently - "pending" already
+        // guarantees a retry, but the failure needs to be visible in the
+        // response, not just in logs, matching the summary contract for every
+        // other failure path in this run.
+        console.error("income upsert:", iErr.message);
+        summary.failed++;
+        const { error: markErr } = await supabase
+          .from("fundamentals_filings")
+          .update({
+            parse_status: "failed",
+            parse_error: `income upsert failed: ${iErr.message}`,
+          })
+          .eq("id", filingRow.id);
+        if (markErr) {
+          console.error("filing status update after income failure:", markErr.message);
+        }
+        continue;
+      }
+
+      const { error: markParsedErr } = await supabase
+        .from("fundamentals_filings")
+        .update({ parse_status: "parsed" })
+        .eq("id", filingRow.id);
+      // The income row is correct either way; only the status flag would lag
+      // behind. A lagging "pending" simply causes a harmless, idempotent
+      // reprocess next run (the income upsert overwrites with identical
+      // values), so this is not counted as a failure - but it is logged so a
+      // recurring pattern here is not invisible.
+      if (markParsedErr) {
+        console.error("filing status update to parsed:", markParsedErr.message);
+      }
+      summary.parsed++;
     }
   }
 
