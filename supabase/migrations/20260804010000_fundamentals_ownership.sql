@@ -22,10 +22,14 @@ create table if not exists corporate_actions (
   record_date  date,
   action_type  text not null,
   value        numeric,
-  description  text,
+  -- Included in the unique key: two distinct actions (e.g. an interim and a
+  -- special dividend) can share the same symbol, ex_date and action_type, and
+  -- must not collide and silently overwrite one another. A re-fetch of the
+  -- same action has identical raw text and still dedupes correctly.
+  description  text not null,
   source       text not null default 'nse',
   fetched_at   timestamptz not null default now(),
-  unique (symbol, ex_date, action_type)
+  unique (symbol, ex_date, action_type, description)
 );
 
 create index if not exists corporate_actions_ex_date_idx

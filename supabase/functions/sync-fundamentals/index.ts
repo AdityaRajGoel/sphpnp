@@ -228,7 +228,7 @@ Deno.serve(async (req) => {
             source: "nse",
             fetched_at: new Date().toISOString(),
           })),
-          { onConflict: "symbol,ex_date,action_type" },
+          { onConflict: "symbol,ex_date,action_type,description" },
         );
       }
     } catch (err) {
