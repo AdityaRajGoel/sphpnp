@@ -3,6 +3,8 @@ import {
   toIsoDate,
   fetchFilingRegistry,
   fetchXbrl,
+  classifyAction,
+  extractActionValue,
 } from "../../supabase/functions/_shared/nse";
 
 describe("toIsoDate", () => {
@@ -193,5 +195,30 @@ describe("fetchFilingRegistry", () => {
     expect(result).toHaveLength(2);
     expect(result[0].isAudited).toBe(true);
     expect(result[1].isAudited).toBe(false);
+  });
+});
+
+describe("classifyAction", () => {
+  it("recognises the common actions", () => {
+    expect(classifyAction("Dividend - Rs 10 Per Share")).toBe("dividend");
+    expect(classifyAction("Bonus 1:1")).toBe("bonus");
+    expect(classifyAction("Face Value Split")).toBe("split");
+    expect(classifyAction("Rights Issue")).toBe("rights");
+    expect(classifyAction("Buy Back of Shares")).toBe("buyback");
+  });
+
+  it("falls back to other rather than guessing", () => {
+    expect(classifyAction("Annual General Meeting")).toBe("other");
+  });
+});
+
+describe("extractActionValue", () => {
+  it("pulls the rupee amount out", () => {
+    expect(extractActionValue("Dividend - Rs 10 Per Share")).toBe(10);
+    expect(extractActionValue("Dividend Rs.5.50 Per Share")).toBe(5.5);
+  });
+
+  it("returns null when there is no amount", () => {
+    expect(extractActionValue("Bonus 1:1")).toBeNull();
   });
 });

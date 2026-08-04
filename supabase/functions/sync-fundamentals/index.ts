@@ -13,6 +13,7 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 import {
   fetchFilingRegistry,
   fetchXbrl,
+  fetchCorporateActions,
   NSE_DELAY_MS,
   sleep,
 } from "../_shared/nse.ts";
@@ -212,6 +213,28 @@ Deno.serve(async (req) => {
       }
       summary.parsed++;
     }
+
+    try {
+      const actions = await fetchCorporateActions(symbol);
+      if (actions.length) {
+        await supabase.from("corporate_actions").upsert(
+          actions.map((a) => ({
+            symbol: a.symbol,
+            ex_date: a.exDate,
+            record_date: a.recordDate,
+            action_type: a.actionType,
+            value: a.value,
+            description: a.description,
+            source: "nse",
+            fetched_at: new Date().toISOString(),
+          })),
+          { onConflict: "symbol,ex_date,action_type" },
+        );
+      }
+    } catch (err) {
+      console.error(`corporate actions failed for ${symbol}:`, (err as Error).message);
+    }
+    await sleep(NSE_DELAY_MS);
   }
 
   const next = batch.length ? batch[batch.length - 1] : null;

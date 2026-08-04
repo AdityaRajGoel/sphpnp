@@ -86,3 +86,58 @@ export async function fetchFilingRegistry(symbol: string): Promise<FilingRecord[
 export async function fetchXbrl(url: string): Promise<string> {
   return (await nseGet(url, true)) as string;
 }
+
+export type CorporateAction = {
+  symbol: string;
+  exDate: string;
+  recordDate: string | null;
+  actionType: string;
+  value: number | null;
+  description: string;
+};
+
+/**
+ * Classify a free-text purpose into a type. NSE writes these as prose
+ * ("Dividend - Rs 10 Per Share"), so the raw text is kept in `description` and
+ * only the coarse type is derived — an unrecognised purpose becomes "other"
+ * rather than being forced into a category it may not belong to.
+ */
+export function classifyAction(purpose: string): string {
+  const p = purpose.toLowerCase();
+  if (p.includes("dividend")) return "dividend";
+  if (p.includes("bonus")) return "bonus";
+  if (p.includes("split")) return "split";
+  if (p.includes("rights")) return "rights";
+  if (p.includes("buy back") || p.includes("buyback")) return "buyback";
+  return "other";
+}
+
+/** Pull the rupee figure out of "Dividend - Rs 10 Per Share". Null when absent. */
+export function extractActionValue(purpose: string): number | null {
+  const m = /(?:rs\.?|inr)\s*([\d.]+)/i.exec(purpose);
+  if (!m) return null;
+  const n = Number(m[1]);
+  return Number.isFinite(n) ? n : null;
+}
+
+export async function fetchCorporateActions(symbol: string): Promise<CorporateAction[]> {
+  const url =
+    `https://www.nseindia.com/api/corporates-corporateActions` +
+    `?index=equities&symbol=${encodeURIComponent(symbol)}`;
+  const rows = (await nseGet(url)) as Array<Record<string, string>>;
+  if (!Array.isArray(rows)) return [];
+
+  return rows.flatMap((r) => {
+    const exDate = toIsoDate(r.exDate ?? "");
+    const purpose = r.subject ?? r.purpose ?? "";
+    if (!exDate || !purpose) return [];
+    return [{
+      symbol,
+      exDate,
+      recordDate: toIsoDate(r.recDate ?? ""),
+      actionType: classifyAction(purpose),
+      value: extractActionValue(purpose),
+      description: purpose,
+    }];
+  });
+}
