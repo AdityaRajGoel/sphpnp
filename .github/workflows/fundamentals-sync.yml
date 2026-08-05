@@ -1,0 +1,42 @@
+# Walks the tracked universe a few symbols at a time, resuming from a cursor
+# in sync_cursors. Hourly rather than daily because the batch is deliberately
+# small (BATCH_SIZE = 5 symbols in sync-fundamentals) and NSE is the
+# exchange's own public service, not an API sold to us - slow and polite
+# beats fast and blocked. Covering the full universe takes many runs; that is
+# the point, not a bug.
+#
+# Reuses the same repo secrets as bhavcopy-sync, market-feed and
+# unlisted-quotes - sync-fundamentals is protected by the same SYNC_SECRET
+# convention as those functions:
+#   SUPABASE_ANON_KEY   - the project's anon/publishable key (passes the edge gateway)
+#   MARKET_SYNC_SECRET  - must match the SYNC_SECRET set on the edge function
+name: Fundamentals sync
+
+on:
+  schedule:
+    - cron: "17 * * * *"
+  workflow_dispatch: {}
+
+# This workflow only calls the Supabase edge function via curl - it never
+# checks out the repo or touches the GitHub API, so GITHUB_TOKEN needs no
+# permissions at all.
+permissions: {}
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger sync-fundamentals
+        run: |
+          # A batch touches up to five symbols, and each symbol can carry many
+          # historical filings plus a corporate-actions call, every one of
+          # them paced against NSE_DELAY_MS. That can add up to well past the
+          # 120-180s window the lighter syncs use, so max-time is generous
+          # here on purpose.
+          resp=$(curl -sS -w "\n%{http_code}" --max-time 300 \
+            -X POST "https://zbkjbbujsdlpujotgltm.supabase.co/functions/v1/sync-fundamentals" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "x-sync-secret: ${{ secrets.MARKET_SYNC_SECRET }}")
+          body=$(echo "$resp" | sed '$d'); code=$(echo "$resp" | tail -1)
+          echo "$body"
+          [ "$code" = "200" ] || exit 1
