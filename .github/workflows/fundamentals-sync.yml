@@ -39,4 +39,27 @@ jobs:
             -H "x-sync-secret: ${{ secrets.MARKET_SYNC_SECRET }}")
           body=$(echo "$resp" | sed '$d'); code=$(echo "$resp" | tail -1)
           echo "$body"
+
+          # Two outcomes, because a filing parked at its retry cap and a filing
+          # that just failed to parse are not the same event:
+          #
+          #   200            every filing this batch touched either parsed or was
+          #                  deliberately skipped. Green.
+          #   500 + failed   at least one filing failed to parse or its income row
+          #                  could not be written. Red - the fundamentals tables
+          #                  feed a stock page, so a silent partial is the thing
+          #                  worth catching.
+          #
+          # `skipped` is annotated rather than failed on: a filing at
+          # MAX_PARSE_ATTEMPTS is a known state that needs a person to look at
+          # parse_error, not a fresh fault to redden every hour until they do.
+          # jq -e is avoided - an absent/zero key is the normal case, not an error
+          # - and a non-JSON body (a gateway HTML page) yields an empty string
+          # rather than failing the step here, leaving the exit code below as the
+          # only thing that decides the build.
+          skipped=$(echo "$body" | jq -r '.skipped // 0' 2>/dev/null || echo 0)
+          if [ -n "$skipped" ] && [ "$skipped" != "0" ] && [ "$skipped" != "null" ]; then
+            echo "::warning title=Fundamentals filings at retry cap::$skipped filing(s) skipped; check fundamentals_filings.parse_error"
+          fi
+
           [ "$code" = "200" ] || exit 1
