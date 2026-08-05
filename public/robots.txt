@@ -2,9 +2,14 @@ User-agent: Googlebot
 Allow: /
 # Decorative hero background, not a watch-page video. Blocking it stops the
 # "Video isn't on a watch page" report in Search Console and saves Googlebot
-# (and Googlebot-Video, which falls back to this group) from fetching a 1.37MB
-# asset it can never index. Longest-match wins, so this beats "Allow: /".
-Disallow: /video.mp4
+# (and Googlebot-Video, which falls back to this group) from fetching assets it
+# can never index. Longest-match wins, so this beats "Allow: /".
+# Four files now, not one: the loop ships as a desktop and a mobile rendition,
+# each as WebM with an MP4 fallback.
+Disallow: /hero-360.mp4
+Disallow: /hero-360.webm
+Disallow: /hero-540.mp4
+Disallow: /hero-540.webm
 
 User-agent: Bingbot
 Allow: /
@@ -81,7 +86,10 @@ Allow: /
 
 User-agent: *
 Allow: /
-Disallow: /video.mp4
+Disallow: /hero-360.mp4
+Disallow: /hero-360.webm
+Disallow: /hero-540.mp4
+Disallow: /hero-540.webm
 Disallow: /admin
 Disallow: /auth
 Disallow: /reset-password
