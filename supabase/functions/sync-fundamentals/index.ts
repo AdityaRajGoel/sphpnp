@@ -16,6 +16,7 @@ import {
   fetchCorporateActions,
   NSE_DELAY_MS,
   sleep,
+  type FilingRecord,
 } from "../_shared/nse.ts";
 import { parseIncomeStatement } from "../_shared/xbrl.ts";
 
@@ -28,6 +29,14 @@ const cors = {
 const JOB = "fundamentals";
 /** Symbols per invocation. Small enough that a run finishes well inside the timeout. */
 const BATCH_SIZE = 5;
+/**
+ * Failed parses of one filing after which the sync stops fetching it. A filing
+ * that has failed this many times is not going to start parsing because we
+ * asked NSE for the same bytes once more; it needs a person to look at
+ * parse_error. The counter resets to 0 the moment the filing parses and its
+ * income row is written.
+ */
+const MAX_PARSE_ATTEMPTS = 5;
 
 async function sha256(text: string): Promise<string> {
   const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
@@ -86,28 +95,62 @@ Deno.serve(async (req) => {
     }
   }
   const batch = symbols.slice(Math.max(0, start), Math.max(0, start) + BATCH_SIZE);
-  const summary = { symbols: batch.length, filings: 0, parsed: 0, failed: 0 };
+  const summary = { symbols: batch.length, filings: 0, parsed: 0, failed: 0, skipped: 0 };
 
   for (const symbol of batch) {
-    let registry;
+    // A registry failure must not take this symbol's corporate actions down with
+    // it. The two come from different NSE endpoints
+    // (corporates-financial-results vs corporates-corporateActions), and one
+    // being unavailable says nothing about the other - so the failure is
+    // expressed as "no filings to iterate" rather than as a `continue`, and the
+    // corporate-actions block at the bottom of the loop body still runs.
+    let registry: FilingRecord[] = [];
     try {
       registry = await fetchFilingRegistry(symbol);
     } catch (err) {
-      // 4xx halts this symbol only; the batch continues.
+      // 4xx halts this symbol's filings only; the batch continues.
       console.error(`registry failed for ${symbol}:`, (err as Error).message);
-      continue;
     }
+    // Paced whether or not the call succeeded: a failed request still consumed
+    // an NSE request, so the delay before the next one stands. This is the only
+    // delay between the registry call and whichever NSE call comes next (the
+    // first fetchXbrl, or fetchCorporateActions when there are no filings).
     await sleep(NSE_DELAY_MS);
 
     for (const f of registry) {
       const { data: existing } = await supabase
         .from("fundamentals_filings")
-        .select("id, content_hash, parse_status")
+        .select("id, content_hash, parse_status, parse_attempts")
         .eq("symbol", f.symbol)
         .eq("from_date", f.fromDate)
         .eq("to_date", f.toDate)
         .eq("is_consolidated", f.isConsolidated)
         .maybeSingle();
+
+      const attempts: number = existing?.parse_attempts ?? 0;
+
+      // The cap is checked HERE, before fetchXbrl, because the fetch is the cost
+      // being bounded - skipping after the download would save nothing. Without
+      // it a filing whose XBRL cannot be parsed is re-downloaded from NSE on
+      // every single run, forever: it carries parse_status 'failed', so the
+      // "unchanged and already parsed" check below never matches it.
+      //
+      // The trade-off, stated plainly: because we skip before the fetch we never
+      // see the bytes, so we cannot notice that a permanently-broken filing has
+      // been restated into something parseable - a capped filing stays capped
+      // until a person intervenes. That is the deliberate choice. parse_error is
+      // in the table precisely so there is something to act on, and
+      // docs/fundamentals-validation.md treats any failed row as a gate blocker,
+      // so a capped filing is meant to be looked at rather than retried in
+      // perpetuity against the exchange's own public endpoint.
+      if (existing?.parse_status === "failed" && attempts >= MAX_PARSE_ATTEMPTS) {
+        console.error(
+          `skipping ${f.symbol} ${f.toDate}: ${attempts} failed parse attempts, ` +
+            `see fundamentals_filings.parse_error`,
+        );
+        summary.skipped++;
+        continue;
+      }
 
       let xml: string;
       try {
@@ -149,6 +192,12 @@ Deno.serve(async (req) => {
           content_hash: hash,
           parse_status: statement ? "pending" : "failed",
           parse_error: statement ? null : "no OneD headline context",
+          // Counted on the failure path only. While the filing is 'pending' the
+          // attempt is still in flight and the previous count stands - and
+          // 'pending' is never skipped by the cap above, so an unfinished attempt
+          // can never strand a filing whose income row has not been written.
+          // The reset to 0 belongs with the proven write, not with this one.
+          parse_attempts: statement ? attempts : attempts + 1,
           fetched_at: new Date().toISOString(),
         }, { onConflict: "symbol,from_date,to_date,is_consolidated" })
         .select("id")
@@ -191,6 +240,7 @@ Deno.serve(async (req) => {
           .update({
             parse_status: "failed",
             parse_error: `income upsert failed: ${iErr.message}`,
+            parse_attempts: attempts + 1,
           })
           .eq("id", filingRow.id);
         if (markErr) {
@@ -199,9 +249,12 @@ Deno.serve(async (req) => {
         continue;
       }
 
+      // The income row is now proven, so this is the one place entitled to clear
+      // the attempt counter: a restatement that finally parses must not stay
+      // tainted by the broken version's failures.
       const { error: markParsedErr } = await supabase
         .from("fundamentals_filings")
-        .update({ parse_status: "parsed" })
+        .update({ parse_status: "parsed", parse_attempts: 0 })
         .eq("id", filingRow.id);
       // The income row is correct either way; only the status flag would lag
       // behind. A lagging "pending" simply causes a harmless, idempotent
