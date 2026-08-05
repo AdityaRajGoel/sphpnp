@@ -12,6 +12,34 @@ import { EASE_OUT } from "@/lib/motion";
 
 const TIP_INTERVAL_MS = 6000;
 
+/**
+ * Which background video to serve, decided once on mount.
+ *
+ * Two renditions of the same 30s loop ship: 960x540 for desktop and 640x360 for
+ * phones, each as VP9 WebM with an H.264 MP4 fallback. The small pair is roughly
+ * 40% lighter, and on a phone the difference is invisible - the video sits under
+ * two stacked navy overlays at ~0.70 opacity plus a grid, which hides softness
+ * long before anyone notices it.
+ *
+ * `null` means play nothing and leave the poster showing. That is the right
+ * answer for Save-Data and for 2G/3G, where a background flourish is not worth
+ * someone's data allowance or their battery.
+ */
+type VideoTier = "sm" | "lg" | null;
+
+function pickVideoTier(): VideoTier {
+  if (typeof window === "undefined") return null;
+  // navigator.connection is Chromium-only; absence is treated as a fast link
+  // rather than a slow one, since guessing "slow" would deny the video to every
+  // Safari and Firefox user.
+  const conn = (navigator as Navigator & {
+    connection?: { saveData?: boolean; effectiveType?: string };
+  }).connection;
+  if (conn?.saveData) return null;
+  if (conn?.effectiveType && /(^|-)(2g|3g)$/.test(conn.effectiveType)) return null;
+  return window.matchMedia("(max-width: 768px)").matches ? "sm" : "lg";
+}
+
 type MarketTile = { label: string; price?: string; change?: string; up: boolean };
 
 const StatCounter = memo(({ target, label, suffix = "", delay = 0 }: { target: number; label: string; suffix?: string; delay?: number }) => {
@@ -160,6 +188,13 @@ LiveMarketPanel.displayName = "LiveMarketPanel";
 const Hero = () => {
   const isMobile = useIsMobile();
   const prefersReducedMotion = useReducedMotion();
+
+  // Resolved after mount rather than during render, so the first paint is the
+  // poster image and the video is never part of the LCP critical path. It also
+  // keeps the markup identical on server and client, which a width check read
+  // during render would not.
+  const [videoTier, setVideoTier] = useState<VideoTier>(null);
+  useEffect(() => setVideoTier(pickVideoTier()), []);
   const { indices: liveIndices, commodities, marketOverview, loading: marketLoading } = useLiveMarket();
   const { t } = useT();
 
@@ -263,9 +298,12 @@ const Hero = () => {
             style={{ transform: "translate3d(0,0,0)", backfaceVisibility: "hidden" }}
           />
         </picture>
-        {!prefersReducedMotion && (
+        {!prefersReducedMotion && videoTier && (
           <video
-            src="/video.mp4"
+            // Keyed on the tier so swapping renditions remounts the element.
+            // Changing <source> children of a live <video> does nothing on its
+            // own; the browser only re-selects a source on load().
+            key={videoTier}
             poster="/hero-bg.jpg"
             autoPlay
             loop
@@ -275,7 +313,13 @@ const Hero = () => {
             aria-hidden="true"
             className="absolute inset-0 w-full h-full object-cover object-center"
             style={{ transform: "translate3d(0,0,0)", backfaceVisibility: "hidden" }}
-          />
+          >
+            {/* WebM first: the browser takes the first source it can play, and
+                VP9 is ~26% lighter than the H.264 at matched quality. Safari
+                below 14.1 and anything older falls through to the MP4. */}
+            <source src={`/hero-${videoTier === "sm" ? "360" : "540"}.webm`} type="video/webm" />
+            <source src={`/hero-${videoTier === "sm" ? "360" : "540"}.mp4`} type="video/mp4" />
+          </video>
         )}
         {/* Brand overlay - keeps text legible */}
         <div className="absolute inset-0 bg-gradient-to-br from-brand-navy/72 via-brand-navy/58 to-brand-green/40" />
