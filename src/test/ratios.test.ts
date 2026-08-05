@@ -82,4 +82,50 @@ describe("computeRatios", () => {
     expect(r.inputsComplete).toBe(true);
     expect(r.unusableInputs).toEqual([]);
   });
+
+  // Negative equity means liabilities exceed assets. A negative PAT over
+  // negative equity divides out to a positive number that looks like a
+  // healthy ROE, but two sign errors cancelling is not a meaningful ratio —
+  // it is the single most misleading number this module could emit. Equity
+  // is present and finite, so this must land in unusableInputs, not
+  // missingInputs.
+  it("withholds ROE when totalEquity is negative, even with a negative numerator", () => {
+    const r = computeRatios({ ...complete, profitAfterTax: -50, totalEquity: -200 });
+    expect(r.roe).toBeNull();
+    expect(r.inputsComplete).toBe(false);
+    expect(r.unusableInputs).toContain("totalEquity");
+    expect(r.missingInputs).not.toContain("totalEquity");
+  });
+
+  // Same negative-equity guard, but with a positive numerator this time —
+  // the sign of profitAfterTax must not matter. A distressed company with
+  // negative equity does not get a meaningful ROE no matter which way the
+  // profit line happens to point.
+  it("withholds ROE when totalEquity is negative, regardless of the numerator's sign", () => {
+    const r = computeRatios({ ...complete, profitAfterTax: 50, totalEquity: -200 });
+    expect(r.roe).toBeNull();
+    expect(r.inputsComplete).toBe(false);
+    expect(r.unusableInputs).toContain("totalEquity");
+  });
+
+  // The over-correction guard: a negative numerator over POSITIVE equity is
+  // a real, meaningful negative ROE (the company lost money on a genuinely
+  // positive equity base). It must keep computing, and inputsComplete must
+  // stay true — negative equity is the defect, a negative ratio is not.
+  it("still computes a real negative ROE when only the numerator is negative", () => {
+    const r = computeRatios({ ...complete, profitAfterTax: -50, totalEquity: 200 });
+    expect(r.roe).toBeCloseTo(-25);
+    expect(r.inputsComplete).toBe(true);
+    expect(r.unusableInputs).toEqual([]);
+  });
+
+  // Same reasoning applied to ROCE's capital-employed denominator: negative
+  // capital employed (debt exceeds equity by more than equity itself) makes
+  // ROCE equally meaningless.
+  it("withholds ROCE when capital employed (equity + debt) is negative", () => {
+    const r = computeRatios({ ...complete, totalEquity: -400, totalDebt: 100 });
+    expect(r.roce).toBeNull();
+    expect(r.inputsComplete).toBe(false);
+    expect(r.unusableInputs).toContain("totalEquity+totalDebt");
+  });
 });
