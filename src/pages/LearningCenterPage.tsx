@@ -358,11 +358,20 @@ const LearningCenterPage = () => {
     try {
       const { data, error } = await supabase.functions.invoke('fetch-live-broadcasts');
       if (!error && data?.success && Array.isArray(data.channels)) {
-        const nextEmbeds = data.channels.reduce((acc: Record<string, { embedUrl: string | null; watchUrl: string; title?: string | null }>, channel: { channelId: string; handle?: string; embedUrl?: string; watchUrl?: string; liveUrl?: string; title?: string | null }) => {
+        const nextEmbeds = data.channels.reduce((acc: Record<string, { embedUrl: string | null; watchUrl: string; title?: string | null }>, channel: { channelId: string; handle?: string; status?: string; videoId?: string | null; embedUrl?: string | null; watchUrl?: string; liveUrl?: string; title?: string | null }) => {
+          // Only a genuinely resolved live video is embeddable. This is asserted on
+          // status AND videoId, not merely on embedUrl being truthy, because that
+          // is exactly how this broke before: the function always supplied a
+          // fallback embed URL, so a truthy check could never fail, and the frame
+          // it rendered pointed at the retired embed/live_stream?channel= form,
+          // which answers HTTP 200 with an "unavailable" body. The reader saw a
+          // dead player. The function now sends embedUrl: null when off-air, so
+          // this check is belt-and-braces on purpose - a future change there must
+          // not be able to resurrect a broken frame here.
+          const isLive =
+            channel.status === "ok" && Boolean(channel.videoId) && Boolean(channel.embedUrl);
           acc[channel.channelId] = {
-            // Only a resolved videoId embed is trustworthy; if none, treat as offline
-            // and show the watch-on-YouTube state instead of a guaranteed-broken frame.
-            embedUrl: channel.embedUrl || null,
+            embedUrl: isLive ? (channel.embedUrl ?? null) : null,
             watchUrl: channel.watchUrl || channel.liveUrl || `https://www.youtube.com/@${channel.handle}/live`,
             title: channel.title || null,
           };
