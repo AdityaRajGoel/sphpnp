@@ -46,7 +46,7 @@ const UnlistedSpacePage = () => {
         jsonLd={{
           "@type": "Product",
           "name": "Unlisted Space - Pre-IPO Shares",
-          "description": "Discover high-growth pre-IPO opportunities and unlisted shares through Parasram India's Unlisted Space. SEBI registered facilitator offering seamless Demat transfers.",
+          "description": "Pre-IPO and unlisted shares through Parasram India's Unlisted Space. A SEBI registered facilitator handling Demat transfers.",
           "brand": { "@type": "Brand", "name": "Parasram India" },
           "offers": {
             "@type": "AggregateOffer",

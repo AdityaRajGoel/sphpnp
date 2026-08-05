@@ -383,7 +383,7 @@ When an IPO is **oversubscribed** (more applications than shares), retail invest
 
 No. A listing "pop" is never guaranteed - many IPOs list flat or below their issue price. Treat an IPO like any other investment: read the DRHP, understand the business, check the valuation ([P/E ratio](/learn/pe-ratio)), and only apply if the company looks genuinely worth owning.
 
-> Parasram India helps you apply for IPOs seamlessly via UPI/ASBA. [Open a free Demat account](/open-account) to get started, or [see our services](/services).`,
+> Parasram India helps you apply for IPOs via UPI/ASBA. [Open a free Demat account](/open-account) to get started, or [see our services](/services).`,
   },
 
   "full-service-vs-discount-broker": {

@@ -22,7 +22,7 @@ const DepositoryServicesPage = () => {
     <PageTransition>
       <SEOHead 
         title="Depository Services | NSDL & CDSL | Parasram India Panipat" 
-        description="Open your secure Demat account. Enjoy seamless transfers, pledge for margin, and automated corporate actions with Parasram India."
+        description="Open a Demat account with Parasram India. Transfer shares, pledge holdings for margin, and track corporate actions."
         breadcrumbs={[
           { name: "Home", url: "/" },
           { name: "Depository Services" },
@@ -30,14 +30,14 @@ const DepositoryServicesPage = () => {
         faqItems={[
           { question: "What is a Depository Participant (DP)?", answer: "A Depository Participant is a SEBI-registered intermediary that provides electronic holding of your shares and securities through NSDL or CDSL. Parasram India is a registered DP with both." },
           { question: "What is the difference between NSDL and CDSL?", answer: "NSDL (National Securities Depository Limited) and CDSL (Central Depository Services Limited) are the two depositories in India. Both are safe; Parasram India offers access to either based on your preference." },
-          { question: "Can I pledge my shares for trading margin?", answer: "Yes, you can pledge your existing holdings electronically to obtain trading margin without selling your shares. This is done seamlessly through your Demat account." },
+          { question: "Can I pledge my shares for trading margin?", answer: "Yes, you can pledge your existing holdings electronically to obtain trading margin without selling your shares. The pledge is created through your Demat account." },
           { question: "Will I automatically receive bonus shares and dividends?", answer: "Yes, bonus shares are automatically credited to your Demat account and dividends are directly sent to your linked bank account without any manual intervention." },
           { question: "Is it free to open a Demat account with Parasram India?", answer: "Yes, Demat account opening is free with Parasram India Panipat. There are no account opening charges." },
         ]}
         jsonLd={{
           "@type": "Service",
           "name": "Depository Services - Demat Account",
-          "description": "Parasram India offers NSDL & CDSL depository participant services including Demat account opening, seamless share transfers, corporate action tracking, and margin pledging in Panipat, Haryana.",
+          "description": "Parasram India offers NSDL & CDSL depository participant services including Demat account opening, share transfers, corporate action tracking, and margin pledging in Panipat, Haryana.",
           "serviceType": "Depository Participant Services",
           "provider": {
             "@type": "FinancialService",

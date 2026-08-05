@@ -172,7 +172,7 @@ const REAL_ARTICLES: Article[] = [
   },
   {
     id: "r13", title: "F&O Basics: Futures & Options for Beginners", slug: "fno-basics",
-    excerpt: "Unlock the world of derivatives. Futures contracts, option buying vs selling, margin requirements, and why F&O has a higher risk profile than equities.",
+    excerpt: "Futures contracts, option buying versus selling, margin requirements, and why F&O carries more risk than equities.",
     content: "", category: "trading", cover_image: null, read_time: 13, published: true, created_at: "2025-10-28",
     source: "NSE India", source_url: "https://www.nseindia.com/products/content/derivatives/equities/homepage.htm",
     difficulty: "Advanced",
