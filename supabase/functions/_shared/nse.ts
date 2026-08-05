@@ -97,23 +97,52 @@ export type CorporateAction = {
 };
 
 /**
- * Classify a free-text purpose into a type. NSE writes these as prose
- * ("Dividend - Rs 10 Per Share"), so the raw text is kept in `description` and
- * only the coarse type is derived — an unrecognised purpose becomes "other"
- * rather than being forced into a category it may not belong to.
+ * Classify a free-text purpose into every type it mentions. NSE writes these
+ * as prose, and a single record routinely announces more than one action
+ * ("Interim Dividend Rs 5 Per Share and Bonus Issue 1:1") — an if-chain that
+ * returns on the first keyword hit would silently drop the rest. The raw
+ * text is kept in `description`; only the coarse type(s) are derived here.
+ * An unrecognised purpose becomes `["other"]` rather than being forced into
+ * a category it may not belong to, and "other" is never mixed in alongside
+ * a real type.
  */
-export function classifyAction(purpose: string): string {
+export function classifyActions(purpose: string): string[] {
   const p = purpose.toLowerCase();
-  if (p.includes("dividend")) return "dividend";
-  if (p.includes("bonus")) return "bonus";
-  if (p.includes("split")) return "split";
-  if (p.includes("rights")) return "rights";
-  if (p.includes("buy back") || p.includes("buyback")) return "buyback";
-  return "other";
+  const types: string[] = [];
+  if (p.includes("dividend")) types.push("dividend");
+  if (p.includes("bonus")) types.push("bonus");
+  if (p.includes("split")) types.push("split");
+  if (p.includes("rights")) types.push("rights");
+  if (p.includes("buy back") || p.includes("buyback")) types.push("buyback");
+  return types.length ? types : ["other"];
 }
 
-/** Pull the rupee figure out of "Dividend - Rs 10 Per Share". Null when absent. */
+// Matches "... from Rs 10/- to Rs 2 ..." (and the Rs./INR, "/-", and
+// extra-whitespace variants NSE uses) to pull out the resulting figure.
+const FROM_TO_VALUE =
+  /from\s+(?:rs\.?|inr)\s*[\d.]+(?:\s*\/-)?\s+to\s+(?:rs\.?|inr)\s*([\d.]+)(?:\s*\/-)?/i;
+
+/**
+ * Pull the rupee figure out of a purpose string.
+ *
+ * When the purpose uses "from X to Y" phrasing (a face value split, e.g.
+ * "Face Value Split from Rs 10 to Rs 2"), the resulting ("to") figure is
+ * returned rather than the pre-split face value — otherwise the pre-split
+ * value would be stored next to `action_type` as if it were the outcome.
+ * For every other purpose, the first rupee figure found is returned, as
+ * before. Null when no figure is present.
+ *
+ * Limitation: this extracts one value per purpose STRING, not per detected
+ * action type. A genuinely combined purpose ("dividend AND split") still
+ * yields only one number, and every `CorporateAction` row emitted for that
+ * purpose (see `classifyActions`) gets that same `value`. Not solved here.
+ */
 export function extractActionValue(purpose: string): number | null {
+  const fromTo = FROM_TO_VALUE.exec(purpose);
+  if (fromTo) {
+    const n = Number(fromTo[1]);
+    return Number.isFinite(n) ? n : null;
+  }
   const m = /(?:rs\.?|inr)\s*([\d.]+)/i.exec(purpose);
   if (!m) return null;
   const n = Number(m[1]);
@@ -131,13 +160,20 @@ export async function fetchCorporateActions(symbol: string): Promise<CorporateAc
     const exDate = toIsoDate(r.exDate ?? "");
     const purpose = r.subject ?? r.purpose ?? "";
     if (!exDate || !purpose) return [];
-    return [{
+    const recordDate = toIsoDate(r.recDate ?? "");
+    const value = extractActionValue(purpose);
+    // One CorporateAction per detected type, not per registry row: the
+    // corporate_actions unique key is (symbol, ex_date, action_type,
+    // description), so a purpose announcing several actions at once emits
+    // several rows sharing the same description instead of collapsing to
+    // whichever type happened to be checked first.
+    return classifyActions(purpose).map((actionType) => ({
       symbol,
       exDate,
-      recordDate: toIsoDate(r.recDate ?? ""),
-      actionType: classifyAction(purpose),
-      value: extractActionValue(purpose),
+      recordDate,
+      actionType,
+      value,
       description: purpose,
-    }];
+    }));
   });
 }

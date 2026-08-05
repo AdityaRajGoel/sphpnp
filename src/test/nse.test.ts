@@ -3,7 +3,8 @@ import {
   toIsoDate,
   fetchFilingRegistry,
   fetchXbrl,
-  classifyAction,
+  fetchCorporateActions,
+  classifyActions,
   extractActionValue,
 } from "../../supabase/functions/_shared/nse";
 
@@ -62,6 +63,17 @@ function baseFilingRow(
     audited: "Audited",
     xbrl: "https://nsearchives.nseindia.com/corporate/xbrl/RELIANCE_Q3FY25.xml",
     filingDate: "05-Nov-2024",
+    ...overrides,
+  };
+}
+
+function baseActionRow(
+  overrides: Partial<Record<string, string>> = {},
+): Record<string, string> {
+  return {
+    exDate: "01-Oct-2024",
+    recDate: "01-Oct-2024",
+    subject: "Dividend - Rs 10 Per Share",
     ...overrides,
   };
 }
@@ -198,17 +210,33 @@ describe("fetchFilingRegistry", () => {
   });
 });
 
-describe("classifyAction", () => {
+describe("classifyActions", () => {
   it("recognises the common actions", () => {
-    expect(classifyAction("Dividend - Rs 10 Per Share")).toBe("dividend");
-    expect(classifyAction("Bonus 1:1")).toBe("bonus");
-    expect(classifyAction("Face Value Split")).toBe("split");
-    expect(classifyAction("Rights Issue")).toBe("rights");
-    expect(classifyAction("Buy Back of Shares")).toBe("buyback");
+    expect(classifyActions("Dividend - Rs 10 Per Share")).toEqual(["dividend"]);
+    expect(classifyActions("Bonus 1:1")).toEqual(["bonus"]);
+    expect(classifyActions("Face Value Split")).toEqual(["split"]);
+    expect(classifyActions("Rights Issue")).toEqual(["rights"]);
+    expect(classifyActions("Buy Back of Shares")).toEqual(["buyback"]);
   });
 
   it("falls back to other rather than guessing", () => {
-    expect(classifyAction("Annual General Meeting")).toBe("other");
+    expect(classifyActions("Annual General Meeting")).toEqual(["other"]);
+  });
+
+  it("returns every action type present in a combined purpose", () => {
+    const result = classifyActions(
+      "Interim Dividend Rs 5 Per Share and Bonus Issue 1:1",
+    );
+
+    expect(result).toEqual(["dividend", "bonus"]);
+  });
+
+  it("never emits other alongside a real action type", () => {
+    const result = classifyActions(
+      "Interim Dividend Rs 5 Per Share and Bonus Issue 1:1",
+    );
+
+    expect(result).not.toContain("other");
   });
 });
 
@@ -220,5 +248,59 @@ describe("extractActionValue", () => {
 
   it("returns null when there is no amount", () => {
     expect(extractActionValue("Bonus 1:1")).toBeNull();
+  });
+
+  it("returns the resulting face value for a from-to split, not the pre-split value", () => {
+    expect(extractActionValue("Face Value Split from Rs 10 to Rs 2")).toBe(2);
+  });
+
+  it("still returns the first rupee figure for a plain (non-split) dividend purpose", () => {
+    expect(extractActionValue("Dividend - Rs 10 Per Share")).toBe(10);
+  });
+
+  it("handles Rs./-  spacing and punctuation variants in from-to phrasing", () => {
+    expect(
+      extractActionValue("Sub-Division / Split - From Rs.10/- To Rs.2/-"),
+    ).toBe(2);
+    expect(
+      extractActionValue("Face Value Split  from   Rs   10   to   Rs   1"),
+    ).toBe(1);
+  });
+});
+
+describe("fetchCorporateActions", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("emits one row per detected action type for a combined purpose", async () => {
+    const row = baseActionRow({
+      subject: "Interim Dividend Rs 5 Per Share and Bonus Issue 1:1",
+    });
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValueOnce(okJsonResponse([row])));
+
+    const result = await fetchCorporateActions("RELIANCE");
+
+    expect(result).toHaveLength(2);
+    const [first, second] = result;
+    expect(first.symbol).toBe("RELIANCE");
+    expect(second.symbol).toBe("RELIANCE");
+    expect(first.exDate).toBe(second.exDate);
+    expect(first.description).toBe(second.description);
+    expect(first.actionType).not.toBe(second.actionType);
+    expect([first.actionType, second.actionType].sort()).toEqual([
+      "bonus",
+      "dividend",
+    ]);
+  });
+
+  it("emits a single 'other' row for an unrecognised purpose", async () => {
+    const row = baseActionRow({ subject: "Annual General Meeting" });
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValueOnce(okJsonResponse([row])));
+
+    const result = await fetchCorporateActions("RELIANCE");
+
+    expect(result).toHaveLength(1);
+    expect(result[0].actionType).toBe("other");
   });
 });
