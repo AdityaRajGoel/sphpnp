@@ -32,6 +32,32 @@ jobs:
             -H "x-sync-secret: ${{ secrets.MARKET_SYNC_SECRET }}")
           body=$(echo "$resp" | sed '$d'); code=$(echo "$resp" | tail -1)
           echo "$body"
-          # A partial parse returns 500 with a failures[] list: a source whose
-          # markup changed must fail the run rather than quietly freeze the block.
+
+          # Three outcomes, because "a dealer's server blipped" and "a dealer's
+          # markup changed" are not the same event and must not look the same:
+          #
+          #   200, no warnings   every source parsed. Green.
+          #   200 + warnings[]   a source was briefly unreachable and had already
+          #                      been retried once inside the function, but another
+          #                      source wrote rows, so the run did its job. Green
+          #                      build, yellow annotation - the timeout stays
+          #                      visible without blocking on weather.
+          #   500 + failures[]   a source parsed 0 quotes, 404'd, or the run wrote
+          #                      nothing at all. Its last-good rows stay in the
+          #                      table and age out on screen, so without a red
+          #                      build nobody would notice the block had frozen.
+          #
+          # Warnings are annotated, never swallowed: a transient failure that we
+          # decided not to fail on is exactly the thing that must not vanish.
+          # jq -e is not used - an absent .warnings key is the normal case, not an
+          # error - and a non-JSON body (a gateway HTML error page) falls through
+          # the redirect to an empty string rather than failing the step here, so
+          # the exit code below stays the only thing that decides the build.
+          warnings=$(echo "$body" | jq -r '.warnings // [] | .[]' 2>/dev/null || true)
+          if [ -n "$warnings" ]; then
+            while IFS= read -r w; do
+              echo "::warning title=Unlisted quote source degraded::$w"
+            done <<< "$warnings"
+          fi
+
           [ "$code" = "200" ] || exit 1

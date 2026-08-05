@@ -18,6 +18,14 @@
 // what the removed price displays in UnlistedShares.tsx used to do.
 
 import { createClient } from "npm:@supabase/supabase-js@2";
+import {
+  classifyFailure,
+  classifyHttpStatus,
+  errorMessage,
+  SourceError,
+  summarizeRun,
+  type SourceFailure,
+} from "../_shared/quote-failures.ts";
 
 const USER_AGENT =
   "Mozilla/5.0 (compatible; sphpnp-price-monitor/1.0; +https://www.sphpnp.com)";
@@ -67,30 +75,60 @@ function matchKey(name: string): string {
 }
 
 /**
- * One retry on a 5xx, because the alternative is crying wolf.
+ * One retry on anything that looks momentary, because the alternative is crying
+ * wolf.
  *
  * A source that stops parsing must fail the run loudly - that is the whole
  * point of the failure policy. But a dealer's server returning a momentary 502
  * is not that, and a red build for every blip trains people to ignore red
  * builds. Retried once, briefly; anything still failing after that is real.
  *
+ * The retry used to cover only the 5xx case, which was the one transient
+ * failure that never actually happened. `AbortSignal.timeout` firing makes
+ * `fetch` itself reject: no response is ever returned, so `!res.ok` is not
+ * evaluated and the 5xx branch could not see it. Same for a DNS failure or a
+ * connection reset. The most common transient failure - and the one that broke
+ * a scheduled run with "UnlistedZone: Signal timed out." - therefore got zero
+ * retries while the rare one got all of them. Each of the three ways an attempt
+ * can fail now retries once, so the docstring above describes what the code does.
+ *
  * 4xx is not retried: a 404 or 403 means the URL or our access changed, and
- * asking again will not fix it.
+ * asking again will not fix it. The 30s cap is per attempt, not per call.
  */
 async function getHtml(url: string, attempt = 0): Promise<string> {
-  const res = await fetch(url, {
-    headers: { "User-Agent": USER_AGENT, Accept: "text/html" },
-    signal: AbortSignal.timeout(30_000),
-  });
+  const retry = async () => {
+    await new Promise((r) => setTimeout(r, 3_000));
+    return getHtml(url, attempt + 1);
+  };
+
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      headers: { "User-Agent": USER_AGENT, Accept: "text/html" },
+      signal: AbortSignal.timeout(30_000),
+    });
+  } catch (err) {
+    // Timed out, DNS failed, connection refused or reset - no response exists.
+    if (attempt === 0) return retry();
+    throw new SourceError("transient", `${url} could not be fetched: ${errorMessage(err)}`);
+  }
 
   if (!res.ok) {
-    if (res.status >= 500 && attempt === 0) {
-      await new Promise((r) => setTimeout(r, 3_000));
-      return getHtml(url, attempt + 1);
-    }
-    throw new Error(`${url} returned HTTP ${res.status}`);
+    if (res.status >= 500 && attempt === 0) return retry();
+    throw new SourceError(
+      classifyHttpStatus(res.status),
+      `${url} returned HTTP ${res.status}`,
+    );
   }
-  return res.text();
+
+  try {
+    return await res.text();
+  } catch (err) {
+    // Headers arrived but the body did not finish streaming. Still a network
+    // failure, and still nothing to do with our parser.
+    if (attempt === 0) return retry();
+    throw new SourceError("transient", `${url} body could not be read: ${errorMessage(err)}`);
+  }
 }
 
 /**
@@ -234,7 +272,7 @@ Deno.serve(async (req) => {
   }
 
   const collected: Array<Quote & { fetched_at: string }> = [];
-  const failures: string[] = [];
+  const failures: SourceFailure[] = [];
   // One timestamp for the whole run, so a source's rows cannot appear to be
   // from different moments depending on upsert ordering.
   const fetchedAt = new Date().toISOString();
@@ -243,12 +281,22 @@ Deno.serve(async (req) => {
     try {
       const rows = await source.run();
       if (rows.length === 0) {
-        failures.push(`${source.name}: parsed 0 quotes (markup likely changed)`);
+        // The fetch succeeded and the parser still found nothing, which is what
+        // a markup change looks like from here. Structural, always.
+        failures.push({
+          source: source.name,
+          message: "parsed 0 quotes (markup likely changed)",
+          kind: "structural",
+        });
         continue;
       }
       collected.push(...rows.map((r) => ({ ...r, fetched_at: fetchedAt })));
     } catch (err) {
-      failures.push(`${source.name}: ${(err as Error).message}`);
+      failures.push({
+        source: source.name,
+        message: errorMessage(err),
+        kind: classifyFailure(err),
+      });
     }
   }
 
@@ -271,10 +319,12 @@ Deno.serve(async (req) => {
 
   // A source that silently stops parsing is the failure worth catching: its
   // last-good rows stay in the table and age out on screen, but without a
-  // non-200 nobody would notice the block had quietly frozen.
-  const status = failures.length > 0 ? 500 : 200;
+  // non-200 nobody would notice the block had quietly frozen. A dealer that
+  // timed out through its retry is not that, so it comes back as a warning on a
+  // 200 instead - see summarizeRun for the full rule and why it is split.
+  const { status, body } = summarizeRun(collected.length, failures);
   return new Response(
-    JSON.stringify({ upserted: collected.length, failures }),
+    JSON.stringify(body),
     { status, headers: { ...cors, "Content-Type": "application/json" } },
   );
 });
