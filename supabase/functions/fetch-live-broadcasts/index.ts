@@ -100,9 +100,44 @@ type Resolution = {
   /** Carried back so the cache row can keep the backoff and quota counters. */
   misses: number;
   discovered: boolean;
+  /**
+   * Why a tier did not answer, in non-sensitive terms ("auth", "quota",
+   * "scrape-http-429", "scrape-no-canonical"). Surfaced in the response because
+   * "offline" alone is unactionable: a restricted API key, an exhausted quota and
+   * a genuinely off-air channel all look identical from the outside, and the edge
+   * runtime's logs are not reachable from the CLI. Never contains the API key or
+   * any part of it.
+   */
+  diagnostic: string | null;
 };
 
 const utcDay = (nowMs: number): string => new Date(nowMs).toISOString().slice(0, 10);
+
+/**
+ * Google's first error `reason` verbatim, e.g. "accessNotConfigured" (the API is
+ * not enabled on the project), "ipRefererBlocked" (the key has an HTTP-referrer
+ * restriction, which cannot work from a server), "keyInvalid", or "quotaExceeded".
+ *
+ * Surfaced because a bare 403 is ambiguous and each of those needs a completely
+ * different fix in the Google Cloud console. It is a fixed Google enum, never
+ * user data and never any part of the key.
+ */
+function errorReason(payload: unknown): string | null {
+  if (typeof payload !== "object" || payload === null) return null;
+  const error = (payload as Record<string, unknown>).error;
+  if (typeof error !== "object" || error === null) return null;
+  const errors = (error as Record<string, unknown>).errors;
+  if (Array.isArray(errors)) {
+    for (const entry of errors) {
+      if (entry && typeof entry === "object") {
+        const reason = (entry as Record<string, unknown>).reason;
+        if (typeof reason === "string" && reason.length > 0) return reason;
+      }
+    }
+  }
+  const status = (error as Record<string, unknown>).status;
+  return typeof status === "string" && status.length > 0 ? status : null;
+}
 
 async function getJson(url: string): Promise<{ status: number; payload: unknown }> {
   const res = await fetch(url, {
@@ -123,7 +158,7 @@ async function getJson(url: string): Promise<{ status: number; payload: unknown 
 async function confirmLive(
   apiKey: string,
   videoId: string,
-): Promise<{ live: LiveVideo | null; failed: boolean }> {
+): Promise<{ live: LiveVideo | null; failed: boolean; kind: string | null }> {
   const url =
     `https://www.googleapis.com/youtube/v3/videos` +
     `?part=snippet,liveStreamingDetails&id=${encodeURIComponent(videoId)}` +
@@ -133,13 +168,13 @@ async function confirmLive(
     if (status !== 200) {
       const kind = classifyYouTubeError(status, payload);
       console.error(`youtube videos.list ${status} (${kind}) for ${videoId}`);
-      return { live: null, failed: true };
+      return { live: null, failed: true, kind: `confirm-${kind}-${status}:${errorReason(payload) ?? "unknown"}` };
     }
     // A parse of null here is a real answer - the stream ended - not a failure.
-    return { live: parseVideoLiveStatus(payload, videoId), failed: false };
+    return { live: parseVideoLiveStatus(payload, videoId), failed: false, kind: null };
   } catch (err) {
     console.error(`youtube videos.list threw for ${videoId}:`, (err as Error).message);
-    return { live: null, failed: true };
+    return { live: null, failed: true, kind: "confirm-threw" };
   }
 }
 
@@ -151,7 +186,7 @@ async function confirmLive(
 async function discoverLive(
   apiKey: string,
   channelId: string,
-): Promise<{ live: LiveVideo | null; failed: boolean }> {
+): Promise<{ live: LiveVideo | null; failed: boolean; kind: string | null }> {
   const url =
     `https://www.googleapis.com/youtube/v3/search` +
     `?part=snippet&channelId=${encodeURIComponent(channelId)}` +
@@ -163,17 +198,19 @@ async function discoverLive(
     if (status !== 200) {
       const kind = classifyYouTubeError(status, payload);
       console.error(`youtube search.list ${status} (${kind}) for ${channelId}`);
-      return { live: null, failed: true };
+      return { live: null, failed: true, kind: `search-${kind}-${status}:${errorReason(payload) ?? "unknown"}` };
     }
-    return { live: parseSearchResponse(payload), failed: false };
+    return { live: parseSearchResponse(payload), failed: false, kind: null };
   } catch (err) {
     console.error(`youtube search.list threw for ${channelId}:`, (err as Error).message);
-    return { live: null, failed: true };
+    return { live: null, failed: true, kind: "search-threw" };
   }
 }
 
 /** Tier 2. Free, undocumented, and fails closed if the markup shifts. */
-async function scrapeLive(channelId: string): Promise<LiveVideo | null> {
+async function scrapeLive(
+  channelId: string,
+): Promise<{ live: LiveVideo | null; kind: string | null }> {
   const url = `https://www.youtube.com/channel/${encodeURIComponent(channelId)}/live`;
   try {
     const res = await fetch(url, {
@@ -182,12 +219,24 @@ async function scrapeLive(channelId: string): Promise<LiveVideo | null> {
     });
     if (!res.ok) {
       console.error(`youtube /live returned HTTP ${res.status} for ${channelId}`);
-      return null;
+      return { live: null, kind: `scrape-http-${res.status}` };
     }
-    return extractLiveVideoFromHtml(await res.text());
+    const html = await res.text();
+    const live = extractLiveVideoFromHtml(html);
+    if (live) return { live, kind: null };
+    // Distinguish "page looked fine, channel is off-air" from "we were served
+    // something else entirely" - a datacenter IP getting a consent or bot
+    // interstitial has no canonical watch link and would otherwise be
+    // indistinguishable from an idle channel.
+    const hasCanonical = /rel=["']canonical["']/i.test(html);
+    const hasWatch = /\/watch\?v=/.test(html);
+    return {
+      live: null,
+      kind: `scrape-miss:len=${html.length},canonical=${hasCanonical},watch=${hasWatch}`,
+    };
   } catch (err) {
     console.error(`youtube /live threw for ${channelId}:`, (err as Error).message);
-    return null;
+    return { live: null, kind: "scrape-threw" };
   }
 }
 
@@ -202,13 +251,19 @@ async function resolveChannel(
   const usedToday = cached?.discovery_day === today ? (cached?.discovery_count ?? 0) : 0;
 
   let apiUnavailable = !apiKey;
+  let diagnostic: string | null = apiKey ? null : "no-api-key";
 
   if (apiKey) {
     // Cheap path first: we already know a videoId, so ask the 1-unit question.
     if (cached?.video_id && cached.is_live) {
-      const { live, failed } = await confirmLive(apiKey, cached.video_id);
-      if (live) return { live, resolvedFrom: "api", misses: 0, discovered: false };
-      if (failed) apiUnavailable = true;
+      const { live, failed, kind } = await confirmLive(apiKey, cached.video_id);
+      if (live) {
+        return { live, resolvedFrom: "api", misses: 0, discovered: false, diagnostic: null };
+      }
+      if (failed) {
+        apiUnavailable = true;
+        diagnostic = kind;
+      }
       // Not failed and not live means the stream genuinely ended - fall through
       // to discovery, which the backoff below may still decline to pay for.
     }
@@ -228,15 +283,39 @@ async function resolveChannel(
       }
 
       if (!withinBackoff && !capReached) {
-        const { live, failed } = await discoverLive(apiKey, channel.channelId);
-        if (live) return { live, resolvedFrom: "api", misses: 0, discovered: true };
-        if (failed) apiUnavailable = true;
-        else return { live: null, resolvedFrom: "api", misses: misses + 1, discovered: true };
+        const { live, failed, kind } = await discoverLive(apiKey, channel.channelId);
+        if (live) {
+          return { live, resolvedFrom: "api", misses: 0, discovered: true, diagnostic: null };
+        }
+        if (failed) {
+          apiUnavailable = true;
+          diagnostic = kind;
+        } else {
+          return {
+            live: null,
+            resolvedFrom: "api",
+            misses: misses + 1,
+            discovered: true,
+            diagnostic: "api-says-offline",
+          };
+        }
       } else if (!withinBackoff && capReached) {
         // Cap, not backoff, is what stopped us - do not let it look like a miss.
-        return { live: null, resolvedFrom: "api-capped", misses, discovered: false };
+        return {
+          live: null,
+          resolvedFrom: "api-capped",
+          misses,
+          discovered: false,
+          diagnostic: `discovery-cap-${usedToday}`,
+        };
       } else {
-        return { live: null, resolvedFrom: "api-backoff", misses, discovered: false };
+        return {
+          live: null,
+          resolvedFrom: "api-backoff",
+          misses,
+          discovered: false,
+          diagnostic: `backoff-${Math.round(backoff / 1000)}s`,
+        };
       }
     }
   }
@@ -245,12 +324,29 @@ async function resolveChannel(
   // quota, or an upstream error. A quota-exhausted day therefore still serves a
   // working player rather than going dark, which is the whole point of having it.
   if (apiUnavailable) {
-    const live = await scrapeLive(channel.channelId);
-    if (live) return { live, resolvedFrom: "scrape", misses: 0, discovered: false };
-    return { live: null, resolvedFrom: "scrape", misses: misses + 1, discovered: false };
+    const { live, kind } = await scrapeLive(channel.channelId);
+    if (live) {
+      return { live, resolvedFrom: "scrape", misses: 0, discovered: false, diagnostic };
+    }
+    return {
+      live: null,
+      resolvedFrom: "scrape",
+      misses: misses + 1,
+      discovered: false,
+      // Both tiers' reasons, because "offline" with a working key and a working
+      // scrape means something very different from "offline" because the key is
+      // rejected and YouTube served us an interstitial.
+      diagnostic: [diagnostic, kind].filter(Boolean).join(" | ") || null,
+    };
   }
 
-  return { live: null, resolvedFrom: "offline", misses: misses + 1, discovered: false };
+  return {
+    live: null,
+    resolvedFrom: "offline",
+    misses: misses + 1,
+    discovered: false,
+    diagnostic,
+  };
 }
 
 Deno.serve(async (req) => {
@@ -319,6 +415,7 @@ Deno.serve(async (req) => {
           resolvedFrom: "error",
           misses: (cached?.consecutive_misses ?? 0) + 1,
           discovered: false,
+          diagnostic: "resolution-threw",
         };
       }
 
@@ -361,6 +458,7 @@ Deno.serve(async (req) => {
         embedUrl: videoId ? buildEmbedUrl(videoId) : null,
         watchUrl: channel.liveUrl,
         resolvedFrom: resolution.resolvedFrom,
+        diagnostic: resolution.diagnostic,
       };
     }),
   );
