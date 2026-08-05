@@ -38,8 +38,14 @@ export type XbrlContext = {
 // attribute order and sometimes add extras (e.g. xml:lang). Matching only
 // `id="..."` immediately before `>` would silently drop any context whose tag
 // doesn't happen to look exactly like that, with no error to signal the loss.
+// The attribute must still be matched carefully: some filings also carry a
+// namespaced `xml:id="..."` alongside the real `id="..."`, and a bare `\b`
+// boundary before `id` treats the ':' in `xml:id` as a word boundary too, so
+// it happily matches the namespaced attribute instead. Requiring `id` to sit
+// at the start of the blob or right after whitespace rules that out while
+// still tolerating any attribute order.
 const CONTEXT_RE = /<xbrli:context\b([^>]*)>([\s\S]*?)<\/xbrli:context>/g;
-const ID_ATTR_RE = /\bid="([^"]+)"/;
+const ID_ATTR_RE = /(?:^|\s)id="([^"]+)"/;
 const START_RE = /<xbrli:startDate>([^<]+)<\/xbrli:startDate>/;
 const END_RE = /<xbrli:endDate>([^<]+)<\/xbrli:endDate>/;
 const INSTANT_RE = /<xbrli:instant>([^<]+)<\/xbrli:instant>/;
