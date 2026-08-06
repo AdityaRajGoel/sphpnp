@@ -228,11 +228,39 @@ async function scrapeLive(
     // something else entirely" - a datacenter IP getting a consent or bot
     // interstitial has no canonical watch link and would otherwise be
     // indistinguishable from an idle channel.
-    const hasCanonical = /rel=["']canonical["']/i.test(html);
-    const hasWatch = /\/watch\?v=/.test(html);
+    // `canonical=true,watch=true` was ambiguous and hid the actual cause: it
+    // said only that SOME canonical tag existed and that `/watch?v=` appeared
+    // SOMEWHERE, which an off-air page satisfies trivially - its canonical
+    // points at the channel and its body is full of links to past uploads. A
+    // genuinely live channel reading "offline" was therefore indistinguishable
+    // from an idle one.
+    //
+    // What decides it is where canonical points, so report that plus the live
+    // flag separately. Verified from an Indian residential IP while CNBC Awaaz
+    // was live: canonical=watch and liveFlag=true, i.e. this exact request
+    // succeeds there. When production disagrees, these two fields say which of
+    // the two required signals was missing.
+    const canonicalHref = html
+      .match(/<link[^>]*rel=["']canonical["'][^>]*>/i)?.[0]
+      ?.match(/href=["']([^"']+)["']/i)?.[1];
+    const canonicalKind = !canonicalHref
+      ? "none"
+      : canonicalHref.includes("/watch")
+      ? "watch"
+      : canonicalHref.includes("/channel/") || canonicalHref.includes("/@")
+      ? "channel"
+      : "other";
+    const liveFlag = /"(?:isLive|isLiveNow)"\s*:\s*true/.test(html);
+    // The href itself when the shape is unrecognised, because "other" alone
+    // still does not say what to accept. It is a public YouTube URL - nothing
+    // sensitive - and only surfaces on the miss path.
+    const hrefHint = canonicalKind === "other" && canonicalHref
+      ? `,href=${canonicalHref.slice(0, 80)}`
+      : "";
     return {
       live: null,
-      kind: `scrape-miss:len=${html.length},canonical=${hasCanonical},watch=${hasWatch}`,
+      kind:
+        `scrape-miss:len=${html.length},canonical=${canonicalKind},liveFlag=${liveFlag}${hrefHint}`,
     };
   } catch (err) {
     console.error(`youtube /live threw for ${channelId}:`, (err as Error).message);
