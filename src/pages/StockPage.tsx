@@ -31,6 +31,12 @@ export default function StockPage() {
     ? `${s.header.name} (${s.header.symbol}) financials`
     : `${symbol?.toUpperCase() ?? "Stock"} financials`;
 
+  // Header may not be loaded yet (loading/error states) - fall back to the
+  // route param rather than rendering "undefined" in the breadcrumb trail.
+  const breadcrumbLabel = s.header
+    ? `${s.header.name} (${s.header.symbol})`
+    : symbol?.toUpperCase() ?? "Stock";
+
   return (
     <PageTransition>
       <ScrollProgress />
@@ -44,7 +50,13 @@ export default function StockPage() {
       />
       <Header />
       <main className="container mx-auto px-4 py-8 max-w-5xl">
-        <VisibleBreadcrumbs />
+        <VisibleBreadcrumbs
+          items={[
+            { name: "Home", url: "/" },
+            { name: "Stock Screener", url: "/screener" },
+            { name: breadcrumbLabel },
+          ]}
+        />
 
         {s.loading ? (
           <div className="space-y-4" aria-busy="true" data-stock-state="loading">
@@ -94,8 +106,15 @@ export default function StockPage() {
             </motion.header>
 
             {/* Tracked but unreached by the sync cursor. Ordinary, not broken -
-                the backfill covers ~2 symbols an hour. */}
-            {!s.synced ? (
+                the backfill covers ~2 symbols an hour.
+
+                `synced` and `basis` are set together by selectBasis() inside
+                the hook (basis is non-null exactly when there are income
+                rows), but that link lives in another file. Guarding on both
+                here - instead of asserting `s.basis!` - means a future
+                change that breaks the invariant falls back to this card
+                rather than silently mislabelling the table's basis badge. */}
+            {!s.synced || !s.basis ? (
               <Card className="p-6" data-stock-state="unsynced">
                 <h2 className="font-semibold mb-1">Financials not yet synced</h2>
                 <p className="text-sm text-muted-foreground">
@@ -105,7 +124,7 @@ export default function StockPage() {
               </Card>
             ) : (
               <>
-                <IncomeStatementTable rows={s.income} basis={s.basis!} />
+                <IncomeStatementTable rows={s.income} basis={s.basis} />
                 {s.bothAvailable && (
                   <p className="text-xs text-muted-foreground">
                     This company files both consolidated and standalone results.
