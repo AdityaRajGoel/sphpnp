@@ -33,7 +33,7 @@ export default function SymbolSwitcher() {
         .from("screener_stocks")
         .select("symbol,name")
         .order("symbol");
-      if (!cancelled && data) setEntries(data as Entry[]);
+      if (!cancelled && data) setEntries(data);
     })();
     return () => { cancelled = true; };
   }, [open, entries.length]);
@@ -48,7 +48,7 @@ export default function SymbolSwitcher() {
         Switch stock <kbd className="ml-1 font-mono">⌘K</kbd>
       </button>
 
-      <CommandDialog open={open} onOpenChange={setOpen}>
+      <CommandDialog open={open} onOpenChange={setOpen} title="Search tracked stocks">
         <CommandInput placeholder="Search a stock by symbol or name..." />
         <CommandList>
           <CommandEmpty>No matching stock.</CommandEmpty>
@@ -59,7 +59,7 @@ export default function SymbolSwitcher() {
                 value={`${e.symbol} ${e.name}`}
                 onSelect={() => {
                   setOpen(false);
-                  navigate(`/stock/${e.symbol}`);
+                  navigate(`/stock/${encodeURIComponent(e.symbol)}`);
                 }}
               >
                 <span className="font-medium mr-2">{e.symbol}</span>
