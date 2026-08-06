@@ -189,27 +189,50 @@ guard in `prerender.js` that refuses to prerender when `learnContent.ts` yields
 no article slugs.
 
 `prerender.js` currently catches a `page.goto` timeout, warns, and writes
-whatever DOM exists. Across 28 mostly-static routes that is harmless; across
-~130 data-fetching routes it would silently bake loading skeletons into
-crawlable HTML. **A content assertion is therefore required regardless of which
-delivery mechanism is chosen**: a stock page whose HTML lacks its financial
-data fails the build rather than shipping.
+whatever DOM exists. Across 39 mostly-static routes that is harmless; across
+~159 data-fetching routes it would silently bake loading skeletons into
+crawlable HTML. **A content assertion on every written stock page is therefore
+required**: a page whose HTML lacks its financial data fails the build rather
+than shipping.
 
-> **Open decision.** Whether each page fetches client-side and puppeteer
-> captures the hydrated DOM, or the build injects pre-fetched data, is pending
-> two measurements now in flight: the per-route prerender cost and capture
-> reliability under `networkidle2`, and the serialized per-symbol payload size.
->
-> The decision rule is fixed in advance, so the measurement decides rather than
-> taste. Take the client-fetch path if **both** hold: every trial run captures
-> complete HTML for every stock route (no partial captures at any tested
-> concurrency), and projected total prerender wall-clock for the full route set
-> stays under five minutes at a concurrency the runs show to be stable.
-> Otherwise inject the data at build time and accept the second data path.
-> Client-fetch is preferred on a tie because it keeps one data path; the
-> `corporate_actions` shape mismatch in Track E is what a second, diverging
-> path costs. This section will be completed with the answer before
-> implementation planning begins.
+This is not hypothetical. At concurrency 8 the measurement produced 126
+well-formed 28KB files containing the loading skeleton, with `timeouts=0` and
+nothing in the log distinguishing that run from a good one. The current script
+cannot tell a clean run from a catastrophic one.
+
+**Decision: each page fetches client-side and puppeteer captures the hydrated
+DOM.** No build-time data injection. Measured, against a decision rule fixed
+before the numbers came in.
+
+| Measurement | Result |
+| --- | --- |
+| `vite build` cost of adding the route | ~0 (flat) |
+| Prerender, 169 routes, sequential | **157.8s** (measured, not extrapolated) |
+| Per-route cost: data-fetching vs static | +88ms median (~11%) |
+| Capture completeness, sequential | **190/190 (100%)** |
+| Capture completeness, concurrency 4 | **390/390 (100%)** |
+| Capture completeness, concurrency 6 | 39/130 (30%) |
+| Capture completeness, concurrency 8 | 10/260 (3.8%) |
+
+Sequential comes in at 2.6 minutes against the five-minute bar with perfect
+capture, so **no concurrency is needed** and the collapse above 4 never applies
+to the shipped configuration. Client-fetch also keeps a single data path; the
+`corporate_actions` shape mismatch in Track E is what a second, diverging path
+costs.
+
+Two facts from the same measurement change the build regardless:
+
+1. The existing prerender set is **39 routes**, not 28 — 27 explicit, 11
+   `/learn/:slug` derived from `learnContent.ts`, plus `/404`.
+2. `scripts/prerender.js:82` serves the SPA fallback as
+   `res.sendFile(path.join(DIST_DIR, 'index.html'))`, which `send`'s dotfile
+   guard 404s for **every** route when the repo path contains a dot-segment.
+   It is masked today only because the service worker registers on `/` and then
+   serves `navigateFallback` from precache for later routes. Fix:
+   `res.sendFile('index.html', { root: DIST_DIR })`.
+
+The per-route figure is a floor, not a ceiling: it was measured against empty
+fundamentals tables and a page with no chart. A populated page will cost more.
 
 ### Performance
 
