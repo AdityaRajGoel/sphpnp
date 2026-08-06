@@ -11,3 +11,20 @@ verify_jwt = false
 
 [functions.sync-bhavcopy]
 verify_jwt = false
+
+# sync-fundamentals and sync-unlisted-quotes were both missing from this list
+# while running in production with verification off, so the setting existed only
+# out-of-band. The first `functions deploy` from a clean checkout would have
+# applied the default (true) and the gateway would have started rejecting each
+# workflow's calls before the function ran - turning a fixable outage into a
+# harder one, since a gateway 401 replaces the summary JSON the workflow reads.
+#
+# Both self-guard exactly as the two above do: the workflow sends x-sync-secret,
+# the function compares it against SYNC_SECRET and 401s on mismatch, and a unset
+# SYNC_SECRET locks the endpoint rather than leaving it open. That guard, not
+# verify_jwt, is what protects these service-role writers.
+[functions.sync-fundamentals]
+verify_jwt = false
+
+[functions.sync-unlisted-quotes]
+verify_jwt = false
