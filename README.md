@@ -1,6 +1,6 @@
 # Shri Parasram Holdings Panipat
 
-Production website for **Shri Parasram Holdings Pvt. Ltd.**, a SEBI-registered stockbroker
+Production website for **Shri Parasram Holdings Pvt. Ltd. Panipat**, a SEBI-registered stockbroker
 operating in Panipat, Haryana since 1970.
 
 **Live:** [www.sphpnp.com](https://www.sphpnp.com)

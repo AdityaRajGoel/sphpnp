@@ -1,7 +1,7 @@
 # Security Policy
 
 This repository powers [www.sphpnp.com](https://www.sphpnp.com), the website of
-**Shri Parasram Holdings Pvt. Ltd.** — a SEBI-registered stockbroker. Because the site
+**Shri Parasram Holdings Pvt. Ltd. Panipat** — a SEBI-registered stockbroker. Because the site
 handles prospective-client data and displays market information, we take reports seriously
 and would rather hear from you early.
 
