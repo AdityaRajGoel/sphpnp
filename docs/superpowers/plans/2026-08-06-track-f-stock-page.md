@@ -18,6 +18,7 @@
 - **Fundamentals tables are absent from `src/integrations/supabase/types.ts`.** Use the established cast: `supabase.from("fundamentals_income" as never) as ReturnType<typeof supabase.from>`. See `src/components/admin/MarketDataManager.tsx:146` for the precedent.
 - **Data may be sparse.** The backfill runs ~2 symbols/hour; most symbols have no rows yet. "Not yet synced" is a first-class state, not an error.
 - **Never run `npm run build`** — its `postbuild` pings live search engines via `scripts/submit-indexnow.js`. Use `npx vite build`.
+- **Type-check with `npx tsc -p tsconfig.app.json --noEmit --pretty false`.** Plain `npx tsc --noEmit` checks **nothing** here: the root `tsconfig.json` is `"files": []` plus project references, so without `-b` it exits 0 having examined zero files. `npx vite build` does not type-check either — esbuild strips types without checking them. Every step in this plan that says "run tsc" means the `-p tsconfig.app.json` form. Task 6 shipped a real TS2741 past both of the weaker commands.
 
 ---
 
