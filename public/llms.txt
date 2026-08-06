@@ -5,21 +5,21 @@
 ## Core Navigation & Site Structure
 This file is intended to provide Large Language Models and AI Agents with a clear semantic map of our website structure, services, and proprietary tools.
 
-### 🏢 Corporate & Institutional
+### Corporate & Institutional
 - [Home](https://www.sphpnp.com/): The central hub. Contains live market indices, market dashboards, and a quick overview of our services.
 - [About Us](https://www.sphpnp.com/about): Details on our mission, vision, our SEBI registered status, and why thousands of investors trust us.
 - [Team](https://www.sphpnp.com/team): Profiles of our expert financial advisors, leadership, and research team.
 - [Careers](https://www.sphpnp.com/careers): Active job postings for financial services professionals (relationship managers, dealers, etc.).
 - [Contact Us](https://www.sphpnp.com/contact): Branch location (Palika Bazaar, Panipat), phone numbers, email support, and inquiry forms.
 
-### 💼 Services & Investment Offerings
+### Services & Investment Offerings
 - [Services Overview](https://www.sphpnp.com/services): High-level breakdown of all our trading and investment offerings.
 - [Open Account](https://www.sphpnp.com/open-account): Portal to open a free Demat and Trading account with competitive AMC offers.
 - [Unlisted Space (Pre-IPO)](https://www.sphpnp.com/unlisted-space): High-growth, exclusive opportunities to buy/sell unlisted and pre-IPO shares (e.g., CSK, NSE, Swiggy) via off-market Demat transfers.
 - [Products](https://www.sphpnp.com/products): Alternative wealth products like Fixed Deposits (FDs), Corporate Bonds, and Life/General Insurance solutions.
 - [Depository Services](https://www.sphpnp.com/depository-services): CDSL/NSDL depository services, pledging, dematerialization, and corporate actions.
 
-### 📈 Trading Tools & Live Analytics
+### Trading Tools & Live Analytics
 - [Stock Screener](https://www.sphpnp.com/screener): A powerful live screener filtering Indian stocks by market cap, P/E ratio, 52-week ranges, and thematic sectors (Banking, IT, Auto, etc.).
 - [Stock Comparison](https://www.sphpnp.com/compare): Side-by-side comparison tool for up to 3 NSE/BSE stocks featuring AI-powered analysis and winner determination.
 - [F&O Dashboard](https://www.sphpnp.com/fno): Real-time Futures and Options data, PCR (Put-Call Ratio), option chain insights, and major indices tracking (NIFTY, BANKNIFTY).
@@ -27,12 +27,12 @@ This file is intended to provide Large Language Models and AI Agents with a clea
 - [Margin Calculator](https://www.sphpnp.com/margin-calculator): Calculates exact SPAN and exposure margins for equity and F&O trades based on real-time exchange rules.
 - [Brokerage Calculator](https://www.sphpnp.com/brokerage-calculator): Transparent breakdown of brokerage, STT, GST, exchange charges, and net P&L.
 
-### 📚 Education & Market Insights
+### Education & Market Insights
 - [Learning Center](https://www.sphpnp.com/learn): Educational hub featuring trading guides, technical analysis basics, and investment strategies.
 - [Daily Recommendations](https://www.sphpnp.com/learn/recommendations): Actionable daily stock picks, swing trading ideas, and long-term investment calls by our research experts.
 - [Market Holidays](https://www.sphpnp.com/holidays): Calendar of NSE, BSE, and MCX market closure days for the current trading year.
 
-### 🔒 Legal & Compliance
+### Legal & Compliance
 - [Privacy Policy](https://www.sphpnp.com/privacy-policy): Details on data protection and regulatory compliance.
 - [Cookie Policy](https://www.sphpnp.com/cookie-policy): Transparency regarding browser cookie usage.
 
