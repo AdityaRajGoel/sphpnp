@@ -53,19 +53,47 @@ parsed straight from XBRL into `fundamentals_income`, so they are real.
 
 ### Why every table is empty
 
-The sync is not broken. `sync-fundamentals` is deployed, and the workflow reuses
-the same repo secrets as `sync-bhavcopy`, which demonstrably works.
+Two independent defects, both confirmed by running the workflow on 2026-08-06.
 
+**1. The cron had never fired.**
 `.github/workflows/fundamentals-sync.yml` was added in commit `0476731`, which
 lived only on `feat/fundamentals-data-layer`. **GitHub Actions `schedule`
 triggers fire only from the repository's default branch**, so the hourly cron
-had never run once. `sync_cursors` holding zero rows corroborates this exactly:
-the function writes a cursor after every symbol, so zero cursors means zero
-symbols ever started.
+never ran. The workflow's run history confirmed it: `total_count: 1`, that one
+being the manual dispatch. Merging to `main` fixed this.
 
-Merging that branch to `main` on 2026-08-06 put the workflow on the default
-branch for the first time. The schedule is now live, and `workflow_dispatch: {}`
-allows a manual first run without waiting for the hour.
+**2. NSE blocks the function's requests.** *(still open — blocks everything)*
+That manual run finished in 16 seconds against a design that paces 30s per
+symbol, and returned:
+
+```json
+{"ok":true,"symbols":5,"filings":0,"parsed":0,"failed":0,"skipped":0}
+```
+
+`NSE_HEADERS` (`_shared/nse.ts:10`) sends `User-Agent:
+sphpnp-fundamentals/1.0` and no cookies. NSE's WAF drops the connection
+outright — verified by request: those exact headers yield a connection failure
+with no HTTP response, while a browser User-Agent with cookies primed from
+`nseindia.com` returns HTTP 200 and 130 filing rows for RELIANCE. Because this
+fails below the HTTP layer, `nseGet`'s 4xx/5xx retry logic never engages.
+
+The fix is to prime cookies from the NSE homepage once per invocation, reuse
+that `Cookie` header across the batch, and present a browser User-Agent. Deno's
+`fetch` has no cookie jar, so `Set-Cookie` must be captured and replayed
+manually.
+
+**3. The health signal cannot see either failure.**
+`index.ts:126` catches a registry failure, logs it to `console.error`, and
+deliberately leaves `registry` empty so the symbol's corporate actions still
+run. That is reasonable in isolation, but no counter records it: the summary's
+`failed` counts only parse failures. So total NSE blockage reports
+`{"ok":true,"filings":0,"failed":0}` and the workflow's `[ "$code" = "200" ]`
+gate passes green — indefinitely, with zero rows.
+
+**A green run is not evidence of a working sync.** The summary needs a
+registry-failure counter, and the workflow must fail when registry failures
+approach the batch size. Until that exists, row counts are the only trustworthy
+signal.
 
 ### Coverage ramps from zero
 
