@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import express from 'express';
+import { fetchStockRoutes } from './lib/stock-routes.mjs';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DIST_DIR = path.resolve(__dirname, '../dist');
 
@@ -74,7 +75,10 @@ async function prerender() {
   app.use(express.static(DIST_DIR));
   // Fallback for SPA routing
   app.use((req, res) => {
-    res.sendFile(path.join(DIST_DIR, 'index.html'));
+    // `send`'s dotfile guard rejects the whole path when any segment starts with a
+    // dot, so path.join() 404s every route from a checkout under e.g. .claude/.
+    // Rooting the call scopes that check to the filename.
+    res.sendFile('index.html', { root: DIST_DIR });
   });
 
   const server = app.listen(0, async () => {
@@ -103,7 +107,10 @@ async function prerender() {
         });
       }
 
-      for (const route of [...routes, ERROR_ROUTE]) {
+      const stockRoutes = await fetchStockRoutes();
+      console.log(`Derived ${stockRoutes.length} stock routes from screener_stocks.`);
+
+      for (const route of [...routes, ...stockRoutes, ERROR_ROUTE]) {
         console.log(`Prerendering ${route}...`);
         const page = await browser.newPage();
 
@@ -121,6 +128,21 @@ async function prerender() {
 
         // Get the fully rendered HTML
         const html = await page.content();
+
+        // The catch above swallows a goto timeout and proceeds, so without this a slow
+        // response silently ships a loading skeleton to crawlers. Measured: at high
+        // concurrency this produced 126 well-formed skeleton files with timeouts=0 and
+        // nothing in the log to distinguish it from a clean run.
+        if (route.startsWith('/stock/')) {
+          const ready = html.includes('data-stock-state="ready"');
+          const unsynced = html.includes('data-stock-state="unsynced"');
+          if (!ready && !unsynced) {
+            throw new Error(
+              `Prerender captured no data for ${route} - got a loading or error state. ` +
+              `Refusing to ship a skeleton page.`,
+            );
+          }
+        }
 
         // 3. Save to file
         let filePath;
