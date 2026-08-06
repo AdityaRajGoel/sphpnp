@@ -28,11 +28,17 @@ jobs:
     steps:
       - name: Trigger sync-fundamentals
         run: |
-          # A batch touches up to five symbols, and each symbol can carry many
-          # historical filings plus a corporate-actions call, every one of
-          # them paced against NSE_DELAY_MS. That can add up to well past the
-          # 120-180s window the lighter syncs use, so max-time is generous
-          # here on purpose.
+          # A batch touches up to two symbols (BATCH_SIZE in sync-fundamentals),
+          # and each symbol can carry many historical filings plus a
+          # corporate-actions call, every one of them paced against
+          # NSE_DELAY_MS. That can add up to well past the 120-180s window the
+          # lighter syncs use, so max-time is generous here on purpose.
+          #
+          # max-time is not the binding constraint though - the edge worker's
+          # compute ceiling is. At the original BATCH_SIZE of 5 the first run
+          # that actually reached NSE died with WORKER_RESOURCE_LIMIT after
+          # ~2.5 minutes, having written 176 rows. If that code reappears in
+          # this log, lower BATCH_SIZE rather than raising max-time.
           resp=$(curl -sS -w "\n%{http_code}" --max-time 300 \
             -X POST "https://zbkjbbujsdlpujotgltm.supabase.co/functions/v1/sync-fundamentals" \
             -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \

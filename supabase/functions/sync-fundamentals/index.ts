@@ -27,8 +27,24 @@ const cors = {
 };
 
 const JOB = "fundamentals";
-/** Symbols per invocation. Small enough that a run finishes well inside the timeout. */
-const BATCH_SIZE = 5;
+/**
+ * Symbols per invocation. Sized against the edge worker's compute ceiling, not
+ * the HTTP timeout.
+ *
+ * This was 5 for as long as the sync was silently blocked by NSE, so it was
+ * never once tested against real work. The first run that actually fetched
+ * anything wrote 176 rows and was then killed mid-batch with
+ * WORKER_RESOURCE_LIMIT: at 5 symbols x MAX_FILINGS_PER_SYMBOL this is up to 60
+ * XBRL documents fetched and regex-parsed in one invocation, each around 1MB.
+ *
+ * 2 keeps the full 12-quarter history per symbol and caps the worst case at 24
+ * parses. A full pass over the ~159-symbol universe takes ~80 hourly runs
+ * (about 3.3 days), which is fine for a backfill that only has to happen once.
+ * If WORKER_RESOURCE_LIMIT reappears in the run log, lower this before touching
+ * MAX_FILINGS_PER_SYMBOL - losing symbols per run costs time, losing filings
+ * per symbol costs history depth.
+ */
+const BATCH_SIZE = 2;
 /**
  * Failed parses of one filing after which the sync stops fetching it. A filing
  * that has failed this many times is not going to start parsing because we
