@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { fetchStockRoutes } from './lib/stock-routes.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const today = new Date().toISOString().split('T')[0];
@@ -23,6 +24,12 @@ if (learnArticleSlugs.length === 0) {
   process.exit(1);
 }
 
+// Derived from the live universe for the same reason the slugs above are derived
+// from the content file: a stock the app serves but the sitemap omits is a page
+// search engines never find. fetchStockRoutes throws on an empty or failed
+// fetch, so a bad response fails the build rather than silently shrinking it.
+const stockRoutes = await fetchStockRoutes();
+
 const urls = [
   { loc: '/',                    changefreq: 'daily',   priority: '1.0',  lastmod: today },
   { loc: '/unlisted-space',      changefreq: 'weekly',  priority: '0.9',  lastmod: today },
@@ -33,6 +40,8 @@ const urls = [
   { loc: '/depository-services', changefreq: 'weekly',  priority: '0.85', lastmod: today },
   { loc: '/about',               changefreq: 'monthly', priority: '0.8',  lastmod: today },
   { loc: '/screener',            changefreq: 'daily',   priority: '0.8',  lastmod: today },
+  // Per-symbol stock pages (the screener's children)
+  ...stockRoutes.map(route => ({ loc: route, changefreq: 'weekly', priority: '0.6', lastmod: today })),
   { loc: '/learn',               changefreq: 'weekly',  priority: '0.8',  lastmod: today },
   { loc: '/learn/recommendations', changefreq: 'daily', priority: '0.8',  lastmod: today },
   // Learning Center articles (original content)
