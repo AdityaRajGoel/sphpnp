@@ -57,6 +57,14 @@ jobs:
           # - and a non-JSON body (a gateway HTML page) yields an empty string
           # rather than failing the step here, leaving the exit code below as the
           # only thing that decides the build.
+          # A partial NSE blockage is worth surfacing without reddening the
+          # build. Total blockage does not appear here at all - the function
+          # returns 500 for it, so the exit check below catches it.
+          regfail=$(echo "$body" | jq -r '.registryFailed // 0' 2>/dev/null || echo 0)
+          if [ -n "$regfail" ] && [ "$regfail" != "0" ] && [ "$regfail" != "null" ]; then
+            echo "::warning title=NSE registry calls failed::$regfail of $(echo "$body" | jq -r '.symbols // "?"' 2>/dev/null || echo '?') symbol(s) could not be fetched from NSE"
+          fi
+
           skipped=$(echo "$body" | jq -r '.skipped // 0' 2>/dev/null || echo 0)
           if [ -n "$skipped" ] && [ "$skipped" != "0" ] && [ "$skipped" != "null" ]; then
             echo "::warning title=Fundamentals filings at retry cap::$skipped filing(s) skipped; check fundamentals_filings.parse_error"

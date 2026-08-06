@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 import {
+  NSE_HEADERS,
   toIsoDate,
   fetchFilingRegistry,
   fetchXbrl,
@@ -7,6 +8,27 @@ import {
   classifyActions,
   extractActionValue,
 } from "../../supabase/functions/_shared/nse";
+
+describe("NSE_HEADERS", () => {
+  // The sync ran green and wrote nothing for its entire life because these
+  // headers announced a bot. NSE's WAF does not answer with a status we could
+  // react to - it drops the connection, so `fetch` rejects and nseGet's
+  // 4xx/5xx retry never engages. Measured 3/3: this exact UA yields no HTTP
+  // response, while a browser UA yields 200 with the full payload. Cookies
+  // turned out to be irrelevant - the UA alone decides it.
+  it("does not announce itself as a bot", () => {
+    const ua = NSE_HEADERS["User-Agent"];
+    expect(ua).not.toMatch(/sphpnp|compatible;|bot|crawler|spider/i);
+  });
+
+  it("presents a browser user-agent", () => {
+    const ua = NSE_HEADERS["User-Agent"];
+    expect(ua).toMatch(/^Mozilla\/5\.0 \(/);
+    expect(ua).toMatch(/AppleWebKit\/[\d.]+ \(KHTML, like Gecko\)/);
+    expect(ua).toMatch(/Chrome\/[\d.]+/);
+    expect(ua).toMatch(/Safari\/[\d.]+/);
+  });
+});
 
 describe("toIsoDate", () => {
   it("converts an NSE date to ISO", () => {

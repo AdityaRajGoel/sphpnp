@@ -7,11 +7,30 @@
  * 5xx is a blip and is retried once.
  */
 
+// A self-identifying bot user-agent is dropped by NSE's WAF at the connection
+// level - not answered with a 403, simply never answered - so `fetch` rejects
+// and the 4xx/5xx retry below never engages. Every registry call failed this
+// way from the day the sync was written, and because a registry failure was
+// counted nowhere the run still reported {"ok":true,"filings":0} and went
+// green. Measured 3/3 against the live endpoint: the old UA returns no HTTP
+// response, this one returns 200 with the full payload.
+//
+// Cookies are deliberately NOT primed. The obvious theory was that NSE needs
+// the nsit/nseappid cookies from a homepage visit first; measurement says
+// otherwise - a browser UA with no cookies at all returns 200. Priming would
+// add a fetch per invocation for nothing.
+//
+// Keep this a real browser UA. Reintroducing a courteous "+https://..." bot
+// string silently restores the original outage; `src/test/nse.test.ts` guards
+// against exactly that.
 export const NSE_HEADERS: Record<string, string> = {
   "User-Agent":
-    "Mozilla/5.0 (compatible; sphpnp-fundamentals/1.0; +https://www.sphpnp.com)",
-  Referer: "https://www.nseindia.com/",
-  Accept: "application/json",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 " +
+    "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+  Referer:
+    "https://www.nseindia.com/companies-listing/corporate-filings-financial-results",
+  Accept: "application/json, text/plain, */*",
+  "Accept-Language": "en-US,en;q=0.9",
 };
 
 /** Delay between NSE requests, milliseconds. */

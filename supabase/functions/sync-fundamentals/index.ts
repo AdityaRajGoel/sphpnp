@@ -113,7 +113,16 @@ Deno.serve(async (req) => {
     }
   }
   const batch = symbols.slice(Math.max(0, start), Math.max(0, start) + BATCH_SIZE);
-  const summary = { symbols: batch.length, filings: 0, parsed: 0, failed: 0, skipped: 0 };
+  const summary = {
+    symbols: batch.length,
+    filings: 0,
+    parsed: 0,
+    failed: 0,
+    skipped: 0,
+    // Symbols whose NSE filing-registry call threw. Distinct from a symbol that
+    // genuinely has no filings, which returns an empty array and is not a fault.
+    registryFailed: 0,
+  };
 
   for (const symbol of batch) {
     // A registry failure must not take this symbol's corporate actions down with
@@ -127,6 +136,13 @@ Deno.serve(async (req) => {
       registry = await fetchFilingRegistry(symbol);
     } catch (err) {
       // 4xx halts this symbol's filings only; the batch continues.
+      //
+      // Counted, not merely logged. console.error goes to the edge function
+      // log, which the workflow never sees - so when NSE blocked every request
+      // the run reported {"ok":true,"symbols":5,"filings":0,"failed":0} and
+      // passed its status-code gate, hourly, writing nothing. `failed` tracks
+      // parse failures only and could not express this.
+      summary.registryFailed++;
       console.error(`registry failed for ${symbol}:`, (err as Error).message);
     }
     // Paced whether or not the call succeeded: a failed request still consumed
@@ -420,9 +436,21 @@ Deno.serve(async (req) => {
   // while `skipped` is informational (a filing at its attempt cap is a known,
   // deliberate state, not a new fault) and is annotated by the workflow rather
   // than failing it.
-  const status = summary.failed > 0 ? 500 : 200;
-  return new Response(JSON.stringify({ ok: summary.failed === 0, ...summary }), {
-    status,
-    headers: { ...cors, "Content-Type": "application/json" },
-  });
+  // Every symbol's registry call failing is not a partial - it is NSE refusing
+  // us outright, and it must be able to turn the build red on its own. This is
+  // the exact state the sync sat in, undetected, from the day it was written:
+  // `failed` stayed 0 because nothing ever got far enough to fail parsing.
+  //
+  // A partial (some symbols blocked, others fine) stays green and is annotated
+  // by the workflow instead, the same treatment `skipped` gets - NSE refusing
+  // one symbol is ordinary, refusing all five is an outage.
+  const blockedOut = summary.symbols > 0 && summary.registryFailed === summary.symbols;
+  const status = summary.failed > 0 || blockedOut ? 500 : 200;
+  return new Response(
+    JSON.stringify({ ok: summary.failed === 0 && !blockedOut, ...summary }),
+    {
+      status,
+      headers: { ...cors, "Content-Type": "application/json" },
+    },
+  );
 });
