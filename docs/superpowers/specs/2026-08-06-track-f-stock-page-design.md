@@ -27,15 +27,20 @@ spec, so it is decomposed:
 
 This was verified against the code, not the plan, and the two disagree.
 
-| Table | Written by | Usable here |
-| --- | --- | --- |
-| `fundamentals_filings` | `sync-fundamentals` | Yes — provenance |
-| `fundamentals_income` | `sync-fundamentals` | Yes — the core of the page |
-| `fundamentals_corporate_actions` | `sync-fundamentals` | Yes — dividends, splits |
-| `fundamentals_balance` | **nothing** | No |
-| `fundamentals_cashflow` | **nothing** | No |
-| `fundamentals_derived` | **nothing** | No |
-| `shareholding_pattern` | **nothing** | No |
+| Table | Written by | Rows today | Usable here |
+| --- | --- | --- | --- |
+| `screener_stocks` (universe) | `fetch-screener-data` | **159** | Yes — header, route list |
+| `fundamentals_filings` | `sync-fundamentals` | **0** | Provenance, once populated |
+| `fundamentals_income` | `sync-fundamentals` | **0** | Core of the page, once populated |
+| `fundamentals_corporate_actions` | `sync-fundamentals` | **0** | Dividends and splits, once populated |
+| `fundamentals_balance` | **nothing** | 0 | No |
+| `fundamentals_cashflow` | **nothing** | 0 | No |
+| `fundamentals_derived` | **nothing** | 0 | No |
+| `shareholding_pattern` | **nothing** | 0 | No |
+
+Row counts are exact, read live from PostgREST with `Prefer: count=exact`, with
+`bhavcopy_eod` (3183) as a control confirming anon can read real data and that
+the counts are not RLS masking.
 
 Commit `5d69968` ("add balance sheet and cash flow tables") shipped a migration
 and no fetcher. Commit `5e04992` ("compute derived ratios fail-closed") shipped
@@ -46,10 +51,34 @@ ratio and free cash flow therefore cannot be computed today.
 Two ratios survive: `debt_equity_ratio` and `debt_service_coverage_ratio` are
 parsed straight from XBRL into `fundamentals_income`, so they are real.
 
-The universe is `screener_stocks`. `sync-fundamentals` walks it 5 symbols per
-hourly run behind a cursor in `sync_cursors`, so a full cycle takes about a day
-and **coverage at any moment is partial by design**. The page must treat an
-uncovered symbol as an ordinary state, not an error.
+### Why every table is empty
+
+The sync is not broken. `sync-fundamentals` is deployed, and the workflow reuses
+the same repo secrets as `sync-bhavcopy`, which demonstrably works.
+
+`.github/workflows/fundamentals-sync.yml` was added in commit `0476731`, which
+lived only on `feat/fundamentals-data-layer`. **GitHub Actions `schedule`
+triggers fire only from the repository's default branch**, so the hourly cron
+had never run once. `sync_cursors` holding zero rows corroborates this exactly:
+the function writes a cursor after every symbol, so zero cursors means zero
+symbols ever started.
+
+Merging that branch to `main` on 2026-08-06 put the workflow on the default
+branch for the first time. The schedule is now live, and `workflow_dispatch: {}`
+allows a manual first run without waiting for the hour.
+
+### Coverage ramps from zero
+
+The universe is `screener_stocks` — 159 symbols. `sync-fundamentals` walks it 5
+symbols per hourly run behind a cursor, so a full first pass is **32 runs, about
+32 hours**. Coverage is therefore not merely partial, it starts at zero and
+climbs.
+
+This elevates one state from edge case to primary case: for the first hours
+after the sync starts, *most* symbols will have no financials. "Not yet synced"
+is the majority rendering on day one and must be designed as a first-class
+state, not an afterthought — and this page cannot be validated against real data
+until the sync has run.
 
 ## Architecture
 
