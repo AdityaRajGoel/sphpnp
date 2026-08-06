@@ -63,6 +63,7 @@ const ReportsPage = lazy(() => import("./pages/ReportsPage"));
 const StockRecommendationsPage = lazy(() => import("./pages/StockRecommendationsPage"));
 const ArticlePage = lazy(() => import("./pages/ArticlePage"));
 const SIPCalculatorPage = lazy(() => import("./pages/SIPCalculatorPage"));
+const StockPage = lazy(() => import("./pages/StockPage"));
 
 // --- Professional branded loading screen ---
 const candleVariants = {
@@ -179,6 +180,7 @@ const AnimatedRoutes = () => {
         <Route path="/reports" element={<ReportsPage />} />
         <Route path="/learn/recommendations" element={<StockRecommendationsPage />} />
         <Route path="/learn/:slug" element={<ArticlePage />} />
+        <Route path="/stock/:symbol" element={<StockPage />} />
         <Route path="/sip-calculator" element={<SIPCalculatorPage />} />
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
         <Route path="*" element={<NotFound />} />
