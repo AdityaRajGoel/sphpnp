@@ -14,8 +14,13 @@ describe("alignPeriods", () => {
     expect(out).toHaveLength(1);
     expect(out[0].periodEnd).toBe("2024-12-31");
     expect(out[0].input.profitAfterTax).toBe(100);
+    expect(out[0].input.profitBeforeTax).toBe(130);
     expect(out[0].input.totalEquity).toBe(500);
+    expect(out[0].input.totalDebt).toBe(200);
+    expect(out[0].input.currentAssets).toBe(300);
+    expect(out[0].input.currentLiabilities).toBe(150);
     expect(out[0].input.operatingCf).toBe(90);
+    expect(out[0].input.capex).toBe(30);
   });
 
   // THE TRAP. NSE's filing toDate and Yahoo's quarter endDate can differ by a
@@ -50,6 +55,12 @@ describe("alignPeriods", () => {
       [{ period_end: "2024-12-31", operating_cf: null, capex: null }],
     );
     expect(out[0].input.profitAfterTax).toBeNull();
+    expect(out[0].input.profitBeforeTax).toBeNull();
     expect(out[0].input.totalEquity).toBeNull();
+    expect(out[0].input.totalDebt).toBeNull();
+    expect(out[0].input.currentAssets).toBeNull();
+    expect(out[0].input.currentLiabilities).toBeNull();
+    expect(out[0].input.operatingCf).toBeNull();
+    expect(out[0].input.capex).toBeNull();
   });
 });
