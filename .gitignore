@@ -70,3 +70,4 @@ __pycache__/
 
 # Source media kept out of the build and out of git history (see public/hero-*.webm)
 media-src/
+.env*
