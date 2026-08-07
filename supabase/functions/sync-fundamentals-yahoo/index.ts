@@ -146,14 +146,18 @@ Deno.serve(async (req) => {
   // later without re-deriving it from raw table contents.
   const basisBySymbol: Record<string, "consolidated" | "standalone" | "none"> = {};
   // Counts failed writes to fundamentals_balance, fundamentals_cashflow and
-  // fundamentals_derived - kept outside `summary` so the HTTP response keeps
-  // exactly the { ok, symbols, balanceRows, cashflowRows, derivedRows,
-  // yahooFailed } shape, but still gates the status code below. Without this,
-  // a run where every one of those writes failed (bad column, an RLS change,
-  // a renamed table) still reported {"ok":true} with zero rows written - the
-  // same shape as the {"ok":true,"filings":0} defect this repo already
-  // shipped once, where `sync_observations.failures` recorded the truth but
-  // the status code the workflow actually gates on did not.
+  // fundamentals_derived, PLUS failed reads of fundamentals_income - that
+  // read sits one hop upstream of the derived write and gates the entire
+  // derived-ratio branch, so a read failure there is the same fault class as
+  // a write failure with the write simply never reached. Kept outside
+  // `summary` so the HTTP response keeps exactly the { ok, symbols,
+  // balanceRows, cashflowRows, derivedRows, yahooFailed } shape, but still
+  // gates the status code below. Without this, a run where every one of
+  // these failed (bad column, an RLS change, a renamed table) still reported
+  // {"ok":true} with zero rows written - the same shape as the
+  // {"ok":true,"filings":0} defect this repo already shipped once, where
+  // `sync_observations.failures` recorded the truth but the status code the
+  // workflow actually gates on did not.
   let writeFailed = 0;
 
   // Opened BEFORE the loop, not after it, so a run killed mid-batch (e.g. by
@@ -173,23 +177,38 @@ Deno.serve(async (req) => {
     let json: unknown | null = null;
     let balance: BalanceRow[] = [];
     let cashflow: CashflowRow[] = [];
+    // Recorded separately from the fetch failure below: a fetch failure means
+    // Yahoo (or the crumb flow) refused us, while a parse failure means Yahoo
+    // answered fine and OUR code broke on the payload. Collapsing the two
+    // under one "yahoo" label would misdirect on-call straight at Yahoo for a
+    // fault that is actually a parser regression - the label would be wrong
+    // even though the containment (skip this symbol, keep the batch going)
+    // is identical either way.
+    let parseFailed = false;
     try {
       json = await fetchQuoteSummary(
         yahooSymbol,
         "balanceSheetHistoryQuarterly,cashflowStatementHistoryQuarterly",
       );
-      if (json !== null) {
-        // Parsing runs inside the SAME try/catch as the fetch. It used to sit
-        // outside it: an unexpected throw from a malformed payload would then
-        // escape the per-symbol boundary entirely and abort the rest of the
-        // batch, rather than costing only this symbol the way a fetch
-        // failure does.
+    } catch (err) {
+      console.error(`yahoo fetch failed for ${symbol}:`, (err as Error).message);
+      json = null;
+    }
+
+    if (json !== null) {
+      // Parsing gets its OWN try/catch, not folded into the fetch's. It used
+      // to sit outside any try/catch at all: an unexpected throw from a
+      // malformed payload would then escape the per-symbol boundary entirely
+      // and abort the rest of the batch, rather than costing only this
+      // symbol the way a fetch failure does.
+      try {
         balance = parseBalanceSheet(json);
         cashflow = parseCashflow(json);
+      } catch (err) {
+        console.error(`yahoo parse failed for ${symbol}:`, (err as Error).message);
+        parseFailed = true;
+        json = null;
       }
-    } catch (err) {
-      console.error(`yahoo fetch or parse failed for ${symbol}:`, (err as Error).message);
-      json = null;
     }
 
     if (json === null) {
@@ -197,7 +216,7 @@ Deno.serve(async (req) => {
       // it is visible in the response and the observation row, not just in
       // logs the workflow never reads.
       summary.yahooFailed++;
-      observation.recordFailure("yahoo", 1);
+      observation.recordFailure(parseFailed ? "parse" : "yahoo", 1);
       await advanceCursor(symbol);
       continue;
     }
@@ -268,6 +287,17 @@ Deno.serve(async (req) => {
     if (incErr) {
       console.error(`income read failed for ${symbol}:`, incErr.message);
       observation.recordFailure("fundamentals_income_read", 1);
+      // Folded into the same gate as the write failures below. This read sits
+      // directly upstream of the fundamentals_derived write: on failure,
+      // selectIncomeBasis/alignPeriods/computeRatios and the derived upsert
+      // never run for this symbol at all, so there is never an upsert here to
+      // fail. A run where this read fails for every symbol (RLS change,
+      // dropped column, renamed table - the exact fault classes the gate
+      // exists for) would otherwise leave blockedOut false (Yahoo succeeded)
+      // and writeFailed at 0 (nothing was ever attempted), returning
+      // {"ok":true,"derivedRows":0} - the same defect one hop upstream of a
+      // write instead of at one.
+      writeFailed++;
     } else {
       const { basis, rows: basisRows } = selectIncomeBasis(
         (incomeRows ?? []) as IncomeBasisRow[],
@@ -362,10 +392,10 @@ Deno.serve(async (req) => {
   // the XBRL sync's registry calls. A partial (some symbols blocked, others
   // fine) stays green on this condition alone.
   const blockedOut = summary.symbols > 0 && summary.yahooFailed === summary.symbols;
-  // A database write failing is a DIFFERENT fault from Yahoo refusing a
-  // symbol, and blockedOut alone cannot see it: a run where every
-  // fundamentals_balance/fundamentals_cashflow/fundamentals_derived write
-  // failed (bad column, an RLS change, a renamed table) had every Yahoo call
+  // A database write (or the fundamentals_income read that gates the derived
+  // write) failing is a DIFFERENT fault from Yahoo refusing a symbol, and
+  // blockedOut alone cannot see it: a run where every one of those failed
+  // (bad column, an RLS change, a renamed table) had every Yahoo call
   // succeed, so yahooFailed stays 0 and blockedOut stays false. Without this
   // check that run returns {"ok":true} having written nothing - the same
   // shape as the {"ok":true,"filings":0} defect this repo already shipped
@@ -387,7 +417,8 @@ Deno.serve(async (req) => {
     error: blockedOut
       ? `every symbol in the batch failed its Yahoo call (${summary.yahooFailed}/${summary.symbols})`
       : anyWriteFailed
-        ? `${writeFailed} write(s) failed across fundamentals_balance/fundamentals_cashflow/fundamentals_derived`
+        ? `${writeFailed} write(s)/read(s) failed across fundamentals_balance/` +
+          `fundamentals_cashflow/fundamentals_income/fundamentals_derived`
         : undefined,
   });
 
