@@ -65,7 +65,15 @@ Deno.serve(async (req) => {
         }
       );
       const data = await res.json();
+      // Telegram always answers with an `ok` boolean even on HTTP 200. Relaying
+      // this response with a blanket 200 previously meant a rejected
+      // setWebhook call (bad token, unreachable URL, etc.) looked identical to
+      // a successful one to whoever is registering the webhook.
+      if (!res.ok || data?.ok !== true) {
+        console.error('Telegram setWebhook failed:', res.status, data);
+      }
       return new Response(JSON.stringify(data), {
+        status: res.ok && data?.ok === true ? 200 : 502,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
@@ -76,7 +84,11 @@ Deno.serve(async (req) => {
         `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getWebhookInfo`
       );
       const data = await res.json();
+      if (!res.ok || data?.ok !== true) {
+        console.error('Telegram getWebhookInfo failed:', res.status, data);
+      }
       return new Response(JSON.stringify(data), {
+        status: res.ok && data?.ok === true ? 200 : 502,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
@@ -90,8 +102,11 @@ Deno.serve(async (req) => {
       .limit(15);
 
     if (error) {
+      // Log the real postgrest error server-side only; the client gets a
+      // generic message so DB internals never leak into an HTTP response.
+      console.error('telegram_updates read error:', error);
       return new Response(
-        JSON.stringify({ success: false, error: error.message }),
+        JSON.stringify({ success: false, error: 'Failed to load messages' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -142,6 +157,11 @@ Deno.serve(async (req) => {
         const fileData = await fileRes.json();
         if (fileData.ok && fileData.result.file_path) {
           photoUrl = `https://api.telegram.org/file/bot${TELEGRAM_BOT_TOKEN}/${fileData.result.file_path}`;
+        } else {
+          // Not fatal: the post is still saved with hasPhoto true and a null
+          // photoUrl. Logged so a run of these doesn't go unnoticed - it means
+          // the channel post renders without its image.
+          console.error('Telegram getFile failed to resolve a photo URL:', fileRes.status, fileData);
         }
       }
 
@@ -168,9 +188,14 @@ Deno.serve(async (req) => {
       );
 
       if (error) {
+        // Fail LOUD to Telegram on purpose: this is a webhook, and Telegram
+        // retries non-2xx deliveries. The upsert is keyed on
+        // telegram_message_id (onConflict), so a retried delivery after a
+        // transient DB error is safe to replay rather than something to
+        // suppress.
         console.error('DB insert error:', error);
         return new Response(
-          JSON.stringify({ ok: false, error: error.message }),
+          JSON.stringify({ ok: false, error: 'Failed to save message' }),
           { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
@@ -181,7 +206,7 @@ Deno.serve(async (req) => {
     } catch (err) {
       console.error('Webhook error:', err);
       return new Response(
-        JSON.stringify({ ok: false, error: String(err) }),
+        JSON.stringify({ ok: false, error: 'Webhook processing failed' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }

@@ -16,16 +16,37 @@ function stripTags(s: string): string {
   return out;
 }
 
-async function fetchRss(url: string, sourceName: string, defaultCategory: string) {
+interface NewsItem {
+  title: string;
+  summary: string;
+  category: string;
+  timeAgo: string;
+  timestamp: string;
+  source: string;
+  url: string;
+}
+
+interface RssFetchResult {
+  // false when the fetch/parse itself failed (network error, non-OK HTTP
+  // status, thrown exception). A feed that fetched fine but genuinely had
+  // zero qualifying items still reports ok: true - that isn't a failure.
+  ok: boolean;
+  items: NewsItem[];
+}
+
+async function fetchRss(url: string, sourceName: string, defaultCategory: string): Promise<RssFetchResult> {
   try {
     const res = await fetch(url);
-    if (!res.ok) return [];
+    if (!res.ok) {
+      console.error(`RSS fetch non-OK for ${sourceName} (${url}): HTTP ${res.status}`);
+      return { ok: false, items: [] };
+    }
     const xml = await res.text();
     
     // Very basic XML parsing using Regex to avoid heavy Deno dependencies
     const items = [...xml.matchAll(/<item>([\s\S]*?)<\/item>/gi)].slice(0, 10);
-    
-    return items.map(match => {
+
+    const parsed = items.map(match => {
       const itemStr = match[1];
       
       // Handle CDATA or regular text
@@ -78,9 +99,11 @@ async function fetchRss(url: string, sourceName: string, defaultCategory: string
         url
       };
     }).filter(i => i.title !== "Market Update");
+
+    return { ok: true, items: parsed };
   } catch (e) {
     console.error("RSS Fetch Error for", url, e);
-    return [];
+    return { ok: false, items: [] };
   }
 }
 
@@ -104,12 +127,12 @@ function interleave<T extends { title: string }>(groups: T[][], limit: number): 
 }
 
 async function getLiveNews() {
-  // Reputed Indian market-news sources (RSS). fetchRss fails soft -> [] on error,
-  // so an occasionally-down feed never breaks the response.
-  const [
-    etMarkets, moneyControl, businessStandard, liveMint, financialExpress, ndtvProfit, zeeBusiness,
-    cnbcWorld, yahooFinance,
-  ] = await Promise.all([
+  // Reputed Indian market-news sources (RSS). fetchRss fails soft -> { ok: false, items: [] }
+  // on error, so an occasionally-down feed never breaks the response. But we
+  // still track ok/failed counts below so a total outage across every source
+  // is visible in the response instead of quietly presenting empty arrays as
+  // a successful fetch.
+  const results = await Promise.all([
     fetchRss("https://economictimes.indiatimes.com/markets/rssfeeds/1977021501.cms", "Economic Times", "Markets"),
     fetchRss("https://www.moneycontrol.com/rss/MCtopnews.xml", "Moneycontrol", "Business"),
     fetchRss("https://www.business-standard.com/rss/markets-106.rss", "Business Standard", "Markets"),
@@ -121,16 +144,23 @@ async function getLiveNews() {
     fetchRss("https://search.cnbc.com/rs/search/combinedcms/view.xml?profile=120000000&id=10000664", "CNBC", "Global"),
     fetchRss("https://query2.finance.yahoo.com/v1/finance/rss/news", "Yahoo Finance", "Markets"),
   ]);
+  const [
+    etMarkets, moneyControl, businessStandard, liveMint, financialExpress, ndtvProfit, zeeBusiness,
+    cnbcWorld, yahooFinance,
+  ] = results;
 
   // Deep enough that the client's featured story + 9-card grid still leaves
   // stories behind the "Show more" button.
   const indian = interleave(
-    [etMarkets, moneyControl, businessStandard, liveMint, financialExpress, ndtvProfit, zeeBusiness],
+    [etMarkets, moneyControl, businessStandard, liveMint, financialExpress, ndtvProfit, zeeBusiness].map(r => r.items),
     24,
   );
-  const world = interleave([cnbcWorld, yahooFinance], 14);
+  const world = interleave([cnbcWorld, yahooFinance].map(r => r.items), 14);
 
-  return { indian, world };
+  const sourcesTotal = results.length;
+  const sourcesOk = results.filter(r => r.ok).length;
+
+  return { indian, world, sourcesTotal, sourcesOk };
 }
 
 Deno.serve(async (req) => {
@@ -141,9 +171,34 @@ Deno.serve(async (req) => {
   try {
     const news = await getLiveNews();
 
+    // Total failure: every single RSS source errored or returned non-OK.
+    // Previously this still answered `success: true` with two empty arrays,
+    // so a full outage of the news pipeline was indistinguishable from a
+    // legitimately quiet news day - nobody would know to look. Callers that
+    // check `success` and per-array length (MarketNews, LearningCenterPage)
+    // already fall back to their own cached/fallback content on
+    // success: false, so this doesn't regress the UI, it just makes the
+    // outage visible in the response instead of only in a log nobody reads.
+    const allSourcesFailed = news.sourcesOk === 0;
+
+    if (allSourcesFailed) {
+      console.error(`All ${news.sourcesTotal} news sources failed on this request.`);
+    }
+
     return new Response(
-      JSON.stringify({ success: true, ...news, fetchedAt: new Date().toISOString() }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      JSON.stringify({
+        success: !allSourcesFailed,
+        indian: news.indian,
+        world: news.world,
+        sourcesOk: news.sourcesOk,
+        sourcesTotal: news.sourcesTotal,
+        ...(allSourcesFailed ? { error: 'All news sources are currently unavailable' } : {}),
+        fetchedAt: new Date().toISOString(),
+      }),
+      {
+        status: allSourcesFailed ? 502 : 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      }
     );
   } catch (error) {
     console.error('Error:', error);

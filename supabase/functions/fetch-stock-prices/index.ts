@@ -106,13 +106,19 @@ async function fetchETCommodity(symbol: string) {
     const res = await fetch(`https://economictimes.indiatimes.com/commoditysummary/symbol-${symbol}.cms`, {
       headers: { "User-Agent": "Mozilla/5.0" }
     });
-    if (!res.ok) return null;
+    if (!res.ok) {
+      console.error(`ET commodity fetch non-OK for ${symbol}: HTTP ${res.status}`);
+      return null;
+    }
     const html = await res.text();
     const priceMatch = html.match(/class="commodityPrice"[^>]*>([^<]+)<\//i);
     const changeMatch = html.match(/class="data perChng"[^>]*>([^<]+)<\//i);
-    
-    if (!priceMatch) return null;
-    
+
+    if (!priceMatch) {
+      console.error(`ET commodity parse error for ${symbol}: price element not found`);
+      return null;
+    }
+
     const price = parseFloat(priceMatch[1].replace(/,/g, ''));
     let changePercent = 0;
     if (changeMatch) {
@@ -121,13 +127,14 @@ async function fetchETCommodity(symbol: string) {
         changePercent = parseFloat(pMatch[1].replace('%',''));
       }
     }
-    
+
     return {
       price,
       changePercent,
       up: changePercent >= 0
     };
-  } catch {
+  } catch (e) {
+    console.error(`ET commodity fetch error for ${symbol}:`, e);
     return null;
   }
 }
@@ -138,10 +145,16 @@ async function fetchYahooQuote(symbol: string): Promise<QuoteResult | null> {
     const res = await fetch(url, {
       headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
     });
-    if (!res.ok) return null;
+    if (!res.ok) {
+      console.error(`Yahoo quote fetch non-OK for ${symbol}: HTTP ${res.status}`);
+      return null;
+    }
     const data = await res.json();
     const result = data?.chart?.result?.[0];
-    if (!result) return null;
+    if (!result) {
+      console.error(`Yahoo quote parse error for ${symbol}: no chart result in response`);
+      return null;
+    }
 
     const meta = result.meta;
     const price = meta.regularMarketPrice;
@@ -162,7 +175,8 @@ async function fetchYahooQuote(symbol: string): Promise<QuoteResult | null> {
       prevClose,
       volume: indicators?.volume?.[lastIdx] || meta.regularMarketVolume || undefined,
     };
-  } catch {
+  } catch (e) {
+    console.error(`Yahoo quote fetch error for ${symbol}:`, e);
     return null;
   }
 }
@@ -276,20 +290,30 @@ Deno.serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     let sb: any = null;
+    // Hoisted out of the block below so it's still available further down as
+    // a last-resort stale fallback if every live source fails this request.
+    let cachedRow: { data: any; updated_at: string } | null = null;
     if (supabaseUrl && serviceKey) {
       sb = createClient(supabaseUrl, serviceKey);
-      const { data: cached } = await sb
+      const { data: cached, error: cacheReadError } = await sb
         .from("market_cache")
         .select("data, updated_at")
         .eq("id", CACHE_KEY)
         .single();
 
+      // PGRST116 ("no rows") is expected on a cold cache and isn't an error
+      // worth logging; anything else (permissions, connectivity) is.
+      if (cacheReadError && cacheReadError.code !== "PGRST116") {
+        console.error("market_cache read failed:", cacheReadError);
+      }
+
       if (cached) {
+        cachedRow = cached;
         const age = Date.now() - new Date(cached.updated_at).getTime();
         const ttl = marketStatus.isOpen ? CACHE_TTL_MS : 10 * 60 * 1000; // 10 min when closed
         if (age < ttl) {
           return new Response(
-            JSON.stringify({ ...cached.data, cached: true }),
+            JSON.stringify({ ...cached.data, cached: true, stale: false }),
             { headers: { ...corsHeaders, "Content-Type": "application/json" } }
           );
         }
@@ -409,13 +433,55 @@ Deno.serve(async (req) => {
     // Extract VIX from commodities
     const vixResult = commodityResults.find(c => c?.name === "INDIA VIX");
 
+    const indices = indexResults.filter(Boolean);
+    const stocksData = stockResults.filter(Boolean);
+    const commodities = commodityResults.filter(Boolean);
+    const globalMarkets = globalResults.filter(Boolean);
+    const sectors = sectorResults.filter(Boolean);
+
+    // Every per-symbol fetch already fails soft to null so one blocked quote
+    // never breaks the whole response. But if literally everything came back
+    // null - every index, stock, commodity, global index and sector - that's
+    // not a handful of quiet symbols, it's the upstream (Yahoo/ET) being
+    // unreachable entirely. Previously this still built and cached a
+    // `success: true` response full of empty arrays, so a total outage was
+    // indistinguishable from a market with nothing to report, AND that empty
+    // snapshot got written into market_cache and kept being served as "fresh"
+    // for the next 2-10 minutes.
+    const allEmpty = indices.length === 0
+      && stocksData.length === 0
+      && validMarket.length === 0
+      && commodities.length === 0
+      && globalMarkets.length === 0
+      && sectors.length === 0;
+
+    if (allEmpty) {
+      console.error('Live stock price fetch returned zero results across every source (indices, stocks, market movers, commodities, global markets, sectors) - treating as a total upstream outage.');
+
+      if (cachedRow) {
+        // Serve the last known-good snapshot instead of an empty page, but
+        // mark it stale so this is distinguishable from a normal cache hit.
+        return new Response(
+          JSON.stringify({ ...cachedRow.data, cached: true, stale: true }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // No live data and nothing cached to fall back to - there is genuinely
+      // nothing to serve, so this must not report success.
+      return new Response(
+        JSON.stringify({ success: false, error: 'Live market data is temporarily unavailable' }),
+        { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     const responseData = {
       success: true,
-      indices: indexResults.filter(Boolean),
-      data: stockResults.filter(Boolean),
-      commodities: commodityResults.filter(Boolean),
-      globalMarkets: globalResults.filter(Boolean),
-      sectors: sectorResults.filter(Boolean),
+      indices,
+      data: stocksData,
+      commodities,
+      globalMarkets,
+      sectors,
       vix: vixResult || null,
       marketOverview: {
         gainers,
@@ -433,14 +499,19 @@ Deno.serve(async (req) => {
       fetchedAt: new Date().toISOString(),
     };
 
-    // Cache the result
+    // Cache the result. postgrest-js resolves with an { error } object on
+    // failure instead of throwing, so a bare try/catch here would never see
+    // a rejected write - it has to be checked explicitly.
     if (sb) {
       try {
-        await sb.from("market_cache").upsert({
+        const { error: cacheWriteError } = await sb.from("market_cache").upsert({
           id: CACHE_KEY,
           data: responseData,
           updated_at: new Date().toISOString(),
         });
+        if (cacheWriteError) {
+          console.error("Cache write failed:", cacheWriteError);
+        }
       } catch (e) {
         console.error("Cache write failed:", e);
       }

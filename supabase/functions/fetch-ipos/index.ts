@@ -43,7 +43,10 @@ async function fetchFromIPOWatch(): Promise<IPOEntry[] | null> {
       signal: AbortSignal.timeout(12000),
     });
 
-    if (!res.ok) return null;
+    if (!res.ok) {
+      console.error('IPOWatch fetch non-OK:', res.status);
+      return null;
+    }
     const html = await res.text();
     return parseIPOWatchHtml(html);
   } catch (e) {
@@ -252,18 +255,27 @@ async function fetchFromInvestorGain(): Promise<IPOEntry[] | null> {
       signal: AbortSignal.timeout(12000),
     });
 
-    if (!res.ok) return null;
+    if (!res.ok) {
+      console.error('InvestorGain fetch non-OK:', res.status);
+      return null;
+    }
     const html = await res.text();
 
     const rows: IPOEntry[] = [];
     const tableMatch = html.match(/<table[^>]*id="mainTable"[^>]*>([\s\S]*?)<\/table>/i)
       || html.match(/<table[^>]*class="[^"]*table[^"]*"[^>]*>([\s\S]*?)<\/table>/i);
-    if (!tableMatch) return null;
+    if (!tableMatch) {
+      console.error('InvestorGain parse error: no matching table found in response HTML');
+      return null;
+    }
 
     const tbodyMatch = tableMatch[1].match(/<tbody[^>]*>([\s\S]*?)<\/tbody>/i);
     const tableContent = tbodyMatch ? tbodyMatch[1] : tableMatch[1];
     const trMatches = tableContent.match(/<tr[^>]*>([\s\S]*?)<\/tr>/gi);
-    if (!trMatches || trMatches.length < 1) return null;
+    if (!trMatches || trMatches.length < 1) {
+      console.error('InvestorGain parse error: no rows found in matched table');
+      return null;
+    }
 
     for (let i = 0; i < Math.min(trMatches.length, 30); i++) {
       const row = trMatches[i];
@@ -327,7 +339,7 @@ async function fetchFromInvestorGain(): Promise<IPOEntry[] | null> {
 
     return rows.length > 0 ? rows : null;
   } catch (e) {
-    console.log('InvestorGain error:', e);
+    console.error('InvestorGain error:', e);
     return null;
   }
 }
@@ -391,7 +403,13 @@ Deno.serve(async (req) => {
       }
       console.log(`Using ${ipos.length} live + ${listedSupplements.length} curated listed IPOs`);
     } else {
-      console.log('All live sources failed, using curated data');
+      // Both live sources failed - not a partial degradation, a total one.
+      // There's still data to hand back (the curated list), so `success`
+      // stays true and the caller still gets a usable page, but `live: false`
+      // and the deliberately omitted `fetchedAt` stop this from being
+      // presented as freshly scraped when it's actually a hand-curated
+      // snapshot that can silently go stale for weeks if nobody notices.
+      console.error('All live IPO sources failed, serving curated fallback data');
       finalIpos = getCuratedIPOs();
       source = 'curated';
     }
@@ -407,12 +425,19 @@ Deno.serve(async (req) => {
       return true;
     });
 
+    const live = source !== 'curated';
+
     return new Response(
       JSON.stringify({
         success: true,
         ipos: finalIpos,
         source,
-        fetchedAt: new Date().toISOString(),
+        live,
+        // Only stamp "now" when the data was actually fetched just now.
+        // The IPOTracker UI only renders "Last updated: ..." when this is
+        // truthy, so omitting it for the curated fallback removes the false
+        // freshness claim without needing any frontend change.
+        fetchedAt: live ? new Date().toISOString() : null,
         count: finalIpos.length,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -424,7 +449,9 @@ Deno.serve(async (req) => {
         success: true,
         ipos: getCuratedIPOs(),
         source: 'fallback',
-        fetchedAt: new Date().toISOString(),
+        live: false,
+        count: getCuratedIPOs().length,
+        fetchedAt: null,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
