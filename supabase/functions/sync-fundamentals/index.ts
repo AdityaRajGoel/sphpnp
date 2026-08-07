@@ -19,6 +19,7 @@ import {
   type FilingRecord,
 } from "../_shared/nse.ts";
 import { parseIncomeStatement } from "../_shared/xbrl.ts";
+import { SyncObservation } from "../_shared/observation.ts";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -139,6 +140,18 @@ Deno.serve(async (req) => {
     // genuinely has no filings, which returns an empty array and is not a fault.
     registryFailed: 0,
   };
+
+  // Opened BEFORE the loop, not after it. A summary written only at the end
+  // cannot survive the run being killed - which is exactly what happened when a
+  // batch hit WORKER_RESOURCE_LIMIT after writing 176 rows and left no trace it
+  // had ever started. An unclosed row with status='running' is that signal.
+  const observation = new SyncObservation(supabase, JOB);
+  await observation.open({
+    batch,
+    cursorStart: start,
+    universeSize: symbols.length,
+    batchSize: BATCH_SIZE,
+  });
 
   for (const symbol of batch) {
     // A registry failure must not take this symbol's corporate actions down with
@@ -305,6 +318,7 @@ Deno.serve(async (req) => {
 
       if (fErr) { console.error("filing upsert:", fErr.message); continue; }
       summary.filings++;
+      observation.recordWrite("fundamentals_filings");
 
       if (!statement) { summary.failed++; continue; }
 
@@ -327,6 +341,8 @@ Deno.serve(async (req) => {
         source: "nse_xbrl",
         fetched_at: new Date().toISOString(),
       }, { onConflict: "symbol,period_end,is_consolidated" });
+
+      if (!iErr) observation.recordWrite("fundamentals_income");
 
       if (iErr) {
         // The filing must not be left in "pending" silently - "pending" already
@@ -417,6 +433,8 @@ Deno.serve(async (req) => {
         if (caErr) {
           console.error(`corporate actions upsert failed for ${symbol}:`, caErr.message);
           summary.failed++;
+        } else {
+          observation.recordWrite("fundamentals_corporate_actions", deduped.size);
         }
       }
     } catch (err) {
@@ -437,7 +455,15 @@ Deno.serve(async (req) => {
     }, { onConflict: "job" });
     // Unchecked, a failing cursor write is indistinguishable from success and the
     // same batch repeats hourly forever.
-    if (curErr) console.error(`cursor upsert failed at ${symbol}:`, curErr.message);
+    if (curErr) {
+      console.error(`cursor upsert failed at ${symbol}:`, curErr.message);
+      // Counted, because console.error goes to the edge log the workflow never
+      // reads. A cursor that never advances is why the same five symbols would
+      // be reprocessed hourly forever.
+      observation.recordFailure("cursor", 1);
+    } else {
+      observation.recordWrite("sync_cursors");
+    }
   }
 
   // The cursor is written per symbol inside the loop above, so there is no
@@ -462,6 +488,20 @@ Deno.serve(async (req) => {
   // one symbol is ordinary, refusing all five is an outage.
   const blockedOut = summary.symbols > 0 && summary.registryFailed === summary.symbols;
   const status = summary.failed > 0 || blockedOut ? 500 : 200;
+
+  // Closed with row counts rather than a verdict. `{"ok":true,"filings":0}` was
+  // literally true for the entire lifetime of this sync while it wrote nothing,
+  // so "ok, and wrote nothing" has to be visibly different from "ok".
+  observation.recordFailure("registry", summary.registryFailed);
+  observation.recordFailure("parse", summary.failed);
+  await observation.close({
+    status: status === 200 ? "ok" : "failed",
+    detail: { ...summary, blockedOut, wroteNothing: observation.wroteNothing },
+    error: blockedOut
+      ? `every symbol in the batch failed its NSE registry call (${summary.registryFailed}/${summary.symbols})`
+      : undefined,
+  });
+
   return new Response(
     JSON.stringify({ ok: summary.failed === 0 && !blockedOut, ...summary }),
     {
