@@ -30,6 +30,15 @@ export class SyncObservation {
   private readonly writes: Record<string, number> = {};
   private readonly failures: Record<string, number> = {};
   private opened = false;
+  /**
+   * What open() recorded, kept so close() can merge rather than replace.
+   *
+   * `detail` is a single jsonb column, so writing it at close overwrote the
+   * open-time context wholesale - losing `batch`, the list of symbols the run
+   * was working on. That is the one field an unclosed row exists to preserve:
+   * knowing a run died is far less useful than knowing what it died holding.
+   */
+  private openDetail: Record<string, unknown> = {};
 
   constructor(
     private readonly supabase: SupabaseLike,
@@ -40,6 +49,7 @@ export class SyncObservation {
 
   /** Opens the row. Call before any work, so a kill mid-run is still visible. */
   async open(detail: Record<string, unknown> = {}): Promise<void> {
+    this.openDetail = detail;
     const { error } = await this.supabase.from(TABLE).insert({
       job: this.job,
       run_id: this.runId,
@@ -87,7 +97,10 @@ export class SyncObservation {
         status,
         writes: this.writes,
         failures: this.failures,
-        ...(outcome.detail ? { detail: outcome.detail } : {}),
+        // Merged, not replaced. `detail` is one jsonb column, so assigning the
+        // close-time object alone discarded everything open() had recorded.
+        // Close-time keys win on collision; open-time context survives.
+        detail: { ...this.openDetail, ...(outcome.detail ?? {}) },
         ...(outcome.error ? { error: outcome.error.slice(0, 2000) } : {}),
       })
       .eq("job", this.job)
