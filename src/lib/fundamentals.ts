@@ -41,11 +41,16 @@ export function selectBasis(rows: IncomeRow[]): {
 
 const CRORE = 10_000_000;
 const LAKH = 100_000;
+/** One lakh crore, expressed in crore - the unit formatCrore's input arrives in. */
+const LAKH_CRORE = 100_000;
 
 /** Indian grouping: 1,28,260 rather than 128,260. */
-const group = (n: number): string =>
-  n.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const groupTo = (n: number, digits: number): string =>
+  n.toLocaleString("en-IN", { minimumFractionDigits: digits, maximumFractionDigits: digits });
 
+const group = (n: number): string => groupTo(n, 2);
+
+/** Rupees in, rupees out. Never hand this a crore-denominated column. */
 export function formatINR(value: number | null): string {
   if (value === null || !Number.isFinite(value)) return "—";
   const sign = value < 0 ? "-" : "";
@@ -53,6 +58,25 @@ export function formatINR(value: number | null): string {
   if (abs >= CRORE) return `${sign}₹${group(abs / CRORE)} Cr`;
   if (abs >= LAKH) return `${sign}₹${group(abs / LAKH)} L`;
   return `${sign}₹${group(abs)}`;
+}
+
+/**
+ * screener_stocks.market_cap is written in crore, not rupees
+ * (fetch-screener-data divides by 10^7 before insert). Passing that column to
+ * formatINR published every market cap 10,000,000x too small - "₹17.93 L" for a
+ * company worth ₹17.93 lakh crore. The unit is in the name so the next caller
+ * cannot make the same substitution by accident.
+ *
+ * Large caps read in lakh crore, the unit Indian coverage actually uses; below
+ * that, plain crore with no decimals, because the column is already rounded to
+ * whole crore at ingest and inventing two decimal places would overstate it.
+ */
+export function formatCrore(valueInCrore: number | null): string {
+  if (valueInCrore === null || !Number.isFinite(valueInCrore)) return "—";
+  const sign = valueInCrore < 0 ? "-" : "";
+  const abs = Math.abs(valueInCrore);
+  if (abs >= LAKH_CRORE) return `${sign}₹${groupTo(abs / LAKH_CRORE, 2)} L Cr`;
+  return `${sign}₹${groupTo(abs, 0)} Cr`;
 }
 
 export function formatRatio(value: number | null): string {

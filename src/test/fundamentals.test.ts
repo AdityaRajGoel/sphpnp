@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
-  selectBasis, formatINR, formatRatio, toCell, type IncomeRow,
+  selectBasis, formatINR, formatCrore, formatRatio, toCell, type IncomeRow,
 } from "../lib/fundamentals";
 
 const row = (over: Partial<IncomeRow> = {}): IncomeRow => ({
@@ -63,6 +63,38 @@ describe("formatINR", () => {
   });
   it("returns an em dash for null so callers must use toCell", () => {
     expect(formatINR(null)).toBe("—");
+  });
+});
+
+describe("formatCrore", () => {
+  // screener_stocks.market_cap is stored in crore. Reliance sits at ~17.93 lakh
+  // crore; formatINR read the same number as rupees and published "₹17.93 L".
+  it("renders a large cap in lakh crore", () => {
+    expect(formatCrore(1793000)).toBe("₹17.93 L Cr");
+  });
+  it("does not agree with formatINR on the same number", () => {
+    expect(formatCrore(1793000)).not.toBe(formatINR(1793000));
+  });
+  it("renders a mid cap in plain crore with Indian grouping", () => {
+    expect(formatCrore(66927)).toBe("₹66,927 Cr");
+  });
+  it("stays in plain crore just below one lakh crore", () => {
+    expect(formatCrore(99999)).toBe("₹99,999 Cr");
+  });
+  it("switches to lakh crore exactly at one lakh crore", () => {
+    expect(formatCrore(100000)).toBe("₹1.00 L Cr");
+  });
+  it("keeps the sign on negatives", () => {
+    expect(formatCrore(-500)).toBe("-₹500 Cr");
+  });
+  it("returns an em dash for null", () => {
+    expect(formatCrore(null)).toBe("—");
+  });
+  // fetch-screener-data writes 0 when the upstream quote has no market cap, so
+  // 0 is an unknown rather than a real value. Formatting it is still defined;
+  // suppressing it is the caller's job (StockPage guards on truthiness).
+  it("formats zero rather than throwing, leaving suppression to the caller", () => {
+    expect(formatCrore(0)).toBe("₹0 Cr");
   });
 });
 

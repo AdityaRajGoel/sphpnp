@@ -2,7 +2,11 @@ import { motion } from "motion/react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { revealItem, revealSection } from "@/lib/motion";
+import { toCell } from "@/lib/fundamentals";
 import type { CorporateAction } from "@/hooks/useStockFundamentals";
+
+/** Same two-decimal convention IncomeStatementTable uses for per-share money. */
+const formatActionValue = (n: number): string => `₹${n.toFixed(2)}`;
 
 const formatDate = (iso: string): string => {
   const d = new Date(iso);
@@ -24,14 +28,21 @@ export default function CorporateActionsList({ actions }: { actions: CorporateAc
         </Card>
       ) : (
         <ul className="space-y-2">
-          {actions.map((a, i) => (
+          {actions.map((a, i) => {
+            const value = toCell(a.value, formatActionValue);
+            return (
             <motion.li key={`${a.ex_date}-${a.action_type}-${i}`} {...revealItem(i)}>
               <Card className="p-4 flex items-start justify-between gap-4 hover:bg-muted/30 transition-colors">
                 <div className="min-w-0">
                   <div className="flex items-center gap-2 mb-1">
                     <Badge variant="outline" className="capitalize">{a.action_type}</Badge>
-                    {a.value !== null && (
-                      <span className="font-semibold tabular-nums">₹{a.value}</span>
+                    {value.kind === "value" ? (
+                      <span className="font-semibold tabular-nums">{value.text}</span>
+                    ) : (
+                      <span className="text-muted-foreground text-xs">
+                        Not available
+                        <span className="sr-only"> — {value.reason}</span>
+                      </span>
                     )}
                   </div>
                   {/* Raw announcement text is kept verbatim - the parser stores
@@ -44,7 +55,8 @@ export default function CorporateActionsList({ actions }: { actions: CorporateAc
                 </div>
               </Card>
             </motion.li>
-          ))}
+            );
+          })}
         </ul>
       )}
     </motion.section>

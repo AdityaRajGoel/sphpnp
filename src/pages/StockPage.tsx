@@ -12,7 +12,7 @@ import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { revealSection } from "@/lib/motion";
-import { formatINR } from "@/lib/fundamentals";
+import { formatCrore } from "@/lib/fundamentals";
 import { useStockFundamentals } from "@/hooks/useStockFundamentals";
 import IncomeStatementTable from "@/components/stock/IncomeStatementTable";
 import CorporateActionsList from "@/components/stock/CorporateActionsList";
@@ -98,9 +98,11 @@ export default function StockPage() {
                   <div className="mt-2"><SymbolSwitcher /></div>
                 </div>
               </div>
+              {/* market_cap arrives in crore, and 0 is the ingest's "unknown"
+                  sentinel rather than a real zero - so the truthy guard stays. */}
               {s.header?.market_cap ? (
                 <p className="text-sm text-muted-foreground mt-3">
-                  Market cap {formatINR(s.header.market_cap)}
+                  Market cap {formatCrore(s.header.market_cap)}
                 </p>
               ) : null}
             </motion.header>
