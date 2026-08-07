@@ -145,6 +145,16 @@ Deno.serve(async (req) => {
   // pairing (or an unexpected "none") is diagnosable from the observation row
   // later without re-deriving it from raw table contents.
   const basisBySymbol: Record<string, "consolidated" | "standalone" | "none"> = {};
+  // Counts failed writes to fundamentals_balance, fundamentals_cashflow and
+  // fundamentals_derived - kept outside `summary` so the HTTP response keeps
+  // exactly the { ok, symbols, balanceRows, cashflowRows, derivedRows,
+  // yahooFailed } shape, but still gates the status code below. Without this,
+  // a run where every one of those writes failed (bad column, an RLS change,
+  // a renamed table) still reported {"ok":true} with zero rows written - the
+  // same shape as the {"ok":true,"filings":0} defect this repo already
+  // shipped once, where `sync_observations.failures` recorded the truth but
+  // the status code the workflow actually gates on did not.
+  let writeFailed = 0;
 
   // Opened BEFORE the loop, not after it, so a run killed mid-batch (e.g. by
   // WORKER_RESOURCE_LIMIT) still leaves a visible trace: an unclosed row with
@@ -161,13 +171,25 @@ Deno.serve(async (req) => {
     const yahooSymbol = toYahooSymbol(symbol);
 
     let json: unknown | null = null;
+    let balance: BalanceRow[] = [];
+    let cashflow: CashflowRow[] = [];
     try {
       json = await fetchQuoteSummary(
         yahooSymbol,
         "balanceSheetHistoryQuarterly,cashflowStatementHistoryQuarterly",
       );
+      if (json !== null) {
+        // Parsing runs inside the SAME try/catch as the fetch. It used to sit
+        // outside it: an unexpected throw from a malformed payload would then
+        // escape the per-symbol boundary entirely and abort the rest of the
+        // batch, rather than costing only this symbol the way a fetch
+        // failure does.
+        balance = parseBalanceSheet(json);
+        cashflow = parseCashflow(json);
+      }
     } catch (err) {
-      console.error(`yahoo fetch failed for ${symbol}:`, (err as Error).message);
+      console.error(`yahoo fetch or parse failed for ${symbol}:`, (err as Error).message);
+      json = null;
     }
 
     if (json === null) {
@@ -179,9 +201,6 @@ Deno.serve(async (req) => {
       await advanceCursor(symbol);
       continue;
     }
-
-    const balance: BalanceRow[] = parseBalanceSheet(json);
-    const cashflow: CashflowRow[] = parseCashflow(json);
 
     if (balance.length > 0) {
       const { error: balErr } = await supabase.from("fundamentals_balance").upsert(
@@ -206,6 +225,7 @@ Deno.serve(async (req) => {
       if (balErr) {
         console.error(`balance upsert failed for ${symbol}:`, balErr.message);
         observation.recordFailure("fundamentals_balance", 1);
+        writeFailed++;
       } else {
         summary.balanceRows += balance.length;
         observation.recordWrite("fundamentals_balance", balance.length);
@@ -230,6 +250,7 @@ Deno.serve(async (req) => {
       if (cfErr) {
         console.error(`cashflow upsert failed for ${symbol}:`, cfErr.message);
         observation.recordFailure("fundamentals_cashflow", 1);
+        writeFailed++;
       } else {
         summary.cashflowRows += cashflow.length;
         observation.recordWrite("fundamentals_cashflow", cashflow.length);
@@ -300,6 +321,7 @@ Deno.serve(async (req) => {
           if (derErr) {
             console.error(`derived upsert failed for ${symbol}:`, derErr.message);
             observation.recordFailure("fundamentals_derived", 1);
+            writeFailed++;
           } else {
             summary.derivedRows += derivedRows.length;
             observation.recordWrite("fundamentals_derived", derivedRows.length);
@@ -338,22 +360,39 @@ Deno.serve(async (req) => {
   // Yahoo refusing us outright (or the crumb flow breaking), and it must be
   // able to turn the build red on its own, exactly as blockedOut works for
   // the XBRL sync's registry calls. A partial (some symbols blocked, others
-  // fine) stays green; per-write failures are recorded but do not flip the
-  // status, since a symbol with no balance sheet this quarter is an ordinary,
-  // expected outcome, not a fault.
+  // fine) stays green on this condition alone.
   const blockedOut = summary.symbols > 0 && summary.yahooFailed === summary.symbols;
-  const status = blockedOut ? 500 : 200;
+  // A database write failing is a DIFFERENT fault from Yahoo refusing a
+  // symbol, and blockedOut alone cannot see it: a run where every
+  // fundamentals_balance/fundamentals_cashflow/fundamentals_derived write
+  // failed (bad column, an RLS change, a renamed table) had every Yahoo call
+  // succeed, so yahooFailed stays 0 and blockedOut stays false. Without this
+  // check that run returns {"ok":true} having written nothing - the same
+  // shape as the {"ok":true,"filings":0} defect this repo already shipped
+  // once. sync_observations.failures records the truth either way, but that
+  // table isn't what gates the GitHub Actions workflow; the status code is.
+  // Mirrors the sibling XBRL sync's `summary.failed > 0 || blockedOut` gate.
+  const anyWriteFailed = writeFailed > 0;
+  const status = blockedOut || anyWriteFailed ? 500 : 200;
 
   await observation.close({
     status: status === 200 ? "ok" : "failed",
-    detail: { ...summary, blockedOut, basisBySymbol, wroteNothing: observation.wroteNothing },
+    detail: {
+      ...summary,
+      blockedOut,
+      writeFailed,
+      basisBySymbol,
+      wroteNothing: observation.wroteNothing,
+    },
     error: blockedOut
       ? `every symbol in the batch failed its Yahoo call (${summary.yahooFailed}/${summary.symbols})`
-      : undefined,
+      : anyWriteFailed
+        ? `${writeFailed} write(s) failed across fundamentals_balance/fundamentals_cashflow/fundamentals_derived`
+        : undefined,
   });
 
   return new Response(
-    JSON.stringify({ ok: !blockedOut, ...summary }),
+    JSON.stringify({ ok: !blockedOut && !anyWriteFailed, ...summary }),
     {
       status,
       headers: { ...cors, "Content-Type": "application/json" },
