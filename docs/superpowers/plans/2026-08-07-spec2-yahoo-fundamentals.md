@@ -524,7 +524,13 @@ Requirements specific to this function:
 - A Yahoo failure for one symbol must not abort the batch. Count it via `observation.recordFailure("yahoo", 1)` and continue, mirroring how the XBRL sync treats a registry failure.
 - Upsert balance rows on `(symbol, period_end)`, cash flow rows on `(symbol, period_end)`.
 - **Check `.error` on every write.** postgrest-js resolves with an error object rather than throwing, so a bare try/catch catches nothing. That exact pattern silently killed the `corporate_actions` writes for two commits and a deploy.
-- After writing both, read this symbol's `fundamentals_income` rows, call `alignPeriods`, call `computeRatios` per aligned period, and upsert `fundamentals_derived` on `(symbol, period_end)` with `roe`, `roce`, `current_ratio`, `free_cash_flow`, `inputs_complete`, `missing_inputs`, `unusable_inputs`.
+- **Select one reporting basis before aligning — this is mandatory.** `fundamentals_income` is unique on `(symbol, period_end, is_consolidated)`, so a symbol routinely holds **two** rows per period: consolidated and standalone. Measured on live data: 95 of 204 rows are duplicate `symbol + period_end` pairs. `fundamentals_derived` is unique on `(symbol, period_end)` — one row only.
+
+  Passing raw income rows into `alignPeriods` therefore produces two derived rows per period that collide on the unique key, and whichever lands last wins arbitrarily. The deeper problem is that **Yahoo reports consolidated figures**, so a standalone profit paired with Yahoo's consolidated equity is exactly the cross-basis mismatch this plan exists to prevent — arriving through a different door than the period-alignment guard.
+
+  Filter per symbol before calling `alignPeriods`: prefer `is_consolidated = true` rows; fall back to standalone only when the symbol has no consolidated rows at all. Never mix the two bases within one symbol. Record the basis used in the observation `detail` so a wrong pairing is diagnosable later. There is no shared basis selector available to edge functions — `selectBasis` lives in `src/lib/fundamentals.ts`, which is frontend code — so implement the filter inline and keep it small.
+
+- After writing both, read this symbol's `fundamentals_income` rows, apply the basis filter above, call `alignPeriods`, call `computeRatios` per aligned period, and upsert `fundamentals_derived` on `(symbol, period_end)` with `roe`, `roce`, `current_ratio`, `free_cash_flow`, `inputs_complete`, `missing_inputs`, `unusable_inputs`.
 - Record every write through `observation.recordWrite(table, n)`.
 - Return 500 when every symbol in the batch failed Yahoo — total blockage is an outage, not a partial, exactly as `blockedOut` works in the XBRL sync.
 
