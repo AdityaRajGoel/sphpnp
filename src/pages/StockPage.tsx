@@ -23,6 +23,14 @@ export default function StockPage() {
   const { symbol } = useParams<{ symbol: string }>();
   const s = useStockFundamentals(symbol);
 
+  // `synced` and `basis` are set together by selectBasis() inside the hook
+  // (basis is non-null exactly when there are income rows), but that link lives
+  // in another file. Guarding on both here - instead of asserting `s.basis!` -
+  // means a future change that breaks the invariant falls back to the unsynced
+  // card rather than silently mislabelling the table's basis badge.
+  const basis = s.synced ? s.basis : null;
+  const hasFinancials = basis !== null;
+
   // An unknown ticker must be a real 404, not an empty shell - /stock/:symbol
   // is an open namespace and would otherwise become a soft-404 farm.
   if (s.notFound) return <NotFound />;
@@ -69,7 +77,15 @@ export default function StockPage() {
             <p className="text-sm text-muted-foreground">{s.error}</p>
           </Card>
         ) : (
-          <div className="space-y-10" data-stock-state="ready">
+          // One page, one state marker. `ready` used to sit on this wrapper for
+          // every non-loading render with `unsynced` nested inside it, which
+          // made the unsynced arm unreachable and reduced the prerender
+          // assertion to "not a skeleton" - it could not detect the empty-table
+          // regression it was written to catch.
+          <div
+            className="space-y-10"
+            data-stock-state={hasFinancials ? "ready" : "unsynced"}
+          >
             <motion.header {...revealSection}>
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div>
@@ -108,16 +124,9 @@ export default function StockPage() {
             </motion.header>
 
             {/* Tracked but unreached by the sync cursor. Ordinary, not broken -
-                the backfill covers ~2 symbols an hour.
-
-                `synced` and `basis` are set together by selectBasis() inside
-                the hook (basis is non-null exactly when there are income
-                rows), but that link lives in another file. Guarding on both
-                here - instead of asserting `s.basis!` - means a future
-                change that breaks the invariant falls back to this card
-                rather than silently mislabelling the table's basis badge. */}
-            {!s.synced || !s.basis ? (
-              <Card className="p-6" data-stock-state="unsynced">
+                the backfill covers ~2 symbols an hour. */}
+            {basis === null ? (
+              <Card className="p-6">
                 <h2 className="font-semibold mb-1">Financials not yet synced</h2>
                 <p className="text-sm text-muted-foreground">
                   This company is tracked, but its filings have not been processed
@@ -126,7 +135,7 @@ export default function StockPage() {
               </Card>
             ) : (
               <>
-                <IncomeStatementTable rows={s.income} basis={s.basis} />
+                <IncomeStatementTable rows={s.income} basis={basis} />
                 {s.bothAvailable && (
                   <p className="text-xs text-muted-foreground">
                     This company files both consolidated and standalone results.

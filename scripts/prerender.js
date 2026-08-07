@@ -68,6 +68,52 @@ const routes = [
 // ships noindex,nofollow even if the status code ever regresses to 200.
 const ERROR_ROUTE = '/404';
 
+// Only the income statement renders a <td> on a stock page, so a table cell
+// holding a signed number - "₹1,28,260.00 Cr", "₹6.44", "0.41" - is a real
+// financial figure and nothing else on the page can forge one.
+const FINANCIAL_FIGURE = /<td[^>]*>\s*-?(?:₹\s*)?\d/;
+
+/**
+ * The catch around page.goto swallows a timeout and proceeds, so without this a
+ * slow response silently ships a loading skeleton to crawlers. Measured: at high
+ * concurrency this produced 126 well-formed skeleton files with timeouts=0 and
+ * nothing in the log to distinguish it from a clean run.
+ *
+ * The state attribute alone is not enough. An RLS regression on
+ * fundamentals_income returns an empty array with no error object - PostgREST
+ * resolves rather than throwing, so the hook's .error checks never fire - and
+ * every page would render "Financials not yet synced" and pass. So a page that
+ * claims `ready` has to show a figure, and a page that claims `unsynced` has to
+ * say so in words. Unsynced is legitimate while the backfill is mid-flight.
+ */
+function assertStockPageCaptured(route, html) {
+  const ready = html.includes('data-stock-state="ready"');
+  const unsynced = html.includes('data-stock-state="unsynced"');
+
+  if (ready === unsynced) {
+    throw new Error(
+      ready
+        ? `Prerender captured both states for ${route} - the state marker is ambiguous.`
+        : `Prerender captured no data for ${route} - got a loading or error state. ` +
+          `Refusing to ship a skeleton page.`,
+    );
+  }
+
+  if (ready && !FINANCIAL_FIGURE.test(html)) {
+    throw new Error(
+      `Prerender captured ${route} as ready but its income table holds no figures. ` +
+      `Refusing to ship an empty financials table.`,
+    );
+  }
+
+  if (unsynced && !html.includes('Financials not yet synced')) {
+    throw new Error(
+      `Prerender captured ${route} as unsynced but the page does not say so. ` +
+      `Refusing to ship a page whose state marker does not match its content.`,
+    );
+  }
+}
+
 async function prerender() {
   console.log('Starting prerendering process...');
 
@@ -130,19 +176,8 @@ async function prerender() {
         // Get the fully rendered HTML
         const html = await page.content();
 
-        // The catch above swallows a goto timeout and proceeds, so without this a slow
-        // response silently ships a loading skeleton to crawlers. Measured: at high
-        // concurrency this produced 126 well-formed skeleton files with timeouts=0 and
-        // nothing in the log to distinguish it from a clean run.
         if (route.startsWith('/stock/')) {
-          const ready = html.includes('data-stock-state="ready"');
-          const unsynced = html.includes('data-stock-state="unsynced"');
-          if (!ready && !unsynced) {
-            throw new Error(
-              `Prerender captured no data for ${route} - got a loading or error state. ` +
-              `Refusing to ship a skeleton page.`,
-            );
-          }
+          assertStockPageCaptured(route, html);
         }
 
         // 3. Save to file. routeToFilePath decodes each segment so the file a
