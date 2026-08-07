@@ -81,6 +81,22 @@ const OpenAccountPage = () => {
 
       if (error) throw error;
 
+      if (data?.success === false) {
+        // Transport succeeded but the lead was not persisted server-side.
+        // Never show the success state - offer the WhatsApp fallback instead.
+        toast({
+          title: "We couldn't save your details",
+          description: data?.whatsappUrl
+            ? "Please message us on WhatsApp and we'll take it from there."
+            : "Please try again or call us directly.",
+          variant: "destructive",
+        });
+        if (data?.whatsappUrl) {
+          window.open(data.whatsappUrl, '_blank');
+        }
+        return;
+      }
+
       setSubmitted(true);
       toast({ title: "Request Submitted! ✅", description: "Our team will contact you shortly." });
 

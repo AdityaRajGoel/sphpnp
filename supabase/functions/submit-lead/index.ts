@@ -47,6 +47,53 @@ const securityHeaders = {
   'Referrer-Policy': 'strict-origin-when-cross-origin',
 };
 
+// One bounded retry for a transient blip. Not a queue, not unbounded -
+// try once, wait briefly, try again, then report honestly.
+const DB_INSERT_MAX_ATTEMPTS = 2;
+const DB_INSERT_RETRY_DELAY_MS = 500;
+
+interface LeadPayload {
+  name: string;
+  phone: string;
+  email: string | null;
+  city: string | null;
+  message: string | null;
+}
+
+async function insertLeadWithRetry(
+  supabaseUrl: string,
+  supabaseKey: string,
+  payload: LeadPayload
+): Promise<boolean> {
+  for (let attempt = 1; attempt <= DB_INSERT_MAX_ATTEMPTS; attempt++) {
+    try {
+      const dbRes = await fetch(`${supabaseUrl}/rest/v1/account_leads`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': supabaseKey,
+          'Authorization': `Bearer ${supabaseKey}`,
+          'Prefer': 'return=minimal',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (dbRes.ok) return true;
+
+      // Log server-side only - never echo the raw PostgREST error body to the client.
+      console.error(`DB insert failed (attempt ${attempt}/${DB_INSERT_MAX_ATTEMPTS}):`, await dbRes.text());
+    } catch (fetchError) {
+      console.error(`DB insert threw (attempt ${attempt}/${DB_INSERT_MAX_ATTEMPTS}):`, fetchError);
+    }
+
+    if (attempt < DB_INSERT_MAX_ATTEMPTS) {
+      await new Promise((resolve) => setTimeout(resolve, DB_INSERT_RETRY_DELAY_MS));
+    }
+  }
+
+  return false;
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: { ...corsHeaders, ...securityHeaders } });
@@ -130,27 +177,29 @@ Deno.serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
-    const dbRes = await fetch(`${supabaseUrl}/rest/v1/account_leads`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'apikey': supabaseKey,
-        'Authorization': `Bearer ${supabaseKey}`,
-        'Prefer': 'return=minimal',
-      },
-      body: JSON.stringify({ name, phone, email, city, message }),
-    });
-
-    if (!dbRes.ok) {
-      console.error('DB insert failed:', await dbRes.text());
-    }
+    const persisted = await insertLeadWithRetry(supabaseUrl, supabaseKey, { name, phone, email, city, message });
 
     const whatsappNumber = '919416400314';
     const waMessage = `🆕 New Lead!\n👤 ${name}\n📱 ${phone}${email ? `\n📧 ${email}` : ''}${city ? `\n📍 ${city}` : ''}${message ? `\n💬 ${message}` : ''}`;
     const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(waMessage)}`;
 
+    if (!persisted) {
+      // The write did not go through even after a retry. Never report success -
+      // that is how leads go missing. Keep whatsappUrl in the payload so the UI
+      // can still get the visitor to the business instead of a dead end.
+      return new Response(
+        JSON.stringify({
+          success: false,
+          persisted: false,
+          whatsappUrl,
+          message: "We couldn't save your details automatically. Please message us on WhatsApp or call us directly.",
+        }),
+        { headers: responseHeaders }
+      );
+    }
+
     return new Response(
-      JSON.stringify({ success: true, whatsappUrl, message: 'Lead saved successfully' }),
+      JSON.stringify({ success: true, persisted: true, whatsappUrl, message: 'Lead saved successfully' }),
       { headers: responseHeaders }
     );
   } catch (error) {

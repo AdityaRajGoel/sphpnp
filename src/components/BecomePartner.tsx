@@ -53,7 +53,7 @@ const BecomePartner = () => {
 
     setLoading(true);
     try {
-      const { error } = await supabase.functions.invoke("submit-lead", {
+      const { data, error } = await supabase.functions.invoke("submit-lead", {
         body: {
           name: form.name.trim().slice(0, 100),
           phone: form.phone.trim().slice(0, 20),
@@ -65,6 +65,23 @@ const BecomePartner = () => {
         },
       });
       if (error) throw error;
+
+      if (data?.success === false) {
+        // Transport succeeded but the lead was not persisted server-side.
+        // Never show the success state - offer the WhatsApp fallback instead.
+        toast({
+          title: "We couldn't save your details",
+          description: data?.whatsappUrl
+            ? "Please message us directly on WhatsApp and our team will follow up."
+            : "Please call us directly at +91 9416400314.",
+          variant: "destructive",
+        });
+        if (data?.whatsappUrl) {
+          window.open(data.whatsappUrl, "_blank");
+        }
+        return;
+      }
+
       setSubmitted(true);
       toast({ title: "Application received! ✅", description: "Our team will reach out within 24 hours." });
     } catch {
