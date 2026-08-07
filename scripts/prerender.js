@@ -3,6 +3,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import express from 'express';
 import { fetchStockRoutes } from './lib/stock-routes.mjs';
+import { routeToFilePath } from './lib/route-paths.mjs';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DIST_DIR = path.resolve(__dirname, '../dist');
 
@@ -144,21 +145,13 @@ async function prerender() {
           }
         }
 
-        // 3. Save to file
-        let filePath;
-
-        if (route === '/') {
-          filePath = path.join(DIST_DIR, 'index.html');
-        } else {
-          // e.g., '/about' -> 'about.html', '/learn/recommendations' -> 'learn/recommendations.html'
-          const routePath = route.startsWith('/') ? route.substring(1) : route;
-          filePath = path.join(DIST_DIR, `${routePath}.html`);
-
-          // Create directory if it doesn't exist
-          const dir = path.dirname(filePath);
-          if (!fs.existsSync(dir)) {
-            fs.mkdirSync(dir, { recursive: true });
-          }
+        // 3. Save to file. routeToFilePath decodes each segment so the file a
+        // static host looks for after decoding the request path is the file we
+        // actually wrote - see route-paths.mjs.
+        const filePath = path.join(DIST_DIR, routeToFilePath(route));
+        const dir = path.dirname(filePath);
+        if (!fs.existsSync(dir)) {
+          fs.mkdirSync(dir, { recursive: true });
         }
 
         fs.writeFileSync(filePath, html);
