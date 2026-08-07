@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, Link } from "react-router-dom";
 import { useScreenerStocks, type ScreenerStock } from "@/hooks/useScreenerStocks";
 import { useBhavcopy, buildDeliveryMap } from "@/hooks/useBhavcopy";
 import { useLiveMarket } from "@/hooks/useLiveMarket";
@@ -548,8 +548,21 @@ const StockScreenerPage = () => {
                       return (
                         <motion.tr key={s.symbol} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.01 }} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
                           <td className="px-4 py-3">
-                            <div className="font-semibold text-foreground">{s.symbol}</div>
-                            <div className="text-xs text-muted-foreground">{s.name}</div>
+                            {/* The 159 prerendered /stock/:symbol pages had no inbound
+                                link from anywhere in the app - reachable only by typing
+                                the URL or arriving from search. The screener lists the
+                                same screener_stocks universe those routes are derived
+                                from, so every row here is the natural way in. */}
+                            <Link
+                              to={`/stock/${encodeURIComponent(s.symbol)}`}
+                              className="group inline-block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
+                              aria-label={`View financials for ${s.name} (${s.symbol})`}
+                            >
+                              <div className="font-semibold text-foreground group-hover:text-primary group-focus-visible:text-primary transition-colors">
+                                {s.symbol}
+                              </div>
+                              <div className="text-xs text-muted-foreground">{s.name}</div>
+                            </Link>
                           </td>
                           <td className="px-4 py-3 font-mono font-medium text-foreground">₹{s.price.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                           <td className="px-4 py-3">
