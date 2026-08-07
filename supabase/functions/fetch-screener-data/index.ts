@@ -30,7 +30,7 @@ const NSE_SYMBOLS: { symbol: string; yahoo: string; name: string; sector: string
   { symbol: "CHOLAFIN", yahoo: "CHOLAFIN.NS", name: "Cholamandalam Investment", sector: "NBFC" },
   { symbol: "MUTHOOTFIN", yahoo: "MUTHOOTFIN.NS", name: "Muthoot Finance", sector: "NBFC" },
   { symbol: "SHRIRAMFIN", yahoo: "SHRIRAMFIN.NS", name: "Shriram Finance", sector: "NBFC" },
-  { symbol: "M&MFIN", yahoo: "M%26MFIN.NS", name: "Mahindra & Mahindra Financial", sector: "NBFC" },
+  { symbol: "M&MFIN", yahoo: "M&MFIN.NS", name: "Mahindra & Mahindra Financial", sector: "NBFC" },
   { symbol: "POONAWALLA", yahoo: "POONAWALLA.NS", name: "Poonawalla Fincorp", sector: "NBFC" },
 
   // IT
@@ -63,7 +63,7 @@ const NSE_SYMBOLS: { symbol: string; yahoo: string; name: string; sector: string
   // Automobiles
   { symbol: "MARUTI", yahoo: "MARUTI.NS", name: "Maruti Suzuki", sector: "Auto" },
   { symbol: "TATAMOTORS", yahoo: "TATAMOTORS.NS", name: "Tata Motors", sector: "Auto" },
-  { symbol: "M&M", yahoo: "M%26M.NS", name: "Mahindra & Mahindra", sector: "Auto" },
+  { symbol: "M&M", yahoo: "M&M.NS", name: "Mahindra & Mahindra", sector: "Auto" },
   { symbol: "BAJAJ-AUTO", yahoo: "BAJAJ-AUTO.NS", name: "Bajaj Auto", sector: "Auto" },
   { symbol: "HEROMOTOCO", yahoo: "HEROMOTOCO.NS", name: "Hero MotoCorp", sector: "Auto" },
   { symbol: "EICHERMOT", yahoo: "EICHERMOT.NS", name: "Eicher Motors", sector: "Auto" },
@@ -315,7 +315,10 @@ async function fetchBatchQuotes(symbols: string[], crumb: string, cookie: string
         regularMarketPreviousClose: meta.chartPreviousClose ?? meta.previousClose ?? 0,
         fiftyTwoWeekHigh: meta.fiftyTwoWeekHigh ?? 0,
         fiftyTwoWeekLow: meta.fiftyTwoWeekLow ?? 0,
-        marketCap: 0,
+        // The v8 chart API has no market-cap field at all — leave marketCap
+        // unset (rather than sentinel 0) so buildStockRow can tell "Yahoo
+        // didn't give us a market cap this run" apart from "Yahoo reported
+        // zero," and skip writing over a previously good stored value.
         trailingPE: 0,
       });
     } catch { /* ignore parse errors */ }
@@ -323,21 +326,26 @@ async function fetchBatchQuotes(symbols: string[], crumb: string, cookie: string
   return results;
 }
 
+// Whether `q` (a Yahoo quote/chart record) carries a usable market cap.
+// A missing, zero, negative, or non-numeric value means Yahoo didn't give
+// us real data this run — that is NOT the same as the company actually
+// having a zero market cap, and must never be treated as one.
+function hasUsableMarketCap(q: any): boolean {
+  return typeof q.marketCap === "number" && Number.isFinite(q.marketCap) && q.marketCap > 0;
+}
+
 function buildStockRow(stock: typeof NSE_SYMBOLS[0], q: any) {
   const price = q.regularMarketPrice ?? 0;
   const change = q.regularMarketChange ?? 0;
   const changePct = q.regularMarketChangePercent ?? 0;
-  const marketCapRaw = q.marketCap ?? 0;
-  const marketCapCr = marketCapRaw > 0 ? Math.round(marketCapRaw / 10000000) : 0;
 
-  return {
+  const row: Record<string, unknown> = {
     symbol: stock.symbol,
     name: stock.name,
     sector: stock.sector,
     price,
     change,
     change_pct: changePct,
-    market_cap: marketCapCr,
     pe: q.trailingPE ?? q.forwardPE ?? 0,
     high_52: q.fiftyTwoWeekHigh ?? 0,
     low_52: q.fiftyTwoWeekLow ?? 0,
@@ -348,6 +356,17 @@ function buildStockRow(stock: typeof NSE_SYMBOLS[0], q: any) {
     prev_close: q.regularMarketPreviousClose ?? 0,
     updated_at: new Date().toISOString(),
   };
+
+  // market_cap is stored in CRORES (raw Yahoo value / 1e7). Only set the key
+  // when we have a real number to write. If we omit it entirely, the upsert
+  // below (grouped by "has market_cap" so every call in a batch shares the
+  // same column shape) leaves the column untouched on conflict instead of
+  // clobbering a previously-good stored value with a sentinel zero.
+  if (hasUsableMarketCap(q)) {
+    row.market_cap = Math.round(q.marketCap / 10000000);
+  }
+
+  return row;
 }
 
 async function processBatch(stocks: typeof NSE_SYMBOLS, crumb: string, cookie: string, batchSize = 15, delayMs = 400) {
@@ -490,7 +509,15 @@ Deno.serve(async (req) => {
             sector: q.quoteType || stockInfo?.sector || "General" 
           };
           const row = buildStockRow(discoveredStock, q);
-          await sb.from("screener_stocks").upsert(row, { onConflict: "symbol" });
+          if (!("market_cap" in row)) {
+            console.warn(`[market_cap] No usable market cap from Yahoo for ${requestedSymbol}; leaving existing stored value (if any) untouched.`);
+          }
+          // postgrest-js resolves with an { error } object on failure rather
+          // than throwing, so a bare await here would silently swallow it.
+          const { error: upsertError } = await sb.from("screener_stocks").upsert(row, { onConflict: "symbol" });
+          if (upsertError) {
+            console.error(`Upsert failed for ${requestedSymbol}:`, upsertError.message);
+          }
           return new Response(JSON.stringify({ success: true, stocks: [row] }), {
             headers: { ...corsHeaders, "Content-Type": "application/json" },
           });
@@ -507,12 +534,35 @@ Deno.serve(async (req) => {
       console.log(`Got data for ${stockData.length} stocks`);
 
       if (stockData.length > 0) {
-        for (let i = 0; i < stockData.length; i += 50) {
-          const batch = stockData.slice(i, i + 50);
-          const { error } = await sb
-            .from("screener_stocks")
-            .upsert(batch, { onConflict: "symbol" });
-          if (error) console.error("Upsert error:", error.message);
+        // Split rows by shape before upserting. Rows missing market_cap
+        // (Yahoo gave us no usable value this run) must never share a batch
+        // with rows that have it: PostgREST's bulk upsert derives one fixed
+        // column list per call, so mixing shapes would either error or fill
+        // the "missing" rows' market_cap with NULL — overwriting whatever
+        // good value is already stored. Upserting the two groups separately
+        // means the market_cap-less call never references that column at
+        // all, so ON CONFLICT leaves the existing stored value untouched.
+        const rowsWithCap = stockData.filter(row => "market_cap" in row);
+        const rowsWithoutCap = stockData.filter(row => !("market_cap" in row));
+
+        if (rowsWithoutCap.length > 0) {
+          const skippedSymbols = rowsWithoutCap.map(row => row.symbol).join(", ");
+          console.warn(
+            `[market_cap] ${rowsWithoutCap.length}/${stockData.length} symbols had no usable market cap from Yahoo this run — existing stored values preserved: ${skippedSymbols}`
+          );
+        }
+
+        for (const [label, rows] of [["with market_cap", rowsWithCap], ["without market_cap", rowsWithoutCap]] as const) {
+          for (let i = 0; i < rows.length; i += 50) {
+            const batch = rows.slice(i, i + 50);
+            if (batch.length === 0) continue;
+            // postgrest-js resolves with an { error } object rather than
+            // throwing on failure — check it explicitly on every write.
+            const { error } = await sb
+              .from("screener_stocks")
+              .upsert(batch, { onConflict: "symbol" });
+            if (error) console.error(`Upsert error (${label}, batch starting at ${i}):`, error.message);
+          }
         }
       }
     }
