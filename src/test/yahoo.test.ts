@@ -19,6 +19,14 @@ const balanceJson = {
       longTermDebt: { raw: 250000000000 },
     },
     { endDate: { raw: 1727654400 } },            // 2024-09-30, everything absent
+    {
+      endDate: { raw: 1719187200 },              // 2024-06-30, only short-term debt
+      shortLongTermDebt: { raw: 75000000000 },
+    },
+    {
+      endDate: { raw: 1710806400 },              // 2024-03-31, only long-term debt
+      longTermDebt: { raw: 300000000000 },
+    },
   ] } }] },
 };
 
@@ -58,6 +66,14 @@ describe("parseBalanceSheet", () => {
   // short-term with an absent long-term must not silently become the total.
   it("sums short and long term debt", () => {
     expect(parseBalanceSheet(balanceJson)[0].totalDebt).toBe(350000000000);
+  });
+
+  it("returns only short-term debt when long-term is absent", () => {
+    expect(parseBalanceSheet(balanceJson)[2].totalDebt).toBe(75000000000);
+  });
+
+  it("returns only long-term debt when short-term is absent", () => {
+    expect(parseBalanceSheet(balanceJson)[3].totalDebt).toBe(300000000000);
   });
 
   it("returns null - never 0 - for an absent figure", () => {
