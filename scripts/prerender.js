@@ -114,6 +114,67 @@ function assertStockPageCaptured(route, html) {
   }
 }
 
+// Bounded on purpose. Two flakes in four back-to-back 169-route runs - a
+// capture in neither state on ABB, a `ProtocolError: Runtime.callFunctionOn
+// timed out` on BEL - both cleared on a second try, and 169 routes now gate a
+// production deploy. A route that fails every attempt still fails the build, so
+// this buys back transient puppeteer noise without becoming a way to mask a
+// genuine capture failure. No concurrency: above 4 parallel pages capture
+// completeness was measured to collapse silently.
+const CAPTURE_ATTEMPTS = 3;
+const RETRY_DELAY_MS = 1000;
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/** One attempt on a fresh page. The page is always closed, success or not. */
+async function captureOnce(browser, port, route) {
+  const page = await browser.newPage();
+  // Suppress console logs from the page
+  page.on('console', () => {});
+
+  try {
+    try {
+      await page.goto(`http://localhost:${port}${route}`, {
+        waitUntil: 'networkidle2', // More resilient than networkidle0
+        timeout: 15000,
+      });
+    } catch (e) {
+      console.warn(`Timeout or error on ${route}, proceeding to capture current DOM...`);
+    }
+
+    const html = await page.content();
+    if (route.startsWith('/stock/')) {
+      assertStockPageCaptured(route, html);
+    }
+    return html;
+  } finally {
+    // A page left open after a ProtocolError leaks a renderer for the rest of
+    // the run, so this closes on the failure path too - which is also what
+    // makes the next attempt a genuinely fresh one.
+    await page.close().catch(() => {});
+  }
+}
+
+async function captureWithRetry(browser, port, route) {
+  let lastError;
+  for (let attempt = 1; attempt <= CAPTURE_ATTEMPTS; attempt += 1) {
+    try {
+      return await captureOnce(browser, port, route);
+    } catch (error) {
+      lastError = error;
+      if (attempt < CAPTURE_ATTEMPTS) {
+        console.warn(
+          `Attempt ${attempt}/${CAPTURE_ATTEMPTS} failed for ${route}: ${error.message} - retrying on a fresh page.`,
+        );
+        await sleep(RETRY_DELAY_MS);
+      }
+    }
+  }
+  throw new Error(
+    `Prerender failed for ${route} after ${CAPTURE_ATTEMPTS} attempts: ${lastError.message}`,
+  );
+}
+
 async function prerender() {
   console.log('Starting prerendering process...');
 
@@ -159,26 +220,8 @@ async function prerender() {
 
       for (const route of [...routes, ...stockRoutes, ERROR_ROUTE]) {
         console.log(`Prerendering ${route}...`);
-        const page = await browser.newPage();
 
-        // Suppress console logs from the page
-        page.on('console', () => {});
-
-        try {
-          await page.goto(`http://localhost:${port}${route}`, {
-            waitUntil: 'networkidle2', // More resilient than networkidle0
-            timeout: 15000,
-          });
-        } catch (e) {
-          console.warn(`Timeout or error on ${route}, proceeding to capture current DOM...`);
-        }
-
-        // Get the fully rendered HTML
-        const html = await page.content();
-
-        if (route.startsWith('/stock/')) {
-          assertStockPageCaptured(route, html);
-        }
+        const html = await captureWithRetry(browser, port, route);
 
         // 3. Save to file. routeToFilePath decodes each segment so the file a
         // static host looks for after decoding the request path is the file we
@@ -191,7 +234,6 @@ async function prerender() {
 
         fs.writeFileSync(filePath, html);
         console.log(`Saved ${filePath}`);
-        await page.close();
       }
 
       await browser.close();
