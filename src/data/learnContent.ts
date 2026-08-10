@@ -728,10 +728,10 @@ Sensible: high-conviction large-cap positions where you expect the move to outpa
       "Everyone who trades in the auction fills at one single equilibrium price, whatever their own limit price was.",
       "The pre-open session is being rebuilt on the same pattern from 7 September 2026.",
     ],
-    related: ["fno-basics", "intraday-trading", "margin-trading-facility-mtf"],
+    related: ["fno-basics", "pre-open-auction-session-2026", "margin-trading-facility-mtf"],
     content: `## The one-minute version
 
-Until 1 August 2026, a stock's closing price was an **average**. The exchange took every trade in the last thirty minutes and computed a volume-weighted average price (VWAP). That was the close.
+Until 31 July 2026, a stock's closing price was an **average**. The exchange took every trade in the last thirty minutes and computed a volume-weighted average price (VWAP). That was the close.
 
 From **3 August 2026**, for stocks that have futures and options contracts, the closing price is instead an auction. Continuous trading in those stocks stops at 3:15 p.m. Everyone who wants to buy or sell at the close puts their orders into one pool. At 3:30 p.m. the exchange finds the single price at which the largest number of shares can change hands, and that price becomes the close. Everybody in the auction trades at that one price.
 

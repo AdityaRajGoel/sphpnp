@@ -89,7 +89,7 @@ const REAL_ARTICLES: Article[] = [
   {
     id: "r24", title: "Futures & Options (F&O) Basics for Beginners", slug: "fno-basics",
     excerpt: "Lots, expiry, SPAN margins, CE/PE premiums and the SEBI loss study - what every beginner should know before touching derivatives.",
-    content: "", category: "trading", cover_image: null, read_time: 8, published: true, created_at: "2026-07-10",
+    content: "", category: "trading", cover_image: null, read_time: 10, published: true, created_at: "2026-07-10",
     source: "Parasram Research", source_url: "",
     difficulty: "Intermediate",
   },
