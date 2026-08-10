@@ -585,7 +585,7 @@ const TelegramChannel = ({ limit = 10, showViewAll = false, showFilters = false 
                 <p className="text-amber-700/90 dark:text-amber-400/80 text-xs leading-relaxed">
                   <strong>Investments in securities market are subject to market risks. Read all related documents carefully before investing.</strong>{" "}
                   The stock recommendations displayed above are for educational and informational purposes only and should not be construed as investment advice.
-                  Past performance is not indicative of future results. Parasram India Pvt. Ltd. (SEBI Reg: INZ000220838) does not guarantee any assured returns.
+                  Past performance is not indicative of future results. Shri Parasram Holdings Pvt. Ltd. (SEBI Reg: INZ000220838) does not guarantee any assured returns.
                   Please consult your financial advisor before making any investment decisions. Trading in equity, derivatives, and commodities involves substantial risk of loss and is not suitable for every investor.
                   All investment decisions are made at your own risk.
                 </p>

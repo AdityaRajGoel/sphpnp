@@ -17,14 +17,14 @@ const ServicesPage = () => {
       <div className="min-h-screen bg-background">
       <SEOHead
         title="Stock Broking Services in Panipat | Parasram India"
-        description="Equity trading, mutual funds, SIP, IPO applications, F&O, commodities and unlisted shares in Panipat. SEBI-registered broker since 1970 with 10L+ happy clients."
+        description="Equity trading, mutual funds, SIP, IPO applications, F&O, commodities and unlisted shares in Panipat. SEBI-registered broker serving investors since 1970, with 10L+ happy clients."
         breadcrumbs={[
           { name: "Home", url: "/" },
           { name: "Services" },
         ]}
         faqItems={[
           { question: "What financial services does Parasram India Panipat offer?", answer: "Parasram India Panipat offers equity trading, mutual funds & SIPs, IPO applications, F&O trading, commodities (MCX), currency trading, unlisted shares, and depository (Demat) services." },
-          { question: "Is Parasram India a SEBI-registered broker?", answer: "Yes, Parasram India is a fully SEBI-registered stockbroker and depository participant, operating through NSE and BSE since 1970." },
+          { question: "Is Parasram India a SEBI-registered broker?", answer: "Yes. Shri Parasram Holdings Pvt. Ltd. is a fully SEBI-registered stockbroker and depository participant (SEBI Regn. No. INZ000220838), with membership of NSE, BSE, MCX and MSEI. The firm has served investors since 1970 and was incorporated in 1994." },
           { question: "Can I start a SIP with a small amount?", answer: "Yes, you can start a Systematic Investment Plan (SIP) with as little as ₹500 per month through Parasram India." },
           { question: "Do you offer F&O trading services?", answer: "Yes, we offer Futures & Options trading on NSE with competitive brokerage rates and risk management support from our experienced team." },
           { question: "How do I apply for an IPO through Parasram India?", answer: "You can apply for IPOs using the ASBA/UPI block mechanism through your linked bank account. Our team guides you through the entire process." },
@@ -32,7 +32,7 @@ const ServicesPage = () => {
         jsonLd={{
           "@type": "ItemList",
           "name": "Financial Services by Parasram India Panipat",
-          "description": "Complete range of SEBI-registered financial services offered by Shri Parasram Holdings Pvt. Ltd. in Panipat, Haryana since 1970.",
+          "description": "Complete range of SEBI-registered financial services offered by Shri Parasram Holdings Pvt. Ltd. from its Panipat, Haryana branch, open since 1997.",
           "numberOfItems": 8,
           "itemListElement": [
             {

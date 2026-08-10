@@ -143,7 +143,7 @@ const Footer = () => {
                 Start your investment journey <span className="text-transparent bg-clip-text bg-gradient-to-r from-secondary to-brand-gold">today</span>
               </h3>
               <p className="text-primary-foreground/60 text-sm mt-1">
-                Free Demat account · SEBI registered since 1970 · Real branch support in Panipat
+                Free Demat account · SEBI registered · Serving investors since 1970 · Real branch support in Panipat
               </p>
             </div>
             <div className="flex items-center gap-3 flex-wrap justify-center">
@@ -353,7 +353,7 @@ const Footer = () => {
                 Investments in securities market are subject to market risks. Read all related documents carefully before investing.
               </p>
               <p className="mt-2">
-                © {new Date().getFullYear()} Parasram India Pvt. Ltd. All rights reserved. | Panipat Branch
+                © {new Date().getFullYear()} Shri Parasram Holdings Pvt. Ltd. All rights reserved. | Panipat Branch
               </p>
             </div>
             <button

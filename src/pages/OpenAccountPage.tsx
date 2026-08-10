@@ -168,7 +168,7 @@ const OpenAccountPage = () => {
         jsonLd={{
           "@type": "Service",
           "name": "Free Demat Account Opening - Parasram India Panipat",
-          "description": "Open a free Demat and trading account with Parasram India Panipat. Zero account opening charges. SEBI registered broker since 1970 offering NSE, BSE, MCX access.",
+          "description": "Open a free Demat and trading account with Parasram India Panipat. Zero account opening charges. SEBI registered broker, serving investors since 1970, offering NSE, BSE, MCX access.",
           "serviceType": "Demat Account Opening",
           "provider": {
             "@type": "FinancialService",
@@ -197,7 +197,7 @@ const OpenAccountPage = () => {
           "@context": "https://schema.org",
           "@type": "HowTo",
           "name": "How to Open a Free Demat Account with Parasram India Panipat",
-          "description": "Step-by-step guide to opening a free Demat and trading account with Parasram India, Panipat's SEBI-registered stock broker since 1970.",
+          "description": "Step-by-step guide to opening a free Demat and trading account with Parasram India, a SEBI-registered stock broker serving investors since 1970.",
           "totalTime": "PT2D",
           "estimatedCost": { "@type": "MonetaryAmount", "currency": "INR", "value": "0" },
           "step": [

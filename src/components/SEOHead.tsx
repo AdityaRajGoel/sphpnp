@@ -118,7 +118,7 @@ const SEOHead = ({
       "name": "Shri Parasram Holdings Panipat",
       "alternateName": ["Shri Parasram Holdings Pvt. Ltd.", "Parasram India"],
       "url": BASE_URL,
-      "description": "Best stock broker in Panipat, Haryana. SEBI registered since 1970. Stocks, Mutual Funds, IPO, F&O, Commodities, Unlisted Shares.",
+      "description": "Stock broker in Panipat, Haryana. SEBI registered, serving investors since 1970. Stocks, Mutual Funds, IPO, F&O, Commodities, Unlisted Shares.",
       "inLanguage": "en-IN",
       "potentialAction": {
         "@type": "SearchAction",

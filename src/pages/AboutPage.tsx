@@ -27,7 +27,7 @@ const AboutPage = () => {
       <div className="min-h-screen bg-background">
       <SEOHead
         title="About Parasram India Panipat | 50+ Years Legacy Stock Broker"
-        description="Parasram India - Panipat's most trusted SEBI-registered stock broker since 1970. NSE, BSE & MCX member. 10L+ happy clients. Open your free Demat account today."
+        description="Parasram India - a SEBI-registered stock broker serving investors since 1970, with a Panipat branch since 1997. NSE, BSE & MCX member. Open your free Demat account today."
         breadcrumbs={[
           { name: "Home", url: "/" },
           { name: "About Us" },
@@ -36,7 +36,7 @@ const AboutPage = () => {
         jsonLd={{
           "@type": "AboutPage",
           "name": "About Shri Parasram Holdings Panipat",
-          "description": "Parasram India is one of the oldest and most trusted SEBI-registered stock brokers in Panipat, Haryana, serving investors since 1970.",
+          "description": "Parasram India is a SEBI-registered stock broker that has served investors since 1970, operating in Panipat, Haryana since 1997.",
           "about": {
             "@type": "Organization",
             "name": "Shri Parasram Holdings Pvt. Ltd.",

@@ -38,7 +38,7 @@ const Index = () => {
       <div className="min-h-screen bg-background">
       <SEOHead
         title="Best Stock Broker in Panipat | Shri Parasram Holdings Panipat"
-        description="SEBI-registered stock broker in Panipat since 1970. Open a free Demat account. Trade stocks, mutual funds, IPO, F&O, commodities and unlisted shares."
+        description="SEBI-registered stock broker in Panipat since 1997, serving investors since 1970. Open a free Demat account. Trade stocks, mutual funds, IPO, F&O, commodities and unlisted shares."
         breadcrumbs={[{ name: "Home", url: "/" }]}
       />
       <BannerMessage />

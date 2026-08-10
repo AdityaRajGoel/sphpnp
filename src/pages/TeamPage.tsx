@@ -185,7 +185,7 @@ const TeamPage = () => {
           "@type": "Organization",
           "name": "Shri Parasram Holdings Panipat",
           "url": "https://www.sphpnp.com",
-          "description": "Trusted stock brokerage firm in Panipat since 1970 with 2,000+ active clients and ₹250Cr+ AUM managed.",
+          "description": "Trusted stock brokerage firm, in Panipat since 1997, with 2,000+ active clients and ₹250Cr+ AUM managed.",
           "employee": teamMembers.map(m => ({
             "@type": "Person",
             "name": m.name,

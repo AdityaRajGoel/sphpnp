@@ -60,7 +60,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     "contact.subtitle": "Visit our Panipat branch, call us, or send a message. We're here to help with all your investment needs.",
     "openAccount.title1": "Open Your",
     "openAccount.title2": "Demat Account",
-    "openAccount.subtitle": "Start your investment journey with Parasram India - Panipat's most trusted stockbroker since 1970.",
+    "openAccount.subtitle": "Start your investment journey with Parasram India - serving investors since 1970, in Panipat since 1997.",
   },
   hi: {
     "nav.services": "हमारी सेवाएँ",
@@ -102,7 +102,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     "contact.subtitle": "हमारी पानीपत शाखा में आएँ, हमें कॉल करें, या संदेश भेजें। हम आपकी सभी निवेश ज़रूरतों में मदद के लिए यहाँ हैं।",
     "openAccount.title1": "अपना",
     "openAccount.title2": "डीमैट खाता खोलें",
-    "openAccount.subtitle": "1970 से पानीपत के सबसे भरोसेमंद स्टॉक ब्रोकर पारसराम इंडिया के साथ अपनी निवेश यात्रा शुरू करें।",
+    "openAccount.subtitle": "पारसराम इंडिया के साथ अपनी निवेश यात्रा शुरू करें - 1970 से निवेशकों की सेवा में, 1997 से पानीपत में।",
   },
 };
 

@@ -81,7 +81,7 @@ const StockRecommendationsPage = () => {
                       <strong>Trading and investing in the securities market carries a high degree of risk.</strong> You could potentially lose some or all of your initial investment. The stock recommendations and market analysis provided on this page are strictly for <strong>educational and informational purposes only</strong> and do not constitute certified financial advice.
                     </p>
                     <p>
-                      Parasram India Pvt. Ltd. provides these insights based on technical and fundamental analysis, but <strong>past performance does not guarantee future returns.</strong> You must conduct your own independent research or consult with a SEBI-registered financial advisor before executing any trades or investments.
+                      Shri Parasram Holdings Pvt. Ltd. provides these insights based on technical and fundamental analysis, but <strong>past performance does not guarantee future returns.</strong> You must conduct your own independent research or consult with a SEBI-registered financial advisor before executing any trades or investments.
                     </p>
                     <p className="text-xs text-muted-foreground mt-2">
                       By proceeding to view these recommendations, you acknowledge that all trading decisions are made entirely at your own risk.

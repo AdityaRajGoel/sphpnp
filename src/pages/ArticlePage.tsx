@@ -152,7 +152,7 @@ const ArticlePage = () => {
           >
             <h2 className="font-heading text-xl md:text-2xl font-bold mb-2">Ready to start investing?</h2>
             <p className="text-white/80 text-sm mb-5 max-w-md mx-auto">
-              Open a free Demat account with Parasram India - SEBI-registered since 1970, with real branch support in Panipat.
+              Open a free Demat account with Parasram India - SEBI-registered, serving investors since 1970, with real branch support in Panipat.
             </p>
             <Link
               to="/open-account"

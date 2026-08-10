@@ -80,7 +80,7 @@ There are two central depositories in India - **CDSL** and **NSDL** - that actua
 
 Without a Demat account you simply cannot buy or hold shares, apply for IPOs, or invest in most mutual funds and bonds in India. It is the foundation of your entire investment journey - secure, paperless, and instantly accessible from your phone.
 
-> Ready to start? You can [open a free Demat account with Parasram India](/open-account) - SEBI-registered since 1970, with a real branch in Panipat for in-person help.`,
+> Ready to start? You can [open a free Demat account with Parasram India](/open-account) - SEBI-registered, serving investors since 1970, with a real branch in Panipat for in-person help.`,
   },
 
   "pe-ratio": {

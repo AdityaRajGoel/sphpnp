@@ -89,7 +89,7 @@ const Header = () => {
             </a>
             <span className="hidden xl:flex items-center gap-1.5 text-primary-foreground/60">
               <span className="w-1.5 h-1.5 rounded-full bg-secondary animate-pulse" />
-              SEBI Registered · Since 1970
+              SEBI Registered · Serving Investors Since 1970
             </span>
           </div>
           <div className="flex items-center gap-3">

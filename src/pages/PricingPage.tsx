@@ -156,7 +156,7 @@ const PricingPage = () => {
           >
             <span className="inline-flex items-center gap-1.5 text-secondary"><BadgeCheck className="w-4 h-4" /> ₹0 Account Opening</span>
             <span className="inline-flex items-center gap-1.5 text-secondary"><BadgeCheck className="w-4 h-4" /> Free Trading AMC</span>
-            <span className="inline-flex items-center gap-1.5 text-secondary"><BadgeCheck className="w-4 h-4" /> SEBI-Registered Since 1970</span>
+            <span className="inline-flex items-center gap-1.5 text-secondary"><BadgeCheck className="w-4 h-4" /> SEBI-Registered · Since 1970</span>
           </motion.div>
 
           <div className="space-y-8">
