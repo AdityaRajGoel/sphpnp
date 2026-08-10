@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
-  parseBalanceSheet, parseCashflow, toYahooSymbol,
+  parseBalanceSheet, parseCashflow, toYahooSymbol, isValidCrumb,
 } from "../../supabase/functions/_shared/yahoo";
 
 // Yahoo wraps every figure as { raw, fmt, longFmt } and omits the key entirely
@@ -111,5 +111,35 @@ describe("parseCashflow", () => {
 
   it("returns an empty array for a malformed payload", () => {
     expect(parseCashflow({})).toEqual([]);
+  });
+});
+
+describe("isValidCrumb", () => {
+  it("accepts a real opaque crumb", () => {
+    expect(isValidCrumb("kPn8Zx2.QmT")).toBe(true);
+  });
+
+  // The regression this function exists for. Yahoo answers a throttled crumb
+  // request with the bare text "Too Many Requests" - 17 chars, no angle
+  // bracket - which the previous length-and-"<" guard accepted and cached for
+  // 30 minutes as though it were an auth token.
+  it("rejects Yahoo's rate-limit refusal", () => {
+    expect(isValidCrumb("Too Many Requests")).toBe(false);
+  });
+
+  it("rejects any value containing whitespace", () => {
+    expect(isValidCrumb("has space")).toBe(false);
+    expect(isValidCrumb("has\ttab")).toBe(false);
+    expect(isValidCrumb("has\nnewline")).toBe(false);
+  });
+
+  it("rejects an HTML login wall", () => {
+    expect(isValidCrumb("<!DOCTYPE html>")).toBe(false);
+  });
+
+  it("rejects empty and over-long values", () => {
+    expect(isValidCrumb("")).toBe(false);
+    expect(isValidCrumb("x".repeat(41))).toBe(false);
+    expect(isValidCrumb("x".repeat(40))).toBe(true);
   });
 });

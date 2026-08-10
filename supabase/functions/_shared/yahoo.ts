@@ -14,6 +14,26 @@ const YAHOO_UA =
 const CRUMB_TTL_MS = 30 * 60 * 1000;
 let crumbCache: { crumb: string; cookie: string; ts: number } | null = null;
 
+/**
+ * A real crumb is a short opaque single token. Two non-crumbs reach this code
+ * with a 200-ish body and must be rejected:
+ *
+ *  - a login wall, which is HTML, caught by the "<" test;
+ *  - a rate-limit refusal, which is the bare text `Too Many Requests`.
+ *
+ * The second is the one that bites. It is 17 characters with no angle bracket,
+ * so a length-and-"<" check accepts it, and the caller then caches it for the
+ * full CRUMB_TTL_MS and appends it to every quoteSummary URL for half an hour -
+ * a refusal string used as an auth token, which makes a throttled window look
+ * like a parse-shaped failure instead of a throttle. Whitespace is the cheap
+ * discriminator: crumbs never contain any, English refusals always do.
+ *
+ * Exported for tests - the fetch flow around it cannot run under Vitest.
+ */
+export function isValidCrumb(crumb: string): boolean {
+  return crumb.length > 0 && crumb.length <= 40 && !crumb.includes("<") && !/\s/.test(crumb);
+}
+
 export async function getYahooCrumb(): Promise<{ crumb: string; cookie: string } | null> {
   try {
     if (crumbCache && Date.now() - crumbCache.ts < CRUMB_TTL_MS) {
@@ -26,8 +46,7 @@ export async function getYahooCrumb(): Promise<{ crumb: string; cookie: string }
       headers: { "User-Agent": YAHOO_UA, Cookie: cookie },
     });
     const crumb = (await crumbRes.text()).trim();
-    // A login wall returns HTML; a valid crumb is a short opaque token.
-    if (!crumb || crumb.includes("<") || crumb.length > 40) return null;
+    if (!isValidCrumb(crumb)) return null;
     crumbCache = { crumb, cookie, ts: Date.now() };
     return { crumb, cookie };
   } catch {
