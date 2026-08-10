@@ -416,8 +416,13 @@ async function askOpenRouter(prompt: string, isChat: boolean = false, modelOverr
 
   if (!response.ok) {
     const err = await response.text();
-    console.error("OpenRouter Error:", err);
-    throw new Error(`OpenRouter API Error (${response.status}): ${err.slice(0, 200)}`);
+    // Body to the log only, status to the caller: this message is pushed to
+    // `errors` below and can be serialised straight to the browser, either
+    // inside committee_debug on a successful run or in the joined message on
+    // total cascade failure. An upstream 4xx/5xx body is not something to
+    // hand back to a public page - the status is all the caller can act on.
+    console.warn(`OpenRouter API Error (${response.status}): ${err.slice(0, 200)}`);
+    throw new Error(`OpenRouter: HTTP ${response.status}`);
   }
 
   const data = await response.json();
@@ -484,7 +489,8 @@ async function askGroq(prompt: string, isChat: boolean = false, model = "llama-3
 
     if (!res.ok) {
       const err = await res.text();
-      throw new ProviderHttpError(`Groq API Error (${res.status}): ${err.slice(0, 100)}`, res.status);
+      console.warn(`Groq API Error (${res.status}): ${err.slice(0, 100)}`);
+      throw new ProviderHttpError(`Groq: HTTP ${res.status}`, res.status);
     }
     return res;
   });
@@ -538,7 +544,8 @@ async function askCerebras(prompt: string, isChat: boolean = false) {
 
   if (!response.ok) {
     const err = await response.text();
-    throw new Error(`Cerebras API Error (${response.status}): ${err.slice(0, 100)}`);
+    console.warn(`Cerebras API Error (${response.status}): ${err.slice(0, 100)}`);
+    throw new Error(`Cerebras: HTTP ${response.status}`);
   }
 
   const data = await response.json();
@@ -755,7 +762,8 @@ async function askGemini(prompt: string, isChat: boolean = false, useWebSearch: 
 
     if (!res.ok) {
       const err = await res.text();
-      throw new ProviderHttpError(`Gemini API Error (${res.status}): ${err.slice(0, 100)}`, res.status);
+      console.warn(`Gemini API Error (${res.status}): ${err.slice(0, 100)}`);
+      throw new ProviderHttpError(`Gemini: HTTP ${res.status}`, res.status);
     }
     return res;
   });
@@ -1675,7 +1683,7 @@ serve(async (req) => {
         } catch (e) {
           const msg = e instanceof Error ? e.message : String(e);
           console.error("✗ OpenRouter:", msg);
-          errors.push(`OpenRouter: ${msg}`);
+          errors.push(`OpenRouter: ${msg.slice(0, 120)}`);
         }
       }
 
@@ -1712,7 +1720,7 @@ serve(async (req) => {
         } catch (e) {
           const msg = e instanceof Error ? e.message : String(e);
           console.error("✗ Gemini Direct:", msg);
-          errors.push(`Gemini: ${msg}`);
+          errors.push(`Gemini: ${msg.slice(0, 120)}`);
         }
       }
 
