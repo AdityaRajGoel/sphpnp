@@ -57,6 +57,13 @@ coverage/
 .claude/skills/
 .github/skills/
 
+# Local agent-browser config written by `playwright-cli install --skills`.
+# Machine-local (it pins a downloaded Chrome for Testing build), and the CLI
+# regenerates it on install — same reasoning as the vendored skills above.
+.playwright/
+# Per-session page snapshots and console logs the same CLI drops beside it.
+.playwright-cli/
+
 # graphify knowledge-graph output
 graphify-out/
 scripts/i18n-out.json
