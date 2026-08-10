@@ -342,16 +342,6 @@
     to { --beam-angle: 360deg; }
   }
 
-  /* Living gradient text — the gradient slowly breathes across the letters */
-  .text-shimmer {
-    background-size: 200% auto;
-    animation: text-shimmer 5s ease-in-out infinite alternate;
-  }
-  @keyframes text-shimmer {
-    0% { background-position: 0% center; }
-    100% { background-position: 100% center; }
-  }
-
   /* Expand touch target without visual/layout change (mobile a11y).
      Uses ::before so it never clashes with ::after decorations (btn-shine). */
   .tap-area {
@@ -376,8 +366,7 @@
       transition: none;
     }
     .hero-aurora,
-    .border-beam::after,
-    .text-shimmer {
+    .border-beam::after {
       animation: none;
     }
   }

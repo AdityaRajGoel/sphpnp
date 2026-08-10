@@ -222,7 +222,7 @@ const OpenAccountPage = () => {
             <TrendingUp className="w-3.5 h-3.5 text-secondary" /> Free Demat Account
           </motion.span>
           <motion.h1 className="font-heading text-4xl md:text-5xl lg:text-6xl font-bold text-primary-foreground mb-4" initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-            {t("openAccount.title1")} <span className="text-transparent bg-clip-text bg-gradient-to-r from-secondary to-brand-gold">{t("openAccount.title2")}</span>
+            {t("openAccount.title1")} <span className="text-brand-gold">{t("openAccount.title2")}</span>
           </motion.h1>
           <motion.p className="text-lg text-primary-foreground/80 max-w-xl mx-auto" initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
             {t("openAccount.subtitle")}

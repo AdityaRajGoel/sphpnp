@@ -140,7 +140,7 @@ const Footer = () => {
           >
             <div className="text-center md:text-left">
               <h3 className="font-heading text-xl md:text-2xl font-bold">
-                Start your investment journey <span className="text-transparent bg-clip-text bg-gradient-to-r from-secondary to-brand-gold">today</span>
+                Start your investment journey <span className="text-brand-gold">today</span>
               </h3>
               <p className="text-primary-foreground/60 text-sm mt-1">
                 Free Demat account · SEBI registered · Serving investors since 1970 · Real branch support in Panipat

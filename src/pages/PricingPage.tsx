@@ -139,7 +139,7 @@ const PricingPage = () => {
               <IndianRupee className="w-4 h-4" /> Transparent Pricing
             </span>
             <h1 className="font-heading text-3xl md:text-5xl font-bold text-foreground mb-4">
-              Brokerage Charges, <span className="text-transparent bg-clip-text bg-gradient-to-r from-secondary to-brand-gold">No Surprises</span>
+              Brokerage Charges, <span className="text-brand-gold">No Surprises</span>
             </h1>
             <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
               Every charge published upfront - and if you trade actively, we tailor

@@ -381,7 +381,7 @@ const Hero = () => {
             >
               {t("hero.title1")}
               <br />
-              <span className="text-shimmer block bg-gradient-to-r from-secondary via-brand-gold to-secondary bg-clip-text pb-1 text-transparent">
+              <span className="block pb-1 text-brand-gold">
                 {t("hero.title2")}
               </span>
             </motion.h1>

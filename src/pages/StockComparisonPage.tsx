@@ -173,7 +173,7 @@ const StockComparisonPage = () => {
   };
 
   // Column colors for the winner
-  const WINNER_COLORS = ["border-l-4 border-l-brand-orange bg-brand-orange/5", "border-l-4 border-l-secondary bg-secondary/5", "border-l-4 border-l-blue-500 bg-blue-500/5"];
+  const WINNER_COLORS = ["border-l border-l-brand-orange bg-brand-orange/5", "border-l border-l-secondary bg-secondary/5", "border-l border-l-blue-500 bg-blue-500/5"];
   const STAT_BAR_COLORS = ["bg-brand-orange", "bg-secondary", "bg-blue-500"];
 
   // Determine the overall winner by P/E + market_cap + change_pct composite

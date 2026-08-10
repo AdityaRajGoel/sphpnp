@@ -117,7 +117,7 @@ const BecomePartner = () => {
             </motion.span>
             <h2 className="font-heading text-3xl md:text-4xl font-bold text-primary-foreground mb-4">
               Become a{" "}
-              <span className="text-shimmer text-transparent bg-clip-text bg-gradient-to-r from-secondary via-brand-gold to-secondary">
+              <span className="text-brand-gold">
                 Business Associate
               </span>
             </h2>

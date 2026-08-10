@@ -640,10 +640,7 @@ const LearningCenterPage = () => {
                           return (
                             <motion.div key={article.id} initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }}
                               transition={{ delay: i * 0.04 }} whileHover={{ y: -3 }}>
-                              <Card className={`p-5 h-full flex flex-col cursor-pointer group overflow-hidden border-l-4 ${{
-                                basics: "border-l-primary/40", trading: "border-l-brand-orange/40",
-                                analysis: "border-l-secondary/40", investing: "border-l-brand-gold/40",
-                              }[article.category] || "border-l-border"} ${isRead ? "opacity-70" : "hover:shadow-md"} transition-[opacity,box-shadow]`}
+                              <Card className={`p-5 h-full flex flex-col cursor-pointer group overflow-hidden ${isRead ? "opacity-70" : "hover:shadow-md"} transition-[opacity,box-shadow]`}
                                 onClick={() => openArticle(article)}>
                                 <div className="flex items-center justify-between mb-2.5">
                                   <div className="flex items-center gap-1.5">

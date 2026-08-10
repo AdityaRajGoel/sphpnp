@@ -62,7 +62,7 @@ const StockRecommendationsPage = () => {
           <div className="container mx-auto px-4 mb-8">
             <aside
               aria-labelledby="risk-warning-heading"
-              className="bg-destructive/10 border-l-4 border-destructive rounded-r-xl p-5 md:p-6 shadow-sm"
+              className="bg-destructive/10 border border-destructive/30 rounded-xl p-5 md:p-6 shadow-sm"
             >
               <div className="flex items-start gap-4">
                 <div className="w-12 h-12 rounded-full bg-destructive/20 flex items-center justify-center flex-shrink-0 mt-1">
