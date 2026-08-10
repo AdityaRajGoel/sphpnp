@@ -1,5 +1,7 @@
+import { lazy, Suspense, useState } from "react";
 import { useParams } from "react-router-dom";
 import { motion } from "motion/react";
+import { Bot } from "lucide-react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import SEOHead from "@/components/SEOHead";
@@ -8,9 +10,11 @@ import ScrollProgress from "@/components/ScrollProgress";
 import WhatsAppButton from "@/components/WhatsAppButton";
 import VisibleBreadcrumbs from "@/components/VisibleBreadcrumbs";
 import NotFound from "@/pages/NotFound";
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
+import type { StockForAnalysis } from "@/components/AIAnalysisModal";
 import { revealSection } from "@/lib/motion";
 import { formatCrore } from "@/lib/fundamentals";
 import { useStockFundamentals } from "@/hooks/useStockFundamentals";
@@ -20,9 +24,14 @@ import CorporateActionsList from "@/components/stock/CorporateActionsList";
 import StockProvenance from "@/components/stock/StockProvenance";
 import SymbolSwitcher from "@/components/stock/SymbolSwitcher";
 
+// Same split the screener, comparison and search surfaces make: the modal drags
+// in recharts and react-markdown, which is more JS than this whole page ships.
+const AIAnalysisModal = lazy(() => import("@/components/AIAnalysisModal"));
+
 export default function StockPage() {
   const { symbol } = useParams<{ symbol: string }>();
   const s = useStockFundamentals(symbol);
+  const [askingAI, setAskingAI] = useState(false);
 
   // `synced` and `basis` are set together by selectBasis() inside the hook
   // (basis is non-null exactly when there are income rows), but that link lives
@@ -31,6 +40,34 @@ export default function StockPage() {
   // card rather than silently mislabelling the table's basis badge.
   const basis = s.synced ? s.basis : null;
   const hasFinancials = basis !== null;
+
+  // The modal wants a live quote; this page holds a filings-first subset of one,
+  // so only the fields that genuinely exist here are handed over. Price is
+  // required by StockForAnalysis and anchors everything the report derives from
+  // it, so a header without one has nothing to be asked about. P/E, the 52-week
+  // and day ranges, volume and debt/equity are screener columns this page never
+  // loads: they are left absent rather than approximated, because the modal
+  // forwards them untouched to the model and a stand-in comes back as a
+  // confident wrong answer about a real company.
+  //
+  // ROE is absent for the same reason even though s.derived carries one. Those
+  // rows are per-quarter (one quarter's profit after tax over equity), while the
+  // modal's roe slot is read as a trailing-twelve-month figure - bucketed at
+  // >15% as "excellent capital efficiency" and benchmarked server-side against
+  // an annual sector average. The honest number in the wrong slot still reads
+  // about four times too low.
+  const aiStock: StockForAnalysis | null =
+    s.header && s.header.price !== null
+      ? {
+          symbol: s.header.symbol,
+          name: s.header.name,
+          price: s.header.price,
+          change_pct: s.header.change_pct,
+          // 0 is the ingest's "unknown" sentinel, same as the display below.
+          market_cap: s.header.market_cap || null,
+          sector: s.header.sector,
+        }
+      : null;
 
   // An unknown ticker must be a real 404, not an empty shell - /stock/:symbol
   // is an open namespace and would otherwise become a soft-404 farm.
@@ -112,7 +149,24 @@ export default function StockPage() {
                       {new Date(s.header.updated_at).toLocaleString("en-IN")}
                     </div>
                   )}
-                  <div className="mt-2"><SymbolSwitcher /></div>
+                  <div className="mt-2 flex flex-wrap items-center justify-end gap-2">
+                    <SymbolSwitcher />
+                    {/* Gated on hasFinancials, not just on loading: a symbol the
+                        sync cursor has not reached has no results for the AI to
+                        read, and offering analysis on it invites a report built
+                        from nothing but a price. */}
+                    {hasFinancials && aiStock && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        aria-label={`Ask AI about ${aiStock.name}`}
+                        className="text-brand-orange border-brand-orange/30 hover:bg-brand-orange/10 bg-transparent text-xs min-h-[44px] md:min-h-0 md:h-8 px-3"
+                        onClick={() => setAskingAI(true)}
+                      >
+                        <Bot className="w-3.5 h-3.5 mr-1" /> Ask AI
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </div>
               {/* market_cap arrives in crore, and 0 is the ingest's "unknown"
@@ -157,6 +211,13 @@ export default function StockPage() {
       </main>
       <WhatsAppButton />
       <Footer />
+
+      {/* Lazy: recharts only downloads when an analysis is opened */}
+      {askingAI && aiStock && (
+        <Suspense fallback={null}>
+          <AIAnalysisModal isOpen onClose={() => setAskingAI(false)} stock={aiStock} />
+        </Suspense>
+      )}
     </PageTransition>
   );
 }

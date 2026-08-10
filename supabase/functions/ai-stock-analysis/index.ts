@@ -46,6 +46,24 @@ const CEREBRAS_API_KEY = Deno.env.get("CEREBRAS_API_KEY");
 // llama-3.3-70b was decommissioned on Cerebras and now 404s; gpt-oss-120b is
 // current. Override via CEREBRAS_MODEL — /v1/models lists what your account has.
 const CEREBRAS_MODEL = Deno.env.get("CEREBRAS_MODEL") ?? "gpt-oss-120b";
+// NVIDIA NIM (build.nvidia.com) free developer tier. OpenAI-compatible, so it
+// reuses the same request/parse shape as Groq/Cerebras rather than a bespoke path.
+// openai/gpt-oss-120b was confirmed present in the live catalogue served by
+// GET https://integrate.api.nvidia.com/v1/models, and it is the same open-weight
+// family the rest of this cascade already leans on. Override via NVIDIA_MODEL —
+// that /v1/models listing is the source of truth for what a given key can serve
+// (NVIDIA gates catalogue access per NGC org, so a model id that works on one
+// key can 403 on another).
+const NVIDIA_MODEL = Deno.env.get("NVIDIA_MODEL") ?? "openai/gpt-oss-120b";
+// Bytez free tier. NOT OpenAI-shaped: the model id lives in the URL path,
+// generation settings go under `params`, and a reply comes back as { error, output } with a
+// 200 even when the model itself failed - so the error field has to be checked
+// explicitly or a dead attempt would look like a successful empty report.
+// Qwen3-4B is the model Bytez's own chat quickstart documents end-to-end; it is
+// small, which is why Bytez sits last. Override via BYTEZ_MODEL - the catalogue
+// at GET /models/v2/list/models?task=chat needs a key, so it cannot be probed
+// from here to pick a bigger default.
+const BYTEZ_MODEL = Deno.env.get("BYTEZ_MODEL") ?? "Qwen/Qwen3-4B";
 // Gemini-direct fallback model name (strip the "google/" prefix if present).
 // Gemini-direct model ids, kept separate from REPORT_MODEL: that value is an
 // OpenRouter model id and the two catalogs have diverged. gemini-2.5-flash is
@@ -86,9 +104,22 @@ const GEMINI_API_KEYS = readKeys(
   "GEMENI_API_KEY_SECOND",
 );
 
+const NVIDIA_API_KEYS = readKeys(
+  "NVIDIA_API_KEY",
+  "NVIDIA_API_KEY_SECOND",
+  "NVIDIA_API_KEY_THIRD",
+);
+const BYTEZ_API_KEYS = readKeys(
+  "BYTEZ_API_KEY",
+  "BYTEZ_API_KEY_SECOND",
+  "BYTEZ_API_KEY_THIRD",
+);
+
 // Retained for the "is this provider available?" checks in the cascade below.
 const GROQ_API_KEY = GROQ_API_KEYS[0];
 const GEMINI_API_KEY = GEMINI_API_KEYS[0];
+const NVIDIA_API_KEY = NVIDIA_API_KEYS[0];
+const BYTEZ_API_KEY = BYTEZ_API_KEYS[0];
 
 // HTTP statuses where a DIFFERENT key can plausibly succeed: quota/rate limit,
 // or a dead/revoked/unfunded key. Any other status is a request-level fault
@@ -483,6 +514,135 @@ async function askCerebras(prompt: string, isChat: boolean = false) {
   }
 
   return { result: content, model: `${CEREBRAS_MODEL} (Cerebras)` };
+}
+
+// ─────────────────────────────────────────────────────────────
+// Provider: NVIDIA NIM (free developer tier). OpenAI-compatible, so this is a
+// straight clone of the Groq/Cerebras shape rather than a separate code path.
+// Optional - skipped unless NVIDIA_API_KEY is configured.
+// ─────────────────────────────────────────────────────────────
+async function askNvidia(prompt: string, isChat: boolean = false, model = NVIDIA_MODEL) {
+  const systemMsg = isChat ? CHAT_SYSTEM_PROMPT : REPORT_SYSTEM_PROMPT;
+
+  const response = await withKeyRotation("NVIDIA", NVIDIA_API_KEYS, async (apiKey) => {
+    const res = await fetch("https://integrate.api.nvidia.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model,
+        messages: [
+          { role: "system", content: systemMsg },
+          { role: "user", content: prompt + (isChat ? "" : "\n\nRespond with ONLY valid JSON. No text before or after the JSON object.") },
+        ],
+        temperature: isChat ? 0.35 : 0.1,
+        max_tokens: isChat ? 1024 : 6000,
+        // Deliberately no response_format: NIM's JSON mode is per-model and not
+        // documented for the hosted catalogue, and an unsupported field is a
+        // request-level 400 that every key in the pool would hit identically -
+        // burning this whole cascade step. The "ONLY valid JSON" instruction plus
+        // the tolerant parse below costs nothing when the model complies.
+      }),
+    });
+
+    if (!res.ok) {
+      const err = await res.text();
+      // NVIDIA reports an unauthorized/unentitled key as 403 "Authorization
+      // failed" rather than 401, which KEY_ROTATION_STATUSES already covers.
+      throw new ProviderHttpError(`NVIDIA API Error (${res.status}): ${err.slice(0, 100)}`, res.status);
+    }
+    return res;
+  });
+
+  const data = await response.json();
+  let content = data.choices?.[0]?.message?.content;
+  if (!content) throw new Error("Empty response from NVIDIA");
+
+  if (!isChat) {
+    try {
+      const cleaned = content.replace(/```json/g, "").replace(/```/g, "").trim();
+      const parsed = JSON.parse(cleaned);
+      if (parsed.structured_data) {
+        parsed.structured_data = validateAndFixStructuredData(parsed.structured_data);
+      }
+      content = parsed;
+    } catch {
+      content = { markdown_report: typeof content === "string" ? content : "Report parsing error." };
+    }
+  }
+
+  return { result: content, model: `${model} (NVIDIA)` };
+}
+
+// ─────────────────────────────────────────────────────────────
+// Provider: Bytez (free tier). Not OpenAI-shaped - model id in the path,
+// generation settings under `params`, reply as { error, output }.
+// Optional - skipped unless BYTEZ_API_KEY is configured.
+// ─────────────────────────────────────────────────────────────
+async function askBytez(prompt: string, isChat: boolean = false, model = BYTEZ_MODEL) {
+  const systemMsg = isChat ? CHAT_SYSTEM_PROMPT : REPORT_SYSTEM_PROMPT;
+  // Model ids are namespaced ("Qwen/Qwen3-4B") and Bytez puts the whole id in the
+  // path, so encode segment by segment - encoding the id as one unit would escape
+  // the separator and 404.
+  const path = model.split("/").map(encodeURIComponent).join("/");
+
+  const response = await withKeyRotation("Bytez", BYTEZ_API_KEYS, async (apiKey) => {
+    const res = await fetch(`https://api.bytez.com/models/v2/${path}`, {
+      method: "POST",
+      headers: {
+        // "Key " prefix, not "Bearer": Bytez's maintained client (bytez.js) sends
+        // `Key ${apiKey}`. Their raw-HTTP docs show the bare key instead, and a
+        // bad key 401s identically either way, so the client's form is the one
+        // that is actually exercised in production.
+        "Authorization": `Key ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        messages: [
+          { role: "system", content: systemMsg },
+          { role: "user", content: prompt + (isChat ? "" : "\n\nRespond with ONLY valid JSON. No text before or after the JSON object.") },
+        ],
+        params: {
+          temperature: isChat ? 0.35 : 0.1,
+          max_new_tokens: isChat ? 1024 : 6000,
+        },
+      }),
+    });
+
+    if (!res.ok) {
+      const err = await res.text();
+      throw new ProviderHttpError(`Bytez API Error (${res.status}): ${err.slice(0, 100)}`, res.status);
+    }
+    return res;
+  });
+
+  const data = await response.json();
+  // Bytez answers 200 with { error, output } even when the model itself failed,
+  // so a populated error field has to be raised here or a dead attempt would be
+  // handed downstream as a successful empty report.
+  if (data?.error) throw new Error(`Bytez API Error: ${String(data.error).slice(0, 100)}`);
+  // Chat models answer with { role, content }; plain text-generation models
+  // answer with a bare string.
+  const out = data?.output;
+  let content = typeof out === "string" ? out : out?.content;
+  if (!content) throw new Error("Empty response from Bytez");
+
+  if (!isChat) {
+    try {
+      const cleaned = content.replace(/```json/g, "").replace(/```/g, "").trim();
+      const parsed = JSON.parse(cleaned);
+      if (parsed.structured_data) {
+        parsed.structured_data = validateAndFixStructuredData(parsed.structured_data);
+      }
+      content = parsed;
+    } catch {
+      content = { markdown_report: typeof content === "string" ? content : "Report parsing error." };
+    }
+  }
+
+  return { result: content, model: `${model} (Bytez)` };
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -1279,7 +1439,7 @@ serve(async (req) => {
         errors.push(`Gemini Web Search Error: ${msg}`);
       }
     } else {
-      // Standard cascade: free open-weight models → paid OpenRouter → Groq → Cerebras → Gemini
+      // Standard cascade: free open-weight models → paid OpenRouter → Groq → Cerebras → Gemini → NVIDIA NIM → Bytez
       const cascadeStart = Date.now();
 
       // ── Committee mode (opt-in "Deep"): multiple free models in parallel,
@@ -1397,6 +1557,34 @@ serve(async (req) => {
           const msg = e instanceof Error ? e.message : String(e);
           console.error("✗ Gemini Direct:", msg);
           errors.push(`Gemini: ${msg}`);
+        }
+      }
+
+      // ── Last-ditch open-weight fallbacks. Deliberately BELOW Gemini: they are
+      //    new and unproven here, and the providers above already answer the
+      //    overwhelming majority of requests, so they only fire on a genuine
+      //    multi-provider outage. By that point most of the 60s edge-function
+      //    budget is gone, hence the tight timeouts - a last attempt must not be
+      //    what turns a degraded run into a hard 60s kill with no report at all. ──
+      if (!result && NVIDIA_API_KEY) {
+        try {
+          console.log(`→ NVIDIA NIM (${NVIDIA_MODEL})...`);
+          result = await withTimeout(askNvidia(finalPrompt, !!is_chat), 18000, "NVIDIA");
+        } catch (e) {
+          const msg = e instanceof Error ? e.message : String(e);
+          console.warn("✗ NVIDIA:", msg);
+          errors.push(`NVIDIA: ${msg.slice(0, 120)}`);
+        }
+      }
+
+      if (!result && BYTEZ_API_KEY) {
+        try {
+          console.log(`→ Bytez (${BYTEZ_MODEL})...`);
+          result = await withTimeout(askBytez(finalPrompt, !!is_chat), 15000, "Bytez");
+        } catch (e) {
+          const msg = e instanceof Error ? e.message : String(e);
+          console.warn("✗ Bytez:", msg);
+          errors.push(`Bytez: ${msg.slice(0, 120)}`);
         }
       }
     }
