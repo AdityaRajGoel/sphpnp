@@ -16,3 +16,24 @@
 export function hasFeedItems(xml: string): boolean {
   return /<item[\s>]/i.test(xml) || /<entry[\s>]/i.test(xml);
 }
+
+/**
+ * A publication date that `Date` cannot parse yields an Invalid Date, whose
+ * `.toISOString()` does not return a sentinel - it THROWS
+ * `RangeError: Invalid time value`.
+ *
+ * In fetch-news that throw happened inside the per-item `.map()`, so it escaped
+ * the map, escaped the enclosing try, and discarded the WHOLE feed over a
+ * single malformed item. Measured against the deployed function, four of nine
+ * sources (LiveMint, BusinessLine, NDTV Profit, Business Today) were being lost
+ * to exactly this - they fetch fine and parse fine apart from one date each.
+ *
+ * Falling back to `fallback` keeps one bad item from costing a whole publisher.
+ * The item's position in the feed is a far better freshness signal than nothing
+ * at all, and RSS orders newest-first.
+ */
+export function parseFeedDate(raw: string | null | undefined, fallback: Date = new Date()): Date {
+  if (!raw) return fallback;
+  const parsed = new Date(raw.trim());
+  return Number.isNaN(parsed.getTime()) ? fallback : parsed;
+}

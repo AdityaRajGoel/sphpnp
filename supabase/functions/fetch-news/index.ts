@@ -1,4 +1,4 @@
-import { hasFeedItems } from "../_shared/rss.ts";
+import { hasFeedItems, parseFeedDate } from "../_shared/rss.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -34,14 +34,30 @@ interface RssFetchResult {
   // zero qualifying items still reports ok: true - that isn't a failure.
   ok: boolean;
   items: NewsItem[];
+  /** Publisher name, carried so a failure can be reported by name, not by index. */
+  name: string;
+  /** Why this source failed, present only when ok is false. */
+  reason?: string;
 }
 
 async function fetchRss(url: string, sourceName: string, defaultCategory: string): Promise<RssFetchResult> {
   try {
-    const res = await fetch(url);
+    // A bare Deno fetch sends no User-Agent, and several Indian publishers 403
+    // that outright from Supabase's egress IPs while serving the same feed to a
+    // browser. Same reasoning as the UA already sent to NSE (_shared/nse.ts) and
+    // Yahoo (_shared/yahoo.ts); Accept is included because a few feeds
+    // content-negotiate to an HTML page when it is absent.
+    const res = await fetch(url, {
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
+          "(KHTML, like Gecko) Chrome/120.0 Safari/537.36",
+        "Accept": "application/rss+xml, application/atom+xml, application/xml;q=0.9, text/xml;q=0.8, */*;q=0.5",
+      },
+    });
     if (!res.ok) {
       console.error(`RSS fetch non-OK for ${sourceName} (${url}): HTTP ${res.status}`);
-      return { ok: false, items: [] };
+      return { ok: false, items: [], name: sourceName, reason: `HTTP ${res.status}` };
     }
     const xml = await res.text();
 
@@ -52,7 +68,7 @@ async function fetchRss(url: string, sourceName: string, defaultCategory: string
     // See hasFeedItems for the full rationale.
     if (!hasFeedItems(xml)) {
       console.error(`RSS body for ${sourceName} (${url}) has no <item>/<entry> - feed likely redirected off RSS`);
-      return { ok: false, items: [] };
+      return { ok: false, items: [], name: sourceName, reason: "200 but no <item>/<entry>" };
     }
 
     // Very basic XML parsing using Regex to avoid heavy Deno dependencies
@@ -84,11 +100,11 @@ async function fetchRss(url: string, sourceName: string, defaultCategory: string
       if (summary.length > 150) summary = summary.substring(0, 147) + "...";
       if (!summary) summary = title; // fallback
 
-      let date = new Date();
-      if (dateMatch) {
-         date = new Date(dateMatch[1]);
-      }
-      
+      // Never construct this with a bare `new Date(raw)` again: an unparseable
+      // pubDate makes `date.toISOString()` below throw, which used to take the
+      // entire feed down with it. See parseFeedDate.
+      const date = parseFeedDate(dateMatch ? dateMatch[1] : null);
+
       // Calculate timeAgo
       const diffMs = new Date().getTime() - date.getTime();
       const diffHrs = diffMs / (1000 * 60 * 60);
@@ -112,10 +128,15 @@ async function fetchRss(url: string, sourceName: string, defaultCategory: string
       };
     }).filter(i => i.title !== "Market Update");
 
-    return { ok: true, items: parsed };
+    return { ok: true, items: parsed, name: sourceName };
   } catch (e) {
     console.error("RSS Fetch Error for", url, e);
-    return { ok: false, items: [] };
+    return {
+      ok: false,
+      items: [],
+      name: sourceName,
+      reason: e instanceof Error ? e.message.slice(0, 80) : "network error",
+    };
   }
 }
 
@@ -179,8 +200,14 @@ async function getLiveNews() {
 
   const sourcesTotal = results.length;
   const sourcesOk = results.filter(r => r.ok).length;
+  // By name and reason, not just a count. A bare "3 of 9" cannot tell you
+  // whether one publisher rotated a URL or whether the whole egress IP is
+  // being throttled, and those need different responses.
+  const failedSources = results
+    .filter(r => !r.ok)
+    .map(r => ({ name: r.name, reason: r.reason ?? "unknown" }));
 
-  return { indian, world, sourcesTotal, sourcesOk };
+  return { indian, world, sourcesTotal, sourcesOk, failedSources };
 }
 
 Deno.serve(async (req) => {
@@ -201,17 +228,38 @@ Deno.serve(async (req) => {
     // outage visible in the response instead of only in a log nobody reads.
     const allSourcesFailed = news.sourcesOk === 0;
 
+    // Fewer than half the sources answering is a real outage, not a quiet news
+    // day - the first measurement from the deployed function found 3 of 9,
+    // because Supabase's egress IPs are throttled by publishers that answer a
+    // laptop fine. `allSourcesFailed` cannot see that: it only trips at zero.
+    //
+    // Deliberately NOT folded into `success`. Both callers (MarketNews,
+    // LearningCenterPage) gate rendering on `data?.success` and fall back to
+    // hardcoded copy when it is false, so degrading `success` here would throw
+    // away the articles the working sources DID return and show staler content
+    // than we already have. The degradation is surfaced as its own field and
+    // logged instead, so it is visible to monitoring without being paid for by
+    // the reader.
+    const degraded = !allSourcesFailed && news.sourcesOk * 2 < news.sourcesTotal;
+
     if (allSourcesFailed) {
       console.error(`All ${news.sourcesTotal} news sources failed on this request.`);
+    } else if (degraded) {
+      console.error(
+        `News degraded: only ${news.sourcesOk}/${news.sourcesTotal} sources answered. ` +
+          `Failed: ${news.failedSources.map(f => `${f.name} (${f.reason})`).join(", ")}`,
+      );
     }
 
     return new Response(
       JSON.stringify({
         success: !allSourcesFailed,
+        degraded,
         indian: news.indian,
         world: news.world,
         sourcesOk: news.sourcesOk,
         sourcesTotal: news.sourcesTotal,
+        failedSources: news.failedSources,
         ...(allSourcesFailed ? { error: 'All news sources are currently unavailable' } : {}),
         fetchedAt: new Date().toISOString(),
       }),
