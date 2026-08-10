@@ -136,10 +136,28 @@ async function captureOnce(browser, port, route) {
     try {
       await page.goto(`http://localhost:${port}${route}`, {
         waitUntil: 'networkidle2', // More resilient than networkidle0
-        timeout: 15000,
+        timeout: 30000,
       });
     } catch (e) {
       console.warn(`Timeout or error on ${route}, proceeding to capture current DOM...`);
+    }
+
+    // networkidle2 is a heuristic about sockets, not about whether this page
+    // has its data yet, and on a cold container the two come apart: the build
+    // that broke shipped nothing because /stock/ABB - the FIRST stock route,
+    // so the one paying for the cold JS parse and the first Supabase
+    // round-trip - was still on its skeleton when the socket count went quiet.
+    //
+    // So wait for the condition the assertion below actually checks. The wait
+    // is deliberately swallowed: when the state never settles we want
+    // assertStockPageCaptured's specific message ("no data ... refusing to ship
+    // a skeleton"), not a generic selector timeout that says nothing about why.
+    if (route.startsWith('/stock/')) {
+      await page
+        .waitForSelector('[data-stock-state="ready"], [data-stock-state="unsynced"]', {
+          timeout: 25000,
+        })
+        .catch(() => {});
     }
 
     const html = await page.content();
