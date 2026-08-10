@@ -73,6 +73,18 @@ const MAX_PARSE_ATTEMPTS = 5;
  */
 const MAX_FILINGS_PER_SYMBOL = 12;
 
+/**
+ * Wall-clock budget for one invocation. Supabase terminates an edge function at
+ * 150s (IDLE_TIMEOUT), so this sits far enough below that the current filing can
+ * finish, the cursor can be written and the observation row can be closed after
+ * the budget trips. Overshoot per check is bounded by one NSE round trip plus
+ * NSE_DELAY_MS, not by a whole symbol, because the inner filings loop checks too.
+ *
+ * Raising this is almost always the wrong move: the ceiling is the platform's,
+ * not ours. Lower MAX_FILINGS_PER_SYMBOL or BATCH_SIZE instead.
+ */
+const RUN_BUDGET_MS = 110_000;
+
 async function sha256(text: string): Promise<string> {
   const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
   return Array.from(new Uint8Array(buf))
@@ -139,12 +151,17 @@ Deno.serve(async (req) => {
     // Symbols whose NSE filing-registry call threw. Distinct from a symbol that
     // genuinely has no filings, which returns an empty array and is not a fault.
     registryFailed: 0,
+    // True when the run stopped itself on the time budget below rather than
+    // finishing the batch. Reported so a chronically truncated batch is visible
+    // in the response instead of only inferable from a falling filings count.
+    budgetExhausted: false,
   };
 
   // Opened BEFORE the loop, not after it. A summary written only at the end
   // cannot survive the run being killed - which is exactly what happened when a
   // batch hit WORKER_RESOURCE_LIMIT after writing 176 rows and left no trace it
   // had ever started. An unclosed row with status='running' is that signal.
+  const runStarted = Date.now();
   const observation = new SyncObservation(supabase, JOB);
   await observation.open({
     batch,
@@ -154,6 +171,24 @@ Deno.serve(async (req) => {
   });
 
   for (const symbol of batch) {
+    // Supabase kills an edge function at 150s. A batch of 2 symbols x up to 12
+    // filings, each paced by NSE_DELAY_MS on top of however long NSE itself
+    // takes, runs right at that ceiling - the run that prompted this died at
+    // 2m31s with IDLE_TIMEOUT, mid-symbol, with no closing observation row.
+    //
+    // Stopping ourselves before the platform does is strictly better: the
+    // cursor is written per symbol, so an early break banks every symbol
+    // already finished and the next run resumes at the right place. Being
+    // killed instead loses the summary and re-does the work.
+    if (Date.now() - runStarted > RUN_BUDGET_MS) {
+      summary.budgetExhausted = true;
+      console.warn(
+        `Time budget reached before ${symbol}; stopping cleanly with ` +
+          `${summary.filings} filing(s) written. Next run resumes from the cursor.`,
+      );
+      break;
+    }
+
     // A registry failure must not take this symbol's corporate actions down with
     // it. The two come from different NSE endpoints
     // (corporates-financial-results vs corporates-corporateActions), and one
@@ -188,6 +223,17 @@ Deno.serve(async (req) => {
       .slice(0, MAX_FILINGS_PER_SYMBOL);
 
     for (const f of recent) {
+      // Checked per filing, not just per symbol: one symbol can hold 12 filings,
+      // each an NSE fetch plus NSE_DELAY_MS, so a symbol entered just under the
+      // budget could otherwise run tens of seconds past it and be killed anyway.
+      // Breaking here leaves the remaining filings for the next run - they are
+      // re-derived from the registry every time, so nothing is lost.
+      if (Date.now() - runStarted > RUN_BUDGET_MS) {
+        summary.budgetExhausted = true;
+        console.warn(`Time budget reached mid-symbol at ${f.symbol} ${f.toDate}; stopping cleanly.`);
+        break;
+      }
+
       const { data: existing, error: readErr } = await supabase
         .from("fundamentals_filings")
         .select("id, content_hash, parse_status, parse_attempts, xbrl_url, filing_date")
