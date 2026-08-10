@@ -1,3 +1,5 @@
+import { hasFeedItems } from "../_shared/rss.ts";
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
@@ -42,7 +44,17 @@ async function fetchRss(url: string, sourceName: string, defaultCategory: string
       return { ok: false, items: [] };
     }
     const xml = await res.text();
-    
+
+    // fetch() follows redirects, so a feed URL that now 301s to an HTML page
+    // still lands here with res.ok === true and an HTML body. Without this
+    // check that body just yields zero <item> matches below and reports
+    // ok: true with an empty feed - indistinguishable from a quiet news day.
+    // See hasFeedItems for the full rationale.
+    if (!hasFeedItems(xml)) {
+      console.error(`RSS body for ${sourceName} (${url}) has no <item>/<entry> - feed likely redirected off RSS`);
+      return { ok: false, items: [] };
+    }
+
     // Very basic XML parsing using Regex to avoid heavy Deno dependencies
     const items = [...xml.matchAll(/<item>([\s\S]*?)<\/item>/gi)].slice(0, 10);
 
@@ -137,22 +149,30 @@ async function getLiveNews() {
     fetchRss("https://www.moneycontrol.com/rss/MCtopnews.xml", "Moneycontrol", "Business"),
     fetchRss("https://www.business-standard.com/rss/markets-106.rss", "Business Standard", "Markets"),
     fetchRss("https://www.livemint.com/rss/markets", "LiveMint", "Markets"),
-    fetchRss("https://www.financialexpress.com/market/feed/", "Financial Express", "Markets"),
+    // financialexpress.com/market/feed/ now 301s to /market/ (an HTML page) and
+    // returned HTTP 200 with no <item> in it - swapped for a probed-working feed.
+    fetchRss("https://www.thehindubusinessline.com/markets/feeder/default.rss", "BusinessLine", "Markets"),
     fetchRss("https://feeds.feedburner.com/ndtvprofit-latest", "NDTV Profit", "Markets"),
-    fetchRss("https://www.zeebiz.com/rss/india.xml", "Zee Business", "Business"),
+    // zeebiz.com/rss/india.xml (and every other zeebiz.com/*/rss path probed)
+    // now answers 403 - swapped for a probed-working feed.
+    fetchRss("https://www.businesstoday.in/rss/latest.xml", "Business Today", "Business"),
     // World
-    fetchRss("https://search.cnbc.com/rs/search/combinedcms/view.xml?profile=120000000&id=10000664", "CNBC", "Global"),
-    fetchRss("https://query2.finance.yahoo.com/v1/finance/rss/news", "Yahoo Finance", "Markets"),
+    // search.cnbc.com/... now answers 503 - same CNBC "Finance" category (id
+    // 10000664), different still-live endpoint.
+    fetchRss("https://www.cnbc.com/id/10000664/device/rss/rss.html", "CNBC", "Global"),
+    // query2.finance.yahoo.com/... now answers 429 (rate-limited) - swapped for
+    // Yahoo's own front-end RSS index, which isn't gated the same way.
+    fetchRss("https://finance.yahoo.com/news/rssindex", "Yahoo Finance", "Markets"),
   ]);
   const [
-    etMarkets, moneyControl, businessStandard, liveMint, financialExpress, ndtvProfit, zeeBusiness,
+    etMarkets, moneyControl, businessStandard, liveMint, businessLine, ndtvProfit, businessToday,
     cnbcWorld, yahooFinance,
   ] = results;
 
   // Deep enough that the client's featured story + 9-card grid still leaves
   // stories behind the "Show more" button.
   const indian = interleave(
-    [etMarkets, moneyControl, businessStandard, liveMint, financialExpress, ndtvProfit, zeeBusiness].map(r => r.items),
+    [etMarkets, moneyControl, businessStandard, liveMint, businessLine, ndtvProfit, businessToday].map(r => r.items),
     24,
   );
   const world = interleave([cnbcWorld, yahooFinance].map(r => r.items), 14);
