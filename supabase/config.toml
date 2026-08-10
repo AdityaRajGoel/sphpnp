@@ -34,3 +34,10 @@ verify_jwt = false
 
 [functions.sync-unlisted-quotes]
 verify_jwt = false
+
+# Same self-guard as the other sync-* functions above: SYNC_SECRET protects
+# the service-role writes, so verify_jwt must stay declared and off here from
+# the first deploy rather than silently defaulting to true and turning a
+# fixable gateway rejection into a harder-to-diagnose one.
+[functions.sync-macro]
+verify_jwt = false
