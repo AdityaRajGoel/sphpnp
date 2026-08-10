@@ -46,16 +46,24 @@ export default function StockPage() {
   // required by StockForAnalysis and anchors everything the report derives from
   // it, so a header without one has nothing to be asked about. P/E, the 52-week
   // and day ranges, volume and debt/equity are screener columns this page never
-  // loads: they are left absent rather than approximated, because the modal
-  // forwards them untouched to the model and a stand-in comes back as a
-  // confident wrong answer about a real company.
+  // loads, and they are left absent rather than approximated.
   //
-  // ROE is absent for the same reason even though s.derived carries one. Those
-  // rows are per-quarter (one quarter's profit after tax over equity), while the
-  // modal's roe slot is read as a trailing-twelve-month figure - bucketed at
-  // >15% as "excellent capital efficiency" and benchmarked server-side against
-  // an annual sector average. The honest number in the wrong slot still reads
-  // about four times too low.
+  // That absence is only safe because the modal and the edge function now
+  // PROPAGATE it. They used to substitute: 52-week bounds at spot ±15%, ROE at
+  // a flat 12%, debt/equity at 0.4, volume at 0 - and those stand-ins were then
+  // stated as fact about a named listed company, right down to a
+  // support/resistance ladder built entirely out of the invented 52-week range.
+  // This page is the first surface that supplies none of them, so it is the one
+  // that would have shown it. Absent fields now travel as null, reach the model
+  // as "N/A", and render as a withheld state. Anything added to the object below
+  // must be a figure this page actually holds.
+  //
+  // ROE stays absent even though s.derived carries one. Those rows are
+  // per-quarter (one quarter's profit after tax over equity), while the modal's
+  // roe slot is read as a trailing-twelve-month figure - bucketed at >15% as
+  // "excellent capital efficiency" and benchmarked server-side against an annual
+  // sector average. The honest number in the wrong slot still reads about four
+  // times too low.
   const aiStock: StockForAnalysis | null =
     s.header && s.header.price !== null
       ? {

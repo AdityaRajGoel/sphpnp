@@ -32,6 +32,14 @@ const FREE_MODEL_TIMEOUT_MS = 22_000;
 // (worst case: attempt starts just under the deadline and runs its full
 // timeout, leaving the 12s minimum paid budget still inside the hard limit).
 const FREE_TIER_DEADLINE_MS = 24_000;
+// Wall-clock budget the last-ditch providers (NVIDIA, Bytez) share between them,
+// measured from the start of the cascade. 55s of the 60s hard limit, leaving
+// room for the reconcile + cache write that still have to happen after a hit.
+const LAST_DITCH_BUDGET_MS = 55_000;
+// Below this much remaining budget a last-ditch provider is skipped rather than
+// started: a sub-5s window is not enough for a 6000-token report, so attempting
+// one only spends what is left and still returns nothing.
+const LAST_DITCH_FLOOR_MS = 5_000;
 // Free model tried first for Q&A chat (falls back to the paid chat model).
 // llama-3.3-70b:free was withdrawn from OpenRouter's free tier, so every chat
 // request paid a 404 before falling back. gpt-oss-20b:free is current and fast.
@@ -202,9 +210,43 @@ async function withTimeout<T>(promise: Promise<T>, ms: number, label: string): P
 }
 
 // ─────────────────────────────────────────────────────────────
+// Model-reply hygiene
+// ─────────────────────────────────────────────────────────────
+/**
+ * Every parse path below assumes the model's reply is a string, but chat APIs
+ * are allowed to answer with an ARRAY of content parts and several do. Left
+ * unchecked, `.replace()` on a non-string throws into the parse catch, which
+ * wraps it as `markdown_report: "Report parsing error."` - truthy enough to
+ * stop the provider cascade and be returned to the browser as a successful
+ * report. Throwing here instead lets the next provider have a go.
+ */
+function assertStringContent(provider: string, content: unknown): string {
+  if (typeof content !== "string") {
+    const shape = Array.isArray(content) ? "array" : typeof content;
+    throw new Error(`${provider} returned non-string content (${shape})`);
+  }
+  return content;
+}
+
+/**
+ * Strips a reasoning model's chain-of-thought preamble, then the markdown
+ * fence. Qwen3 - the Bytez default - emits <think>...</think> ahead of the
+ * answer unless told not to, and emits an UNTERMINATED one when the token
+ * budget runs out mid-thought, so both shapes are handled. Without this the
+ * preamble breaks JSON.parse and is then handed to the reader verbatim as
+ * "the report".
+ */
+function stripPreamble(raw: string): string {
+  const closed = raw.replace(/<think>[\s\S]*?<\/think>/gi, "");
+  const dangling = closed.search(/<think>/i);
+  const answer = dangling >= 0 ? closed.slice(0, dangling) : closed;
+  return answer.replace(/```json/gi, "").replace(/```/g, "").trim();
+}
+
+// ─────────────────────────────────────────────────────────────
 // System prompts
 // ─────────────────────────────────────────────────────────────
-const CHAT_SYSTEM_PROMPT = `You are 'Parasram Intelligence', a seasoned Indian stock market expert at Parasram India - one of India's legacy brokerages (since 1970, SEBI registered).
+const CHAT_SYSTEM_PROMPT =`You are 'Parasram Intelligence', a seasoned Indian stock market expert at Parasram India - one of India's legacy brokerages (since 1970, SEBI registered).
 Your tone should be friendly, confident, and professional - like a veteran NSE/BSE analyst talking to a client.
 Use conversational markers like 'Looking at the charts...', 'In my view...', 'The data suggests...'.
 AVOID robotic 'As an AI' boilerplate. Be direct, specific, and helpful. Use markdown for clarity.
@@ -383,6 +425,7 @@ async function askOpenRouter(prompt: string, isChat: boolean = false, modelOverr
   const usedModel = data.model || model;
 
   if (!content) throw new Error("Empty response from OpenRouter");
+  assertStringContent("OpenRouter", content);
 
   if (!isChat) {
     try {
@@ -401,7 +444,7 @@ async function askOpenRouter(prompt: string, isChat: boolean = false, modelOverr
     } catch (e) {
       if (strictJson) throw new Error(`Malformed JSON from ${model}: ${e instanceof Error ? e.message : e}`);
       console.warn("OpenRouter JSON parse failed, wrapping:", e);
-      content = { markdown_report: typeof content === 'string' ? content : "Report parsing error." };
+      content = { markdown_report: content };
     }
   }
 
@@ -447,7 +490,9 @@ async function askGroq(prompt: string, isChat: boolean = false, model = "llama-3
   });
 
   const data = await response.json();
-  let content = data.choices[0].message.content;
+  let content = data.choices?.[0]?.message?.content;
+  if (!content) throw new Error("Empty response from Groq");
+  assertStringContent("Groq", content);
 
   if (!isChat) {
     try {
@@ -457,8 +502,8 @@ async function askGroq(prompt: string, isChat: boolean = false, model = "llama-3
         parsed.structured_data = validateAndFixStructuredData(parsed.structured_data);
       }
       content = parsed;
-    } catch (e) {
-      content = { markdown_report: typeof content === 'string' ? content : "Report parsing error." };
+    } catch {
+      content = { markdown_report: content };
     }
   }
 
@@ -499,6 +544,7 @@ async function askCerebras(prompt: string, isChat: boolean = false) {
   const data = await response.json();
   let content = data.choices?.[0]?.message?.content;
   if (!content) throw new Error("Empty response from Cerebras");
+  assertStringContent("Cerebras", content);
 
   if (!isChat) {
     try {
@@ -509,7 +555,7 @@ async function askCerebras(prompt: string, isChat: boolean = false) {
       }
       content = parsed;
     } catch {
-      content = { markdown_report: typeof content === "string" ? content : "Report parsing error." };
+      content = { markdown_report: content };
     }
   }
 
@@ -551,29 +597,42 @@ async function askNvidia(prompt: string, isChat: boolean = false, model = NVIDIA
       const err = await res.text();
       // NVIDIA reports an unauthorized/unentitled key as 403 "Authorization
       // failed" rather than 401, which KEY_ROTATION_STATUSES already covers.
-      throw new ProviderHttpError(`NVIDIA API Error (${res.status}): ${err.slice(0, 100)}`, res.status);
+      //
+      // The body stays in the log and out of the thrown message: this message
+      // is pushed to `errors` and serialised to the browser, and an upstream
+      // that echoes the request's Authorization header in a 4xx body would put
+      // a key prefix on a public page. The status alone is all the caller can
+      // act on anyway.
+      console.warn(`NVIDIA API Error (${res.status}): ${err.slice(0, 100)}`);
+      throw new ProviderHttpError(`NVIDIA: HTTP ${res.status}`, res.status);
     }
     return res;
   });
 
   const data = await response.json();
-  let content = data.choices?.[0]?.message?.content;
-  if (!content) throw new Error("Empty response from NVIDIA");
+  const raw = data.choices?.[0]?.message?.content;
+  if (!raw) throw new Error("Empty response from NVIDIA");
+  const content = assertStringContent("NVIDIA", raw);
 
-  if (!isChat) {
-    try {
-      const cleaned = content.replace(/```json/g, "").replace(/```/g, "").trim();
-      const parsed = JSON.parse(cleaned);
-      if (parsed.structured_data) {
-        parsed.structured_data = validateAndFixStructuredData(parsed.structured_data);
-      }
-      content = parsed;
-    } catch {
-      content = { markdown_report: typeof content === "string" ? content : "Report parsing error." };
+  if (isChat) return { result: content, model: `${model} (NVIDIA)` };
+
+  // NIM's catalogue is largely reasoning models, so the same <think> preamble
+  // Bytez's default emits has to be stripped here too.
+  const cleaned = stripPreamble(content);
+  if (!cleaned) throw new Error("NVIDIA returned only a reasoning preamble, no report");
+
+  let result: unknown;
+  try {
+    const parsed = JSON.parse(cleaned);
+    if (parsed.structured_data) {
+      parsed.structured_data = validateAndFixStructuredData(parsed.structured_data);
     }
+    result = parsed;
+  } catch {
+    result = { markdown_report: cleaned };
   }
 
-  return { result: content, model: `${model} (NVIDIA)` };
+  return { result, model: `${model} (NVIDIA)` };
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -613,7 +672,10 @@ async function askBytez(prompt: string, isChat: boolean = false, model = BYTEZ_M
 
     if (!res.ok) {
       const err = await res.text();
-      throw new ProviderHttpError(`Bytez API Error (${res.status}): ${err.slice(0, 100)}`, res.status);
+      // Body to the log only, status to the caller - see the same guard in
+      // askNvidia: this message ends up in the JSON served to the browser.
+      console.warn(`Bytez API Error (${res.status}): ${err.slice(0, 100)}`);
+      throw new ProviderHttpError(`Bytez: HTTP ${res.status}`, res.status);
     }
     return res;
   });
@@ -621,28 +683,40 @@ async function askBytez(prompt: string, isChat: boolean = false, model = BYTEZ_M
   const data = await response.json();
   // Bytez answers 200 with { error, output } even when the model itself failed,
   // so a populated error field has to be raised here or a dead attempt would be
-  // handed downstream as a successful empty report.
-  if (data?.error) throw new Error(`Bytez API Error: ${String(data.error).slice(0, 100)}`);
+  // handed downstream as a successful empty report. Same log-not-serve split as
+  // the HTTP path above: the upstream text stays out of the client response.
+  if (data?.error) {
+    console.warn(`Bytez model error: ${String(data.error).slice(0, 200)}`);
+    throw new Error("Bytez: upstream reported a model error");
+  }
   // Chat models answer with { role, content }; plain text-generation models
   // answer with a bare string.
   const out = data?.output;
-  let content = typeof out === "string" ? out : out?.content;
-  if (!content) throw new Error("Empty response from Bytez");
+  const raw = typeof out === "string" ? out : out?.content;
+  if (!raw) throw new Error("Empty response from Bytez");
+  // Chat-shaped `content` is commonly an ARRAY of parts, which is exactly the
+  // shape this provider is most likely to return - reject it rather than let
+  // the parse below manufacture a "Report parsing error." report.
+  const content = assertStringContent("Bytez", raw);
 
-  if (!isChat) {
-    try {
-      const cleaned = content.replace(/```json/g, "").replace(/```/g, "").trim();
-      const parsed = JSON.parse(cleaned);
-      if (parsed.structured_data) {
-        parsed.structured_data = validateAndFixStructuredData(parsed.structured_data);
-      }
-      content = parsed;
-    } catch {
-      content = { markdown_report: typeof content === "string" ? content : "Report parsing error." };
+  if (isChat) return { result: content, model: `${model} (Bytez)` };
+
+  // BYTEZ_MODEL defaults to Qwen3, which reasons out loud before answering.
+  const cleaned = stripPreamble(content);
+  if (!cleaned) throw new Error("Bytez returned only a reasoning preamble, no report");
+
+  let result: unknown;
+  try {
+    const parsed = JSON.parse(cleaned);
+    if (parsed.structured_data) {
+      parsed.structured_data = validateAndFixStructuredData(parsed.structured_data);
     }
+    result = parsed;
+  } catch {
+    result = { markdown_report: cleaned };
   }
 
-  return { result: content, model: `${model} (Bytez)` };
+  return { result, model: `${model} (Bytez)` };
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -689,6 +763,7 @@ async function askGemini(prompt: string, isChat: boolean = false, useWebSearch: 
   const data = await response.json();
   let text = data.candidates?.[0]?.content?.parts?.[0]?.text;
   if (!text) throw new Error("Empty response from Gemini");
+  assertStringContent("Gemini", text);
 
   if (!isChat) {
     try {
@@ -698,8 +773,8 @@ async function askGemini(prompt: string, isChat: boolean = false, useWebSearch: 
         parsed.structured_data = validateAndFixStructuredData(parsed.structured_data);
       }
       text = parsed;
-    } catch (e) {
-      text = { markdown_report: typeof text === 'string' ? text : "Report parsing error." };
+    } catch {
+      text = { markdown_report: text };
     }
   }
 
@@ -1000,8 +1075,12 @@ function computeQuant(s: any, f: any) {
   else if (/Bearish/i.test(s.macd.trend)) tech -= 4;
   const dir = tech >= 50 ? 1 : -1;
   if (s.adxVal > 25) tech += dir * Math.min(8, (s.adxVal - 25) / 3); // strong trend amplifies direction
-  tech += (s.pos52w - 50) * 0.10;                       // 52W positioning context
-  if (/High/i.test(s.volSignal)) tech += s.changePct >= 0 ? 3 : -3; // volume confirmation
+  // Both terms are skipped rather than neutralised when their input is absent:
+  // pos52w and volSignal are now null when the 52W range / today's volume were
+  // never supplied, and `null - 50` would quietly read as a stock sitting at
+  // its 52-week low.
+  if (s.pos52w != null) tech += (s.pos52w - 50) * 0.10;  // 52W positioning context
+  if (s.volSignal && /High/i.test(s.volSignal)) tech += s.changePct >= 0 ? 3 : -3; // volume confirmation
   tech = _clamp(tech);
 
   // ── Fundamental sub-score (only when real data available) ──
@@ -1044,10 +1123,10 @@ function computeQuant(s: any, f: any) {
 
   const insights = {
     quality: Math.round(_clamp(fundAvail ? (f.roe ?? s.secROE) * 2 + (f.profitMargin ?? 10) : 50 + (s.price > s.sma200 ? 15 : -15))),
-    valuation: Math.round(_clamp(fundAvail ? ((s.secPE - (f.trailingPE ?? s.pe ?? s.secPE)) / s.secPE) * 40 + 50 : 60 - (s.pos52w - 50) * 0.4)),
+    valuation: Math.round(_clamp(fundAvail ? ((s.secPE - (f.trailingPE ?? s.pe ?? s.secPE)) / s.secPE) * 40 + 50 : s.pos52w != null ? 60 - (s.pos52w - 50) * 0.4 : 50)),
     growth: Math.round(_clamp(fundAvail ? 50 + (f.earningsGrowth ?? 0) * 0.8 + (f.revenueGrowth ?? 0) * 0.5 : 50 + s.changePct * 3)),
   };
-  const momentum_score = Math.round(_clamp(50 + (rsi - 50) * 0.6 + (s.pos52w - 50) * 0.3 + (/Bullish/i.test(s.macd.trend) ? 10 : -10)));
+  const momentum_score = Math.round(_clamp(50 + (rsi - 50) * 0.6 + (s.pos52w != null ? (s.pos52w - 50) * 0.3 : 0) + (/Bullish/i.test(s.macd.trend) ? 10 : -10)));
 
   return {
     tech: Math.round(tech), fund: Math.round(fund), analyst: analyst != null ? Math.round(analyst) : null,
@@ -1066,9 +1145,12 @@ function computeTargets(s: any, atr: number, f: any, verdictUI: string) {
     target_3m = (target_3m + f.targetMean) / 2;
     target_1m = (target_1m + (price + (f.targetMean - price) * 0.4)) / 2;
   }
+  // Support/resistance come from the 52W Fibonacci ladder, which does not exist
+  // without a 52W range - so they stay null rather than being back-filled from
+  // spot. The ATR targets are independent of it and remain available.
   return {
-    support: Math.round(s.nearestSupport),
-    resistance: Math.round(s.nearestResistance),
+    support: s.nearestSupport === null ? null : Math.round(s.nearestSupport),
+    resistance: s.nearestResistance === null ? null : Math.round(s.nearestResistance),
     target_1m: Math.round(target_1m),
     target_3m: Math.round(target_3m),
     atr: a,
@@ -1080,28 +1162,51 @@ function computeTargets(s: any, atr: number, f: any, verdictUI: string) {
 // ─────────────────────────────────────────────────────────────
 async function enrichStockData(raw: any, opts: { withFundamentals?: boolean; withNews?: boolean } = {}) {
   const price = parseFloat(String(raw.price).replace(/[₹,]/g, '')) || 0;
-  const high52 = raw.high_52 || price * 1.15;
-  const low52 = raw.low_52 || price * 0.85;
-  const range52 = high52 - low52;
-  const pos52w = range52 > 0 ? Math.round(((price - low52) / range52) * 100) : 50;
 
-  const dayHigh = raw.day_high || price;
-  const dayLow = raw.day_low || price;
-  const dayRange = dayHigh - dayLow;
-  const dayPos = dayRange > 0 ? Math.round(((price - dayLow) / dayRange) * 100) : 50;
+  // Quote fields the caller did not supply stay NULL all the way to the prompt
+  // and to structured_data. They used to be filled in from spot - 52W bounds at
+  // ±15%, day range collapsed onto the price, volume at 0 - and every one of
+  // those stand-ins is a specific, checkable, wrong claim about a real listed
+  // company by the time it reaches the reader. The screener supplies all of
+  // them so it never showed; the stock page supplies none of them, which is why
+  // the numbers below have to be able to be absent.
+  const num = (v: unknown): number | null => {
+    const n = typeof v === "number" ? v : parseFloat(String(v ?? "").replace(/[₹,]/g, ""));
+    return Number.isFinite(n) && n !== 0 ? n : null;
+  };
+
+  const high52 = num(raw.high_52);
+  const low52 = num(raw.low_52);
+  const has52 = high52 !== null && low52 !== null && high52 > low52;
+  const range52 = has52 ? high52! - low52! : null;
+  const pos52w = has52 ? Math.round(((price - low52!) / range52!) * 100) : null;
+
+  const dayHigh = num(raw.day_high);
+  const dayLow = num(raw.day_low);
+  const hasDayRange = dayHigh !== null && dayLow !== null && dayHigh > dayLow;
+  const dayPos = hasDayRange ? Math.round(((price - dayLow!) / (dayHigh! - dayLow!)) * 100) : null;
 
   const changePct = parseFloat(raw.change_pct) || 0;
-  const prevClose = raw.prev_close || (price / (1 + changePct / 100));
-  const openPrice = raw.open_price || prevClose;
+  // prevClose is not a stand-in: it is exactly recoverable from spot and the day
+  // change, both of which are required. openPrice is not recoverable from
+  // anything, so it stays absent when the caller omits it.
+  const prevClose = num(raw.prev_close) ?? (price / (1 + changePct / 100));
+  const openPrice = num(raw.open_price);
 
-  const gapVsPrevClose = prevClose > 0 ? ((price - prevClose) / prevClose * 100).toFixed(2) : "0";
-  const gapVsOpen = openPrice > 0 ? ((price - openPrice) / openPrice * 100).toFixed(2) : "0";
+  const gapVsPrevClose = prevClose > 0 ? ((price - prevClose) / prevClose * 100).toFixed(2) : null;
+  const gapVsOpen = openPrice !== null && openPrice > 0
+    ? ((price - openPrice) / openPrice * 100).toFixed(2)
+    : null;
 
-  const vol = raw.volume || 0;
-  const volInMillions = vol > 0 ? (vol / 1_000_000).toFixed(2) : "N/A";
+  const vol = num(raw.volume);
+  const volInMillions = vol !== null ? (vol / 1_000_000).toFixed(2) : null;
 
   const mcap = raw.market_cap || 0;
-  const mcapTier = mcap > 100000 ? "Large Cap" : mcap > 20000 ? "Mid Cap" : mcap > 5000 ? "Small Cap" : "Micro Cap";
+  // Without a market cap there is no tier. The old expression bottomed out at
+  // "Micro Cap", so a stock whose cap simply was not sent got reported as a
+  // micro cap - which is a size claim, not a blank.
+  const mcapTier = mcap <= 0 ? null
+    : mcap > 100000 ? "Large Cap" : mcap > 20000 ? "Mid Cap" : mcap > 5000 ? "Small Cap" : "Micro Cap";
 
   // ── Fetch REAL historical data + fundamentals + recent news in parallel ──
   const [hist, fundamentals, newsItems] = await Promise.all([
@@ -1113,13 +1218,19 @@ async function enrichStockData(raw: any, opts: { withFundamentals?: boolean; wit
   let sma20 = 0, sma50 = 0, sma200 = 0;
   let macd = { value: 0, signal: 0, histogram: 0, trend: "N/A" };
   let adxVal = 25;
-  let volAvg20 = 0, volSignal = "Normal";
+  let volAvg20 = 0;
+  // Null, not "Normal": the signal is a ratio of today's volume to the 20-day
+  // average, so with no volume there is no signal - only the absence of one.
+  let volSignal: string | null = null;
   let atr = 0;
   let detectedPatterns: string[] = [];
+  // Scoped to what this label actually covers. It is set from the price-history
+  // fetch alone and says nothing about the quote fields the caller passed in,
+  // several of which may never have been fetched at all - see withheld below.
   let dataSource = "Approximated";
 
   if (hist) {
-    dataSource = "Real (Yahoo Finance 1Y Daily)";
+    dataSource = "Real (Yahoo Finance 1Y daily price history)";
     const { closes, highs, lows, volumes } = hist;
     detectedPatterns = detectCandlestickPatterns(hist.opens, highs, lows, closes);
     rsiVal = realRSI(closes);
@@ -1131,15 +1242,24 @@ async function enrichStockData(raw: any, opts: { withFundamentals?: boolean; wit
     adxVal = realADX(highs, lows, closes);
     atr = realATR(highs, lows, closes);
     volAvg20 = avgVolume(volumes, 20);
-    const volRatio = volAvg20 > 0 ? vol / volAvg20 : 1;
-    volSignal = volRatio > 1.5 ? "High (abnormal)" : volRatio < 0.6 ? "Low (quiet)" : "Normal";
+    // Only when today's volume was actually supplied. vol used to default to 0,
+    // which made volRatio 0 and reported every stock as "Low (quiet)" - a claim
+    // about how a company traded today, from a number nobody ever fetched.
+    if (vol !== null && volAvg20 > 0) {
+      const volRatio = vol / volAvg20;
+      volSignal = volRatio > 1.5 ? "High (abnormal)" : volRatio < 0.6 ? "Low (quiet)" : "Normal";
+    }
   } else {
-    // Fallback approximations only when Yahoo is unreachable
-    rsiVal = Math.max(15, Math.min(85, Math.round(50 + changePct * 2 + (pos52w - 50) / 2)));
+    // Fallback approximations only when Yahoo is unreachable. These stay
+    // approximations - the branch labels itself as such in dataSource - but
+    // they must not silently read a missing 52W range as a mid-range one, so
+    // the terms that need it drop out rather than centring on 50.
+    const pos = pos52w ?? 50;
+    rsiVal = Math.max(15, Math.min(85, Math.round(50 + changePct * 2 + (pos - 50) / 2)));
     rsiSignal = rsiVal > 70 ? "Overbought" : rsiVal < 30 ? "Oversold" : "Neutral";
     sma20 = Math.round(price * (1 - changePct / 100 * 0.3));
-    sma50 = Math.round(price * (1 - (pos52w - 50) / 100 * 0.12));
-    sma200 = Math.round(low52 + range52 * 0.50);
+    sma50 = Math.round(price * (1 - (pos - 50) / 100 * 0.12));
+    sma200 = has52 ? Math.round(low52! + range52! * 0.50) : Math.round(price);
     macd = { value: 0, signal: 0, histogram: 0, trend: changePct > 1 ? "Slightly Bullish" : changePct < -1 ? "Slightly Bearish" : "Neutral" };
   }
 
@@ -1161,27 +1281,49 @@ async function enrichStockData(raw: any, opts: { withFundamentals?: boolean; wit
   else if (isMetal) { secPE = 12; secROE = 12; secDE = 1.0; }
   else if (isEnergy) { secPE = 15; secROE = 12; secDE = 0.8; }
 
-  // Fibonacci levels from 52W
-  const fib382 = Math.round(high52 - range52 * 0.382);
-  const fib618 = Math.round(high52 - range52 * 0.618);
-  const fibLevels = [low52, high52 - range52 * 0.786, fib618, high52 - range52 * 0.5, fib382, high52 - range52 * 0.236, high52].sort((a, b) => a - b);
-  let nearestSupport = low52, nearestResistance = high52;
-  for (const l of fibLevels) { if (l < price) nearestSupport = l; }
-  for (let i = fibLevels.length - 1; i >= 0; i--) { if (fibLevels[i] > price) nearestResistance = fibLevels[i]; }
-  if (nearestSupport >= price) nearestSupport = price * 0.95;
-  if (nearestResistance <= price) nearestResistance = price * 1.05;
+  // Fibonacci levels from 52W. The 52W high and low are the ONLY inputs to this
+  // ladder, so without them there is no ladder: the old ±15% stand-ins made the
+  // final two clamps below the only rule that ever fired, pinning support at
+  // exactly 96.5% of spot and resistance at 103.5% for every stock, forever -
+  // and the prompt then labels those "AUTHORITATIVE computed levels".
+  let fib382: number | null = null;
+  let fib618: number | null = null;
+  let nearestSupport: number | null = null;
+  let nearestResistance: number | null = null;
+  if (has52) {
+    const hi = high52!, lo = low52!, rng = range52!;
+    fib382 = Math.round(hi - rng * 0.382);
+    fib618 = Math.round(hi - rng * 0.618);
+    const fibLevels = [lo, hi - rng * 0.786, fib618, hi - rng * 0.5, fib382, hi - rng * 0.236, hi].sort((a, b) => a - b);
+    nearestSupport = lo;
+    nearestResistance = hi;
+    for (const l of fibLevels) { if (l < price) nearestSupport = l; }
+    for (let i = fibLevels.length - 1; i >= 0; i--) { if (fibLevels[i] > price) nearestResistance = fibLevels[i]; }
+    if (nearestSupport >= price) nearestSupport = price * 0.95;
+    if (nearestResistance <= price) nearestResistance = price * 1.05;
+  }
+
+  // Named so the prompt can say which fields were never fetched, instead of
+  // leaving the dataSource header to imply the whole table is real.
+  const withheld = [
+    has52 ? null : "52-week high/low",
+    hasDayRange ? null : "day range",
+    vol === null ? "volume" : null,
+    openPrice === null ? "open" : null,
+    mcapTier === null ? "market cap" : null,
+  ].filter(Boolean) as string[];
 
   const base = {
     ...raw, price, high52, low52, pos52w,
     dayHigh, dayLow, dayPos, prevClose, openPrice,
     gapVsPrevClose, gapVsOpen, vol, volInMillions,
-    mcap, mcapTier, changePct, dataSource,
+    mcap, mcapTier, changePct, dataSource, withheld,
     rsiVal, rsiSignal,
     macd, adxVal, volSignal, atr,
     sma20, sma50, sma200,
     secPE, secROE, secDE,
-    nearestSupport: Math.round(nearestSupport),
-    nearestResistance: Math.round(nearestResistance),
+    nearestSupport: nearestSupport === null ? null : Math.round(nearestSupport),
+    nearestResistance: nearestResistance === null ? null : Math.round(nearestResistance),
     fib382, fib618,
     isFinancial: isFin,
     // Real detected candlestick patterns (overrides the empty client value)
@@ -1204,29 +1346,37 @@ async function enrichStockData(raw: any, opts: { withFundamentals?: boolean; wit
 // Build the analysis prompt
 // ─────────────────────────────────────────────────────────────
 function buildAnalysisPrompt(s: any): string {
+  // Every cell below goes through this. A field that was never fetched must
+  // reach the model as the string "N/A" and never as a number - the model has
+  // no way to tell an approximation from a quote, and whatever it is given it
+  // will restate as fact about a real listed company.
+  const na = (v: unknown, fmt: (n: number) => string = (n) => String(n)): string =>
+    v === null || v === undefined || v === "" ? "N/A" : typeof v === "number" ? fmt(v) : String(v);
+
   return `Analyze this LIVE NSE/BSE stock for an Indian retail investor:
 
-**Data Source: ${s.dataSource}**
+**Price history source: ${s.dataSource}**
+${s.withheld?.length ? `**Not fetched for this stock: ${s.withheld.join(", ")}.** Every field below marked N/A was never retrieved. Do NOT estimate, infer or fill in an N/A field, and do not comment on it as though you had the number - say the data was not available.` : "**All quote fields below were supplied.**"}
 
 ## Stock Data
 | Metric | Value |
 |--------|-------|
 | **Name** | ${s.name} (${s.symbol}) |
 | **Sector** | ${s.sector || "N/A"} |
-| **Market Cap** | ₹${s.mcap ? s.mcap.toLocaleString('en-IN') + ' Cr' : 'N/A'} (${s.mcapTier}) |
+| **Market Cap** | ${s.mcap ? `₹${s.mcap.toLocaleString('en-IN')} Cr (${s.mcapTier})` : "N/A"} |
 | **CMP** | ₹${s.price.toLocaleString('en-IN')} |
 | **Day Change** | ${s.changePct >= 0 ? "+" : ""}${s.changePct.toFixed(2)}% |
-| **Open** | ₹${s.openPrice} |
+| **Open** | ${na(s.openPrice, (n) => `₹${n}`)} |
 | **Prev Close** | ₹${s.prevClose} |
-| **Gap vs Prev Close** | ${s.gapVsPrevClose}% |
-| **Gap vs Open** | ${s.gapVsOpen}% |
-| **Day Range** | ₹${s.dayLow} – ₹${s.dayHigh} (Currently at ${s.dayPos}% of range) |
-| **52W High** | ₹${s.high52} |
-| **52W Low** | ₹${s.low52} |
-| **52W Position** | ${s.pos52w}% (0%=at Low, 100%=at High) |
+| **Gap vs Prev Close** | ${s.gapVsPrevClose === null ? "N/A" : `${s.gapVsPrevClose}%`} |
+| **Gap vs Open** | ${s.gapVsOpen === null ? "N/A" : `${s.gapVsOpen}%`} |
+| **Day Range** | ${s.dayPos === null ? "N/A" : `₹${s.dayLow} – ₹${s.dayHigh} (Currently at ${s.dayPos}% of range)`} |
+| **52W High** | ${na(s.high52, (n) => `₹${n}`)} |
+| **52W Low** | ${na(s.low52, (n) => `₹${n}`)} |
+| **52W Position** | ${s.pos52w === null ? "N/A" : `${s.pos52w}% (0%=at Low, 100%=at High)`} |
 | **P/E Ratio** | ${s.pe || "N/A"} |
-| **Volume** | ${s.volInMillions}M shares |
-| **Volume Signal** | ${s.volSignal} |
+| **Volume** | ${s.volInMillions === null ? "N/A" : `${s.volInMillions}M shares`} |
+| **Volume Signal** | ${na(s.volSignal)} |
 | **ROE** | ${s.roe || "N/A"} |
 | **Debt/Equity** | ${s.debt_equity || "N/A"} |
 
@@ -1237,7 +1387,7 @@ function buildAnalysisPrompt(s: any): string {
 | **ROE** | ${s.roe ? s.roe + "%" : "N/A"} | ${s.secROE}% |
 | **Debt/Equity** | ${s.debt_equity || "N/A"} | ${s.secDE} |
 
-## Technical Indicators (Computed from Real 1Y Daily Data)
+## Technical Indicators (${s.dataSource === "Approximated" ? "APPROXIMATED - Yahoo price history was unreachable, treat these as estimates" : "Computed from Real 1Y Daily Data"})
 | Indicator | Value |
 |-----------|-------|
 | **RSI (14)** | ${s.rsiVal} (${s.rsiSignal}) |
@@ -1246,10 +1396,10 @@ function buildAnalysisPrompt(s: any): string {
 | **SMA 20** | ₹${s.sma20} (Price is ${s.price > s.sma20 ? 'Above ✅' : 'Below ❌'}) |
 | **SMA 50** | ₹${s.sma50} (Price is ${s.price > s.sma50 ? 'Above ✅' : 'Below ❌'}) |
 | **SMA 200** | ₹${s.sma200} (Price is ${s.price > s.sma200 ? 'Above ✅' : 'Below ❌'}) |
-| **Fibonacci 38.2%** | ₹${s.fib382} |
-| **Fibonacci 61.8%** | ₹${s.fib618} |
-| **Support** | ₹${s.nearestSupport} |
-| **Resistance** | ₹${s.nearestResistance} |
+| **Fibonacci 38.2%** | ${na(s.fib382, (n) => `₹${n}`)} |
+| **Fibonacci 61.8%** | ${na(s.fib618, (n) => `₹${n}`)} |
+| **Support** | ${na(s.nearestSupport, (n) => `₹${n}`)} |
+| **Resistance** | ${na(s.nearestResistance, (n) => `₹${n}`)} |
 | **ATR (14)** | ₹${s.atr} (volatility) |
 | **Detected Pattern** | ${s.patterns?.join(', ') || "N/A"} |
 | **Momentum** | ${s.isBullish ? "Bullish" : "Bearish"} |
@@ -1280,21 +1430,23 @@ Factor these headlines into your Executive Summary, Risk Factors and Verdict rea
 ## ⚙️ QUANT ENGINE OUTPUT - AUTHORITATIVE (computed deterministically from the real data above)
 - **Composite Score: ${s.quant.composite}/100** - Technical ${s.quant.tech} · Fundamental ${s.quant.fundAvail ? s.quant.fund : "N/A"} · Analyst ${s.quant.analyst ?? "N/A"}
 - **Rating: ${s.quant.rating_label}** → Verdict: **${s.quant.verdictUI}** · Confidence ${s.quant.confidence}%
-- **Computed levels** → Support ₹${s.targets.support} · Resistance ₹${s.targets.resistance} · 1M Target ₹${s.targets.target_1m} · 3M Target ₹${s.targets.target_3m}
+- **Computed levels** → Support ${na(s.targets.support, (n) => `₹${n}`)} · Resistance ${na(s.targets.resistance, (n) => `₹${n}`)} · 1M Target ₹${s.targets.target_1m} · 3M Target ₹${s.targets.target_3m}
 
-⚠️ CRITICAL: The QUANT ENGINE score, rating, verdict and price targets above are computed from real market data and are AUTHORITATIVE. Your report MUST explain and justify these numbers. Do NOT invent a different verdict, score, or targets that contradict them. Build your Trade Setup around the computed support/resistance/targets.
+⚠️ CRITICAL: The QUANT ENGINE score, rating, verdict and price targets above are computed from real market data and are AUTHORITATIVE. Your report MUST explain and justify these numbers. Do NOT invent a different verdict, score, or targets that contradict them. Build your Trade Setup around the computed support/resistance/targets. Any of them shown as N/A could not be computed because its input was never fetched - leave it out of the Trade Setup rather than substituting a level of your own.
 
 Provide a comprehensive professional analysis. The markdown_report must include:
 1. **Executive Summary** - 2-line verdict with conviction level
 2. **Financial Overview** - table of key metrics with sector comparison
-3. **Price Action & Volume** - gap analysis, intraday positioning (${s.dayPos}% of day range), volume assessment (${s.volSignal})
-4. **Technical Analysis** - RSI (${s.rsiVal}), MACD (${s.macd.trend}), ADX (${s.adxVal}), key moving averages (SMA 20: ₹${s.sma20}, SMA 50: ₹${s.sma50}, SMA 200: ₹${s.sma200}), support ₹${s.nearestSupport} / resistance ₹${s.nearestResistance}
-5. **Fundamental Assessment** - P/E vs Sector Avg (${s.secPE}), ROE quality vs peers (${s.secROE}%), debt health vs peers (${s.secDE}), ${s.mcapTier} considerations
+3. **Price Action${s.volSignal ? " & Volume" : ""}** - gap analysis${s.dayPos === null ? " (intraday range not available - do not describe intraday positioning)" : `, intraday positioning (${s.dayPos}% of day range)`}${s.volSignal ? `, volume assessment (${s.volSignal})` : ". Today's traded volume was NOT fetched: do not assess volume, do not call the stock quiet or active, and say the volume data was unavailable"}
+4. **Technical Analysis** - RSI (${s.rsiVal}), MACD (${s.macd.trend}), ADX (${s.adxVal}), key moving averages (SMA 20: ₹${s.sma20}, SMA 50: ₹${s.sma50}, SMA 200: ₹${s.sma200})${s.nearestSupport === null ? ". Support/resistance levels are unavailable (no 52-week range) - do not invent them" : `, support ₹${s.nearestSupport} / resistance ₹${s.nearestResistance}`}
+5. **Fundamental Assessment** - P/E vs Sector Avg (${s.secPE}), ROE quality vs peers (${s.secROE}%), debt health vs peers (${s.secDE})${s.mcapTier ? `, ${s.mcapTier} considerations` : ""}
 6. **Risk Factors** - 3 specific risks with estimated % impact
 7. **Trade Setup** - table with Entry Zone, Stop-Loss, Target 1, Target 2, Risk-Reward Ratio
 8. **Verdict** - final BUY/SELL/HOLD/WATCH call with timeframe
 
-For structured_data price_targets: support ≈ ₹${s.nearestSupport}, resistance ≈ ₹${s.nearestResistance}. Calculate realistic target_1m and target_3m from these levels.`;
+${s.nearestSupport === null
+  ? `For structured_data price_targets: set "support" and "resistance" to null - the 52-week range they are derived from was not available. Calculate realistic target_1m and target_3m from the ATR and current price instead.`
+  : `For structured_data price_targets: support ≈ ₹${s.nearestSupport}, resistance ≈ ₹${s.nearestResistance}. Calculate realistic target_1m and target_3m from these levels.`}`;
 }
 
 function buildChatPrompt(s: any, context: string, chatHistory: any[], chatMessage: string): string {
@@ -1443,10 +1595,14 @@ serve(async (req) => {
       const cascadeStart = Date.now();
 
       // ── Committee mode (opt-in "Deep"): multiple free models in parallel,
-      //    each also giving an INDEPENDENT verdict. Members are drawn from
-      //    EVERY available free provider (OpenRouter free tier, Groq,
-      //    Cerebras) so the committee still convenes when one provider is
-      //    down. Falls back to the normal cascade when nobody responds. ──
+      //    each also giving an INDEPENDENT verdict. Members are drawn from the
+      //    three proven free providers (OpenRouter free tier, Groq, Cerebras)
+      //    so the committee still convenes when one of them is down. NVIDIA and
+      //    Bytez are free too but are deliberately NOT members: they sit at the
+      //    bottom of the cascade precisely because they are unproven here, and
+      //    a second opinion is only worth having from a provider whose output
+      //    shape we trust. Falls back to the normal cascade when nobody
+      //    responds. ──
       if (committeeMode) {
         const committeePrompt = finalPrompt + `\n\nADDITIONALLY: in structured_data include "independent_verdict" (exactly one of BUY | SELL | HOLD | WATCH) - YOUR OWN independent judgement from the raw market data above, which MAY differ from the quant engine - and "independent_conviction" (a number 0-100). Everything else must still respect the quant engine as instructed.`;
         const candidates: { name: string; run: () => Promise<{ result: unknown; model: string }> }[] = [];
@@ -1564,27 +1720,43 @@ serve(async (req) => {
       //    new and unproven here, and the providers above already answer the
       //    overwhelming majority of requests, so they only fire on a genuine
       //    multi-provider outage. By that point most of the 60s edge-function
-      //    budget is gone, hence the tight timeouts - a last attempt must not be
-      //    what turns a degraded run into a hard 60s kill with no report at all. ──
+      //    budget is already spent, so each of these is gated on what is left of
+      //    it rather than on a fixed timeout: with every provider configured and
+      //    every one of them hanging, fixed timeouts stack well past 60s and a
+      //    last attempt becomes what turns a degraded run into a hard kill with
+      //    no report at all. Below the floor the provider is skipped outright -
+      //    a 3s window cannot produce a report, it can only eat the remainder. ──
+      const budgetLeft = () => LAST_DITCH_BUDGET_MS - (Date.now() - cascadeStart);
+
       if (!result && NVIDIA_API_KEY) {
-        try {
-          console.log(`→ NVIDIA NIM (${NVIDIA_MODEL})...`);
-          result = await withTimeout(askNvidia(finalPrompt, !!is_chat), 18000, "NVIDIA");
-        } catch (e) {
-          const msg = e instanceof Error ? e.message : String(e);
-          console.warn("✗ NVIDIA:", msg);
-          errors.push(`NVIDIA: ${msg.slice(0, 120)}`);
+        const left = budgetLeft();
+        if (left < LAST_DITCH_FLOOR_MS) {
+          console.warn(`Skipping NVIDIA: ${Math.round(left / 1000)}s of budget left`);
+        } else {
+          try {
+            console.log(`→ NVIDIA NIM (${NVIDIA_MODEL}, ${Math.round(Math.min(18_000, left) / 1000)}s budget)...`);
+            result = await withTimeout(askNvidia(finalPrompt, !!is_chat), Math.min(18_000, left), "NVIDIA");
+          } catch (e) {
+            const msg = e instanceof Error ? e.message : String(e);
+            console.warn("✗ NVIDIA:", msg);
+            errors.push(`NVIDIA: ${msg.slice(0, 120)}`);
+          }
         }
       }
 
       if (!result && BYTEZ_API_KEY) {
-        try {
-          console.log(`→ Bytez (${BYTEZ_MODEL})...`);
-          result = await withTimeout(askBytez(finalPrompt, !!is_chat), 15000, "Bytez");
-        } catch (e) {
-          const msg = e instanceof Error ? e.message : String(e);
-          console.warn("✗ Bytez:", msg);
-          errors.push(`Bytez: ${msg.slice(0, 120)}`);
+        const left = budgetLeft();
+        if (left < LAST_DITCH_FLOOR_MS) {
+          console.warn(`Skipping Bytez: ${Math.round(left / 1000)}s of budget left`);
+        } else {
+          try {
+            console.log(`→ Bytez (${BYTEZ_MODEL}, ${Math.round(Math.min(15_000, left) / 1000)}s budget)...`);
+            result = await withTimeout(askBytez(finalPrompt, !!is_chat), Math.min(15_000, left), "Bytez");
+          } catch (e) {
+            const msg = e instanceof Error ? e.message : String(e);
+            console.warn("✗ Bytez:", msg);
+            errors.push(`Bytez: ${msg.slice(0, 120)}`);
+          }
         }
       }
     }
@@ -1610,8 +1782,14 @@ serve(async (req) => {
       sd.momentum_score = q.momentum_score;
       sd.insights = q.insights;
       sd.score_breakdown = { technical: q.tech, fundamental: q.fundAvail ? q.fund : null, analyst: q.analyst };
+      // support/resistance are null when the 52W range was never supplied, and
+      // volume_signal is null when today's volume was not. Both stay null here:
+      // validateAndFixStructuredData would otherwise have coerced them to 0 and
+      // "Normal", and the modal renders "Normal" as a finding about the stock.
       sd.price_targets = { support: t.support, resistance: t.resistance, target_1m: t.target_1m, target_3m: t.target_3m };
-      sd.volume_signal = /High/i.test(enriched.volSignal) ? "High" : /Low/i.test(enriched.volSignal) ? "Low" : "Normal";
+      sd.volume_signal = enriched.volSignal === null
+        ? null
+        : /High/i.test(enriched.volSignal) ? "High" : /Low/i.test(enriched.volSignal) ? "Low" : "Normal";
       sd.sector_comparison = {
         pe_avg: enriched.secPE,
         roe_avg: enriched.secROE,

@@ -93,27 +93,69 @@ function IndicatorCard({ label, signal, desc, icon: Icon, delay }:
   );
 }
 
+/**
+ * Same shell, no number. Follows the house pattern from RatiosPanel: state that
+ * the figure is withheld, and put the reason where a screen reader can reach
+ * it. A ratio nobody sent is "Not reported" - the weaker and therefore honest
+ * claim, since we cannot know whether it would have been meaningful.
+ */
+function WithheldIndicatorCard({ label, reason, icon: Icon, delay }:
+  { label: string; reason: string; icon: React.ElementType; delay: number }) {
+  return (
+    <motion.div className="bg-muted/40 border border-border/40 border-dashed rounded-xl p-3 flex flex-col gap-1.5"
+      initial={{ opacity: 0, y: 10, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ type: "spring", stiffness: 200, damping: 18, delay }}>
+      <div className="flex items-center gap-1.5 text-muted-foreground text-[11px] font-semibold">
+        <Icon className="w-3 h-3" />{label}
+      </div>
+      <span className="text-[11px] font-bold px-2 py-0.5 rounded-full border self-start bg-muted text-muted-foreground border-border">
+        Not reported
+      </span>
+      <div className="text-[10px] text-muted-foreground/70 leading-snug italic">{reason}</div>
+    </motion.div>
+  );
+}
+
+/**
+ * Fields the caller did not supply stay null all the way through. They used to
+ * be substituted - 52W bounds at spot ±15%, ROE at a flat 12% (14.5% for
+ * financials), D/E at 0.4 (3.5) - and every substitute was then stated as fact
+ * about a named listed company: rendered in the fundamentals cards here, sent
+ * to the edge function, and used server-side as the sole input to the
+ * support/resistance ladder. The screener supplies these columns so the
+ * substitutes never showed; the stock page supplies none of them.
+ */
 function computeAnalysis(stock: StockForAnalysis) {
   const priceNum = typeof stock.price === "string" ? parseFloat(stock.price.replace(/,/g, "")) : (stock.price ?? 0);
-  const high52 = stock.high_52 ?? priceNum * 1.15;
-  const low52 = stock.low_52 ?? priceNum * 0.85;
+  const high52 = stock.high_52 ?? null;
+  const low52 = stock.low_52 ?? null;
   const changePct = stock.change_pct ?? 0;
-  
+
   const isFinancial = stock.sector === "Financial Services" || stock.symbol.includes("BANK");
-  const roe = stock.roe ?? (isFinancial ? 14.5 : stock.pe && stock.pe > 0 ? 100 / stock.pe * 1.5 : 12.0);
-  const debtEquity = stock.debt_equity ?? (isFinancial ? 3.5 : 0.4);
+  const roe = stock.roe ?? null;
+  const debtEquity = stock.debt_equity ?? null;
 
-  const roeSignal = roe > 15 ? "Strong" : roe > 8 ? "Neutral" : "Weak";
-  const roeDesc = `Return on Equity: ${roe.toFixed(1)}%. ${roe > 15 ? "Excellent capital efficiency." : "Average efficiency."}`;
+  const roeSignal = roe === null ? null : roe > 15 ? "Strong" : roe > 8 ? "Neutral" : "Weak";
+  const roeDesc = roe === null
+    ? null
+    : `Return on Equity: ${roe.toFixed(1)}%. ${roe > 15 ? "Excellent capital efficiency." : "Average efficiency."}`;
 
-  const deSignal = debtEquity > (isFinancial ? 5 : 1) ? "High Risk" : "Strong";
-  const deDesc = `D/E Ratio: ${debtEquity.toFixed(2)}. ${deSignal === "Strong" ? "Healthy balance sheet." : "Highly leveraged."}`;
+  const deSignal = debtEquity === null ? null : debtEquity > (isFinancial ? 5 : 1) ? "High Risk" : "Strong";
+  const deDesc = debtEquity === null
+    ? null
+    : `D/E Ratio: ${debtEquity.toFixed(2)}. ${deSignal === "Strong" ? "Healthy balance sheet." : "Highly leveraged."}`;
 
   const isBullish = changePct >= 0;
   const patterns: string[] = []; // Pattern detection is now done server-side with real data
-  const score = Math.min(98, Math.max(10, 50 + changePct * 10 + (roe > 15 ? 10 : 0) - (debtEquity > 1 && !isFinancial ? 10 : 0)));
+  // An absent ratio moves the score by nothing rather than by its stand-in's
+  // bucket. The server's quant engine overrides this anyway; it survives only
+  // as the share-sheet number before a verdict comes back.
+  const score = Math.min(98, Math.max(10,
+    50 + changePct * 10
+    + (roe !== null && roe > 15 ? 10 : 0)
+    - (debtEquity !== null && debtEquity > 1 && !isFinancial ? 10 : 0)));
 
-  return { 
+  return {
     priceNum, high52, low52, changePct, score, isBullish,
     roeSignal, roeDesc, deSignal, deDesc, patterns,
   };
@@ -217,14 +259,18 @@ export const AIAnalysisModal = ({ isOpen, onClose, stock }: AIAnalysisModalProps
         roe_avg: number;
         valuation_status: string;
       };
+      // support/resistance come off a Fibonacci ladder the server can only
+      // build from a real 52-week range, so they are null when it had none.
       price_targets?: {
-        support: number;
-        resistance: number;
+        support: number | null;
+        resistance: number | null;
         target_1m: number;
         target_3m: number;
       };
       momentum_score?: number;
-      volume_signal?: string;
+      // Null when today's traded volume was never fetched - distinct from
+      // "Normal", which is a finding about how the stock actually traded.
+      volume_signal?: string | null;
       confidence?: number;
       rating_label?: string;
       score_breakdown?: { technical: number; fundamental: number | null; analyst: number | null };
@@ -338,10 +384,11 @@ export const AIAnalysisModal = ({ isOpen, onClose, stock }: AIAnalysisModalProps
     // Small delay to ensure state reset has propagated
     const fetchTimer = setTimeout(() => {
       const priceNum = analysis.priceNum;
-      const isFinancial = stock.sector === "Financial Services" || stock.symbol.includes("BANK");
-      const roeValue = stock.roe ?? (isFinancial ? 14.5 : stock.pe && stock.pe > 0 ? 100 / stock.pe * 1.5 : 12.0);
-      const deValue = stock.debt_equity ?? (isFinancial ? 3.5 : 0.4);
 
+      // Absent fields go over the wire as null. The edge function now
+      // propagates that null - it withholds the Fibonacci support/resistance
+      // ladder, the volume signal and the day-range positioning rather than
+      // deriving them from a stand-in, and prints N/A into the model's prompt.
       supabase.functions.invoke('ai-stock-analysis', {
         body: {
           symbol: stock.symbol, 
@@ -354,10 +401,10 @@ export const AIAnalysisModal = ({ isOpen, onClose, stock }: AIAnalysisModalProps
           market_cap: stock.market_cap, 
           volume: stock.volume, 
           sector: stock.sector,
-          day_high: stock.day_high, 
+          day_high: stock.day_high,
           day_low: stock.day_low,
-          roe: roeValue,
-          debt_equity: deValue,
+          roe: stock.roe ?? null,
+          debt_equity: stock.debt_equity ?? null,
           patterns: analysis.patterns,
           score: analysis.score,
           isBullish: analysis.isBullish,
@@ -472,21 +519,28 @@ export const AIAnalysisModal = ({ isOpen, onClose, stock }: AIAnalysisModalProps
   // eslint-disable-next-line react-hooks/exhaustive-deps -- keyed on symbol/mount by design; object identities change every render
   }, [isOpen, stock?.symbol, retryNonce]);
 
-  // Shared context builder for chat - avoids duplicated code
-  const buildChatContext = () => [
-    `Stock: ${stock?.name} (${stock?.symbol})`,
-    `Sector: ${stock?.sector || 'N/A'}`,
-    `CMP: ₹${stock?.price}`,
-    `Change: ${analysis?.changePct?.toFixed(2)}%`,
-    `Day Range: ₹${stock?.day_low} – ₹${stock?.day_high}`,
-    `52W High: ₹${analysis?.high52} | 52W Low: ₹${analysis?.low52}`,
-    `P/E: ${stock?.pe || 'N/A'}`,
-    `Market Cap: ₹${stock?.market_cap} Cr`,
-    `Volume: ${stock?.volume}`,
-    `Patterns: ${analysis?.patterns?.join(', ')}`,
-    `Score: ${analysis?.score}/100`,
-    `Momentum: ${analysis?.isBullish ? 'Bullish' : 'Bearish'}`,
-  ].join(' | ');
+  // Shared context builder for chat - avoids duplicated code. Absent fields say
+  // N/A: this string is the entire factual basis the chat model has, and an
+  // "undefined" or a stand-in there comes back as a confident figure.
+  const buildChatContext = () => {
+    const na = (v: number | null | undefined, fmt: (n: number) => string) =>
+      v === null || v === undefined ? 'N/A' : fmt(v);
+    return [
+      `Stock: ${stock?.name} (${stock?.symbol})`,
+      `Sector: ${stock?.sector || 'N/A'}`,
+      `CMP: ₹${stock?.price}`,
+      `Change: ${analysis?.changePct?.toFixed(2)}%`,
+      `Day Range: ${stock?.day_low != null && stock?.day_high != null ? `₹${stock.day_low} – ₹${stock.day_high}` : 'N/A'}`,
+      `52W High: ${na(analysis?.high52, (n) => `₹${n}`)} | 52W Low: ${na(analysis?.low52, (n) => `₹${n}`)}`,
+      `P/E: ${stock?.pe || 'N/A'}`,
+      `Market Cap: ${na(stock?.market_cap, (n) => `₹${n} Cr`)}`,
+      `Volume: ${na(stock?.volume, (n) => String(n))}`,
+      `Patterns: ${analysis?.patterns?.length ? analysis.patterns.join(', ') : 'N/A'}`,
+      `Score: ${analysis?.score}/100`,
+      `Momentum: ${analysis?.isBullish ? 'Bullish' : 'Bearish'}`,
+      'Any field marked N/A was not retrieved - do not estimate it, say it was unavailable.',
+    ].join(' | ');
+  };
 
   const handleChatSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -755,10 +809,21 @@ export const AIAnalysisModal = ({ isOpen, onClose, stock }: AIAnalysisModalProps
                       </div>
                     </div>
 
-                    {/* Fundamentals Grid */}
+                    {/* Fundamentals Grid - a card only appears with a figure
+                        behind it. Surfaces that do not carry ROE / debt-equity
+                        (the stock page is one) get the withheld state, not a
+                        sector-default number presented as this company's. */}
                     <div className="grid grid-cols-2 gap-3">
-                      <IndicatorCard label="Return on Equity" signal={analysis.roeSignal} desc={analysis.roeDesc} icon={TrendingUp} delay={0.1} />
-                      <IndicatorCard label="Debt to Equity" signal={analysis.deSignal} desc={analysis.deDesc} icon={AlertTriangle} delay={0.2} />
+                      {analysis.roeSignal && analysis.roeDesc ? (
+                        <IndicatorCard label="Return on Equity" signal={analysis.roeSignal} desc={analysis.roeDesc} icon={TrendingUp} delay={0.1} />
+                      ) : (
+                        <WithheldIndicatorCard label="Return on Equity" reason="Not supplied for this stock" icon={TrendingUp} delay={0.1} />
+                      )}
+                      {analysis.deSignal && analysis.deDesc ? (
+                        <IndicatorCard label="Debt to Equity" signal={analysis.deSignal} desc={analysis.deDesc} icon={AlertTriangle} delay={0.2} />
+                      ) : (
+                        <WithheldIndicatorCard label="Debt to Equity" reason="Not supplied for this stock" icon={AlertTriangle} delay={0.2} />
+                      )}
                     </div>
 
                     {/* Price Targets Card - shown when AI has returned structured data */}
@@ -791,10 +856,20 @@ export const AIAnalysisModal = ({ isOpen, onClose, stock }: AIAnalysisModalProps
                           ].map(({ label, value, color, bg }) => (
                             <div key={label} className={`${bg} rounded-lg p-3 text-center`}>
                               <p className="text-[9px] font-bold text-muted-foreground uppercase mb-1">{label}</p>
-                              <p className={`text-sm font-black font-mono ${color}`}>
-                                {value > 0 ? `₹${value.toLocaleString("en-IN")}` : "-"}
-                              </p>
-                              {value > 0 && analysis.priceNum > 0 && (
+                              {/* Support and resistance are withheld, not zeroed,
+                                  when the 52-week range they derive from was never
+                                  fetched - so say so rather than showing a dash a
+                                  reader would read as "flat". */}
+                              {value != null && value > 0 ? (
+                                <p className={`text-sm font-black font-mono ${color}`}>
+                                  ₹{value.toLocaleString("en-IN")}
+                                </p>
+                              ) : (
+                                <p className="text-[10px] font-semibold text-muted-foreground italic">
+                                  Not available
+                                </p>
+                              )}
+                              {value != null && value > 0 && analysis.priceNum > 0 && (
                                 <p className={`text-[8px] font-medium mt-0.5 ${value >= analysis.priceNum ? "text-secondary" : "text-destructive"}`}>
                                   {value >= analysis.priceNum ? "+" : ""}{(((value - analysis.priceNum) / analysis.priceNum) * 100).toFixed(1)}%
                                 </p>
@@ -802,30 +877,35 @@ export const AIAnalysisModal = ({ isOpen, onClose, stock }: AIAnalysisModalProps
                             </div>
                           ))}
                         </div>
-                        {/* Price range bar: support → current → resistance */}
-                        {geminiVerdict.structured.price_targets.support > 0 && geminiVerdict.structured.price_targets.resistance > 0 && (
-                          <div>
-                            <div className="flex justify-between text-[8px] text-muted-foreground mb-1">
-                              <span>Support ₹{geminiVerdict.structured.price_targets.support.toLocaleString("en-IN")}</span>
-                              <span>Resistance ₹{geminiVerdict.structured.price_targets.resistance.toLocaleString("en-IN")}</span>
+                        {/* Price range bar: support → current → resistance. Both
+                            ends have to be real numbers - with either withheld
+                            there is no band to place the marker in. */}
+                        {(() => {
+                          const { support, resistance } = geminiVerdict.structured.price_targets;
+                          if (support == null || resistance == null || support <= 0 || resistance <= support) return null;
+                          return (
+                            <div>
+                              <div className="flex justify-between text-[8px] text-muted-foreground mb-1">
+                                <span>Support ₹{support.toLocaleString("en-IN")}</span>
+                                <span>Resistance ₹{resistance.toLocaleString("en-IN")}</span>
+                              </div>
+                              <div className="h-2 bg-muted rounded-full relative overflow-hidden">
+                                <div className="absolute left-0 top-0 h-full bg-gradient-to-r from-secondary via-brand-orange to-destructive rounded-full" style={{ width: "100%", opacity: 0.3 }} />
+                                <motion.div
+                                  className="absolute top-1/2 -translate-y-1/2 w-3 h-3 bg-white border-2 border-brand-orange rounded-full z-10 shadow"
+                                  initial={{ left: "50%" }}
+                                  animate={{
+                                    left: `${Math.min(95, Math.max(5,
+                                      ((analysis.priceNum - support) / (resistance - support)) * 100
+                                    ))}%`
+                                  }}
+                                  transition={{ duration: 0.8, ease: EASE_OUT }}
+                                  style={{ transform: "translate(-50%, -50%)" }}
+                                />
+                              </div>
                             </div>
-                            <div className="h-2 bg-muted rounded-full relative overflow-hidden">
-                              <div className="absolute left-0 top-0 h-full bg-gradient-to-r from-secondary via-brand-orange to-destructive rounded-full" style={{ width: "100%", opacity: 0.3 }} />
-                              <motion.div
-                                className="absolute top-1/2 -translate-y-1/2 w-3 h-3 bg-white border-2 border-brand-orange rounded-full z-10 shadow"
-                                initial={{ left: "50%" }}
-                                animate={{
-                                  left: `${Math.min(95, Math.max(5,
-                                    ((analysis.priceNum - geminiVerdict.structured.price_targets.support) /
-                                    (geminiVerdict.structured.price_targets.resistance - geminiVerdict.structured.price_targets.support)) * 100
-                                  ))}%`
-                                }}
-                                transition={{ duration: 0.8, ease: EASE_OUT }}
-                                style={{ transform: "translate(-50%, -50%)" }}
-                              />
-                            </div>
-                          </div>
-                        )}
+                          );
+                        })()}
                       </motion.div>
                     )}
 
@@ -1056,7 +1136,8 @@ export const AIAnalysisModal = ({ isOpen, onClose, stock }: AIAnalysisModalProps
                               <div className="space-y-1">
                                 <div className="text-[10px] text-muted-foreground">ROE vs Sector Avg</div>
                                 <div className="flex items-end gap-2 text-sm font-bold">
-                                  {stock.roe || 'N/A'}% <span className="text-[10px] font-normal text-muted-foreground">vs</span> {geminiVerdict.structured.sector_comparison.roe_avg || 0}%
+                                  {/* "N/A%" would read as a figure. No ROE, no unit. */}
+                                  {stock.roe ? `${stock.roe}%` : 'N/A'} <span className="text-[10px] font-normal text-muted-foreground">vs</span> {geminiVerdict.structured.sector_comparison.roe_avg || 0}%
                                 </div>
                                 <div className="h-1 w-full bg-muted rounded-full overflow-hidden">
                                   <div className="h-full bg-secondary" style={{ width: `${Math.min(100, (stock.roe || 0) / (Math.max(1, geminiVerdict.structured.sector_comparison.roe_avg || 15) * 2) * 100)}%` }} />
