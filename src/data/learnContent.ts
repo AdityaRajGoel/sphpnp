@@ -577,15 +577,16 @@ The unlisted market has no SEBI order-matching protections - your counterparty *
       "Understand F&O trading in India: futures and options explained, lots and expiry, SPAN margins, premiums, CE/PE, hedging vs speculation, and the risks involved.",
     category: "trading",
     difficulty: "Intermediate",
-    readTime: 8,
-    updated: "2026-07-10",
+    readTime: 10,
+    updated: "2026-08-09",
     keyTakeaways: [
       "Futures obligate you to buy/sell at a set price on expiry; options give you the right without the obligation.",
       "F&O trades happen in fixed lots (e.g. NIFTY = 75 units), so position sizes are large by design.",
       "Buying options risks only the premium; selling options and trading futures carry potentially unlimited risk.",
       "SEBI found 9 out of 10 individual F&O traders lose money - treat derivatives as risk-management tools first.",
+      "Since 3 August 2026, expiry settlement prices come from the Closing Auction Session, and the equity derivatives segment trades until 3:40 p.m.",
     ],
-    related: ["tax-on-share-market-income", "pe-ratio", "margin-trading-facility-mtf"],
+    related: ["tax-on-share-market-income", "closing-auction-session-cas", "margin-trading-facility-mtf"],
     content: `## What are derivatives?
 
 Futures and options are **contracts whose value derives from an underlying** - an index like NIFTY or a stock like Reliance. They exist for two purposes: **hedging** (insuring a portfolio) and **speculation** (betting on direction with leverage).
@@ -616,6 +617,31 @@ Example: NIFTY at 24,000. You buy a 24,200 CE for ₹120 premium (lot 75 = ₹9,
 - **Expiry** - index options have one weekly expiry per exchange plus monthly; stock F&O is monthly.
 - **OI (open interest)** - outstanding contracts; shifts in OI reveal where positions build ([see our live F&O dashboard](/fno)).
 - **PCR** - put-call ratio, a sentiment gauge.
+- **Settlement price** - the number your contract is finally valued at on expiry. Since 3 August 2026 this comes out of the closing auction, explained in the next section.
+
+## How your contract gets settled: what CAS changed
+
+On expiry day, the profit or loss on an F&O position is not decided by the last tick you saw. It is decided by a **settlement price** computed after the market closes. SEBI changed how that number is built, in the same circular that introduced the **Closing Auction Session (CAS)** in the cash market - **HO/47/11/11(3)2025-MRD-POD2/I/2765/2026** dated 16 January 2026, effective for CAS from 3 August 2026.
+
+Because the closing price of the underlying stock is now discovered by an auction rather than a 30-minute average, the settlement rules had to follow (para 4.9.1):
+
+| Contract type | Settled at |
+|---|---|
+| **Index** futures and options | The closing price of the underlying index on expiry day - and that index close is itself derived from **the closing prices of the index constituents** |
+| **Stock** futures and options | A price calculated by the clearing corporations as the **volume-weighted average of the stock's closing prices in the cash segment across all stock exchanges** |
+
+Two consequences worth holding on to:
+
+- For index contracts, your settlement is a function of how every constituent's closing auction resolves. There is no separate auction for the index itself - the index close is built up from its components.
+- For stock contracts, the settlement price is a **cross-exchange** number. The close on one exchange is not the settlement price; the volume-weighted average across all of them is.
+
+### Two timing changes that affect derivative traders
+
+**The derivatives segment stays open until 3:40 p.m.** (para 4.2.3). The cash-market closing auction runs 3:15 p.m. to 3:35 p.m., but equity derivatives continue trading past it. So there is a window at the end of the day where the cash market is in auction or already closed and your derivative position is still live and tradeable.
+
+**Stock futures price bands are aligned to the auction band from 3:15 p.m. to 3:40 p.m.** (para 4.4.2). In that window the price band on stock futures is brought in line with the band applicable during CAS, and the usual **dynamic flexing of stock futures price bands does not operate**. It resumes in its normal form during continuous trading. In plain terms: the elastic that normally lets a futures band widen intraday is switched off for the last 25 minutes.
+
+If you carry positions into the close - and especially if you trade on expiry day - read the full mechanics in our [Closing Auction Session guide](/learn/closing-auction-session-cas), including why a stop loss order does not follow you into the auction.
 
 ## The risk paragraph you should actually read
 
@@ -683,6 +709,319 @@ MTF fits investors who want more of a stock they already believe in; [F&O](/lear
 Sensible: high-conviction large-cap positions where you expect the move to outpace interest costs. Not sensible: averaging losers, chasing momentum in weak stocks, or funding money you may need on short notice.
 
 > At Parasram India, **MTF terms and margins are structured per client** - based on your portfolio, segments and risk profile rather than a one-size sheet. [Talk to the branch](/pricing) to set up a margin relationship that fits how you invest.`,
+  },
+
+  "closing-auction-session-cas": {
+    slug: "closing-auction-session-cas",
+    title: "Closing Auction Session (CAS): How the Closing Price Works From 3 August 2026",
+    metaDescription:
+      "SEBI replaced the 30-minute VWAP closing price with a Closing Auction Session from 3 August 2026. Timings, price bands, order rules and what changes for you.",
+    category: "trading",
+    difficulty: "Intermediate",
+    readTime: 12,
+    updated: "2026-08-09",
+    keyTakeaways: [
+      "From 3 August 2026, the closing price of stocks that have F&O contracts is discovered in a 20-minute Closing Auction Session running 3:15 p.m. to 3:35 p.m., not the old last-30-minutes VWAP.",
+      "Every stock without derivative contracts is unchanged - it still closes on the VWAP of the last 30 minutes of continuous trading.",
+      "Stop loss orders and iceberg orders are not permitted in CAS, and any you leave open in continuous trading are not carried into it.",
+      "Orders in CAS must sit within +/- 3% of a reference price, which is the VWAP of trades between 3:00 p.m. and 3:15 p.m.",
+      "Everyone who trades in the auction fills at one single equilibrium price, whatever their own limit price was.",
+      "The pre-open session is being rebuilt on the same pattern from 7 September 2026.",
+    ],
+    related: ["fno-basics", "intraday-trading", "margin-trading-facility-mtf"],
+    content: `## The one-minute version
+
+Until 1 August 2026, a stock's closing price was an **average**. The exchange took every trade in the last thirty minutes and computed a volume-weighted average price (VWAP). That was the close.
+
+From **3 August 2026**, for stocks that have futures and options contracts, the closing price is instead an auction. Continuous trading in those stocks stops at 3:15 p.m. Everyone who wants to buy or sell at the close puts their orders into one pool. At 3:30 p.m. the exchange finds the single price at which the largest number of shares can change hands, and that price becomes the close. Everybody in the auction trades at that one price.
+
+The old method asked what people actually paid over the last half hour. The new one asks what single price would clear the most shares if everyone who cares about the close turned up at the same moment.
+
+The detail below matters more than it might sound, because some order types you are probably used to do not work in the auction at all.
+
+> This article is based on SEBI circular **HO/47/11/11(3)2025-MRD-POD2/I/2765/2026** dated 16 January 2026, "Introduction of Closing Auction Session (CAS) in the Equity Cash Segment and certain modifications in the Pre-Open Auction Session". Paragraph numbers below refer to that circular.
+
+## Why SEBI changed it
+
+The closing price is used to settle derivatives, to compute index levels and to strike mutual fund NAVs, so an unrepresentative close propagates a long way. SEBI's reasoning (para 2) is that an auction pools all closing interest into one moment of liquidity. That improves execution for large orders, gives every category of investor the same access to the close, and lets passive funds transact at the closing price with less tracking error.
+
+## Which stocks are affected
+
+This is the first question to answer, because most stocks are **not** affected yet.
+
+| Stock | How its close is determined |
+|---|---|
+| Has F&O contracts | Closing Auction Session (para 4.1.1) |
+| No F&O contracts | Unchanged - VWAP of the last 30 minutes of continuous trading (para 4.1.2) |
+
+SEBI says CAS applies "in a phased manner", starting with stocks on which derivative contracts are available. Exchanges commonly label these two groups Category I and Category II, but that is exchange shorthand, not the regulation's language.
+
+## The timetable
+
+CAS is a **separate 20-minute session from 3:15 p.m. to 3:35 p.m.**, split into four parts (para 4.2.1):
+
+| Time | What happens | What you can do |
+|---|---|---|
+| 3:15 - 3:20 | Reference price is calculated; the market transitions out of continuous trading | Nothing. No order entry. |
+| 3:20 - 3:25 | Order entry | Place **limit and market** orders |
+| 3:25 - 3:30 | Order entry continues, **limit orders only**. Market orders can no longer be modified or cancelled. Closes randomly in the last 2 minutes | Place or amend **limit** orders |
+| 3:30 - 3:35 | Order matching | Nothing. The close is computed. |
+
+Three timing details people miss:
+
+1. **The order window shuts at a random moment between 3:28 and 3:30** (para 4.2.2), decided by the system. You cannot plan to submit at 3:29:58.
+2. **Equity derivatives keep trading until 3:40 p.m.** (para 4.2.3) - five minutes after the cash auction has finished.
+3. **The post-close session runs 3:50 p.m. to 4:00 p.m.** (para 4.2.4), where trades execute at the discovered closing price.
+
+## The reference price, and the 3% band
+
+Before the auction can run, the exchange needs an anchor. That anchor is the **reference price**: the VWAP of all trades in that stock between **3:00 p.m. and 3:15 p.m.** (para 4.3.1).
+
+If the stock did not trade at all in that window, there is a fallback chain (para 4.3.2):
+
+1. The **last traded price** during the day, else
+2. the **previous trading day's closing price** - adjusted, where a corporate action applies, to the adjustable closing price or base price.
+
+Every order in CAS must be priced within **+/- 3% of that reference price** (para 4.4.1). An order outside the band does not participate.
+
+For F&O traders there is a related change: between 3:15 p.m. and 3:40 p.m., stock futures price bands are aligned to the CAS band, and the usual dynamic flexing of futures price bands does not operate in that window (para 4.4.2).
+
+## What order types you can use - and what breaks
+
+Allowed (para 4.5.1): limit orders and market orders. Both count towards discovering the equilibrium price.
+
+**Not allowed:**
+
+- **Iceberg orders** (para 4.5.2). Quantity must be disclosed in full.
+- **Stop loss orders** (para 4.5.3).
+
+And critically - what happens to the orders you already had resting in continuous trading? They are carried into CAS, **except** three kinds (para 4.8.1):
+
+- stop loss orders,
+- iceberg orders,
+- any order priced outside the CAS band.
+
+In plain terms, a stop loss you were relying on to protect an open position does not follow you into the closing auction. If stop losses are how you manage risk near the close, you no longer have that protection between 3:15 p.m. and 3:35 p.m., and you need to size the position accordingly before the auction starts.
+
+Two rewards for having been early, though (para 4.8.2 and 4.8.3):
+
+- A limit order carried over from continuous trading has **higher time priority** than one placed during CAS.
+- But if you **modify** it during CAS, its time priority is reset. Amending a carried-over order costs you your place in the queue.
+
+## How the closing price is actually chosen
+
+The equilibrium price is the price at which the **maximum volume is executable** (para 4.6.2). When more than one price qualifies, the circular gives an explicit tie-breaking ladder:
+
+1. Maximum executable volume (para 4.6.2).
+2. If tied - the price with the **minimum unmatched quantity** in absolute terms (para 4.6.3).
+3. If still tied - the price **closest to the reference price** (para 4.6.4).
+4. If the reference price is the mid-value of that pair of prices - the **reference price itself** becomes the closing price (para 4.6.5).
+5. **If no equilibrium price is discovered at all** - the reference price becomes the closing price (para 4.6.6).
+
+The practical consequence is that you fill at the equilibrium price rather than at your own limit price. If you bid 1,010 and the auction settles at 1,005, you buy at 1,005. In an auction your limit price sets the worst price you are willing to accept; it does not predict what you will pay.
+
+Matching order is also fixed (para 4.7.1). Market orders are served first: market against market by time priority, then leftover market orders against limit orders by price-time priority, then limit against limit by price-time priority.
+
+## What you can see while it runs
+
+Through the session the exchange publishes (para 4.12) the indicative equilibrium price, the indicative cumulative buy and sell quantity, the indicative imbalance quantity at the equilibrium price, the indicative imbalance arising from market orders, and an indicative index. Exchanges may publish more at their discretion.
+
+The imbalance figures are the useful ones to watch. A large buy imbalance means more buying interest is queued than the current indicative price can absorb, so that price will tend to move up before matching.
+
+## Margins
+
+Orders in CAS attract margin at the order level, with one exception: limit orders carried over from continuous trading do not - **unless you modify them**, at which point they do (para 4.11). The existing cash-market risk management framework continues to apply through CAS (para 4.10).
+
+## What changes for derivatives settlement
+
+Because the underlying closing price is now computed differently, SEBI amended the settlement price rules (para 4.9.1):
+
+- **Index derivatives** settle at the closing price of the underlying index on expiry day, with that index close derived from the closing prices of its constituents.
+- **Stock derivatives** settle at a price computed by the clearing corporations as the **volume-weighted average of the stock's closing prices across all stock exchanges**.
+
+## Next: the pre-open session changes on 7 September 2026
+
+The same circular rebuilds the morning auction to match (para 5, effective 7 September 2026 per para 6.2). The pre-open session stays 9:00 a.m. to 9:15 a.m., but its internals change:
+
+| Time | Session |
+|---|---|
+| 9:00 - 9:05 | Order entry, limit and market orders |
+| 9:05 - 9:10 | Limit orders only; no modification or cancellation of market orders; **random close between 9:08 and 9:10** |
+| 9:10 - 9:12 | Order matching |
+| 9:12 - 9:15 | Transition of orders into continuous trading |
+
+As in CAS, **market orders get execution priority over limit orders**, and **iceberg and stop loss orders are not permitted**.
+
+## A practical checklist
+
+- Know whether the stock you are trading has F&O contracts. If it does not, nothing in this article changes your day.
+- Do not rely on a stop loss order to protect you between 3:15 p.m. and 3:35 p.m. It will not be there.
+- If you want to trade at the close, get your order in during 3:20 - 3:25 while market orders are still accepted.
+- Do not amend a carried-over limit order unless you have to. You will lose your time priority.
+- Expect to fill at the equilibrium price, not your limit.
+- Remember the derivatives segment is still open until 3:40 p.m.
+
+> Auction mechanics tend to cost people money through unexpected fills rather than obvious losses, which makes them easy to ignore until they matter. If you trade near the close and want to work through what should change in how you place orders, [speak to the Parasram India desk](/contact).
+
+*This article explains market mechanics based on the SEBI circular cited above. It is educational content, not investment advice, and it does not recommend any security or strategy.*`,
+  },
+
+  "pre-open-auction-session-2026": {
+    slug: "pre-open-auction-session-2026",
+    title: "The Pre-Open Session Changes on 7 September 2026: New Timings and Order Rules",
+    metaDescription:
+      "From 7 September 2026 SEBI rebuilds the 9:00-9:15 a.m. pre-open session to match the Closing Auction Session: new sub-sessions, random close, no stop loss.",
+    category: "trading",
+    difficulty: "Intermediate",
+    readTime: 9,
+    updated: "2026-08-09",
+    keyTakeaways: [
+      "From 7 September 2026 the pre-open session is still 9:00 a.m. to 9:15 a.m., but it is split into four sub-sessions with different rules inside each one.",
+      "Market orders can only be entered between 9:00 and 9:05; after that it is limit orders only, and market orders already placed cannot be modified or cancelled.",
+      "The order entry window shuts at a random, system-decided moment between 9:08 a.m. and 9:10 a.m., so you cannot time your entry to the last second.",
+      "Iceberg orders and stop loss orders are not permitted in the pre-open session - quantity must be disclosed in full.",
+      "Market orders are executed ahead of limit orders, and everyone fills at one common equilibrium price.",
+      "SEBI's stated reason is alignment: the morning auction is being rebuilt to work the same way as the Closing Auction Session that started on 3 August 2026.",
+    ],
+    related: ["closing-auction-session-cas", "fno-basics", "margin-trading-facility-mtf"],
+    content: `## The one-minute version
+
+The pre-open session is the fifteen minutes before normal trading starts, from **9:00 a.m. to 9:15 a.m.** It is where the opening price of a stock gets discovered. That is not changing.
+
+What changes on **7 September 2026** is the machinery inside those fifteen minutes. SEBI has rewritten the pre-open framework so that it works the same way as the **Closing Auction Session (CAS)**, the new closing-price auction that started on 3 August 2026. Same shape, same order rules, same priority ladder - just at the other end of the day.
+
+Three things to take away before the detail:
+
+- The window in which you can place a **market order** is now only the first five minutes, 9:00 to 9:05.
+- The order entry period **ends at a random moment between 9:08 and 9:10**, chosen by the exchange system, not by the clock.
+- **Stop loss orders and iceberg orders are not permitted** in the pre-open session at all.
+
+If you routinely place pre-open orders - and especially if you place them late - this changes how you should work.
+
+> This article is based on SEBI circular **HO/47/11/11(3)2025-MRD-POD2/I/2765/2026** dated 16 January 2026, "Introduction of Closing Auction Session (CAS) in the Equity Cash Segment and certain modifications in the Pre-Open Auction Session". The pre-open changes are at **para 5** of that circular and take effect from **7 September 2026** (para 6.2). Paragraph numbers below refer to that circular; the 17.1.x numbers are the paragraphs of the SEBI Master Circular for Stock Exchanges and Clearing Corporations dated 30 December 2024 that para 5.1 replaces.
+
+## Why it is changing
+
+The heading of para 5 says it plainly: this is the "**alignment of the Pre-Open Auction Session framework with CAS in the cash segment and the derivative segment**". Para 5.1 repeats it - the amendments are made "to ensure alignment of the pre-open auction session with CAS".
+
+So the pre-open is not being reformed on its own merits. It is being reshaped to match the closing auction, so that the two auctions bracketing the trading day behave identically. The reasoning SEBI gives for auction-based price discovery in general is at **para 2**: an auction pools all interest into one moment of liquidity, produces a price that reflects collective market consensus, gives every category of investor the same access, and improves execution for large orders.
+
+Practically, that alignment is a good thing for you: **one set of auction habits now works at both 9 a.m. and 3:30 p.m.** If you have already read our [Closing Auction Session guide](/learn/closing-auction-session-cas), most of what follows will feel familiar.
+
+## The four sub-sessions
+
+The pre-open session remains a **15-minute session from 9:00 a.m. to 9:15 a.m.**, now divided as follows (para 5.1, replacing para 17.1.2):
+
+| Time | Sub-session | What you can do |
+|---|---|---|
+| 9:00 - 9:05 | Order entry, **both limit and market orders** | Place, modify or cancel limit and market orders |
+| 9:05 - 9:10 | Order entry, **limit orders only**. No modification or cancellation of market orders. **Random close in the last 2 minutes** | Place or amend **limit** orders only |
+| 9:10 - 9:12 | **Order matching** (2 minutes) | Nothing. The opening price is computed. |
+| 9:12 - 9:15 | **Transition of orders** from the pre-open session into continuous trading (3 minutes) | Nothing. Unmatched orders move across. |
+
+Two structural points worth noticing.
+
+First, the session is **front-loaded**. Everything you might want to do with a market order has to happen in the first five minutes. After 9:05, a market order you have already entered is locked - you cannot modify it and you cannot cancel it.
+
+Second, the last three minutes are not dead time. They are the **transition of orders from the pre-open session to the continuous trading session** - the plumbing that carries whatever did not match in the auction into the regular market.
+
+## The random close between 9:08 and 9:10
+
+This is the detail that catches people out.
+
+Para 5.1 (replacing para 17.1.3) says the session "shall close randomly during last 2 minutes of order entry period, i.e., **anytime between 9:08 a.m. to 9:10 a.m.**" and that "such random closure shall be **system driven**".
+
+Read that carefully. The order entry period is scheduled to run until 9:10, but the system will cut it off at some unannounced instant in the two minutes before that. Nobody - not you, not your broker - knows in advance whether the gate shuts at 9:08:04 or 9:09:51.
+
+**Why regulators do this:** a fixed, known cut-off invites last-second order placement designed to move the indicative price when there is no time left for anyone to respond. Randomising the close removes the value of waiting.
+
+**What it means for you:** treat 9:08 as your real deadline, not 9:10. An order you intended to submit at 9:09 may simply never enter the auction.
+
+## Market orders get priority over limit orders
+
+Para 5.1 (replacing para 17.1.9) makes market orders the first claim on liquidity. The matching sequence is fixed:
+
+1. **Eligible market orders are matched with eligible market orders**, in order of time priority, at the final equilibrium price (para 17.1.9.1).
+2. **Residual market orders**, in order of time priority, are then matched **against limit orders**, in order of price-time priority (para 17.1.9.2).
+3. **Remaining limit orders are matched with limit orders**, in order of price-time priority (para 17.1.9.3).
+
+The practical reading: a market order is the strongest instruction you can give in this auction, and it can only be given between 9:00 and 9:05. But a market order in an auction is not the same thing as a market order in continuous trading. You are not accepting the best available quote - you are committing to trade at whatever single price the auction discovers. In a volatile open, that price can be well away from the previous close.
+
+## Iceberg and stop loss orders are not permitted
+
+Para 5.1 (replacing para 17.1.4) allows exactly two order types, and explicitly rules out two others:
+
+| Order type | Permitted in the pre-open session? |
+|---|---|
+| Limit order | Yes - counts towards the equilibrium price |
+| Market order | Yes - counts towards the equilibrium price, entry only 9:00 to 9:05 |
+| **Iceberg order** | **No.** Orders must be disclosed in full quantity |
+| **Stop loss order** | **No** |
+
+The iceberg ban has a purpose. An auction only produces an honest price if the order book it is computing from is honest. Hidden quantity would mean the indicative equilibrium price shown to everyone else is calculated on incomplete information.
+
+The stop loss ban matters more for your risk planning. A stop loss is a conditional instruction - it needs a trigger price to be crossed in live trading before it becomes an order. There is no live trading inside an auction; there is one price, computed once. So the order type simply has nowhere to work. **If you rely on stop losses, understand that they do not protect you during the pre-open auction.** The same is true of the closing auction.
+
+## The equilibrium price
+
+Both limit and market orders "shall be reckoned for computation of equilibrium price" (para 5.1, replacing para 17.1.4), and para 17.1.9.1 refers to matching at the "**final equilibrium price**". That is the core of an auction: rather than a stream of bilateral trades at different prices, the system finds **one price**, and everyone who trades in that auction trades at it.
+
+For the closing auction, this circular spells the mechanism out in full - the equilibrium price is the price at which the **maximum volume is executable** (para 4.6.2), with tie-breaks on minimum unmatched quantity (para 4.6.3) and then proximity to the reference price (para 4.6.4).
+
+**A precision note:** that tie-breaking ladder is written in para 4.6 for CAS. The amendments to the pre-open framework in para 5 change the pre-open's timings, order types, priority and dissemination - they do not reproduce an equilibrium-price ladder for the pre-open session. The pre-open paragraphs of the Master Circular that are not listed in para 5.1 are left as they stand. So the honest statement is: the pre-open auction settles at a single equilibrium price computed from both limit and market orders, and this circular does not restate the detailed tie-break rules for it.
+
+The consequence for you is the same either way: **your limit price is a boundary, not a prediction.** If you bid 505 and the auction opens at 498, you buy at 498.
+
+## What you can see while it runs
+
+You are not bidding blind. Through the pre-open session the exchange publishes (para 5.1, replacing para 17.1.14):
+
+- the **indicative equilibrium price** of the stock,
+- the **indicative cumulative buy and sell quantity**,
+- the **indicative imbalance quantity at the equilibrium price**,
+- the **indicative imbalance quantity based on market orders**, and
+- the **indicative index**.
+
+Exchanges may publish additional information at their discretion.
+
+This is the same disclosure set the circular specifies for CAS (para 4.12). Watching the indicative imbalance is the most useful of the five: a heavy buy imbalance tells you the discovered price is under upward pressure and is likely to settle higher than the number currently displayed.
+
+## Does this apply to every stock?
+
+For the closing auction, SEBI phased applicability explicitly - CAS applies first to stocks that have derivative contracts, and everything else keeps the old VWAP close (paras 4.1.1 and 4.1.2).
+
+**Para 5 contains no equivalent carve-out.** It amends the general "Framework for the Call Auction in the Pre-Open Session" in the Master Circular, without limiting the change to a subset of securities. We are not going to over-read that silence into a positive claim - watch for the exchange circulars, which are required under para 8 to issue the operational guidelines. But nothing in para 5 restricts these pre-open changes to F&O stocks.
+
+## What a retail investor should actually do differently
+
+Most of the adjustment is behavioural rather than technical.
+
+**Move your pre-open decisions earlier.** If you want to use a market order in the pre-open, you have a five-minute window, 9:00 to 9:05. Not fifteen.
+
+**Stop treating 9:10 as the deadline.** The random close means your effective cut-off is 9:08. Anything after that is a gamble on the system not having closed the gate yet.
+
+**Do not plan around a stop loss in the pre-open.** It is not an available order type. If you need downside protection at the open, it has to come from position size or from an order you place after continuous trading begins.
+
+**Expect the auction price, not your price.** A limit order defines the worst price you will accept. It does not define your fill.
+
+**Watch the indicative equilibrium price before you commit.** It is published live through the session and it is the closest thing to a preview of where the stock will open.
+
+**Learn one set of habits, use it twice.** The pre-open and the closing auction now share the same order-type restrictions, the same market-over-limit priority ladder and the same live disclosures. What you learn about one applies to the other.
+
+## A practical checklist for 7 September 2026
+
+- Market orders: only 9:00 - 9:05, and unmodifiable after 9:05.
+- Limit orders: any time until the random close between 9:08 and 9:10.
+- Iceberg orders: not permitted. Full quantity must be disclosed.
+- Stop loss orders: not permitted. Plan your risk another way.
+- Matching runs 9:10 - 9:12; orders transition into continuous trading 9:12 - 9:15.
+- You fill at the equilibrium price, whatever your limit price was.
+- Market orders get matched before limit orders.
+- Check the indicative equilibrium price and imbalance before you place anything.
+
+> The pre-open is where a lot of retail orders quietly get worse fills than the investor expected - and a rule change is exactly when that gets more likely, not less. If you place orders at the open and want to review how your order types and timing should change from 7 September, [speak to the Parasram India desk](/contact).
+
+*This article explains market mechanics based on the SEBI circular cited above. It is educational content, not investment advice, and it does not recommend any security or strategy.*`,
   },
 };
 

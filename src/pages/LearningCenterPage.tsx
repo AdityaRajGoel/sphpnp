@@ -52,6 +52,20 @@ const CATEGORIES = [
 
 const REAL_ARTICLES: Article[] = [
   {
+    id: "r27", title: "Pre-Open Session: What Changes on 7 September 2026", slug: "pre-open-auction-session-2026",
+    excerpt: "SEBI is rebuilding the 9:00-9:15 a.m. pre-open session to match the closing auction. Four sub-sessions, a random close between 9:08 and 9:10, and no stop loss orders.",
+    content: "", category: "trading", cover_image: null, read_time: 9, published: true, created_at: "2026-08-09",
+    source: "Parasram Research", source_url: "",
+    difficulty: "Intermediate", featured: true,
+  },
+  {
+    id: "r26", title: "Closing Auction Session (CAS): The New Closing Price Rules", slug: "closing-auction-session-cas",
+    excerpt: "From 3 August 2026 the closing price of every F&O stock is set by a 20-minute auction, not a 30-minute average. Timings, the 3% band, and why your stop loss will not be there.",
+    content: "", category: "trading", cover_image: null, read_time: 12, published: true, created_at: "2026-08-09",
+    source: "Parasram Research", source_url: "",
+    difficulty: "Intermediate", featured: true,
+  },
+  {
     id: "r21", title: "Full-Service vs Discount Broker: Which to Pick?", slug: "full-service-vs-discount-broker",
     excerpt: "Flat-fee app or a broker who picks up the phone? Compare costs, research, call-to-trade and support to find what fits your investing style.",
     content: "", category: "basics", cover_image: null, read_time: 7, published: true, created_at: "2026-07-10",
