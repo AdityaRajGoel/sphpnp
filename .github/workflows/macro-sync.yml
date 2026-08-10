@@ -1,0 +1,76 @@
+# Pulls Indian macro indicators from World Bank Open Data and USD/EUR/GBP-INR
+# rates from Frankfurter, once a day.
+#
+# Daily, not hourly, on purpose: World Bank indicators are annual figures that
+# the source itself updates at most once a year, and Frankfurter publishes one
+# rate per trading day - an hourly cron would just refetch the same answer
+# nine times out of ten and buy nothing over the other sync jobs' cadence.
+#
+# Scheduled at 04:50 UTC, checked against every other cron in this repo before
+# picking it: bhavcopy-sync (14:00 and 16:00 UTC weekdays), fundamentals-sync
+# (:17 hourly), fundamentals-yahoo-sync (:37 hourly), market-feed (13:15 and
+# 15:30 UTC weekdays), unlisted-quotes (02:30 UTC daily). 04:50 lands in the
+# gap after unlisted-quotes and well before the market-hours jobs, and its
+# minute (:50) does not collide with either hourly job's minute at any hour.
+#
+# NOTE FOR WHOEVER TOUCHES THIS NEXT: GitHub Actions `schedule` fires only from
+# the repository's DEFAULT branch (see fundamentals-yahoo-sync.yml, which was
+# dead on a feature branch for its entire life for exactly this reason). This
+# file has to reach `main` before a single scheduled run will happen.
+#
+# Reuses the same repo secrets as every other sync-* workflow:
+#   SUPABASE_ANON_KEY   - the project's anon/publishable key (passes the edge gateway)
+#   MARKET_SYNC_SECRET  - must match the SYNC_SECRET set on the edge function
+name: Macro sync
+
+on:
+  schedule:
+    - cron: "50 4 * * *"
+  workflow_dispatch: {}
+
+# This workflow only calls the Supabase edge function via curl - it never
+# checks out the repo or touches the GitHub API, so GITHUB_TOKEN needs no
+# permissions at all.
+permissions: {}
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger sync-macro
+        run: |
+          # Six HTTP calls total (three World Bank indicators, three
+          # Frankfurter pairs), each a small JSON response - this is a much
+          # lighter run than any other sync in this repo, so a generous
+          # timeout costs nothing and a short one risks nothing either.
+          resp=$(curl -sS -w "\n%{http_code}" --max-time 60 \
+            -X POST "https://zbkjbbujsdlpujotgltm.supabase.co/functions/v1/sync-macro" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "x-sync-secret: ${{ secrets.MARKET_SYNC_SECRET }}")
+          body=$(echo "$resp" | sed '$d'); code=$(echo "$resp" | tail -1)
+          echo "$body"
+
+          # sync-macro's own status gate (see supabase/functions/sync-macro/index.ts)
+          # already returns 500 for every failure mode that matters here: both
+          # upstreams totally refused, a database write failed, or the run
+          # completed having written nothing at all to macro_indicators or
+          # fx_rates (the drift/schema-change case). Unlike
+          # fundamentals-yahoo-sync, no extra shell-side drift trap is needed:
+          # this job has no per-symbol partial-batch shape to reason about -
+          # it is six fixed calls every run, and the function's own
+          # observation.wroteNothing gate already gives that "nothing landed"
+          # case the loud, non-200 outcome the rest of this repo has had to
+          # bolt on after the fact for other syncs.
+          #
+          # A one-sided partial (say, World Bank fine but every Frankfurter
+          # call refused) still returns 200 as long as macro_indicators picked
+          # up rows - that is a genuine partial, not a fault, and is
+          # annotated rather than failed on so a temporary Frankfurter outage
+          # does not redden the build every day.
+          wbfail=$(echo "$body" | jq -r '.worldBankFailed // 0' 2>/dev/null || echo 0)
+          fxfail=$(echo "$body" | jq -r '.frankfurterFailed // 0' 2>/dev/null || echo 0)
+          if [ "$code" = "200" ] && { [ "$wbfail" != "0" ] || [ "$fxfail" != "0" ]; }; then
+            echo "::warning title=Partial macro sync::${wbfail} World Bank indicator(s) and ${fxfail} Frankfurter pair(s) failed this run; see the response body above"
+          fi
+
+          [ "$code" = "200" ] || exit 1
