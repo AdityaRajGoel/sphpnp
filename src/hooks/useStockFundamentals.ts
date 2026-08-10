@@ -26,6 +26,24 @@ export type FilingMeta = {
   is_audited: boolean;
 };
 
+/**
+ * One row of fundamentals_derived. The two string arrays are the reason a null
+ * ratio can be explained rather than shrugged at: missing_inputs names inputs
+ * that never arrived, unusable_inputs names denominators that arrived and were
+ * zero or negative. Both columns are NOT NULL DEFAULT '{}' in the schema, so
+ * consumers can index them without a null guard.
+ */
+export type DerivedRow = {
+  period_end: string;
+  roe: number | null;
+  roce: number | null;
+  current_ratio: number | null;
+  free_cash_flow: number | null;
+  inputs_complete: boolean;
+  missing_inputs: string[];
+  unusable_inputs: string[];
+};
+
 export type StockFundamentalsState = {
   loading: boolean;
   /** Symbol is not in the tracked universe - the page must 404. */
@@ -37,6 +55,7 @@ export type StockFundamentalsState = {
   income: IncomeRow[];
   actions: CorporateAction[];
   filing: FilingMeta | null;
+  derived: DerivedRow[];
   /** False when the symbol is tracked but the cursor has not reached it yet. */
   synced: boolean;
 };
@@ -48,7 +67,8 @@ const table = (name: string) =>
 
 const EMPTY: StockFundamentalsState = {
   loading: true, notFound: false, error: null, header: null, basis: null,
-  bothAvailable: false, income: [], actions: [], filing: null, synced: false,
+  bothAvailable: false, income: [], actions: [], filing: null, derived: [],
+  synced: false,
 };
 
 export function useStockFundamentals(symbol: string | undefined): StockFundamentalsState {
@@ -78,7 +98,7 @@ export function useStockFundamentals(symbol: string | undefined): StockFundament
         }
 
         // Independent of each other - fetched in parallel, no waterfall.
-        const [incomeRes, actionsRes, filingRes] = await Promise.all([
+        const [incomeRes, actionsRes, filingRes, derivedRes] = await Promise.all([
           table("fundamentals_income").select("*").eq("symbol", upper),
           table("fundamentals_corporate_actions")
             .select("ex_date,record_date,action_type,value,description")
@@ -91,10 +111,20 @@ export function useStockFundamentals(symbol: string | undefined): StockFundament
             .order("to_date", { ascending: false })
             .limit(1)
             .maybeSingle(),
+          // Twelve periods is three years of quarters - enough for the panel to
+          // show a trend without paying for rows it will never render.
+          table("fundamentals_derived")
+            .select(
+              "period_end,roe,roce,current_ratio,free_cash_flow,inputs_complete,missing_inputs,unusable_inputs",
+            )
+            .eq("symbol", upper)
+            .order("period_end", { ascending: false })
+            .limit(12),
         ]);
         if (cancelled) return;
 
-        const firstError = incomeRes.error || actionsRes.error || filingRes.error;
+        const firstError =
+          incomeRes.error || actionsRes.error || filingRes.error || derivedRes.error;
         if (firstError) throw new Error(firstError.message);
 
         const rows = (incomeRes.data ?? []) as unknown as IncomeRow[];
@@ -119,6 +149,7 @@ export function useStockFundamentals(symbol: string | undefined): StockFundament
           income: picked.rows,
           actions: (actionsRes.data ?? []) as unknown as CorporateAction[],
           filing: (filingRes.data as unknown as FilingMeta) ?? null,
+          derived: (derivedRes.data ?? []) as unknown as DerivedRow[],
           // Tracked but unreached by the cursor is an ordinary state, not a fault.
           synced: rows.length > 0,
         });

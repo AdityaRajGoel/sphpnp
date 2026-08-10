@@ -15,6 +15,7 @@ import { revealSection } from "@/lib/motion";
 import { formatCrore } from "@/lib/fundamentals";
 import { useStockFundamentals } from "@/hooks/useStockFundamentals";
 import IncomeStatementTable from "@/components/stock/IncomeStatementTable";
+import RatiosPanel from "@/components/stock/RatiosPanel";
 import CorporateActionsList from "@/components/stock/CorporateActionsList";
 import StockProvenance from "@/components/stock/StockProvenance";
 import SymbolSwitcher from "@/components/stock/SymbolSwitcher";
@@ -142,6 +143,10 @@ export default function StockPage() {
                     Consolidated figures are shown; the two are never combined.
                   </p>
                 )}
+                {/* Renders nothing until the Yahoo sync has written a derived
+                    row, so it stays inside the existing `ready` state rather
+                    than earning a data-stock-state value of its own. */}
+                <RatiosPanel derived={s.derived} />
               </>
             )}
 
