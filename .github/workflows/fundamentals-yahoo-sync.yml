@@ -1,0 +1,114 @@
+# Walks the tracked universe five symbols at a time (BATCH_SIZE in
+# sync-fundamentals-yahoo), resuming from its own cursor in sync_cursors, and
+# fills the balance sheet, cash flow and derived-ratio tables that Indian
+# quarterly XBRL filings do not carry by regulation.
+#
+# Scheduled at :37 rather than :17 deliberately - the sibling XBRL sync
+# (fundamentals-sync.yml) runs at :17, and the two write to overlapping
+# symbols. Staggering them keeps a Yahoo batch from racing an NSE batch over
+# the same fundamentals_income rows that the derived-ratio join reads.
+#
+# NOTE FOR WHOEVER TOUCHES THIS NEXT: GitHub Actions `schedule` fires only from
+# the repository's DEFAULT branch. The XBRL sync silently never ran for its
+# entire life because its workflow file only ever existed on a feature branch -
+# it was green, it was correct, and it was dead. This file has to reach `main`
+# before a single scheduled run will happen. Merging it is not a formality.
+#
+# Reuses the same repo secrets as bhavcopy-sync, market-feed, unlisted-quotes
+# and the XBRL fundamentals sync - sync-fundamentals-yahoo is protected by the
+# same SYNC_SECRET convention:
+#   SUPABASE_ANON_KEY   - the project's anon/publishable key (passes the edge gateway)
+#   MARKET_SYNC_SECRET  - must match the SYNC_SECRET set on the edge function
+name: Fundamentals Yahoo sync
+
+on:
+  schedule:
+    - cron: "37 * * * *"
+  workflow_dispatch: {}
+
+# This workflow only calls the Supabase edge function via curl - it never
+# checks out the repo or touches the GitHub API, so GITHUB_TOKEN needs no
+# permissions at all.
+permissions: {}
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger sync-fundamentals-yahoo
+        run: |
+          # Five symbols per batch, each one crumb-authenticated and then a
+          # single quoteSummary call, so this is a much lighter run than the
+          # XBRL sync's per-filing walk. 300s is still the ceiling because the
+          # crumb flow can stall when Yahoo decides to challenge us, and a
+          # hung TLS handshake should not hold the runner indefinitely.
+          resp=$(curl -sS -w "\n%{http_code}" --max-time 300 \
+            -X POST "https://zbkjbbujsdlpujotgltm.supabase.co/functions/v1/sync-fundamentals-yahoo" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "x-sync-secret: ${{ secrets.MARKET_SYNC_SECRET }}")
+          body=$(echo "$resp" | sed '$d'); code=$(echo "$resp" | tail -1)
+          echo "$body"
+
+          # Two outcomes, matching the function's own status gate:
+          #
+          #   200            the batch got through. Some symbols may have been
+          #                  refused by Yahoo; that is a partial, not a fault.
+          #   500            either EVERY symbol in the batch failed its Yahoo
+          #                  call (Yahoo blocking us outright, or the crumb
+          #                  flow broken), or a write/read against
+          #                  fundamentals_balance / fundamentals_cashflow /
+          #                  fundamentals_income / fundamentals_derived failed.
+          #                  Red - the derived ratios feed the stock page, and
+          #                  a silent partial is exactly the thing worth
+          #                  catching.
+          #
+          # A partial blockage is annotated rather than failed on: a handful of
+          # symbols Yahoo has no data for is an ordinary state that should not
+          # redden the build every hour. Total blockage does not appear here at
+          # all - the function returns 500 for it, so the exit check below
+          # catches it.
+          # jq -e is avoided - an absent/zero key is the normal case, not an
+          # error - and a non-JSON body (a gateway HTML page) yields an empty
+          # string rather than failing the step here, leaving the exit code
+          # below as the only thing that decides the build.
+          yahoofail=$(echo "$body" | jq -r '.yahooFailed // 0' 2>/dev/null || echo 0)
+          if [ -n "$yahoofail" ] && [ "$yahoofail" != "0" ] && [ "$yahoofail" != "null" ]; then
+            echo "::warning title=Yahoo calls failed::$yahoofail of $(echo "$body" | jq -r '.symbols // "?"' 2>/dev/null || echo '?') symbol(s) could not be fetched from Yahoo"
+          fi
+
+          # derivedRows is the field that actually matters. balanceRows and
+          # cashflowRows can both be non-zero while derivedRows stays 0, which
+          # means the period-alignment join found no overlapping periods -
+          # a green run that surfaced nothing on the stock page. That is not a
+          # 500 (nothing failed), but it is not silence-worthy either.
+          derived=$(echo "$body" | jq -r '.derivedRows // 0' 2>/dev/null || echo 0)
+          if [ "$code" = "200" ] && { [ -z "$derived" ] || [ "$derived" = "0" ] || [ "$derived" = "null" ]; }; then
+            echo "::warning title=No derived ratios written::the batch wrote 0 rows to fundamentals_derived; check period alignment between the Yahoo statements and fundamentals_income"
+          fi
+
+          # The drift trap. parseBalanceSheet/parseCashflow return [] rather than
+          # throwing when Yahoo's quarterly modules are absent, so a schema change
+          # on their side - a renamed module, a restructured payload - produces a
+          # run where every fetch "succeeded" (yahooFailed stays 0), every upsert
+          # was skipped for want of rows, the cursor advanced anyway, and the
+          # function answered 200 {"ok":true, balanceRows:0, cashflowRows:0,
+          # derivedRows:0}. That is the exact {"ok":true, rows:0} shape this repo
+          # has already shipped twice, and the checks above cannot see it: the
+          # yahooFailed warning does not fire and the derivedRows warning is only
+          # a warning.
+          #
+          # Thin coverage is NOT this. A smallcap Yahoo has no statements for
+          # yields an empty balance sheet too - but not five in a row while every
+          # fetch returns cleanly. Requiring BOTH statements to be empty across
+          # the WHOLE batch is what separates drift from thin data, and it is why
+          # this fails the build rather than warning like the check above.
+          balance=$(echo "$body" | jq -r '.balanceRows // 0' 2>/dev/null || echo 0)
+          cashflow=$(echo "$body" | jq -r '.cashflowRows // 0' 2>/dev/null || echo 0)
+          symbols=$(echo "$body" | jq -r '.symbols // 0' 2>/dev/null || echo 0)
+          if [ "$code" = "200" ] && [ "$symbols" != "0" ] && [ "$yahoofail" = "0" ] \
+             && [ "$balance" = "0" ] && [ "$cashflow" = "0" ]; then
+            echo "::error title=Yahoo parsed nothing::all $symbols symbol(s) fetched without error yet produced 0 balance sheet and 0 cash flow rows - this is the signature of a Yahoo payload change, not thin coverage. Check parseBalanceSheet/parseCashflow in supabase/functions/_shared/yahoo.ts against a live quoteSummary response."
+            exit 1
+          fi
+
+          [ "$code" = "200" ] || exit 1
