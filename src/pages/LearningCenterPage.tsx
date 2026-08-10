@@ -16,6 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BookOpen, Search, Clock, ChevronRight, TrendingUp, GraduationCap, BarChart3, Shield, ExternalLink, Newspaper, Radio, RefreshCw, Globe, IndianRupee, AlertTriangle, Star, CheckCircle2, Play } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { classifyArticleUrl } from "@/lib/urls";
 
 type Article = {
   id: string;
@@ -305,10 +306,16 @@ const LearningCenterPage = () => {
     markRead(article.id);
     if (LEARN_ARTICLES[article.slug]) {
       navigate(`/learn/${article.slug}`);
-    } else if (article.source_url) {
-      if (article.source_url.startsWith("/")) navigate(article.source_url);
-      else window.open(article.source_url, "_blank", "noopener,noreferrer");
+      return;
     }
+    // source_url comes from blog_articles, not from this repo, so it is
+    // classified before it reaches navigate() or window.open(). The previous
+    // startsWith("/") test is precisely the guard React Router's open-redirect
+    // advisory bypasses, and the window.open branch would open any scheme it
+    // was handed. An unclassifiable value does nothing rather than guessing.
+    const target = classifyArticleUrl(article.source_url);
+    if (target.kind === "internal") navigate(target.path);
+    else if (target.kind === "external") window.open(target.url, "_blank", "noopener,noreferrer");
   };
 
   // Map hash to section
