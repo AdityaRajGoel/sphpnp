@@ -12,7 +12,32 @@ interface TickerRowProps {
   textClass?: string;
 }
 
-import Marquee from "react-fast-marquee";
+import MarqueeExport from "react-fast-marquee";
+
+/**
+ * Unwrapped rather than used directly, because the default import cannot be
+ * trusted to be the component.
+ *
+ * react-fast-marquee is CJS-only (no `module`, no `exports`, no `type`), and
+ * Vite 8's rolldown interop pre-bundles it ending in
+ * `export default require_dist()` - which hands us the module's `exports`
+ * OBJECT, `{ __esModule: true, default: Marquee }`, instead of
+ * `exports.default`. Rendering that object is React error #130 ("element type
+ * is invalid ... got: object"), which took the entire homepage down to the
+ * error boundary in production while every unit test passed: Vitest transforms
+ * this dependency through a different path that interops it correctly, so no
+ * amount of unit testing could have seen it. The Playwright check in
+ * e2e/smoke.spec.ts is what guards this now.
+ *
+ * The unwrap is written to be correct either way, so it does not have to be
+ * revisited when the interop is fixed upstream: a properly interoped default is
+ * a forwardRef object with no `default` key, so it falls through unchanged.
+ * It is the only CJS-only default import in src/ - verified by scanning every
+ * bare default import against its package's module format - so this stays a
+ * one-line local fix rather than a bundler config change.
+ */
+const Marquee = (MarqueeExport as unknown as { default?: typeof MarqueeExport })
+  .default ?? MarqueeExport;
 
 const PriceCell = ({ item }: { item: LiveStock }) => {
   const [flash, setFlash] = useState<"up" | "down" | null>(null);

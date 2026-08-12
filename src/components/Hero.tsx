@@ -9,6 +9,7 @@ import { useT } from "@/i18n/LanguageContext";
 import platformImg from "@/assets/parasram-india.webp";
 import { useCountUp } from "@/hooks/useCountUp";
 import { EASE_OUT } from "@/lib/motion";
+import { HIGH_FETCH_PRIORITY } from "@/lib/fetch-priority";
 
 const TIP_INTERVAL_MS = 6000;
 
@@ -290,7 +291,7 @@ const Hero = () => {
             src="/hero-bg.jpg"
             alt="Parasram India - Stock Trading Platform and Investment Background"
             aria-hidden="true"
-            fetchPriority="high"
+            {...HIGH_FETCH_PRIORITY}
             loading="eager"
             width={2940}
             height={1678}
@@ -471,7 +472,7 @@ const Hero = () => {
             alt="Parasram India Platform"
             width={896}
             height={560}
-            fetchPriority="high"
+            {...HIGH_FETCH_PRIORITY}
             className="relative z-10 w-full object-contain drop-shadow-2xl 2xl:max-w-4xl"
             style={prefersReducedMotion ? { maxHeight: "75%" } : { maxHeight: "75%", x: imgX, y: imgY }}
           />

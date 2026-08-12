@@ -9,6 +9,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { HIGH_FETCH_PRIORITY } from "@/lib/fetch-priority";
 
 type BannerType = "none" | "info" | "warning" | "success" | "promo";
 
@@ -149,7 +150,7 @@ const BannerMessage = () => {
                  alt={activeBanner.title || `Promotional ${activeBanner.type} Banner`} 
                  className={`block mx-auto w-full md:w-auto h-auto max-h-[55vh] md:max-h-[85vh] object-contain rounded-none`}
                  loading="eager"
-                 fetchPriority="high"
+                 {...HIGH_FETCH_PRIORITY}
                />
             </div>
         )}

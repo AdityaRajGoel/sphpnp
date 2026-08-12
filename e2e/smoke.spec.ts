@@ -45,3 +45,40 @@ test("pricing page renders the full charges tables", async ({ page }) => {
   await expect(page.getByText("₹885 / year")).toBeVisible();
   await expect(page.getByText("Equity Options")).toBeVisible();
 });
+
+/**
+ * Guards a class of bug that unit tests provably cannot see.
+ *
+ * react-fast-marquee is CJS-only, and Vite 8's rolldown interop handed the app
+ * the module's `exports` object instead of the component. Rendering it threw
+ * React error #130 and took the whole homepage down to the error boundary in
+ * production - while all 304 unit tests passed, because Vitest transforms that
+ * dependency through a different path that interops it correctly.
+ *
+ * Only a real browser running the real bundle can catch that, so this asserts
+ * on uncaught exceptions and React errors directly rather than on any one
+ * component. Routes are checked as a set because a broken interop surfaces
+ * wherever the offending import happens to be rendered, not where it was
+ * introduced.
+ */
+for (const route of ["/", "/screener", "/unlisted-space", "/learn", "/pricing"]) {
+  test(`${route} renders with no uncaught errors`, async ({ page }) => {
+    const errors: string[] = [];
+    page.on("pageerror", (e) => errors.push(`uncaught: ${e.message}`));
+    page.on("console", (m) => {
+      if (m.type() !== "error") return;
+      const text = m.text();
+      // Network noise is not what this test is about - an upstream feed being
+      // down must not fail the build. React invariants and prop warnings are.
+      if (/Failed to load resource|net::ERR|ERR_|status of 5\d\d|unavailable:/i.test(text)) return;
+      errors.push(text);
+    });
+
+    await page.goto(route);
+    await expect(page.locator("h1").first()).toBeVisible();
+    // The ticker and other client-only widgets mount after first paint.
+    await page.waitForTimeout(1500);
+
+    expect(errors, `console/page errors on ${route}:\n${errors.join("\n")}`).toEqual([]);
+  });
+}
