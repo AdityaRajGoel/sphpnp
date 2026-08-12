@@ -2,7 +2,7 @@
 // dealers, powering the "How our rates compare" block on /unlisted-space.
 //
 //   sources: https://www.unlistedzone.com/shares   (Next.js RSC payload, JSON)
-//            https://stockify.net.in/unlisted-shares-price-list-india/  (server-rendered text)
+//            https://stockify.net.in/unlisted-shares-price-list-india/  (Next.js RSC payload, JSON)
 //
 // Trigger: GitHub Actions cron (.github/workflows/unlisted-quotes.yml).
 // Protected by SYNC_SECRET; writes use the service-role key. Safe to re-run.
@@ -16,6 +16,12 @@
 // client, so it would need a headless browser. Writing a parser against markup
 // nobody has inspected is how invented numbers reach a page, which is exactly
 // what the removed price displays in UnlistedShares.tsx used to do.
+//
+// The parsing itself lives in ../_shared/unlisted-sources.ts so a fixture of
+// each dealer's real page can be pointed at it from Vitest. It was inline here
+// until Stockify's redesign took the parser to zero rows: the cron caught it,
+// but nothing in the repository could have, because the rules were welded to a
+// `fetch`.
 
 import { createClient } from "npm:@supabase/supabase-js@2";
 import {
@@ -26,6 +32,13 @@ import {
   summarizeRun,
   type SourceFailure,
 } from "../_shared/quote-failures.ts";
+import {
+  parseStockify,
+  parseUnlistedZone,
+  STOCKIFY_URL,
+  UNLISTEDZONE_URL,
+  type Quote,
+} from "../_shared/unlisted-sources.ts";
 
 const USER_AGENT =
   "Mozilla/5.0 (compatible; sphpnp-price-monitor/1.0; +https://www.sphpnp.com)";
@@ -35,44 +48,6 @@ const cors = {
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type, x-sync-secret",
 };
-
-interface Quote {
-  match_key: string;
-  company_name: string;
-  source: string;
-  source_url: string;
-  price: number;
-  sector: string | null;
-  /** Minimum dealable lot, where the dealer publishes one. */
-  lot_size: number | null;
-  /** The dealer's own stamp on the quote, not our collection time. */
-  as_of: string | null;
-  /** Deep link to that company's page, so a reader can verify one number. */
-  quote_url: string | null;
-}
-
-/**
- * Dealers name the same company differently — "NSE India Limited Unlisted
- * Shares", "NSE India Unlisted Shares", "NSE India Ltd". Strip the boilerplate
- * so one company yields one key across sources.
- *
- * This is imperfect and knowingly so: a dealer listing "CSK Unlisted Shares"
- * against another's "Chennai Super Kings Unlisted Shares" will not match, and
- * no amount of suffix-stripping fixes an abbreviation. Unmatched companies are
- * simply not compared, which is the safe direction to fail.
- */
-function matchKey(name: string): string {
-  return name
-    .toLowerCase()
-    .replace(/&amp;/g, "&")
-    .replace(/\b(unlisted|pre-?ipo)\b/g, " ")
-    .replace(/\b(shares?|equity|stock)\b/g, " ")
-    .replace(/\b(limited|ltd|private|pvt|inc|corporation|corp)\b/g, " ")
-    .replace(/\([^)]*\)/g, " ")
-    .replace(/[^a-z0-9]+/g, " ")
-    .trim()
-    .replace(/\s+/g, "-");
-}
 
 /**
  * One retry on anything that looks momentary, because the alternative is crying
@@ -131,126 +106,12 @@ async function getHtml(url: string, attempt = 0): Promise<string> {
   }
 }
 
-/**
- * UnlistedZone ships its share list as escaped JSON inside the Next.js RSC
- * flight payload, so the array is extracted and parsed rather than scraped.
- *
- * An earlier version matched `"name"` then read the other fields from a fixed
- * window after it. That silently misattributed data: `slug` precedes `name` in
- * each object, so the window ran into the *next* company and picked up its slug
- * and sector — Hindustan Power Exchange was being labelled "Renewable Energy",
- * which is Onix's sector. Parsing the real array removes that whole class of
- * bug, and picks up entries the regex was dropping.
- */
-function extractShares(html: string): Array<Record<string, unknown>> {
-  const marker = '\\"shares\\":[';
-  const start = html.indexOf(marker);
-  if (start < 0) return [];
-
-  // Walk the escaped source counting brackets, skipping string contents so a
-  // bracket inside a company name cannot terminate the array early.
-  let depth = 0;
-  let inStr = false;
-  let end = -1;
-  for (let i = start + marker.length - 1; i < html.length; i++) {
-    const c = html[i];
-    if (inStr) {
-      if (c === "\\" && html.slice(i, i + 2) === '\\"') { i++; inStr = false; }
-      continue;
-    }
-    if (c === "\\" && html.slice(i, i + 2) === '\\"') { i++; inStr = true; continue; }
-    if (c === "[") depth++;
-    else if (c === "]") { depth--; if (depth === 0) { end = i; break; } }
-  }
-  if (end < 0) return [];
-
-  const raw = html
-    .slice(start + marker.length - 1, end + 1)
-    .replace(/\\"/g, '"')
-    .replace(/\\u0026/g, "&")
-    .replace(/\\\\/g, "\\");
-
-  try {
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-}
-
 async function unlistedZone(): Promise<Quote[]> {
-  const html = await getHtml("https://www.unlistedzone.com/shares");
-  const out: Quote[] = [];
-  const seen = new Set<string>();
-
-  for (const share of extractShares(html)) {
-    const name = typeof share.name === "string" ? share.name.trim() : "";
-    const price = Number(share.price);
-    // Companies are published at 0 until a rate is set. Zero is not a price.
-    if (!name || !Number.isFinite(price) || price <= 0) continue;
-
-    const key = matchKey(name);
-    if (!key || seen.has(key)) continue;
-    seen.add(key);
-
-    const asOf = typeof share.as_of === "string" ? share.as_of : null;
-    const slug = typeof share.slug === "string" ? share.slug : null;
-    const lot = Number(share.lot_size);
-
-    out.push({
-      match_key: key,
-      company_name: name,
-      price,
-      sector: typeof share.sector === "string" ? share.sector : null,
-      lot_size: Number.isFinite(lot) && lot > 0 ? lot : null,
-      // Kept only when it parses as a real date; a malformed value would
-      // otherwise be shown to readers as the quote's age.
-      as_of: asOf && !Number.isNaN(Date.parse(asOf)) ? asOf.slice(0, 10) : null,
-      quote_url: slug ? `https://www.unlistedzone.com/shares/${slug}` : null,
-      source: "UnlistedZone",
-      source_url: "https://www.unlistedzone.com/shares",
-    });
-  }
-  return out;
+  return parseUnlistedZone(await getHtml(UNLISTEDZONE_URL));
 }
 
-/** Stockify: server-rendered as "<company> Unlisted Shares ₹1,234.56". */
 async function stockify(): Promise<Quote[]> {
-  const html = await getHtml("https://stockify.net.in/unlisted-shares-price-list-india/");
-  const text = html
-    .replace(/<[^>]+>/g, " ")
-    .replace(/&amp;/g, "&")
-    .replace(/\s+/g, " ");
-
-  const out: Quote[] = [];
-  const seen = new Set<string>();
-  const re =
-    /([A-Z][A-Za-z0-9&.,'()\- ]{3,90}?)\s+Unlisted Shares\s+₹\s?([0-9][0-9,]*(?:\.[0-9]+)?)/g;
-
-  for (const m of text.matchAll(re)) {
-    const name = m[1].trim();
-    const price = Number(m[2].replace(/,/g, ""));
-    if (!Number.isFinite(price) || price <= 0) continue;
-
-    const key = matchKey(name);
-    if (!key || seen.has(key)) continue;
-    seen.add(key);
-
-    out.push({
-      match_key: key,
-      company_name: `${name} Unlisted Shares`,
-      price,
-      // The index page carries name and price only. Left null rather than
-      // guessed - an invented lot size is worse than an absent one.
-      sector: null,
-      lot_size: null,
-      as_of: null,
-      quote_url: null,
-      source: "Stockify",
-      source_url: "https://stockify.net.in/unlisted-shares-price-list-india/",
-    });
-  }
-  return out;
+  return parseStockify(await getHtml(STOCKIFY_URL));
 }
 
 const SOURCES = [
