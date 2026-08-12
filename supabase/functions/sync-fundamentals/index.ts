@@ -275,10 +275,22 @@ Deno.serve(async (req) => {
       // requires parse_status === 'parsed', and 'parsed' is only ever written
       // after an income row is proven written. A filing whose income write failed
       // carries 'pending' or 'failed', so it can never be skipped by this gate.
+      //
+      // filing_date is compared as an INSTANT, not as a string. The column is a
+      // timestamptz, so it reads back as "2024-04-22T19:47:00+00:00" while NSE
+      // sends "22-Apr-2024 19:47" - a `===` between those is false for every
+      // filing that has ever existed, which is why this skip never once fired
+      // and every run re-downloaded ~12 documents per symbol just to discard
+      // them at the content-hash check below. fetchFilingRegistry now normalises
+      // its side (see toIsoTimestamp); this compares the parsed instants so a
+      // null on either side cannot masquerade as a match either.
+      const filedAt = f.filingDate ? Date.parse(f.filingDate) : NaN;
+      const storedAt = existing?.filing_date ? Date.parse(existing.filing_date) : NaN;
       if (
         existing?.parse_status === "parsed" &&
         existing.xbrl_url === f.xbrlUrl &&
-        existing.filing_date === f.filingDate
+        Number.isFinite(filedAt) &&
+        filedAt === storedAt
       ) {
         continue;
       }
@@ -350,7 +362,7 @@ Deno.serve(async (req) => {
           filing_date: f.filingDate,
           content_hash: hash,
           parse_status: statement ? "pending" : "failed",
-          parse_error: statement ? null : "no OneD headline context",
+          parse_error: statement ? null : "no readable OneD figures",
           // Counted on the failure path only. While the filing is 'pending' the
           // attempt is still in flight and the previous count stands - and
           // 'pending' is never skipped by the cap above, so an unfinished attempt

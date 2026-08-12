@@ -49,16 +49,47 @@ export type FilingRecord = {
   filingDate: string | null;
 };
 
+const MONTHS: Record<string, string> = {
+  Jan: "01", Feb: "02", Mar: "03", Apr: "04", May: "05", Jun: "06",
+  Jul: "07", Aug: "08", Sep: "09", Oct: "10", Nov: "11", Dec: "12",
+};
+
 /** "01-Oct-2024" as filed, to "2024-10-01" for Postgres. */
 export function toIsoDate(indian: string): string | null {
   const m = /^(\d{2})-([A-Za-z]{3})-(\d{4})/.exec(indian?.trim() ?? "");
   if (!m) return null;
-  const months: Record<string, string> = {
-    Jan: "01", Feb: "02", Mar: "03", Apr: "04", May: "05", Jun: "06",
-    Jul: "07", Aug: "08", Sep: "09", Oct: "10", Nov: "11", Dec: "12",
-  };
-  const mm = months[m[2]];
+  const mm = MONTHS[m[2]];
   return mm ? `${m[3]}-${mm}-${m[1]}` : null;
+}
+
+/**
+ * "22-Apr-2024 19:47" as filed, to "2024-04-22T19:47:00Z" for a timestamptz
+ * column - the same instant Postgres already derived from the raw string, so
+ * rows written before this existed keep comparing equal and no migration is
+ * needed.
+ *
+ * This exists because `filing_date` is a timestamptz and the sync's
+ * pre-download skip compared the stored value against the RAW NSE string with
+ * `===`. A timestamptz reads back as "2024-04-22T19:47:00+00:00" and can never
+ * equal "22-Apr-2024 19:47", so that skip never fired once: every hourly run
+ * re-downloaded up to 12 ~1MB XBRL documents per symbol from the exchange's own
+ * public endpoint only to throw them away at the content-hash check.
+ *
+ * Emitting an explicit instant rather than leaving the raw string for Postgres
+ * to interpret also removes a silent dependency on the session's DateStyle.
+ * `Date.parse` is deliberately not used on the NSE form: "22-Apr-2024 19:47" is
+ * not a format the spec requires engines to accept, and the ones that do accept
+ * it read it as LOCAL time, which would shift the instant by the runtime's
+ * offset.
+ */
+export function toIsoTimestamp(indian: string): string | null {
+  const m = /^(\d{2})-([A-Za-z]{3})-(\d{4})(?:[ T](\d{2}):(\d{2})(?::(\d{2}))?)?/
+    .exec(indian?.trim() ?? "");
+  if (!m) return null;
+  const mm = MONTHS[m[2]];
+  if (!mm) return null;
+  const [, dd, , yyyy, hh = "00", mi = "00", ss = "00"] = m;
+  return `${yyyy}-${mm}-${dd}T${hh}:${mi}:${ss}Z`;
 }
 
 async function nseGet(url: string, asText = false): Promise<unknown> {
@@ -97,7 +128,9 @@ export async function fetchFilingRegistry(symbol: string): Promise<FilingRecord[
       isConsolidated: r.consolidated === "Consolidated",
       isAudited: r.audited === "Audited",
       xbrlUrl: r.xbrl,
-      filingDate: r.filingDate ?? null,
+      // Normalised, not raw: the destination is a timestamptz, and the sync
+      // compares this against what that column reads back. See toIsoTimestamp.
+      filingDate: toIsoTimestamp(r.filingDate ?? ""),
     }];
   });
 }

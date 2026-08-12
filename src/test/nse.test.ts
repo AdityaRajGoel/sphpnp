@@ -2,6 +2,7 @@ import { describe, it, expect, vi, afterEach } from "vitest";
 import {
   NSE_HEADERS,
   toIsoDate,
+  toIsoTimestamp,
   fetchFilingRegistry,
   fetchXbrl,
   fetchCorporateActions,
@@ -42,6 +43,45 @@ describe("toIsoDate", () => {
   it("returns null for an unparseable value", () => {
     expect(toIsoDate("")).toBeNull();
     expect(toIsoDate("not a date")).toBeNull();
+  });
+});
+
+/**
+ * `fundamentals_filings.filing_date` is a timestamptz, so whatever is written
+ * comes back normalised. The sync's pre-download skip compared the stored value
+ * against NSE's raw "22-Apr-2024 19:47" with `===`, which a timestamptz can
+ * never equal - so the skip never fired once, and every hourly run re-downloaded
+ * up to 12 ~1MB XBRL documents per symbol from the exchange only to discard them
+ * at the content-hash check below.
+ *
+ * Normalising here keeps the instant we already store byte-identical (Postgres
+ * read "22-Apr-2024 19:47" as UTC in a UTC session, which is what this emits),
+ * so the 1720 rows already in the table start matching without a migration.
+ */
+describe("toIsoTimestamp", () => {
+  it("converts an NSE filing timestamp to an explicit UTC instant", () => {
+    expect(toIsoTimestamp("22-Apr-2024 19:47")).toBe("2024-04-22T19:47:00Z");
+  });
+
+  it("keeps seconds when NSE sends them", () => {
+    expect(toIsoTimestamp("22-Apr-2024 19:47:31")).toBe("2024-04-22T19:47:31Z");
+  });
+
+  it("treats a bare date as midnight", () => {
+    expect(toIsoTimestamp("01-Oct-2024")).toBe("2024-10-01T00:00:00Z");
+  });
+
+  it("returns null for an unparseable value", () => {
+    expect(toIsoTimestamp("")).toBeNull();
+    expect(toIsoTimestamp("not a date")).toBeNull();
+  });
+
+  // The point of the whole exercise: what we emit and what Postgres hands back
+  // must compare equal as instants, because that comparison is the skip gate.
+  it("round-trips against the timestamptz form Postgres returns", () => {
+    const emitted = toIsoTimestamp("22-Apr-2024 19:47")!;
+    const fromPostgres = "2024-04-22T19:47:00+00:00";
+    expect(Date.parse(emitted)).toBe(Date.parse(fromPostgres));
   });
 });
 

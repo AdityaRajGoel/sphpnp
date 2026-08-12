@@ -3,6 +3,11 @@ import { readFileSync } from "node:fs";
 import { parseContexts, HEADLINE_CONTEXT } from "../../supabase/functions/_shared/xbrl";
 
 const xml = readFileSync("src/test/fixtures/xbrl/reliance-q3fy25-standalone.xml", "utf-8");
+// Both of these declare ONLY dimensional contexts (OneReportableSegmentRevenue01D
+// and friends) and omit the plain `OneD` / `FourD` declarations, while every
+// headline fact still carries contextRef="OneD". See the fixtures README.
+const bankXml = readFileSync("src/test/fixtures/xbrl/hdfcbank-q2fy24-standalone.xml", "utf-8");
+const webXml = readFileSync("src/test/fixtures/xbrl/tataelxsi-q3fy23-standalone.xml", "utf-8");
 
 describe("parseContexts", () => {
   it("finds the headline current-quarter context", () => {
@@ -110,8 +115,93 @@ describe("parseIncomeStatement", () => {
     expect(parseIncomeStatement(xml)!.periodEnd).toBe("2024-12-31");
   });
 
-  it("returns null when the headline context is absent", () => {
+  it("returns null when the document carries no headline figures at all", () => {
     expect(parseIncomeStatement("<xbrli:xbrl></xbrli:xbrl>")).toBeNull();
+  });
+
+  // A context that is declared but holds none of the figures we read is not a
+  // filing we can store. Writing an all-null income row would mark the filing
+  // "parsed" and hide the gap forever.
+  it("returns null when the headline context is declared but empty", () => {
+    const empty = `
+      <xbrli:xbrl><xbrli:context id="OneD">
+        <xbrli:period><xbrli:startDate>2024-10-01</xbrli:startDate><xbrli:endDate>2024-12-31</xbrli:endDate></xbrli:period>
+      </xbrli:context></xbrli:xbrl>
+    `;
+    expect(parseIncomeStatement(empty)).toBeNull();
+  });
+});
+
+/**
+ * NSE publishes a large minority of filings whose instance declares only the
+ * DIMENSIONAL contexts and silently omits the plain `OneD` / `FourD`
+ * declarations - while every headline fact still carries contextRef="OneD".
+ * That is invalid XBRL on NSE's side, but the figures are present, unambiguous
+ * and correctly scoped, so they are readable.
+ *
+ * Requiring the DECLARATION rejected 27 filings across 9 symbols with
+ * "no OneD headline context" - every banking filing, every NBFC filing and the
+ * `_WEB` Ind-AS variants - and turned the hourly workflow red. Presence of a
+ * declaration is not what makes a fact readable; the contextRef is.
+ */
+describe("parseIncomeStatement on filings that omit the context declaration", () => {
+  it("reads an Ind-AS _WEB filing that never declares OneD", () => {
+    const s = parseIncomeStatement(webXml)!;
+    expect(s).not.toBeNull();
+    // FourD carries the nine-month 23068027000. Reading that would mean the
+    // relaxed guard had also relaxed the column.
+    expect(s.revenue).toBe(8177431000);
+    expect(s.otherIncome).toBe(191348000);
+    expect(s.totalIncome).toBe(8368779000);
+    expect(s.totalExpenses).toBe(5967808000);
+    expect(s.profitBeforeTax).toBe(2400971000);
+    expect(s.profitAfterTax).toBe(1946786000);
+    expect(s.basicEps).toBe(31.26);
+  });
+
+  it("leaves the period end null when there is no declaration to read it from", () => {
+    // The sync stores the registry's toDate, which is authoritative, so an
+    // absent document period costs nothing - but it must not be invented.
+    expect(parseIncomeStatement(webXml)!.periodEnd).toBeNull();
+  });
+});
+
+/**
+ * Banks file under the BANKING taxonomy, which names the same line items
+ * differently. Before these tags were mapped the relaxed guard above would have
+ * let a bank filing through carrying only `Income` and `OtherIncome` - a row
+ * marked "parsed" with revenue, profit and EPS all null, which is worse than a
+ * visible failure because nothing ever revisits it.
+ */
+describe("parseIncomeStatement on banking filings", () => {
+  it("maps the banking tag set onto the same headline figures", () => {
+    const s = parseIncomeStatement(bankXml)!;
+    expect(s).not.toBeNull();
+    // InterestEarned is the bank's revenue from operations.
+    expect(s.revenue).toBe(676983900000);
+    expect(s.otherIncome).toBe(107078400000);
+    expect(s.totalIncome).toBe(784062300000);
+    expect(s.profitBeforeTax).toBe(197900500000);
+    expect(s.profitAfterTax).toBe(159761100000);
+    expect(s.basicEps).toBe(21.13);
+    expect(s.dilutedEps).toBe(21.02);
+  });
+
+  it("keeps the reported identity: interest earned + other income = total income", () => {
+    const s = parseIncomeStatement(bankXml)!;
+    expect(s.revenue! + s.otherIncome!).toBe(s.totalIncome);
+  });
+
+  it("leaves total expenses null rather than storing a figure that excludes provisions", () => {
+    // The only bank-side candidate is ExpenditureExcludingProvisionsAndContingencies.
+    // Storing it as "total expenses" would break the Income - Expenses = PBT
+    // identity that holds for every Ind-AS row in the same column.
+    expect(parseIncomeStatement(bankXml)!.totalExpenses).toBeNull();
+  });
+
+  it("does not let a banking tag override a present Ind-AS tag", () => {
+    // Ind-AS is tried first, so a filing carrying both cannot be hijacked.
+    expect(parseIncomeStatement(xml)!.revenue).toBe(1282600000000);
   });
 
   it("ignores segment breakdowns that share the column prefix", () => {

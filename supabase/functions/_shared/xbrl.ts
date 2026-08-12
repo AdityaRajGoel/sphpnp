@@ -100,52 +100,121 @@ export type IncomeStatement = {
 };
 
 /**
- * Read one fact by EXACT tag name under one exact context.
+ * Read one fact under one exact context, trying each candidate tag in order and
+ * taking the first that is present.
  *
  * Exactness matters in both directions. Matching the tag loosely picks up
  * SegmentRevenueFromOperations when RevenueFromOperations was wanted; matching
  * the context loosely picks up the year-to-date column.
+ *
+ * The candidate list exists because banks file under the BANKING taxonomy,
+ * which names the same line items differently (InterestEarned rather than
+ * RevenueFromOperations, and so on). Order is load-bearing: the Ind-AS name is
+ * always tried first, so a filing carrying both can never be hijacked by the
+ * banking spelling.
  */
-function fact(xml: string, tag: string, contextRef: string): number | null {
-  const re = new RegExp(
-    `<in-bse-fin:${tag}\\s+contextRef="${contextRef}"[^>]*>([-\\d.]+)<`,
-  );
-  const m = re.exec(xml);
-  if (!m) return null;
-  const n = Number(m[1]);
-  return Number.isFinite(n) ? n : null;
+function fact(xml: string, tags: readonly string[], contextRef: string): number | null {
+  for (const tag of tags) {
+    const re = new RegExp(
+      `<in-bse-fin:${tag}\\s+contextRef="${contextRef}"[^>]*>([-\\d.]+)<`,
+    );
+    const m = re.exec(xml);
+    if (!m) continue;
+    const n = Number(m[1]);
+    if (Number.isFinite(n)) return n;
+  }
+  return null;
 }
 
+/**
+ * Read the headline income statement, or null when the filing carries none.
+ *
+ * The guard here is deliberately about FIGURES, not about declarations. NSE
+ * publishes a large minority of filings - every banking and NBFC filing, plus
+ * the `_WEB` Ind-AS variants - whose instance declares only the dimensional
+ * contexts (OneReportableSegmentRevenue01D and friends) and omits the plain
+ * `<xbrli:context id="OneD">` declaration altogether, while every headline fact
+ * still carries contextRef="OneD". That is invalid XBRL on NSE's side, but the
+ * figures are present, unambiguous and correctly scoped.
+ *
+ * Requiring the declaration rejected 27 such filings across 9 symbols with
+ * "no OneD headline context" and turned the hourly workflow red. What a
+ * declaration cannot tell us is whether anything was actually read, so that is
+ * what is checked instead: at least one headline figure, or null. This is
+ * strictly stronger than the old check at the thing that actually matters -
+ * a declared-but-empty OneD used to yield an all-null row marked "parsed",
+ * which is worse than a visible failure because nothing ever revisits it.
+ *
+ * The column is NOT relaxed. Every figure is still read from HEADLINE_CONTEXT
+ * alone, so a missing quarter stays missing rather than borrowing FourD's
+ * year-to-date figure.
+ */
 export function parseIncomeStatement(xml: string): IncomeStatement | null {
-  const contexts = parseContexts(xml);
-  const headline = contexts.get(HEADLINE_CONTEXT);
-  // No current-quarter column means this filing cannot be read. Falling back to
-  // another column would store the wrong period under the right label.
-  if (!headline) return null;
+  // Kept for the period only, and only when NSE bothered to declare it.
+  const headline = parseContexts(xml).get(HEADLINE_CONTEXT);
 
-  return {
-    revenue: fact(xml, "RevenueFromOperations", HEADLINE_CONTEXT),
-    otherIncome: fact(xml, "OtherIncome", HEADLINE_CONTEXT),
-    totalIncome: fact(xml, "Income", HEADLINE_CONTEXT),
-    totalExpenses: fact(xml, "Expenses", HEADLINE_CONTEXT),
-    profitBeforeTax: fact(xml, "ProfitBeforeTax", HEADLINE_CONTEXT),
-    profitAfterTax: fact(xml, "ProfitLossForPeriod", HEADLINE_CONTEXT),
+  const statement: IncomeStatement = {
+    revenue: fact(xml, ["RevenueFromOperations", "InterestEarned"], HEADLINE_CONTEXT),
+    otherIncome: fact(xml, ["OtherIncome"], HEADLINE_CONTEXT),
+    totalIncome: fact(xml, ["Income"], HEADLINE_CONTEXT),
+    // Ind-AS only, on purpose. The bank-side candidate is
+    // ExpenditureExcludingProvisionsAndContingencies, and storing that as
+    // "total expenses" would break the Income - Expenses = ProfitBeforeTax
+    // identity every Ind-AS row in this column satisfies. An absent figure is
+    // the honest answer; a mislabelled one is not.
+    totalExpenses: fact(xml, ["Expenses"], HEADLINE_CONTEXT),
+    profitBeforeTax: fact(
+      xml,
+      ["ProfitBeforeTax", "ProfitLossFromOrdinaryActivitiesBeforeTax"],
+      HEADLINE_CONTEXT,
+    ),
+    profitAfterTax: fact(
+      xml,
+      ["ProfitLossForPeriod", "ProfitLossForThePeriod"],
+      HEADLINE_CONTEXT,
+    ),
     // Verified tag names. EPS is NOT filed as a bare
     // "BasicEarningsLossPerShare" — Ind-AS splits it into continuing,
     // discontinued, and the combined total. The combined figure is the
-    // headline EPS a reader expects, so that is the one stored.
+    // headline EPS a reader expects, so that is the one stored. Banks file the
+    // same idea as "AfterExtraordinaryItems".
     basicEps: fact(
       xml,
-      "BasicEarningsLossPerShareFromContinuingAndDiscontinuedOperations",
+      [
+        "BasicEarningsLossPerShareFromContinuingAndDiscontinuedOperations",
+        "BasicEarningsPerShareAfterExtraordinaryItems",
+      ],
       HEADLINE_CONTEXT,
     ),
     dilutedEps: fact(
       xml,
-      "DilutedEarningsLossPerShareFromContinuingAndDiscontinuedOperations",
+      [
+        "DilutedEarningsLossPerShareFromContinuingAndDiscontinuedOperations",
+        "DilutedEarningsPerShareAfterExtraordinaryItems",
+      ],
       HEADLINE_CONTEXT,
     ),
-    debtEquityRatio: fact(xml, "DebtEquityRatio", HEADLINE_CONTEXT),
-    debtServiceCoverageRatio: fact(xml, "DebtServiceCoverageRatio", HEADLINE_CONTEXT),
-    periodEnd: headline.endDate,
+    debtEquityRatio: fact(xml, ["DebtEquityRatio"], HEADLINE_CONTEXT),
+    debtServiceCoverageRatio: fact(xml, ["DebtServiceCoverageRatio"], HEADLINE_CONTEXT),
+    // Provenance only, and absent on the filings that omit the declaration.
+    // The sync stores the registry's toDate, which is authoritative, so this
+    // being null costs nothing - inventing it would cost correctness.
+    periodEnd: headline?.endDate ?? null,
   };
+
+  // Nothing readable in the current-quarter column. Distinguishing this from a
+  // filing that merely omits its context declaration is the whole point.
+  const figures = [
+    statement.revenue,
+    statement.otherIncome,
+    statement.totalIncome,
+    statement.totalExpenses,
+    statement.profitBeforeTax,
+    statement.profitAfterTax,
+    statement.basicEps,
+    statement.dilutedEps,
+  ];
+  if (figures.every((v) => v === null)) return null;
+
+  return statement;
 }
