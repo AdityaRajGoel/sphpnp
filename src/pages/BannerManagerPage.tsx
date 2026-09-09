@@ -6,7 +6,7 @@ import { motion } from "motion/react";
 import {
   Plus, Pencil, Trash2, Save, X, LogOut, ArrowLeft, Megaphone,
   Info, AlertTriangle, CheckCircle, Sparkles, ExternalLink, Lock,
-  Upload, ImageIcon, Loader2
+  Upload, ImageIcon, Loader2, RefreshCw
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -72,8 +72,11 @@ const BannerManagerPage = () => {
 
   const [banners, setBanners] = useState<BannerMessage[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [busyBannerId, setBusyBannerId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyBanner);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -84,15 +87,18 @@ const BannerManagerPage = () => {
 
   const fetchBanners = useCallback(async () => {
     setLoading(true);
+    setLoadError(null);
     try {
       const { data, error } = await supabase
         .from("banner_messages" as never)
         .select("*")
         .order("display_order", { ascending: true });
-      if (!error && data) setBanners(data as unknown as BannerMessage[]);
-      else toast({ title: "Failed to load banners", variant: "destructive" });
-    } catch {
-      toast({ title: "Failed to load banners", variant: "destructive" });
+      if (error) throw error;
+      setBanners((data ?? []) as unknown as BannerMessage[]);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Please check your connection and try again.";
+      setLoadError(message);
+      toast({ title: "Could not load popups", description: message, variant: "destructive" });
     }
     setLoading(false);
   }, [toast]);
@@ -138,80 +144,96 @@ const BannerManagerPage = () => {
       toast({ title: "Banner needs at least a title, message, or image", variant: "destructive" });
       return;
     }
-    const { error } = await supabase
-      .from("banner_messages" as never)
-      .insert({
-        title: form.title?.trim() || null,
-        message: form.message.trim(),
-        type: form.type,
-        link_url: form.link_url?.trim() || null,
-        link_text: form.link_text?.trim() || null,
-        button_text: form.button_text?.trim() || null,
-        image_url: form.image_url?.trim() || null,
-        bg_theme: form.bg_theme,
-        is_active: form.is_active,
-        display_order: banners.length,
-      } as never);
-      
-    if (!error) {
-      toast({ title: "Banner created" });
+    setIsSaving(true);
+    try {
+      const { error } = await supabase
+        .from("banner_messages" as never)
+        .insert({
+          title: form.title?.trim() || null,
+          message: form.message.trim(),
+          type: form.type,
+          link_url: form.link_url?.trim() || null,
+          link_text: form.link_text?.trim() || null,
+          button_text: form.button_text?.trim() || null,
+          image_url: form.image_url?.trim() || null,
+          bg_theme: form.bg_theme,
+          is_active: form.is_active,
+          display_order: banners.length,
+        } as never);
+      if (error) throw error;
+      toast({ title: "Popup created" });
       setCreating(false);
       setForm(emptyBanner);
-      fetchBanners();
-    } else {
-      toast({ title: "Error creating banner", description: error instanceof Error ? error.message : "Unknown error", variant: "destructive" });
+      await fetchBanners();
+    } catch (error) {
+      toast({ title: "Could not create popup", description: error instanceof Error ? error.message : "Please try again.", variant: "destructive" });
+    } finally {
+      setIsSaving(false);
     }
   };
 
   const handleUpdate = async () => {
     if (!editingId) return;
-    const { error } = await supabase
-      .from("banner_messages" as never)
-      .update({
-        title: form.title?.trim() || null,
-        message: form.message.trim(),
-        type: form.type,
-        link_url: form.link_url?.trim() || null,
-        link_text: form.link_text?.trim() || null,
-        button_text: form.button_text?.trim() || null,
-        image_url: form.image_url?.trim() || null,
-        bg_theme: form.bg_theme,
-        is_active: form.is_active,
-        display_order: form.display_order,
-        updated_at: new Date().toISOString(),
-      } as never)
-      .eq("id", editingId);
-      
-    if (!error) {
-      toast({ title: "Banner updated" });
+    setIsSaving(true);
+    try {
+      const { error } = await supabase
+        .from("banner_messages" as never)
+        .update({
+          title: form.title?.trim() || null,
+          message: form.message.trim(),
+          type: form.type,
+          link_url: form.link_url?.trim() || null,
+          link_text: form.link_text?.trim() || null,
+          button_text: form.button_text?.trim() || null,
+          image_url: form.image_url?.trim() || null,
+          bg_theme: form.bg_theme,
+          is_active: form.is_active,
+          display_order: form.display_order,
+          updated_at: new Date().toISOString(),
+        } as never)
+        .eq("id", editingId);
+      if (error) throw error;
+      toast({ title: "Popup updated" });
       setEditingId(null);
       setForm(emptyBanner);
-      fetchBanners();
-    } else {
-      toast({ title: "Error updating banner", description: error instanceof Error ? error.message : "Unknown error", variant: "destructive" });
+      await fetchBanners();
+    } catch (error) {
+      toast({ title: "Could not update popup", description: error instanceof Error ? error.message : "Please try again.", variant: "destructive" });
+    } finally {
+      setIsSaving(false);
     }
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm("Delete this banner?")) return;
-    const { error } = await supabase
-      .from("banner_messages" as never)
-      .delete()
-      .eq("id", id);
-    if (!error) {
-      toast({ title: "Banner deleted" });
-      fetchBanners();
-    } else {
-      toast({ title: "Error deleting banner", variant: "destructive" });
+    setBusyBannerId(id);
+    try {
+      const { error } = await supabase.from("banner_messages" as never).delete().eq("id", id);
+      if (error) throw error;
+      toast({ title: "Popup deleted" });
+      await fetchBanners();
+    } catch (error) {
+      toast({ title: "Could not delete popup", description: error instanceof Error ? error.message : "Please try again.", variant: "destructive" });
+    } finally {
+      setBusyBannerId(null);
     }
   };
 
   const handleToggle = async (banner: BannerMessage) => {
-    await supabase
-      .from("banner_messages" as never)
-      .update({ is_active: !banner.is_active, updated_at: new Date().toISOString() } as never)
-      .eq("id", banner.id);
-    fetchBanners();
+    setBusyBannerId(banner.id);
+    try {
+      const { error } = await supabase
+        .from("banner_messages" as never)
+        .update({ is_active: !banner.is_active, updated_at: new Date().toISOString() } as never)
+        .eq("id", banner.id);
+      if (error) throw error;
+      toast({ title: `Popup ${banner.is_active ? "disabled" : "enabled"}` });
+      await fetchBanners();
+    } catch (error) {
+      toast({ title: "Could not update popup", description: error instanceof Error ? error.message : "Please try again.", variant: "destructive" });
+    } finally {
+      setBusyBannerId(null);
+    }
   };
 
   const startEdit = (banner: BannerMessage) => {
@@ -303,6 +325,7 @@ const BannerManagerPage = () => {
     <Card className="border-secondary/30 mb-6 shadow-md">
       <CardHeader className="p-4 sm:p-6 pb-2">
         <CardTitle className="text-base sm:text-lg">{title}</CardTitle>
+        <p className="text-sm text-muted-foreground">Changes are shown in the preview before they are published.</p>
       </CardHeader>
       <CardContent className="space-y-5 p-4 sm:p-6 pt-0 sm:pt-4">
         
@@ -456,11 +479,24 @@ const BannerManagerPage = () => {
           </div>
         </div>
 
+        <section aria-label="Popup preview" className="overflow-hidden rounded-xl border border-border bg-background">
+          <div className="flex items-center justify-between border-b border-border px-4 py-2.5">
+            <h3 className="text-sm font-semibold">Live preview</h3>
+            <span className={`text-xs font-medium ${form.is_active ? "text-secondary" : "text-muted-foreground"}`}>{form.is_active ? "Will be visible" : "Saved as disabled"}</span>
+          </div>
+          <div className={`p-5 text-center ${form.bg_theme === "dark" ? "bg-slate-900 text-white" : form.bg_theme === "brand-gradient" ? "bg-hero text-white" : "bg-card text-card-foreground"}`}>
+            {form.image_url && <img src={form.image_url} alt="Popup preview" className="mx-auto mb-4 max-h-36 w-auto max-w-full rounded-lg object-contain" />}
+            <p className="font-heading font-bold">{form.title || "Your popup title"}</p>
+            <p className={`mx-auto mt-2 max-w-xl text-sm whitespace-pre-wrap ${form.bg_theme === "default" ? "text-muted-foreground" : "text-white/80"}`}>{form.message || "Add a short, useful message for visitors."}</p>
+            {form.link_url && <span className="mt-4 inline-flex rounded-md bg-secondary px-3 py-2 text-xs font-bold text-secondary-foreground">{form.button_text || form.link_text || "Learn More"}</span>}
+          </div>
+        </section>
+
         <div className="flex gap-3 pt-2">
-          <Button onClick={onSave} className="px-6">
-            <Save className="w-4 h-4 mr-2" /> Save Popup
+          <Button onClick={onSave} className="px-6" disabled={isSaving || isUploading}>
+            {isSaving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />} {isSaving ? "Saving..." : "Save Popup"}
           </Button>
-          <Button variant="outline" onClick={cancelForm} className="px-6">
+          <Button variant="outline" onClick={cancelForm} className="px-6" disabled={isSaving}>
             <X className="w-4 h-4 mr-2" /> Cancel
           </Button>
         </div>
@@ -507,7 +543,7 @@ const BannerManagerPage = () => {
       <main className="container mx-auto px-4 py-8 max-w-4xl">
         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}>
           {/* Title + Add button */}
-          <div className="flex items-center justify-between mb-8">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-8">
             <div>
               <h2 className="font-heading text-2xl sm:text-3xl font-bold text-foreground flex items-center gap-3">
                 <Megaphone className="w-7 h-7 text-primary" />
@@ -517,18 +553,22 @@ const BannerManagerPage = () => {
                 Create and manage popup modals that display to users when they visit the site.
               </p>
             </div>
-            <Button
-              onClick={() => {
-                setCreating(true);
-                setEditingId(null);
-                setForm(emptyBanner);
-              }}
-              disabled={creating || !!editingId}
-              size="default"
-              className="shadow-sm"
-            >
-              <Plus className="w-4 h-4 mr-2" /> Create Popup
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="default" onClick={fetchBanners} disabled={loading}>
+                <RefreshCw className={`w-4 h-4 mr-2 ${loading ? "animate-spin" : ""}`} /> Refresh
+              </Button>
+              <Button
+                onClick={() => {
+                  setCreating(true);
+                  setEditingId(null);
+                  setForm(emptyBanner);
+                }}
+                disabled={creating || !!editingId}
+                size="default"
+              >
+                <Plus className="w-4 h-4 mr-2" /> Create Popup
+              </Button>
+            </div>
           </div>
 
           {/* Create / Edit forms */}
@@ -541,6 +581,12 @@ const BannerManagerPage = () => {
               {[1, 2, 3].map((i) => (
                 <Skeleton key={i} className="h-24 w-full rounded-xl" />
               ))}
+            </div>
+          ) : loadError ? (
+            <div role="alert" className="rounded-xl border border-destructive/30 bg-destructive/5 p-6 text-center">
+              <p className="font-semibold">Could not load popups</p>
+              <p className="mt-1 text-sm text-muted-foreground">{loadError}</p>
+              <Button variant="outline" className="mt-4" onClick={fetchBanners}><RefreshCw className="w-4 h-4 mr-2" />Try again</Button>
             </div>
           ) : banners.length === 0 && !creating ? (
             <div className="text-center py-10 md:py-20 bg-muted/20 rounded-2xl border border-dashed border-border/60">
@@ -613,14 +659,14 @@ const BannerManagerPage = () => {
                           
                           <div className="flex items-center gap-2 shrink-0 border-l pl-4 ml-2">
                             <div className="flex flex-col items-center gap-1 mr-2">
-                              <Switch checked={banner.is_active} onCheckedChange={() => handleToggle(banner)} title="Toggle Active" />
+                              <Switch checked={banner.is_active} onCheckedChange={() => handleToggle(banner)} disabled={busyBannerId === banner.id} title="Toggle Active" />
                               <span className="text-[9px] text-muted-foreground font-medium uppercase">{banner.is_active ? 'On' : 'Off'}</span>
                             </div>
                             <Button
                               size="icon"
                               variant="outline"
                               onClick={() => startEdit(banner)}
-                              disabled={!!editingId || creating}
+                              disabled={!!editingId || creating || busyBannerId === banner.id}
                               className="w-8 h-8 rounded-md"
                               title="Edit"
                             >
@@ -631,6 +677,7 @@ const BannerManagerPage = () => {
                               variant="outline"
                               className="text-destructive w-8 h-8 rounded-md border-destructive/30 hover:bg-destructive/10"
                               onClick={() => handleDelete(banner.id)}
+                              disabled={busyBannerId === banner.id}
                               title="Delete"
                             >
                               <Trash2 className="w-4 h-4" />
