@@ -52,4 +52,17 @@ export function writeConsent(choice: ConsentChoice): void {
   } catch {
     /* storage blocked - the choice still applies to this session */
   }
+  // Announced so other surfaces can queue behind the consent decision rather
+  // than opening on top of it. `storage` only fires in *other* tabs, so a
+  // same-document listener needs this. Dispatched even when the write above
+  // failed: the choice still holds for this page view, and anything waiting on
+  // it must not be stranded by a blocked localStorage.
+  try {
+    window.dispatchEvent(new CustomEvent(CONSENT_CHANGE_EVENT, { detail: choice }));
+  } catch {
+    /* CustomEvent unavailable - nothing downstream depends on it for correctness */
+  }
 }
+
+/** Fires on the window when a consent decision is recorded, in this document. */
+export const CONSENT_CHANGE_EVENT = "panipat:consent-change";

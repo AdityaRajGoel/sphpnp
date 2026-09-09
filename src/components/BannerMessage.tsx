@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { HIGH_FETCH_PRIORITY } from "@/lib/fetch-priority";
+import { CONSENT_CHANGE_EVENT, readConsent } from "@/lib/consent";
 
 type BannerType = "none" | "info" | "warning" | "success" | "promo";
 
@@ -100,7 +101,26 @@ const BannerMessage = () => {
     dismissedIdsRef.current = dismissedIds;
   }, [dismissedIds]);
 
+  // The cookie prompt gates data collection, so it is answered first and this
+  // waits its turn. Opening both together put two dialogs and two full-screen
+  // overlays on the home page at once: closing the promo revealed the consent
+  // scrim still sitting there, which reads as "the banner won't close".
+  //
+  // It also matters beyond looks. An open Radix dialog marks the rest of the
+  // page aria-hidden, so while this is up the entire home page - every link and
+  // heading - disappears from the accessibility tree. Stacking two of them
+  // doubled the window in which that is true.
+  const [consentAnswered, setConsentAnswered] = useState(() => readConsent() !== null);
+
   useEffect(() => {
+    if (consentAnswered) return;
+    const onDecision = () => setConsentAnswered(true);
+    window.addEventListener(CONSENT_CHANGE_EVENT, onDecision);
+    return () => window.removeEventListener(CONSENT_CHANGE_EVENT, onDecision);
+  }, [consentAnswered]);
+
+  useEffect(() => {
+    if (!consentAnswered) return;
     let openTimer: number | undefined;
 
     const fetchBanners = async () => {
@@ -131,16 +151,16 @@ const BannerMessage = () => {
     return () => {
       if (openTimer !== undefined) window.clearTimeout(openTimer);
     };
-  }, []);
+  }, [consentAnswered]);
 
   const visibleBanners = banners.filter((b) => !dismissedIds.has(b.id));
   const activeBannerId = visibleBanners[0]?.id;
 
   const dismiss = useCallback(() => {
+    // Close and unmount synchronously. Persisting the ID is still useful on a
+    // route revisit, but it must never be the only mechanism that hides the
+    // popup in the current view.
     setIsOpen(false);
-    
-    // Once dialog is dismissed, we mark all current visible banners as dismissed in memory
-    // so it doesn't immediately pop up again during this single page view session
     if (visibleBanners.length === 0) return;
     setDismissedIds((previous) => {
       const updated = new Set(previous);
@@ -148,6 +168,7 @@ const BannerMessage = () => {
       persistDismissedIds(updated);
       return updated;
     });
+    setBanners((previous) => previous.filter((banner) => !visibleBanners.some((visible) => visible.id === banner.id)));
   }, [visibleBanners]);
 
   // The popup remains useful without holding a visitor hostage. An unopened
@@ -177,15 +198,14 @@ const BannerMessage = () => {
         
         {/* Custom Labeled Close Button */}
         <div className="absolute top-4 right-4 md:top-6 md:right-6 z-50">
-          <DialogClose asChild>
             <button
             type="button"
+            onClick={dismiss}
             className="flex items-center gap-2 px-4 py-2 rounded-full bg-black/40 hover:bg-black/60 text-white backdrop-blur-md border border-white/20 transition-colors duration-fast"
             >
               <span className="text-xs font-bold uppercase tracking-wider">Close</span>
               <X className="w-4 h-4" />
             </button>
-          </DialogClose>
         </div>
         
         {/* Image-led showcase on desktop, with the message/action held alongside it. */}

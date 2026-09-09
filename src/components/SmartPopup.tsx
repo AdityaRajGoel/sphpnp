@@ -43,8 +43,9 @@ const SmartPopup = () => {
     }
   }, [isVisible]);
 
-  // Skip rendering on some paths (admin, auth, lead generation paths)
-  if (['/admin', '/auth', '/reset-password', '/banner-manager', '/open-account'].includes(location.pathname)) {
+  // The home page has admin-managed banners with their own dismissal and
+  // frequency controls. Never stack this generic engagement popup over them.
+  if (['/', '/admin', '/auth', '/reset-password', '/banner-manager', '/open-account'].includes(location.pathname)) {
     return null;
   }
 
