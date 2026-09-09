@@ -1,6 +1,6 @@
 import { ArrowRight, TrendingUp, TrendingDown, Sparkles, Award, Lock, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { motion, AnimatePresence, useMotionValue, useTransform, useSpring, useReducedMotion } from "motion/react";
+import { motion, AnimatePresence, useMotionValue, useTransform, useSpring } from "motion/react";
 import { useEffect, useState, useRef, useMemo, memo } from "react";
 import { useLiveMarket } from "@/hooks/useLiveMarket";
 import { Link } from "react-router-dom";
@@ -10,6 +10,7 @@ import platformImg from "@/assets/parasram-india.webp";
 import { useCountUp } from "@/hooks/useCountUp";
 import { EASE_OUT } from "@/lib/motion";
 import { HIGH_FETCH_PRIORITY } from "@/lib/fetch-priority";
+import { usePrefersReducedMotion } from "@/contexts/MotionPreferenceContext";
 
 const TIP_INTERVAL_MS = 6000;
 
@@ -188,7 +189,7 @@ LiveMarketPanel.displayName = "LiveMarketPanel";
 
 const Hero = () => {
   const isMobile = useIsMobile();
-  const prefersReducedMotion = useReducedMotion();
+  const prefersReducedMotion = usePrefersReducedMotion();
 
   // Resolved after mount rather than during render, so the first paint is the
   // poster image and the video is never part of the LCP critical path. It also

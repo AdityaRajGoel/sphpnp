@@ -380,13 +380,54 @@
 }
 
 @layer utilities {
+  /*
+   * Reduced motion stops *animation*, not *feedback*.
+   *
+   * This block used to include `transition-duration: 0.01ms !important`, which
+   * took all ~477 transitions on the site down with it and left the page fully
+   * static. That mattered far more than intended: GNOME's "Reduce Animation"
+   * toggle and GTK's `enable-animations=false` — the default in several distros
+   * and most VMs — make Chrome and Firefox report `reduce`, so Linux users who
+   * never opted in got a site with no hover, focus or press response at all.
+   *
+   * WCAG 2.3.3 targets large-scale motion: parallax, scroll reveals, autoplay
+   * loops, momentum scrolling. A 140ms colour or scale transition carries no
+   * vestibular risk, and removing it doesn't read as "calmer" — it reads as
+   * broken. Focus transitions especially: stripping those degrades the very
+   * users this preference exists to serve.
+   *
+   * So keyframe animations are stopped here, JS motion is stopped by
+   * `MotionConfig reducedMotion="user"` (App.tsx) and Lenis by SmoothScroll,
+   * while authored transitions are left alone — they are already short by
+   * design (see lib/motion.ts). Guarded by e2e/reduced-motion.spec.ts.
+   */
+  /*
+   * Two branches, because an explicit choice has to beat the media query in
+   * both directions: `data-motion="on"` opts back in on a desktop that reports
+   * `reduce` without being asked, and `data-motion="off"` opts out on one that
+   * reports nothing. The attribute is stamped on <html> in main.tsx before the
+   * first paint. `auto` writes no attribute, so the media query stands alone.
+   *
+   * The declarations are repeated rather than shared: CSS cannot OR a media
+   * query with an attribute selector, and a custom-property indirection here
+   * would hide the one rule most likely to be debugged later.
+   */
   @media (prefers-reduced-motion: reduce) {
-    *, ::before, ::after {
+    :root:not([data-motion="on"]) *,
+    :root:not([data-motion="on"]) ::before,
+    :root:not([data-motion="on"]) ::after {
       animation-duration: 0.01ms !important;
       animation-iteration-count: 1 !important;
-      transition-duration: 0.01ms !important;
       scroll-behavior: auto !important;
     }
+  }
+
+  :root[data-motion="off"] *,
+  :root[data-motion="off"] ::before,
+  :root[data-motion="off"] ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
   }
 }
 

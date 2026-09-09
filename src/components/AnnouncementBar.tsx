@@ -1,8 +1,9 @@
 import { Flame, TrendingUp, TrendingDown, Shield, Zap, ArrowRight, X, IndianRupee, PhoneCall } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useState, useEffect, useMemo } from "react";
-import { motion, AnimatePresence, useReducedMotion } from "motion/react";
+import { motion, AnimatePresence } from "motion/react";
 import { useLiveMarket } from "@/hooks/useLiveMarket";
+import { usePrefersReducedMotion } from "@/contexts/MotionPreferenceContext";
 
 type Announcement = {
   icon: typeof Flame;
@@ -30,7 +31,7 @@ const AnnouncementBar = () => {
   const [dismissed, setDismissed] = useState(false);
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
-  const prefersReducedMotion = useReducedMotion();
+  const prefersReducedMotion = usePrefersReducedMotion();
   const { indices } = useLiveMarket();
 
   // Lead slide: live NIFTY/SENSEX from the same feed as the rest of the site,

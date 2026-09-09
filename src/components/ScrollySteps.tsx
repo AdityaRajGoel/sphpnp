@@ -1,7 +1,8 @@
-import { motion, AnimatePresence, useScroll, useMotionValueEvent, useReducedMotion } from "motion/react";
+import { motion, AnimatePresence, useScroll, useMotionValueEvent } from "motion/react";
 import { useRef, useState } from "react";
 import type { LucideIcon } from "lucide-react";
 import { EASE_OUT, revealItemX } from "@/lib/motion";
+import { usePrefersReducedMotion } from "@/contexts/MotionPreferenceContext";
 
 // Scrollytelling steps: on desktop a sticky visual panel morphs as the user
 // scrolls through the steps beside it; on mobile it degrades to stacked cards.
@@ -130,7 +131,7 @@ const StepScene = ({ step, index, total }: { step: ScrollyStep; index: number; t
 const ScrollySteps = ({ steps }: { steps: ScrollyStep[] }) => {
   const listRef = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState(0);
-  const prefersReducedMotion = useReducedMotion();
+  const prefersReducedMotion = usePrefersReducedMotion();
 
   const { scrollYProgress } = useScroll({
     target: listRef,

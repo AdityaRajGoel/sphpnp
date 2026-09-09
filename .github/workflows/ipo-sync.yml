@@ -1,0 +1,25 @@
+# Stores IPO catalogue changes and one GMP observation per run. The edge
+# function holds the service-role key; this workflow only has the anon key and
+# shared sync secret used by the other scheduled producers.
+name: IPO Sync
+
+on:
+  schedule:
+    - cron: "15 3,8,13 * * 1-6" # 08:45, 13:45, 18:45 IST, Mon-Sat
+  workflow_dispatch: {}
+
+permissions: {}
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger sync-ipos
+        run: |
+          resp=$(curl -sS -w "\n%{http_code}" --max-time 90 \
+            -X POST "https://zbkjbbujsdlpujotgltm.supabase.co/functions/v1/sync-ipos" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "x-sync-secret: ${{ secrets.MARKET_SYNC_SECRET }}")
+          body=$(echo "$resp" | sed '$d'); code=$(echo "$resp" | tail -1)
+          echo "$body"
+          [ "$code" = "200" ] || exit 1

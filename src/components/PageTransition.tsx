@@ -1,6 +1,7 @@
-import { motion, useReducedMotion } from "motion/react";
+import { motion } from "motion/react";
 import { ReactNode } from "react";
 import { EASE_OUT } from "@/lib/motion";
+import { usePrefersReducedMotion } from "@/contexts/MotionPreferenceContext";
 
 // Route transition: content fade/lift plus a brand-colored wipe that sweeps
 // across the viewport between pages (App.tsx wraps routes in AnimatePresence
@@ -11,7 +12,7 @@ interface PageTransitionProps {
 }
 
 export const PageTransition = ({ children }: PageTransitionProps) => {
-  const prefersReducedMotion = useReducedMotion();
+  const prefersReducedMotion = usePrefersReducedMotion();
 
   if (prefersReducedMotion) {
     return (

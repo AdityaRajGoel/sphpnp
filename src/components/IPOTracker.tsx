@@ -8,15 +8,17 @@ import {
 import type { LucideIcon } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
+import { Link } from "react-router-dom";
 
 import { revealBar, revealItem, revealSection } from "@/lib/motion";
 type IPO = {
+  slug?: string;
   name: string;
   price: string;
   date: string;
   size: string;
   status: "upcoming" | "open" | "listed";
-  gmp?: string;
+  gmp?: string | number | null;
   gmpUp?: boolean;
   listingGain?: string;
   listingUp?: boolean;
@@ -82,9 +84,9 @@ const IPOCard = ({ ipo, index }: { ipo: IPO; index: number }) => (
         ) : (
           <>
             <div className="text-[10px] text-muted-foreground mb-0.5">GMP</div>
-            <div className={`text-xs font-bold flex items-center gap-0.5 ${ipo.gmpUp ? "text-secondary" : "text-destructive"}`}>
-              {ipo.gmpUp ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
-              {ipo.gmp}
+            <div className={`text-xs font-bold flex items-center gap-0.5 ${(typeof ipo.gmp === "number" ? ipo.gmp >= 0 : ipo.gmpUp) ? "text-secondary" : "text-destructive"}`}>
+              {(typeof ipo.gmp === "number" ? ipo.gmp >= 0 : ipo.gmpUp) ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
+              {typeof ipo.gmp === "number" ? `${ipo.gmp >= 0 ? "+" : "-"}₹${Math.abs(ipo.gmp)}` : ipo.gmp ?? "Awaited"}
             </div>
           </>
         )}
@@ -93,14 +95,14 @@ const IPOCard = ({ ipo, index }: { ipo: IPO; index: number }) => (
 
     {ipo.status === "open" && (
       <motion.div className="mt-3 pt-3 border-t border-border/30">
-        <a
-          href="/open-account"
+        <Link
+          to={ipo.slug ? `/ipo/${ipo.slug}` : "/ipo"}
           className="inline-flex items-center gap-1.5 btn-shine bg-gradient-to-r from-secondary to-brand-green text-secondary-foreground text-[11px] font-bold px-3 py-1.5 rounded-lg hover:opacity-90 transition-opacity"
         >
           <IndianRupee className="w-3 h-3" />
-          Apply Now
+          View details
           <ChevronRight className="w-3 h-3" />
-        </a>
+        </Link>
       </motion.div>
     )}
   </motion.div>
@@ -290,14 +292,14 @@ const IPOTracker = () => {
           <p className="text-sm text-muted-foreground mb-3">
             Want to apply for IPOs? Open your Demat account with Parasram India today.
           </p>
-          <a
-            href="/open-account"
+          <Link
+            to="/ipo"
             className="inline-flex items-center gap-2 bg-gradient-to-r from-brand-orange to-brand-gold text-white font-bold text-sm px-6 py-3 rounded-xl hover:opacity-90 transition-opacity shadow-lg shadow-brand-orange/20"
           >
             <TrendingUp className="w-4 h-4" />
-            Open Free Demat Account
+            Explore IPO tracker
             <ChevronRight className="w-4 h-4" />
-          </a>
+          </Link>
         </motion.div>
       </div>
     </section>

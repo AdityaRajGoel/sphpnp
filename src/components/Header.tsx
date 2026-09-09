@@ -6,6 +6,7 @@ import { Link, useLocation } from "react-router-dom";
 import logo80 from "@/assets/logo-80.webp";
 import logo160 from "@/assets/logo-160.webp";
 import ThemeToggle from "@/components/ThemeToggle";
+import MotionToggle from "@/components/MotionToggle";
 import MegaDropdown from "@/components/header/MegaDropdown";
 import { megaMenuItems } from "@/components/header/megaMenuData";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
@@ -186,6 +187,7 @@ const Header = () => {
 
           <div className="flex items-center gap-2">
             <LanguageSwitcher />
+            <MotionToggle />
             <ThemeToggle />
             {watchlist.length > 0 && (
               <motion.div

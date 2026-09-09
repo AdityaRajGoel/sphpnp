@@ -6,9 +6,12 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
 import { LiveMarketProvider } from "@/hooks/useLiveMarket";
 import { lazy, Suspense } from "react";
+import type { ReactNode } from "react";
 import { usePageTracking } from "@/hooks/usePageTracking";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { LanguageProvider } from "@/i18n/LanguageContext";
+import { MotionPreferenceProvider, useMotionPreference } from "@/contexts/MotionPreferenceContext";
+import { toMotionConfigValue } from "@/lib/motion-preference";
 import { AnimatePresence, motion, MotionConfig } from "motion/react";
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/react";
@@ -64,6 +67,8 @@ const StockRecommendationsPage = lazy(() => import("./pages/StockRecommendations
 const ArticlePage = lazy(() => import("./pages/ArticlePage"));
 const SIPCalculatorPage = lazy(() => import("./pages/SIPCalculatorPage"));
 const StockPage = lazy(() => import("./pages/StockPage"));
+const IpoPage = lazy(() => import("./pages/IpoPage"));
+const IpoDetailPage = lazy(() => import("./pages/IpoDetailPage"));
 
 // --- Professional branded loading screen ---
 const candleVariants = {
@@ -181,6 +186,8 @@ const AnimatedRoutes = () => {
         <Route path="/learn/recommendations" element={<StockRecommendationsPage />} />
         <Route path="/learn/:slug" element={<ArticlePage />} />
         <Route path="/stock/:symbol" element={<StockPage />} />
+        <Route path="/ipo" element={<IpoPage />} />
+        <Route path="/ipo/:slug" element={<IpoDetailPage />} />
         <Route path="/sip-calculator" element={<SIPCalculatorPage />} />
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
         <Route path="*" element={<NotFound />} />
@@ -191,15 +198,35 @@ const AnimatedRoutes = () => {
 
 const queryClient = new QueryClient();
 
+/**
+ * Bridges the stored motion preference into Motion itself.
+ *
+ * This governs how Motion applies its own animations. It is deliberately NOT
+ * the whole story: Motion's `useReducedMotion()` reads the media query directly
+ * and ignores this setting, so components that branch on it use
+ * `usePrefersReducedMotion()` from the context instead. Both layers are needed
+ * — this one for declarative `animate`/`whileInView` props, that one for the
+ * eleven components that make their own decisions.
+ */
+const MotionProvider = ({ children }: { children: ReactNode }) => {
+  const { preference } = useMotionPreference();
+  return (
+    /* One default curve for every Motion animation on the site. Around 90
+       of them specified no easing at all and silently fell back to Motion's
+       default, which is why the same reveal felt different from page to
+       page. Anything that sets its own `ease` still wins. */
+    <MotionConfig reducedMotion={toMotionConfigValue(preference)} transition={{ ease: EASE_OUT }}>
+      {children}
+    </MotionConfig>
+  );
+};
+
 const App = () => (
   <HelmetProvider>
     <LanguageProvider>
     <QueryClientProvider client={queryClient}>
-      {/* One default curve for every Motion animation on the site. Around 90
-          of them specified no easing at all and silently fell back to Motion's
-          default, which is why the same reveal felt different from page to
-          page. Anything that sets its own `ease` still wins. */}
-      <MotionConfig reducedMotion="user" transition={{ ease: EASE_OUT }}>
+      <MotionPreferenceProvider>
+      <MotionProvider>
       <TooltipProvider>
         <LiveMarketProvider>
         <Toaster />
@@ -225,7 +252,8 @@ const App = () => (
         </BrowserRouter>
       </LiveMarketProvider>
     </TooltipProvider>
-      </MotionConfig>
+      </MotionProvider>
+      </MotionPreferenceProvider>
   </QueryClientProvider>
     </LanguageProvider>
   </HelmetProvider>

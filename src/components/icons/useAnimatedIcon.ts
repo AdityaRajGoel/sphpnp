@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
-import { useAnimate, useReducedMotion } from "motion/react";
+import { useAnimate } from "motion/react";
+import { usePrefersReducedMotion } from "@/contexts/MotionPreferenceContext";
 
 /**
  * Shared plumbing for every animated icon.
@@ -20,7 +21,7 @@ import { useAnimate, useReducedMotion } from "motion/react";
  */
 export function useAnimatedIcon() {
   const [scope, animate] = useAnimate();
-  const prefersReducedMotion = useReducedMotion();
+  const prefersReducedMotion = usePrefersReducedMotion();
   const isMounted = useRef(true);
 
   useEffect(() => {

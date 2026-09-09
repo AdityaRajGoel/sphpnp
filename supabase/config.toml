@@ -41,3 +41,8 @@ verify_jwt = false
 # fixable gateway rejection into a harder-to-diagnose one.
 [functions.sync-macro]
 verify_jwt = false
+
+# IPO catalogue and GMP snapshots are written by the scheduled Action. It uses
+# the same SYNC_SECRET guard as the other service-role writer functions.
+[functions.sync-ipos]
+verify_jwt = false

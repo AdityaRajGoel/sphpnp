@@ -1,10 +1,11 @@
 import * as React from "react";
-import { motion, AnimatePresence, useReducedMotion } from "motion/react";
+import { motion, AnimatePresence } from "motion/react";
 import { cva, type VariantProps } from "class-variance-authority";
 
 import { cn } from "@/lib/utils";
 import { buttonVariants } from "@/components/ui/button";
 import { EASE_OUT } from "@/lib/motion";
+import { usePrefersReducedMotion } from "@/contexts/MotionPreferenceContext";
 
 /*
  * Ripple press feedback, ported from Animate UI (MIT) and adapted to this
@@ -61,7 +62,7 @@ const RippleButton = React.forwardRef<HTMLButtonElement, RippleButtonProps>(
     const [ripples, setRipples] = React.useState<Ripple[]>([]);
     const nextId = React.useRef(0);
     const innerRef = React.useRef<HTMLButtonElement>(null);
-    const prefersReducedMotion = useReducedMotion();
+    const prefersReducedMotion = usePrefersReducedMotion();
 
     React.useImperativeHandle(forwardedRef, () => innerRef.current as HTMLButtonElement);
 

@@ -25,6 +25,7 @@ const companyLinks: FooterLink[] = [
 
 const toolLinks: FooterLink[] = [
   { label: "Stock Screener", href: "/screener" },
+  { label: "IPO Tracker", href: "/ipo" },
   { label: "52-Week Tracker", href: "/52-week-tracker" },
   { label: "F&O Dashboard", href: "/fno" },
   { label: "Stock Comparison", href: "/compare" },

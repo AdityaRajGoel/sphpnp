@@ -2,9 +2,17 @@ import { createRoot } from "react-dom/client";
 import { registerSW } from "virtual:pwa-register";
 import App from "./App.tsx";
 import "./index.css";
+import { applyMotionPreference, readMotionPreference } from "@/lib/motion-preference";
 
 // Register Service Worker for PWA
 registerSW({ immediate: true });
+
+// Stamp the saved motion preference onto <html> before the first paint, so the
+// page never renders one motion policy and then swaps to another. This belongs
+// in an inline <script> in index.html on pure-latency grounds, but the CSP in
+// vercel.json has no nonce for one; running it here is early enough because the
+// static splash covers the gap until React paints.
+applyMotionPreference(readMotionPreference());
 
 createRoot(document.getElementById("root")!).render(<App />);
 

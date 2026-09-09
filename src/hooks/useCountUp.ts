@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState } from "react";
-import { useReducedMotion } from "motion/react";
+import { usePrefersReducedMotion } from "@/contexts/MotionPreferenceContext";
 
 // Lightweight requestAnimationFrame count-up.
 // `start` gates the animation so callers can trigger it on scroll-into-view.
 // Respects prefers-reduced-motion by jumping straight to the target.
 export function useCountUp(target: number, duration = 2, start = true): number {
   const [count, setCount] = useState(0);
-  const prefersReducedMotion = useReducedMotion();
+  const prefersReducedMotion = usePrefersReducedMotion();
   const hasRun = useRef(false);
 
   useEffect(() => {

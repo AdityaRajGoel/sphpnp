@@ -51,6 +51,7 @@ export const megaMenuItems: MegaMenuItem[] = [
       { label: "Stock Comparison", href: "/compare", icon: GitCompare, description: "Compare two stocks side-by-side" },
       { label: "52 Week Tracker", href: "/52-week-tracker", icon: ArrowUpDown, description: "Stocks near 52-week highs/lows" },
       { label: "F&O Dashboard", href: "/fno", icon: Activity, description: "Live options chain & OI analysis" },
+      { label: "IPO Tracker", href: "/ipo", icon: Landmark, description: "IPO dates, price bands and GMP history" },
       { label: "Reports & Downloads", href: "/reports", icon: FileText, description: "NSE/BSE/MCX bhavcopy, delivery & data" },
     ],
   },

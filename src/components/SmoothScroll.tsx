@@ -1,8 +1,9 @@
 import { ReactLenis } from "lenis/react";
 import { useLocation } from "react-router-dom";
-import { useReducedMotion } from "motion/react";
+
 import { useEffect } from "react";
 import type { ReactNode } from "react";
+import { usePrefersReducedMotion } from "@/contexts/MotionPreferenceContext";
 
 /**
  * Lenis smooth scroll, applied only where it helps.
@@ -38,7 +39,7 @@ export const isDataRoute = (pathname: string) =>
 
 const SmoothScroll = ({ children }: { children: ReactNode }) => {
   const { pathname } = useLocation();
-  const prefersReducedMotion = useReducedMotion();
+  const prefersReducedMotion = usePrefersReducedMotion();
   const enabled = !prefersReducedMotion && !isDataRoute(pathname);
 
   // `html { scroll-behavior: smooth }` and Lenis both want to own easing; run

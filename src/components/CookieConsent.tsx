@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useId, useState } from "react";
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { AnimatePresence, motion } from "motion/react";
 import { Link } from "react-router-dom";
 import { Cookie } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DURATION, EASE_DRAWER, REVEAL_Y } from "@/lib/motion";
 import { readConsent, writeConsent, type ConsentChoice } from "@/lib/consent";
+import { usePrefersReducedMotion } from "@/contexts/MotionPreferenceContext";
 
 /**
  * Cookie consent prompt.
@@ -26,7 +27,7 @@ import { readConsent, writeConsent, type ConsentChoice } from "@/lib/consent";
  */
 const CookieConsent = () => {
   const [isVisible, setIsVisible] = useState(false);
-  const prefersReducedMotion = useReducedMotion();
+  const prefersReducedMotion = usePrefersReducedMotion();
   const titleId = useId();
   const descriptionId = useId();
 

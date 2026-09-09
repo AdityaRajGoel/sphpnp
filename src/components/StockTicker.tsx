@@ -1,6 +1,6 @@
 import { TrendingUp, TrendingDown, Clock } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
-import { useReducedMotion } from "motion/react";
+
 import { useNavigate } from "react-router-dom";
 import { useLiveMarket, LiveStock } from "@/hooks/useLiveMarket";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -13,6 +13,7 @@ interface TickerRowProps {
 }
 
 import MarqueeExport from "react-fast-marquee";
+import { usePrefersReducedMotion } from "@/contexts/MotionPreferenceContext";
 
 /**
  * Unwrapped rather than used directly, because the default import cannot be
@@ -71,7 +72,7 @@ const PriceCell = ({ item }: { item: LiveStock }) => {
 
 const TickerRow = ({ items, direction = "left", bgClass = "bg-brand-charcoal", textClass = "text-primary-foreground" }: TickerRowProps) => {
   const navigate = useNavigate();
-  const prefersReducedMotion = useReducedMotion();
+  const prefersReducedMotion = usePrefersReducedMotion();
 
   return (
     <div className={`${bgClass} ${textClass} py-1 md:py-1.5 overflow-hidden whitespace-nowrap relative border-b border-black/5 dark:border-white/5`}>
