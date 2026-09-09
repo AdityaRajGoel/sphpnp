@@ -141,7 +141,10 @@ const GlobalStockSearch = ({ className }: Props) => {
       setSearching(true);
       try {
         const { data, error } = await supabase.functions.invoke("fetch-screener-data", {
-          body: { symbol: stock.symbol }
+          // Keep the exchange suffix returned by Yahoo search. Otherwise a
+          // selected BSE result such as RELIANCE.BO is silently fetched as
+          // RELIANCE.NS by the edge function.
+          body: { symbol: stock.yahoo || stock.symbol }
         });
         if (!error && data?.success && data.stocks?.length > 0) {
           setSelected(data.stocks[0]);

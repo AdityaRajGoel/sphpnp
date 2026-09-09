@@ -212,8 +212,6 @@ const NSE_SYMBOLS: { symbol: string; yahoo: string; name: string; sector: string
   { symbol: "IREDA", yahoo: "IREDA.NS", name: "IREDA", sector: "Energy" },
   { symbol: "NBCC", yahoo: "NBCC.NS", name: "NBCC India", sector: "Infra" },
   { symbol: "SJVN", yahoo: "SJVN.NS", name: "SJVN Ltd", sector: "Energy" },
-  { symbol: "NHPC", yahoo: "NHPC.NS", name: "NHPC Ltd", sector: "Energy" },
-  { symbol: "UNIONBANK", yahoo: "UNIONBANK.NS", name: "Union Bank", sector: "Banking" },
   { symbol: "IDBI", yahoo: "IDBI.NS", name: "IDBI Bank", sector: "Banking" },
   { symbol: "CENTRALBK", yahoo: "CENTRALBK.NS", name: "Central Bank of India", sector: "Banking" },
   { symbol: "IOB", yahoo: "IOB.NS", name: "Indian Overseas Bank", sector: "Banking" },
@@ -229,18 +227,9 @@ const NSE_SYMBOLS: { symbol: string; yahoo: string; name: string; sector: string
   { symbol: "ATGL", yahoo: "ATGL.NS", name: "Adani Total Gas", sector: "Energy" },
   { symbol: "YESBANK", yahoo: "YESBANK.NS", name: "Yes Bank", sector: "Banking" },
   { symbol: "SUZLON", yahoo: "SUZLON.NS", name: "Suzlon Energy", sector: "Energy" },
-  { symbol: "JIOFIN", yahoo: "JIOFIN.NS", name: "Jio Financial Services", sector: "NBFC" },
   { symbol: "MRF", yahoo: "MRF.NS", name: "MRF Ltd", sector: "Auto" },
-  { symbol: "PAGEIND", yahoo: "PAGEIND.NS", name: "Page Industries", sector: "Consumer" },
-  { symbol: "HONAUT", yahoo: "HONAUT.NS", name: "Honeywell Automation", sector: "Diversified" },
   { symbol: "3MINDIA", yahoo: "3MINDIA.NS", name: "3M India", sector: "Diversified" },
-  { symbol: "ABB", yahoo: "ABB.NS", name: "ABB India", sector: "Diversified" },
-  { symbol: "SIEMENS", yahoo: "SIEMENS.NS", name: "Siemens", sector: "Diversified" },
   { symbol: "BOSCHLTD", yahoo: "BOSCHLTD.NS", name: "Bosch", sector: "Auto" },
-  { symbol: "LICI", yahoo: "LICI.NS", name: "LIC of India", sector: "Insurance" },
-  { symbol: "HDFCBANK", yahoo: "HDFCBANK.BO", name: "HDFC Bank (BSE)", sector: "Banking" },
-  { symbol: "RELIANCE", yahoo: "RELIANCE.BO", name: "Reliance (BSE)", sector: "Energy" },
-  { symbol: "TCS", yahoo: "TCS.BO", name: "TCS (BSE)", sector: "IT" },
 ];
 
 // Get Yahoo Finance crumb + cookies for authenticated API access
@@ -493,7 +482,12 @@ Deno.serve(async (req) => {
 
     if (requestedSymbol) {
       console.log(`Searching/Updating dynamic symbol: ${requestedSymbol}`);
-      const stockInfo = NSE_SYMBOLS.find(s => s.symbol === requestedSymbol);
+      // Search results identify the venue as e.g. RELIANCE.NS or RELIANCE.BO,
+      // while our curated universe keys NSE rows by the bare symbol. Preserve
+      // the known sector for either listing, but retain the exchange suffix as
+      // the storage key for a dynamically selected BSE result.
+      const baseSymbol = requestedSymbol.replace(/\.(?:NS|BO)$/, "");
+      const stockInfo = NSE_SYMBOLS.find(s => s.symbol === baseSymbol);
       
       try {
         const { crumb, cookie } = await getYahooCrumb();
@@ -506,7 +500,8 @@ Deno.serve(async (req) => {
             symbol: requestedSymbol, 
             yahoo: yahooSym, 
             name: q.shortName || q.longName || stockInfo?.name || requestedSymbol, 
-            sector: q.quoteType || stockInfo?.sector || "General" 
+            // quoteType is an instrument class such as "EQUITY", not a sector.
+            sector: stockInfo?.sector || "General"
           };
           const row = buildStockRow(discoveredStock, q);
           if (!("market_cap" in row)) {
