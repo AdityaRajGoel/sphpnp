@@ -25,9 +25,6 @@ const WhyChooseUs = lazy(() => import("@/components/WhyChooseUs"));
 const DailyResearch = lazy(() => import("@/components/DailyResearch"));
 const TelegramChannel = lazy(() => import("@/components/TelegramChannel"));
 const BecomePartner = lazy(() => import("@/components/BecomePartner"));
-const About = lazy(() => import("@/components/About"));
-const CompanyTimeline = lazy(() => import("@/components/CompanyTimeline"));
-const Contact = lazy(() => import("@/components/Contact"));
 const Footer = lazy(() => import("@/components/Footer"));
 
 const SectionSkeleton = ({ height = "h-64" }: { height?: string }) => (
@@ -87,28 +84,15 @@ const Index = () => {
       <Suspense fallback={<SectionSkeleton height="h-64" />}>
         <DailyResearch />
       </Suspense>
-      {/* The company story sits after the market tools: someone who came for a
+      {/* Why Choose Us sits after the market tools: someone who came for a
           number gets it first, and the case for us is made to a reader who has
-          already stayed. Desktop-only, matching TrustBadges/Awards/BecomePartner
-          above - mobile keeps the home page short and conversion-focused. */}
+          already stayed. About, Our Legacy and Contact deliberately do NOT
+          appear here - /about and /contact are their home, and duplicating them
+          on the home page competed with those pages for the same search intent
+          on a site already struggling to get its pages indexed. */}
       <Suspense fallback={<SectionSkeleton height="h-64" />}>
         <WhyChooseUs />
       </Suspense>
-      <div className="hidden md:block">
-        <Suspense fallback={<SectionSkeleton height="h-96" />}>
-          <About headingLevel="h2" />
-        </Suspense>
-      </div>
-      <div className="hidden md:block">
-        <Suspense fallback={<SectionSkeleton height="h-80" />}>
-          <CompanyTimeline />
-        </Suspense>
-      </div>
-      <div className="hidden md:block">
-        <Suspense fallback={<SectionSkeleton height="h-80" />}>
-          <Contact />
-        </Suspense>
-      </div>
       <Suspense fallback={<SectionSkeleton height="h-80" />}>
         <TelegramChannel limit={4} showViewAll={true} />
       </Suspense>

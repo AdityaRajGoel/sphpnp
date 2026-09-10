@@ -13,6 +13,7 @@ import {
   Phone,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { usePrefersReducedMotion } from "@/contexts/MotionPreferenceContext";
 import { DURATION, EASE_OUT, STAGGER } from "@/lib/motion";
 
@@ -30,18 +31,31 @@ import { DURATION, EASE_OUT, STAGGER } from "@/lib/motion";
  * WhatsApp actions stay on top if they ever overlap on a small screen.
  */
 
-type Shortcut = { id: string; label: string; icon: LucideIcon };
+/**
+ * A shortcut either scrolls to a section on this page (`id`) or navigates to
+ * the page that owns it (`href`).
+ *
+ * About, Our Legacy and Contact are routes rather than anchors: they live on
+ * /about and /contact, and duplicating them on the home page competed with
+ * those pages for the same search intent on a site already struggling to get
+ * its pages indexed. Keeping them in this list means the control still answers
+ * "where do I find X", which is the job; it just sends you to the right page
+ * instead of scrolling to a section that is not there.
+ */
+type Shortcut =
+  | { id: string; label: string; icon: LucideIcon; href?: never }
+  | { href: string; label: string; icon: LucideIcon; id?: never };
 
-/** Order mirrors the page, so the list reads as a map rather than a menu. */
+/** On-page entries are ordered to mirror the page, so the list reads as a map. */
 const SHORTCUTS: Shortcut[] = [
   { id: "market-watch", label: "Market Watch", icon: Gauge },
   { id: "market-overview", label: "Market Overview", icon: LineChart },
   { id: "ipo-corner", label: "IPO Corner", icon: Landmark },
   { id: "research", label: "Research", icon: FlaskConical },
   { id: "why-us", label: "Why Choose Us", icon: ShieldCheck },
-  { id: "about", label: "About Us", icon: Building2 },
-  { id: "timeline", label: "Our Legacy", icon: History },
-  { id: "contact", label: "Contact Us", icon: Phone },
+  { href: "/about", label: "About Us", icon: Building2 },
+  { href: "/about#timeline", label: "Our Legacy", icon: History },
+  { href: "/contact", label: "Contact Us", icon: Phone },
 ];
 
 const SectionShortcuts = () => {
@@ -50,6 +64,7 @@ const SectionShortcuts = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const toggleRef = useRef<HTMLButtonElement>(null);
   const prefersReducedMotion = usePrefersReducedMotion();
+  const navigate = useNavigate();
 
   const close = useCallback(() => setIsOpen(false), []);
 
@@ -82,7 +97,7 @@ const SectionShortcuts = () => {
    * the instant its top edge appears.
    */
   useEffect(() => {
-    const sections = SHORTCUTS.map(({ id }) => document.getElementById(id)).filter(
+    const sections = SHORTCUTS.flatMap((s) => (s.id ? [document.getElementById(s.id)] : [])).filter(
       (el): el is HTMLElement => el !== null,
     );
     if (sections.length === 0) return;
@@ -99,6 +114,11 @@ const SectionShortcuts = () => {
     sections.forEach((section) => observer.observe(section));
     return () => observer.disconnect();
   }, []);
+
+  const goTo = (href: string) => {
+    close();
+    navigate(href);
+  };
 
   const jumpTo = (id: string) => {
     const target = document.getElementById(id);
@@ -134,11 +154,12 @@ const SectionShortcuts = () => {
             className="origin-bottom-left overflow-hidden rounded-2xl border border-border/60 bg-card/95 p-1.5 shadow-2xl backdrop-blur-md"
           >
             <ul className="flex flex-col gap-0.5">
-              {SHORTCUTS.map(({ id, label, icon: Icon }, index) => {
-                const isActive = activeId === id;
+              {SHORTCUTS.map((shortcut, index) => {
+                const { label, icon: Icon } = shortcut;
+                const isActive = shortcut.id !== undefined && activeId === shortcut.id;
                 return (
                   <motion.li
-                    key={id}
+                    key={shortcut.id ?? shortcut.href}
                     initial={prefersReducedMotion ? false : { opacity: 0, x: -6 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={
@@ -149,7 +170,9 @@ const SectionShortcuts = () => {
                   >
                     <button
                       type="button"
-                      onClick={() => jumpTo(id)}
+                      onClick={() =>
+                        shortcut.id ? jumpTo(shortcut.id) : goTo(shortcut.href)
+                      }
                       aria-current={isActive ? "true" : undefined}
                       className={`flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-sm font-medium transition-[background-color,color] duration-fast ${
                         isActive
