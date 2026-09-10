@@ -58,12 +58,17 @@ export default function StockPage() {
   // as "N/A", and render as a withheld state. Anything added to the object below
   // must be a figure this page actually holds.
   //
-  // ROE stays absent even though s.derived carries one. Those rows are
-  // per-quarter (one quarter's profit after tax over equity), while the modal's
-  // roe slot is read as a trailing-twelve-month figure - bucketed at >15% as
-  // "excellent capital efficiency" and benchmarked server-side against an annual
-  // sector average. The honest number in the wrong slot still reads about four
-  // times too low.
+  // ROE stays absent even though s.derived now carries a trailing-twelve-month
+  // figure (alignPeriods sums four consecutive quarters of profit - see
+  // period.ts and RatiosPanel's "(TTM)" label). It is withheld from the AI
+  // modal anyway, for a narrower reason than before: that TTM sum is null
+  // whenever fewer than four consecutive quarters of income history exist for
+  // a symbol, which the modal's roe slot has no representation for - it wants
+  // a number to bucket at >15% as "excellent capital efficiency" and
+  // benchmark server-side against an annual sector average, not a
+  // sometimes-present derived figure with its own withholding rules. Handing
+  // it partial coverage here would reintroduce the same "wrong number
+  // presented as fact" risk this file was written to close.
   const aiStock: StockForAnalysis | null =
     s.header && s.header.price !== null
       ? {

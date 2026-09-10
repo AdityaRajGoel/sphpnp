@@ -51,14 +51,20 @@ const formatPercent = (n: number): string => `${n.toFixed(2)}%`;
 
 const METRICS: readonly Metric[] = [
   {
-    label: "Return on equity",
+    // "(TTM)" is load-bearing, not decoration: r.roe is now a trailing-
+    // twelve-month figure (alignPeriods sums four consecutive quarters of
+    // profit before computeRatios ever sees it - see period.ts). A bare
+    // "Return on equity" reads as annual on every comparable site
+    // (Screener.in, Moneycontrol); leaving the qualifier off here would put
+    // an honest number under a label that implies something else.
+    label: "Return on equity (TTM)",
     pick: (r) => r.roe,
     format: formatPercent,
     inputs: ["profitAfterTax", "totalEquity"],
     unusable: ["totalEquity"],
   },
   {
-    label: "Return on capital employed",
+    label: "Return on capital employed (TTM)",
     pick: (r) => r.roce,
     format: formatPercent,
     inputs: ["profitBeforeTax", "totalEquity", "totalDebt"],

@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { buildStockRow, groupRowsByShape } from "../_shared/screener-row.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -315,48 +316,13 @@ async function fetchBatchQuotes(symbols: string[], crumb: string, cookie: string
   return results;
 }
 
-// Whether `q` (a Yahoo quote/chart record) carries a usable market cap.
-// A missing, zero, negative, or non-numeric value means Yahoo didn't give
-// us real data this run — that is NOT the same as the company actually
-// having a zero market cap, and must never be treated as one.
-function hasUsableMarketCap(q: any): boolean {
-  return typeof q.marketCap === "number" && Number.isFinite(q.marketCap) && q.marketCap > 0;
-}
-
-function buildStockRow(stock: typeof NSE_SYMBOLS[0], q: any) {
-  const price = q.regularMarketPrice ?? 0;
-  const change = q.regularMarketChange ?? 0;
-  const changePct = q.regularMarketChangePercent ?? 0;
-
-  const row: Record<string, unknown> = {
-    symbol: stock.symbol,
-    name: stock.name,
-    sector: stock.sector,
-    price,
-    change,
-    change_pct: changePct,
-    pe: q.trailingPE ?? q.forwardPE ?? 0,
-    high_52: q.fiftyTwoWeekHigh ?? 0,
-    low_52: q.fiftyTwoWeekLow ?? 0,
-    volume: q.regularMarketVolume ?? 0,
-    day_high: q.regularMarketDayHigh ?? 0,
-    day_low: q.regularMarketDayLow ?? 0,
-    open_price: q.regularMarketOpen ?? 0,
-    prev_close: q.regularMarketPreviousClose ?? 0,
-    updated_at: new Date().toISOString(),
-  };
-
-  // market_cap is stored in CRORES (raw Yahoo value / 1e7). Only set the key
-  // when we have a real number to write. If we omit it entirely, the upsert
-  // below (grouped by "has market_cap" so every call in a batch shares the
-  // same column shape) leaves the column untouched on conflict instead of
-  // clobbering a previously-good stored value with a sentinel zero.
-  if (hasUsableMarketCap(q)) {
-    row.market_cap = Math.round(q.marketCap / 10000000);
-  }
-
-  return row;
-}
+// buildStockRow, hasUsableMarketCap and groupRowsByShape live in
+// ../_shared/screener-row.ts — pulled out so this pure row-building and
+// price/pe/day-range guarding logic (which used to write a bare `?? 0` over
+// good stored values whenever Yahoo's quote was missing a sub-field, e.g.
+// the MCDOWELL/ZOMATO price-stuck-at-0 defect) can be unit tested directly,
+// the same reason ratios.ts and period.ts live in _shared rather than inline
+// in their sync functions.
 
 async function processBatch(stocks: typeof NSE_SYMBOLS, crumb: string, cookie: string, batchSize = 15, delayMs = 400) {
   const results: any[] = [];
@@ -504,8 +470,18 @@ Deno.serve(async (req) => {
             sector: stockInfo?.sector || "General"
           };
           const row = buildStockRow(discoveredStock, q);
-          if (!("market_cap" in row)) {
-            console.warn(`[market_cap] No usable market cap from Yahoo for ${requestedSymbol}; leaving existing stored value (if any) untouched.`);
+          // A single-row upsert has no shape-mixing risk (see groupRowsByShape
+          // below for the batch case), but a column buildStockRow omitted
+          // here is still worth logging: it means this run leaves whatever
+          // was already stored for that column untouched rather than writing
+          // a fresh value.
+          const omittedColumns = ["price", "change", "change_pct", "pe", "high_52", "low_52",
+            "volume", "day_high", "day_low", "open_price", "prev_close", "market_cap"]
+            .filter(col => !(col in row));
+          if (omittedColumns.length > 0) {
+            console.warn(
+              `[quote-fields] No usable ${omittedColumns.join(", ")} from Yahoo for ${requestedSymbol}; leaving existing stored value(s) untouched.`
+            );
           }
           // postgrest-js resolves with an { error } object on failure rather
           // than throwing, so a bare await here would silently swallow it.
@@ -529,34 +505,40 @@ Deno.serve(async (req) => {
       console.log(`Got data for ${stockData.length} stocks`);
 
       if (stockData.length > 0) {
-        // Split rows by shape before upserting. Rows missing market_cap
-        // (Yahoo gave us no usable value this run) must never share a batch
-        // with rows that have it: PostgREST's bulk upsert derives one fixed
+        // Group rows by shape before upserting. buildStockRow omits price,
+        // change, change_pct, pe, high_52, low_52, volume, day_high, day_low,
+        // open_price, prev_close and market_cap individually whenever Yahoo's
+        // quote had no usable value for that field this run (see
+        // ../_shared/screener-row.ts). Rows that omit different columns must
+        // never share a batch: PostgREST's bulk upsert derives one fixed
         // column list per call, so mixing shapes would either error or fill
-        // the "missing" rows' market_cap with NULL — overwriting whatever
-        // good value is already stored. Upserting the two groups separately
-        // means the market_cap-less call never references that column at
-        // all, so ON CONFLICT leaves the existing stored value untouched.
-        const rowsWithCap = stockData.filter(row => "market_cap" in row);
-        const rowsWithoutCap = stockData.filter(row => !("market_cap" in row));
-
-        if (rowsWithoutCap.length > 0) {
-          const skippedSymbols = rowsWithoutCap.map(row => row.symbol).join(", ");
+        // a "missing" row's omitted column with NULL — overwriting whatever
+        // good value is already stored (the MCDOWELL/ZOMATO price-stuck-at-0
+        // defect this grouping exists to close). groupRowsByShape buckets by
+        // the exact key set each row carries, so every call in a batch
+        // references only the columns every row in it actually has.
+        const shapeGroups = groupRowsByShape(stockData);
+        const incomplete = stockData.filter(row =>
+          !["price", "change", "change_pct", "pe", "high_52", "low_52", "volume",
+            "day_high", "day_low", "open_price", "prev_close", "market_cap"]
+            .every(col => col in row)
+        );
+        if (incomplete.length > 0) {
           console.warn(
-            `[market_cap] ${rowsWithoutCap.length}/${stockData.length} symbols had no usable market cap from Yahoo this run — existing stored values preserved: ${skippedSymbols}`
+            `[quote-fields] ${incomplete.length}/${stockData.length} symbols had one or more unusable quote fields from Yahoo this run — existing stored values preserved for those columns: ${incomplete.map(r => r.symbol).join(", ")}`
           );
         }
 
-        for (const [label, rows] of [["with market_cap", rowsWithCap], ["without market_cap", rowsWithoutCap]] as const) {
+        for (const rows of shapeGroups) {
+          const shapeLabel = Object.keys(rows[0]).sort().join(",");
           for (let i = 0; i < rows.length; i += 50) {
             const batch = rows.slice(i, i + 50);
-            if (batch.length === 0) continue;
             // postgrest-js resolves with an { error } object rather than
             // throwing on failure — check it explicitly on every write.
             const { error } = await sb
               .from("screener_stocks")
               .upsert(batch, { onConflict: "symbol" });
-            if (error) console.error(`Upsert error (${label}, batch starting at ${i}):`, error.message);
+            if (error) console.error(`Upsert error (shape ${shapeLabel}, batch starting at ${i}):`, error.message);
           }
         }
       }
