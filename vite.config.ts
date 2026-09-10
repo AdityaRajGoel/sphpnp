@@ -1,6 +1,13 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
+import { fileURLToPath } from "node:url";
+
+// import.meta.dirname is not available under Vite's `configLoader: "native"`,
+// and bare __dirname is what the loader warns about on every build. Deriving it
+// from import.meta.url works under both loaders and silences the warning
+// without changing what the alias resolves to.
+const projectRoot = path.dirname(fileURLToPath(import.meta.url));
 
 import { VitePWA } from "vite-plugin-pwa";
 import { visualizer } from "rollup-plugin-visualizer";
@@ -65,7 +72,7 @@ export default defineConfig(({ mode }) => ({
   ].filter(Boolean),
   resolve: {
     alias: {
-      "@": path.resolve(__dirname, "./src"),
+      "@": path.resolve(projectRoot, "./src"),
     },
   },
   build: {

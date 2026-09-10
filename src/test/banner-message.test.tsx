@@ -129,7 +129,17 @@ describe("BannerMessage dismissal", () => {
     });
   });
 
-  it("stays dismissed for the rest of the session", async () => {
+  it("appears again on a fresh load after being dismissed", async () => {
+    /*
+     * The opposite of what this test used to assert, by product decision.
+     *
+     * Dismissal was persisted in sessionStorage so a closed popup stayed closed
+     * for the rest of the session. The banner is admin-published and
+     * time-sensitive, and the requirement is that a visitor sees it again when
+     * they reload or return, so dismissal now lives in component state only.
+     * Remounting stands in for a reload here.
+     */
+    // Dismiss it, then mount a fresh instance the way a reload would.
     await renderAndOpen();
     fireEvent.click(screen.getByRole("button", { name: /close/i }));
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
@@ -143,6 +153,9 @@ describe("BannerMessage dismissal", () => {
       vi.advanceTimersByTime(600);
     });
 
-    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(
+      screen.queryByRole("dialog"),
+      "a reload must show the banner again, not remember the dismissal",
+    ).not.toBeNull();
   });
 });

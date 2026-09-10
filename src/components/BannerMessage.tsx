@@ -35,29 +35,23 @@ const bannerStyles: Record<BannerType, { bg: string; icon: typeof Info; iconColo
   promo: { bg: "bg-purple-500/10", icon: Sparkles, iconColor: "text-purple-500" },
 };
 
-// A popup that has been dismissed should stay gone for the rest of the browsing
-// session, including when visitors navigate away from and back to the home
-// route. Keep IDs—not a global boolean—so publishing a genuinely new popup can
-// still be shown in the same session.
-const DISMISSED_BANNERS_KEY = "pnp_dismissed_banner_ids";
+/*
+ * Dismissal lasts for THIS page view only, by product decision.
+ *
+ * It used to persist in sessionStorage so a closed popup stayed closed for the
+ * rest of the browsing session, including across route changes. The banner is
+ * admin-published and time-sensitive, and the ask is that a visitor sees it
+ * again whenever they reload or come back, so the ids are kept in component
+ * state and nothing is written to storage.
+ *
+ * The trade-off is deliberate and worth naming: someone who reloads repeatedly
+ * will be shown the same popup each time. What protects them from it being
+ * genuinely obnoxious is that it still closes on the button, on the backdrop,
+ * on Escape, and on its own after AUTO_DISMISS_MS - and that it only appears at
+ * all once a cookie decision has been made, so it never stacks on the consent
+ * prompt.
+ */
 const AUTO_DISMISS_MS = 60_000;
-
-const readDismissedIds = (): Set<string> => {
-  try {
-    const parsed: unknown = JSON.parse(sessionStorage.getItem(DISMISSED_BANNERS_KEY) ?? "[]");
-    return new Set(Array.isArray(parsed) ? parsed.filter((value): value is string => typeof value === "string") : []);
-  } catch {
-    return new Set();
-  }
-};
-
-const persistDismissedIds = (ids: Set<string>) => {
-  try {
-    sessionStorage.setItem(DISMISSED_BANNERS_KEY, JSON.stringify([...ids]));
-  } catch {
-    // Private browsing and storage-restricted contexts still get the in-memory dismissal.
-  }
-};
 
 const getThemeStyles = (theme: string, type: BannerType) => {
   const baseTypeStyle = bannerStyles[type] || bannerStyles.info;
@@ -93,7 +87,7 @@ const getThemeStyles = (theme: string, type: BannerType) => {
 
 const BannerMessage = () => {
   const [banners, setBanners] = useState<Banner[]>([]);
-  const [dismissedIds, setDismissedIds] = useState<Set<string>>(readDismissedIds);
+  const [dismissedIds, setDismissedIds] = useState<Set<string>>(() => new Set());
   const [isOpen, setIsOpen] = useState(false);
   const dismissedIdsRef = useRef(dismissedIds);
 
@@ -165,7 +159,6 @@ const BannerMessage = () => {
     setDismissedIds((previous) => {
       const updated = new Set(previous);
       visibleBanners.forEach((banner) => updated.add(banner.id));
-      persistDismissedIds(updated);
       return updated;
     });
     setBanners((previous) => previous.filter((banner) => !visibleBanners.some((visible) => visible.id === banner.id)));

@@ -1,7 +1,7 @@
-import { ReactLenis, type LenisRef } from "lenis/react";
+import { ReactLenis } from "lenis/react";
 import { useLocation } from "react-router-dom";
 
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import type { ReactNode } from "react";
 import { usePrefersReducedMotion } from "@/contexts/MotionPreferenceContext";
 
@@ -40,7 +40,6 @@ export const isDataRoute = (pathname: string) =>
 const SmoothScroll = ({ children }: { children: ReactNode }) => {
   const { pathname } = useLocation();
   const prefersReducedMotion = usePrefersReducedMotion();
-  const lenisRef = useRef<LenisRef>(null);
   const enabled = !prefersReducedMotion && !isDataRoute(pathname);
 
   // `html { scroll-behavior: smooth }` and Lenis both want to own easing; run
@@ -66,8 +65,8 @@ const SmoothScroll = ({ children }: { children: ReactNode }) => {
   }, [enabled]);
 
   /*
-   * Lenis is stopped and started on its instance rather than mounted and
-   * unmounted.
+   * Lenis stays mounted and is disarmed through its OPTIONS, never through
+   * lenis.stop().
    *
    * Returning a bare fragment when disabled and <ReactLenis> when enabled puts
    * two different component types at the same position, so React tears down and
@@ -76,17 +75,20 @@ const SmoothScroll = ({ children }: { children: ReactNode }) => {
    * value came only from the OS and was fixed for the session - the in-app
    * motion toggle made it something a user does, and it read as the page
    * hanging for a second or two. Guarded by e2e/reduced-motion.spec.ts.
+   *
+   * stop() was the first attempt and is the wrong lever: it LOCKS scrolling
+   * rather than disabling smoothing, which is what it exists for (holding the
+   * page still behind a modal). Using it to express "reduced motion" would take
+   * the page from eased-scroll to no-scroll.
+   *
+   * So the instance stays running and smoothWheel/syncTouch are turned off
+   * instead. Lenis then passes wheel and touch straight through to the browser's
+   * native scroll - no easing, no interception, and nothing for the user to
+   * fight - while the component tree is untouched.
    */
-  useEffect(() => {
-    const lenis = lenisRef.current?.lenis;
-    if (!lenis) return;
-    if (enabled) lenis.start();
-    else lenis.stop();
-  }, [enabled]);
 
   return (
     <ReactLenis
-      ref={lenisRef}
       root
       options={{
         // Roughly a half-second glide: enough to read as eased, short enough
@@ -95,9 +97,11 @@ const SmoothScroll = ({ children }: { children: ReactNode }) => {
         // Keep native behaviour for the input methods where easing is wrong:
         // trackpads and touchscreens already have OS-level momentum.
         syncTouch: false,
-        smoothWheel: true,
-        // Lenis handles in-page anchors so they ease like everything else.
-        anchors: true,
+        // The single switch that expresses "reduced motion" here. False makes
+        // Lenis a pass-through: the browser scrolls natively, unmodified.
+        smoothWheel: enabled,
+        // Anchor easing is Lenis's too, so it follows the same switch.
+        anchors: enabled,
       }}
     >
       {children}
