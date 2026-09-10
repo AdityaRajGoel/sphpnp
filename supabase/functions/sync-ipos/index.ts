@@ -1,149 +1,211 @@
-// Collects the published IPO Watch GMP table into the persisted IPO catalogue.
-// Triggered by GitHub Actions; it is not a visitor-facing scraper. Every
-// successful collection inserts a new GMP observation, preserving the history
-// needed for the public detail chart.
+// Collects the IPO catalogue from three independent sources and reconciles
+// them into one entry per issue.
+//
+// It reads three sites rather than one because the single-source version read a
+// fixed column order from IPO Watch, so when that table drifted every field
+// silently took the wrong column and the whole page went wrong at once. With
+// three parsers a layout change shows up as disagreement between sources and as
+// one source reporting zero rows, both of which are recorded, rather than as
+// quietly wrong numbers.
+//
+// Triggered by GitHub Actions; not a visitor-facing scraper. Every successful
+// collection appends a GMP observation, preserving the history the public
+// detail chart draws - GMP snapshots are never rewritten.
 
 import { createClient } from "npm:@supabase/supabase-js@2";
+import {
+  parseChittorgarh,
+  parseInvestorGain,
+  parseIpoWatch,
+  toCatalogueRow,
+} from "../_shared/ipo-parse.ts";
+import { reconcileIpos } from "../_shared/ipo-reconcile.ts";
 
-const SOURCE_URL = "https://ipowatch.in/ipo-grey-market-premium-latest-ipo-gmp/";
+const SOURCES = {
+  ipowatch: "https://ipowatch.in/ipo-grey-market-premium-latest-ipo-gmp/",
+  investorgain: "https://www.investorgain.com/report/live-ipo-gmp/331/",
+  chittorgarhMainboard: "https://www.chittorgarh.com/report/latest-ipo-gmp-grey-market-premium/15/",
+  chittorgarhSme: "https://www.chittorgarh.com/report/latest-sme-ipo-gmp-grey-market/72/",
+} as const;
+
 const USER_AGENT = "Mozilla/5.0 (compatible; sphpnp-ipo-monitor/1.0; +https://www.sphpnp.com)";
+const FETCH_TIMEOUT_MS = 30_000;
+
 const cors = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-sync-secret",
 };
 
-type CollectedIpo = {
-  slug: string;
-  name: string;
-  board: "mainboard" | "sme";
-  status: "upcoming" | "open" | "closed" | "listed";
-  price_band_min: number | null;
-  price_band_max: number | null;
-  open_date: string | null;
-  close_date: string | null;
-  gmp: number;
-  est_listing_price: number | null;
-};
+const json = (body: unknown, status = 200) =>
+  new Response(JSON.stringify(body), {
+    status,
+    headers: { ...cors, "Content-Type": "application/json" },
+  });
 
-const stripTags = (value: string) => {
-  let previous = "";
-  let text = value;
-  while (text !== previous) {
-    previous = text;
-    text = text.replace(/<[^>]*>/g, "");
-  }
-  return text.replace(/&nbsp;/gi, " ").replace(/&amp;/gi, "&").replace(/\s+/g, " ").trim();
-};
+type SourceReport = { source: string; ok: boolean; rows: number; reason?: string };
 
-const slugify = (value: string) => value
-  .toLowerCase()
-  .replace(/\b(ipo|limited|ltd\.?|private)\b/g, " ")
-  .replace(/[^a-z0-9]+/g, "-")
-  .replace(/(^-|-$)/g, "")
-  .slice(0, 96);
-
-const amount = (value: string): number | null => {
-  const match = value.replace(/,/g, "").match(/-?\d+(?:\.\d+)?/);
-  return match ? Number(match[0]) : null;
-};
-
-const priceBand = (value: string): [number | null, number | null] => {
-  const values = [...value.replace(/,/g, "").matchAll(/\d+(?:\.\d+)?/g)].map((m) => Number(m[0]));
-  if (values.length === 0) return [null, null];
-  return [values[0], values[values.length - 1]];
-};
-
-// IPO Watch displays dates such as "10 - 14 Sep 2026". Dates without a year
-// are deliberately left null rather than guessed across a year boundary.
-const parseDates = (value: string): [string | null, string | null] => {
-  const match = value.match(/(\d{1,2})\s*[-–]\s*(\d{1,2})\s*([A-Za-z]{3,9})\s*(\d{4})/);
-  if (!match) return [null, null];
-  const month = new Date(`${match[3]} 1, ${match[4]}`).getMonth();
-  if (Number.isNaN(month)) return [null, null];
-  const iso = (day: string) => `${match[4]}-${String(month + 1).padStart(2, "0")}-${day.padStart(2, "0")}`;
-  return [iso(match[1]), iso(match[2])];
-};
-
-function parseIpoWatch(html: string): CollectedIpo[] {
-  const rows: CollectedIpo[] = [];
-  const tables = html.match(/<table[^>]*>[\s\S]*?<\/table>/gi) ?? [];
-
-  for (const table of tables) {
-    const tableRows = table.match(/<tr[^>]*>[\s\S]*?<\/tr>/gi) ?? [];
-    if (tableRows.length < 2) continue;
-    const header = stripTags(tableRows[0]).toLowerCase();
-    if (!header.includes("ipo") || !header.includes("gmp") || !header.includes("price")) continue;
-
-    for (const row of tableRows.slice(1)) {
-      const cells = row.match(/<td[^>]*>[\s\S]*?<\/td>/gi);
-      if (!cells || cells.length < 6) continue;
-      const values = cells.map(stripTags);
-      const name = values[0].replace(/\s*(IPO|Limited|Ltd\.?)\s*/gi, " ").replace(/\s+/g, " ").trim();
-      if (name.length < 2 || name === "-" || name === "--") continue;
-
-      // Current IPO Watch layout: name, GMP, trend, price band, estimated
-      // listing, dates, type, status, last updated. Older layouts still land
-      // here, but without the status column and are safely marked upcoming.
-      const gmp = amount(values[1]);
-      if (gmp === null) continue;
-      const negativeGmp = /-/.test(values[1]) && gmp > 0;
-      const [min, max] = priceBand(values[3] ?? "");
-      const estimated = amount(values[4] ?? "");
-      const [openDate, closeDate] = parseDates(values[5] ?? "");
-      const type = (values[6] ?? "").toLowerCase();
-      const statusText = (values[7] ?? "").toLowerCase();
-      const status: CollectedIpo["status"] = statusText.includes("open") || statusText.includes("live")
-        ? "open"
-        : statusText.includes("listed") ? "listed"
-        : statusText.includes("closed") || statusText.includes("allotment") ? "closed"
-        : "upcoming";
-
-      rows.push({
-        slug: slugify(name), name, board: type.includes("sme") ? "sme" : "mainboard", status,
-        price_band_min: min, price_band_max: max, open_date: openDate, close_date: closeDate,
-        gmp: negativeGmp ? -gmp : gmp, est_listing_price: estimated,
-      });
+/**
+ * Fetches and parses one source, converting any failure into a reported
+ * outcome rather than an exception.
+ *
+ * A single site being down, rate-limiting, or restructuring must degrade the
+ * catalogue, never empty it - the whole reason for three sources. But a silent
+ * skip would be its own defect, so every failure is recorded with a reason and
+ * returned to the caller for logging.
+ */
+async function collect<T, E extends Record<string, unknown> = Record<string, never>>(
+  source: string,
+  url: string,
+  parse: (html: string) => { rows: T[]; tablesMatched?: number } & E,
+): Promise<{ rows: T[]; report: SourceReport } & Partial<E>> {
+  try {
+    const response = await fetch(url, {
+      headers: { "User-Agent": USER_AGENT, Accept: "text/html" },
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+    });
+    if (!response.ok) {
+      return { rows: [], report: { source, ok: false, rows: 0, reason: `HTTP ${response.status}` } };
     }
+    const parsed = parse(await response.text());
+    const { rows, tablesMatched } = parsed;
+    if (rows.length === 0) {
+      // Zero rows from a reachable page is the signature of layout drift, and
+      // is worth distinguishing from a network failure when reading the logs.
+      return {
+        rows: [],
+        report: {
+          source,
+          ok: false,
+          rows: 0,
+          reason: tablesMatched === 0 ? "no matching table (layout changed?)" : "table matched but parsed 0 rows",
+        },
+      };
+    }
+    return { ...parsed, rows, report: { source, ok: true, rows: rows.length } };
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : String(error);
+    return { rows: [], report: { source, ok: false, rows: 0, reason } };
   }
-
-  const seen = new Set<string>();
-  return rows.filter((row) => row.slug && !seen.has(row.slug) && (seen.add(row.slug), true));
 }
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
+
   const secret = Deno.env.get("SYNC_SECRET");
   if (!secret || req.headers.get("x-sync-secret") !== secret) {
-    return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...cors, "Content-Type": "application/json" } });
+    return json({ error: "Unauthorized" }, 401);
   }
 
   try {
-    const response = await fetch(SOURCE_URL, { headers: { "User-Agent": USER_AGENT, Accept: "text/html" }, signal: AbortSignal.timeout(30_000) });
-    if (!response.ok) throw new Error(`IPO Watch returned HTTP ${response.status}`);
-    const parsed = parseIpoWatch(await response.text());
-    if (parsed.length === 0) throw new Error("IPO Watch parsed 0 rows (markup likely changed)");
+    // Fetched in parallel: they are independent sites and one slow response
+    // should not push the whole run toward the function's time budget.
+    const [watch, gain, cgMain, cgSme] = await Promise.all([
+      collect("ipowatch", SOURCES.ipowatch, (html) => parseIpoWatch(html)),
+      collect("investorgain", SOURCES.investorgain, (html) => parseInvestorGain(html)),
+      collect("chittorgarh-mainboard", SOURCES.chittorgarhMainboard, (html) => parseChittorgarh(html, "mainboard")),
+      collect("chittorgarh-sme", SOURCES.chittorgarhSme, (html) => parseChittorgarh(html, "sme")),
+    ]);
 
-    const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
-    const capturedAt = new Date().toISOString();
-    const catalogueRows = parsed.map(({ gmp: _gmp, est_listing_price: _est, ...ipo }) => ({
-      ...ipo, source: "ipowatch", source_url: SOURCE_URL, data_as_of: capturedAt, updated_at: capturedAt,
-    }));
-    const { data: upserted, error: catalogueError } = await supabase.from("ipos")
-      .upsert(catalogueRows, { onConflict: "slug" }).select("id,slug");
-    if (catalogueError) throw new Error(`IPO upsert failed: ${catalogueError.message}`);
+    const reports = [watch.report, gain.report, cgMain.report, cgSme.report];
+    for (const report of reports) {
+      if (!report.ok) console.error(`sync-ipos source failed: ${report.source} - ${report.reason}`);
+      else console.log(`sync-ipos source ok: ${report.source} (${report.rows} rows)`);
+    }
 
-    const ids = new Map((upserted ?? []).map((row: { id: string; slug: string }) => [row.slug, row.id]));
-    const snapshots = parsed.flatMap((ipo) => {
-      const ipoId = ids.get(ipo.slug);
-      return ipoId ? [{ ipo_id: ipoId, captured_at: capturedAt, gmp: ipo.gmp, est_listing_price: ipo.est_listing_price, source: "ipowatch" }] : [];
+    // IPO Watch publishes listed-issue prices in a second table, returned
+    // separately by the parser. Folding them onto the GMP rows by slug is what
+    // makes FIELD_PRECEDENCE's `listing_price: ["ipowatch"]` reachable; without
+    // this the field would be declared and permanently null.
+    const listingPriceBySlug = new Map(
+      (watch.listings ?? []).map((listing) => [listing.slug, listing.listing_price]),
+    );
+    const ipowatchRows = watch.rows.map((row) => {
+      const listingPrice = listingPriceBySlug.get(row.slug);
+      return listingPrice === undefined || listingPrice === null
+        ? row
+        : { ...row, listing_price: listingPrice };
     });
-    const { error: snapshotError } = await supabase.from("ipo_gmp_snapshots").insert(snapshots);
-    if (snapshotError) throw new Error(`GMP snapshot insert failed: ${snapshotError.message}`);
 
-    return new Response(JSON.stringify({ ok: true, source: "ipowatch", ipos: parsed.length, snapshots: snapshots.length, capturedAt }), { headers: { ...cors, "Content-Type": "application/json" } });
+    const reconciled = reconcileIpos({
+      ipowatch: ipowatchRows,
+      investorgain: gain.rows,
+      chittorgarh: [...cgMain.rows, ...cgSme.rows],
+    });
+
+    // Every source failing is a real outage, not a quiet no-op: fail loudly so
+    // the workflow surfaces it rather than reporting a successful empty run.
+    if (reconciled.length === 0) {
+      return json(
+        { error: "No IPO rows collected from any source", sources: reports },
+        502,
+      );
+    }
+
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+    );
+    const capturedAt = new Date().toISOString();
+    const contributing = reports.filter((r) => r.ok).map((r) => r.source);
+    const sourcesLabel = contributing.join("+") || "none";
+
+    const catalogueRows = reconciled.map((ipo) =>
+      toCatalogueRow(ipo, sourcesLabel, SOURCES.ipowatch, capturedAt),
+    );
+
+    // PostgREST derives one column list per bulk upsert from the batch it is
+    // given, and these rows deliberately omit different fields depending on
+    // what each source knew. Mixing shapes in one call would write NULL into
+    // the omitted columns, which is precisely the clobbering the omission
+    // exists to prevent - so rows are grouped by shape, as screener-row.ts does.
+    const byShape = new Map<string, Record<string, unknown>[]>();
+    for (const row of catalogueRows) {
+      const key = Object.keys(row).sort().join(",");
+      const group = byShape.get(key);
+      if (group) group.push(row);
+      else byShape.set(key, [row]);
+    }
+
+    const idsBySlug = new Map<string, string>();
+    for (const group of byShape.values()) {
+      const { data, error } = await supabase
+        .from("ipos")
+        .upsert(group, { onConflict: "slug" })
+        .select("id,slug");
+      if (error) throw new Error(`IPO upsert failed: ${error.message}`);
+      for (const row of (data ?? []) as { id: string; slug: string }[]) {
+        idsBySlug.set(row.slug, row.id);
+      }
+    }
+
+    const snapshots = reconciled.flatMap((ipo) => {
+      const ipoId = idsBySlug.get(ipo.slug);
+      if (!ipoId || ipo.gmp === null) return [];
+      return [{
+        ipo_id: ipoId,
+        captured_at: capturedAt,
+        gmp: ipo.gmp,
+        est_listing_price: ipo.est_listing_price,
+        source: ipo.gmp_sources.join("+") || "unknown",
+        sources: ipo.gmp_sources,
+      }];
+    });
+
+    if (snapshots.length > 0) {
+      const { error } = await supabase.from("ipo_gmp_snapshots").insert(snapshots);
+      if (error) throw new Error(`GMP snapshot insert failed: ${error.message}`);
+    }
+
+    return json({
+      ok: true,
+      ipos: reconciled.length,
+      snapshots: snapshots.length,
+      sources: reports,
+      capturedAt,
+    });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     console.error("sync-ipos failed:", message);
-    return new Response(JSON.stringify({ error: message }), { status: 500, headers: { ...cors, "Content-Type": "application/json" } });
+    return json({ error: message }, 500);
   }
 });
