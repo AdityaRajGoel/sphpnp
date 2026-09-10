@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
-import { parseChittorgarhDetail, parseIndianDate, parseCroreAmount } from "../../supabase/functions/_shared/ipo-detail";
+import { parseChittorgarhDetail, parseChittorgarhSubscription, parseIndianDate, parseCroreAmount, subscriptionUrl } from "../../supabase/functions/_shared/ipo-detail";
 import { parseChittorgarh } from "../../supabase/functions/_shared/ipo-parse";
 
 /*
@@ -137,5 +137,44 @@ describe("parseChittorgarh detail links", () => {
     const html = readFileSync("src/test/fixtures/ipo/chittorgarh-mainboard.html", "utf-8");
     const jindal = parseChittorgarh(html, "mainboard").rows.find((r) => r.slug.startsWith("jindal-supreme"))!;
     expect(jindal.detail_url).toBe("https://www.chittorgarh.com/ipo/jindal-supreme-ipo/2803/");
+  });
+});
+
+describe("parseChittorgarhSubscription", () => {
+  const sub = (name: string) => readFileSync(`src/test/fixtures/ipo/chittorgarh-subscription-${name}.html`, "utf-8");
+
+  it("reads each category's subscription multiple and the total", () => {
+    // Rentomojo, captured mid-issue on Sep 10, 2026.
+    expect(parseChittorgarhSubscription(sub("rentomojo"))).toEqual({
+      total: 4.71,
+      qib: 0.45,
+      nii: 11.6,
+      retail: 4.2,
+      employee: 4.25,
+      categories: [
+        { category: "Qualified Institutional", times: 0.45 },
+        { category: "Non Institutional", times: 11.6 },
+        { category: "Retail Individual", times: 4.2 },
+        { category: "Employee Reservations", times: 4.25 },
+        { category: "Total Subscription", times: 4.71 },
+      ],
+      // "as of Sep 10, 2026 17:09" is Indian time.
+      as_of: "2026-09-10T11:39:00.000Z",
+    });
+  });
+
+  it("has nothing for an issue that has not opened, rather than zeros", () => {
+    expect(parseChittorgarhSubscription(sub("jindal-supreme"))).toBeNull();
+  });
+});
+
+describe("subscriptionUrl", () => {
+  it("is the issue page's subscription counterpart", () => {
+    expect(subscriptionUrl("https://www.chittorgarh.com/ipo/rentomojo-ipo/2971/"))
+      .toBe("https://www.chittorgarh.com/ipo_subscription/rentomojo-ipo/2971/");
+  });
+
+  it("refuses anything that is not a Chittorgarh issue page", () => {
+    expect(subscriptionUrl("https://evil.example/ipo/x/1/")).toBeNull();
   });
 });

@@ -235,3 +235,66 @@ export function parseChittorgarhDetail(html: string): IpoDetail {
     },
   };
 }
+
+// ---------------------------------------------------------------------------
+// Subscription (chittorgarh.com/ipo_subscription/<slug>/<id>/)
+// ---------------------------------------------------------------------------
+
+export type IpoSubscription = {
+  total: number | null;
+  qib: number | null;
+  nii: number | null;
+  retail: number | null;
+  employee: number | null;
+  categories: { category: string; times: number }[];
+  /** When Chittorgarh took the figures, as an ISO instant. */
+  as_of: string | null;
+};
+
+/** The issue page's subscription counterpart, only for Chittorgarh's own issue pages. */
+export function subscriptionUrl(detailUrl: string): string | null {
+  return /^https:\/\/www\.chittorgarh\.com\/ipo\/[a-z0-9-]+\/\d+\/$/.test(detailUrl)
+    ? detailUrl.replace("/ipo/", "/ipo_subscription/")
+    : null;
+}
+
+/** "as of Sep 10, 2026 17:09" (Indian time) -> the instant in UTC. */
+function asOfInstant(text: string): string | null {
+  const match = /as of\s+([A-Za-z]{3})[a-z]*\s+(\d{1,2}),\s*(\d{4})\s+(\d{1,2}):(\d{2})/i.exec(text);
+  if (!match) return null;
+  const month = MONTHS[match[1].toLowerCase()];
+  if (!month) return null;
+  const iso = `${match[3]}-${month}-${match[2].padStart(2, "0")}T${match[4].padStart(2, "0")}:${match[5]}:00+05:30`;
+  const instant = new Date(iso);
+  return Number.isNaN(instant.getTime()) ? null : instant.toISOString();
+}
+
+/**
+ * The "Investor Category | Subscription (times)" table the subscription page
+ * carries once bidding has opened. Null before then - an issue nobody has bid
+ * on yet has no subscription, which is not the same as a subscription of zero.
+ */
+export function parseChittorgarhSubscription(html: string): IpoSubscription | null {
+  const table = [...html.matchAll(/<table[^>]*>([\s\S]*?)<\/table>/gi)]
+    .map((m) => m[1])
+    .find((body) => /Subscription \(times\)/i.test(text(body.match(/<thead[\s\S]*?<\/thead>/i)?.[0] ?? body.slice(0, 800))));
+  if (!table) return null;
+
+  const categories = [...table.matchAll(/<tr[^>]*>([\s\S]*?)<\/tr>/gi)]
+    .map((row) => [...row[1].matchAll(/<td[^>]*>([\s\S]*?)<\/td>/gi)].map((cell) => text(cell[1])))
+    .filter((cells) => cells.length >= 2)
+    .map((cells) => ({ category: cells[0], times: firstNumber(cells[1]) }))
+    .filter((row): row is { category: string; times: number } => Boolean(row.category) && row.times !== null);
+  if (categories.length === 0) return null;
+
+  const find = (pattern: RegExp) => categories.find((c) => pattern.test(c.category))?.times ?? null;
+  return {
+    total: find(/^Total/i),
+    qib: find(/^Qualified Institutional|^QIB/i),
+    nii: find(/^Non[- ]Institutional|^NII/i),
+    retail: find(/^Retail|^Individual/i),
+    employee: find(/^Employee/i),
+    categories,
+    as_of: asOfInstant(text(html.slice(Math.max(0, html.indexOf(table) - 3000), html.indexOf(table)))),
+  };
+}

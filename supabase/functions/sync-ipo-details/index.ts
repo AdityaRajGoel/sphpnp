@@ -13,7 +13,7 @@
 // fallback and is capped per run.
 
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { parseChittorgarhDetail, type IpoDetail } from "../_shared/ipo-detail.ts";
+import { parseChittorgarhDetail, parseChittorgarhSubscription, subscriptionUrl, type IpoDetail, type IpoSubscription } from "../_shared/ipo-detail.ts";
 import { CHITTORGARH_ISSUE_URL } from "../_shared/ipo-parse.ts";
 import { deriveIpoStatus, istDate } from "../_shared/ipo-status.ts";
 
@@ -21,8 +21,13 @@ import { deriveIpoStatus, istDate } from "../_shared/ipo-status.ts";
 const BATCH_SIZE = Number(Deno.env.get("IPO_DETAILS_BATCH_SIZE") ?? "20");
 /** Apify fallbacks per run - bounded by the run's time budget and the account's credit. */
 const APIFY_MAX_PER_RUN = Number(Deno.env.get("IPO_DETAILS_APIFY_MAX") ?? "4");
-/** A live issue's page changes (subscription, anchor book, dates); refresh it this often. */
+/** A live issue's page changes (anchor book, dates); refresh it this often. */
 const LIVE_REFRESH_HOURS = 12;
+/**
+ * An issue taking bids is re-read on every run (the workflow runs three times
+ * a trading day) - its subscription multiple moves by the hour.
+ */
+const OPEN_REFRESH_HOURS = 3;
 /** Listed issues stay in scope this long for their final details. */
 const LISTED_WINDOW_DAYS = 30;
 const RUN_BUDGET_MS = 110_000;
@@ -48,26 +53,26 @@ type Row = {
   registrar: string | null; allotment_date: string | null;
   lot_size: number | null; price_band_max: number | null;
   details_fetched_at: string | null; details_attempted_at: string | null;
+  subscription_as_of: string | null;
 };
 
 /** A parse that found the issue's own sections, or a reason it did not. */
 const usable = (detail: IpoDetail): string | null =>
   detail.sections.some((s) => s.title === "IPO Details") ? null : "page has no IPO Details section";
 
-async function fetchDirect(url: string): Promise<{ detail: IpoDetail } | { reason: string }> {
+/** A page's HTML, fetched directly as a browser would. */
+async function fetchDirect(url: string): Promise<{ html: string } | { reason: string }> {
   try {
     const response = await fetch(url, { headers: BROWSER_HEADERS, signal: AbortSignal.timeout(20_000) });
     if (!response.ok) return { reason: `HTTP ${response.status}` };
-    const detail = parseChittorgarhDetail(await response.text());
-    const problem = usable(detail);
-    return problem ? { reason: problem } : { detail };
+    return { html: await response.text() };
   } catch (error) {
     return { reason: error instanceof Error ? error.message : String(error) };
   }
 }
 
-/** One page through Apify's RAG Web Browser, which returns the page's HTML. */
-async function fetchViaApify(url: string, token: string): Promise<{ detail: IpoDetail } | { reason: string }> {
+/** A page's HTML through Apify's RAG Web Browser - the fallback when the direct fetch is refused. */
+async function fetchViaApify(url: string, token: string): Promise<{ html: string } | { reason: string }> {
   try {
     const response = await fetch(
       `https://api.apify.com/v2/acts/apify~rag-web-browser/run-sync-get-dataset-items?token=${encodeURIComponent(token)}&timeout=60`,
@@ -81,13 +86,32 @@ async function fetchViaApify(url: string, token: string): Promise<{ detail: IpoD
     if (!response.ok) return { reason: `Apify HTTP ${response.status}: ${(await response.text()).slice(0, 160)}` };
     const items = await response.json() as { html?: string; crawl?: { httpStatusCode?: number } }[];
     const html = items[0]?.html;
-    if (!html) return { reason: `Apify returned no HTML (page status ${items[0]?.crawl?.httpStatusCode ?? "unknown"})` };
-    const detail = parseChittorgarhDetail(html);
-    const problem = usable(detail);
-    return problem ? { reason: `via Apify: ${problem}` } : { detail };
+    return html ? { html } : { reason: `Apify returned no HTML (page status ${items[0]?.crawl?.httpStatusCode ?? "unknown"})` };
   } catch (error) {
     return { reason: `Apify: ${error instanceof Error ? error.message : String(error)}` };
   }
+}
+
+/** The issue page parsed, or why it could not be. */
+function parseDetail(result: { html: string } | { reason: string }, via = ""): { detail: IpoDetail } | { reason: string } {
+  if ("reason" in result) return result;
+  const detail = parseChittorgarhDetail(result.html);
+  const problem = usable(detail);
+  return problem ? { reason: `${via}${problem}` } : { detail };
+}
+
+/** Subscription columns; empty until bidding opens, and never written as zeros. */
+function subscriptionUpdate(sub: IpoSubscription | null): Record<string, unknown> {
+  if (!sub) return {};
+  const update: Record<string, unknown> = { subscription_categories: sub.categories };
+  const set = (column: string, value: number | string | null) => { if (value !== null) update[column] = value; };
+  set("subscription_total", sub.total);
+  set("subscription_qib", sub.qib);
+  set("subscription_nii", sub.nii);
+  set("subscription_retail", sub.retail);
+  set("subscription_employee", sub.employee);
+  set("subscription_as_of", sub.as_of);
+  return update;
 }
 
 /**
@@ -144,16 +168,20 @@ Deno.serve(async (req) => {
   if (!secret || req.headers.get("x-sync-secret") !== secret) return json({ error: "Unauthorized" }, 401);
 
   const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+  // {"force": true} ignores the refresh intervals - for a manual run that must
+  // pick up a change now. The batch size and the Apify cap still apply.
+  const force = ((await req.json().catch(() => ({}))) as { force?: unknown }).force === true;
   const apifyToken = Deno.env.get("APIFY_API_KEY") ?? null;
 
   const { data, error } = await supabase.from("ipos").select(
-    "id,slug,status,detail_url,open_date,close_date,listing_date,registrar,allotment_date,lot_size,price_band_max,details_fetched_at,details_attempted_at",
+    "id,slug,status,detail_url,open_date,close_date,listing_date,registrar,allotment_date,lot_size,price_band_max,details_fetched_at,details_attempted_at,subscription_as_of",
   ).not("detail_url", "is", null);
   if (error) return json({ error: error.message }, 500);
 
   const today = istDate();
   const listedCutoff = new Date(Date.now() - LISTED_WINDOW_DAYS * 86_400_000).toISOString().slice(0, 10);
-  const liveCutoff = Date.now() - LIVE_REFRESH_HOURS * 3_600_000;
+  const liveCutoff = force ? Infinity : Date.now() - LIVE_REFRESH_HOURS * 3_600_000;
+  const openCutoff = force ? Infinity : Date.now() - OPEN_REFRESH_HOURS * 3_600_000;
 
   // Due: live issues whose page is older than LIVE_REFRESH_HOURS, and issues
   // listed within LISTED_WINDOW_DAYS that have never been read. Stalest first.
@@ -164,9 +192,11 @@ Deno.serve(async (req) => {
       const attempted = row.details_attempted_at ? Date.parse(row.details_attempted_at) : 0;
       if (status === "listed") {
         const listedOn = row.listing_date ?? row.close_date;
-        return !row.details_fetched_at && attempted < liveCutoff && (!listedOn || listedOn >= listedCutoff);
+        // Read until both the page and its final subscription are stored.
+        const incomplete = !row.details_fetched_at || !row.subscription_as_of;
+        return incomplete && attempted < liveCutoff && (!listedOn || listedOn >= listedCutoff);
       }
-      return attempted < liveCutoff;
+      return attempted < (status === "open" ? openCutoff : liveCutoff);
     })
     // Live issues before listed ones - a visitor deciding whether to apply needs
     // the minimum investment now; a listing's page is history. Then stalest first.
@@ -182,8 +212,20 @@ Deno.serve(async (req) => {
   let viaApify = 0;
   let writeErrors = 0;
 
+  let subscriptions = 0;
   const store = async (row: Row, detail: IpoDetail, source: string) => {
-    const { error: upErr } = await supabase.from("ipos").update(updateFor(row, detail, source, new Date().toISOString())).eq("id", row.id);
+    // Subscription exists once bidding opens. Read directly only: it is one
+    // extra page per issue, and a miss is retried on the next run anyway.
+    let subscription: IpoSubscription | null = null;
+    const subUrl = subscriptionUrl(row.detail_url!);
+    if (subUrl && deriveIpoStatus(row, row.status, today) !== "upcoming") {
+      const page = await fetchDirect(subUrl);
+      if ("html" in page) subscription = parseChittorgarhSubscription(page.html);
+      if (subscription) subscriptions++;
+      await sleep(PACING_MS);
+    }
+    const update = { ...updateFor(row, detail, source, new Date().toISOString()), ...subscriptionUpdate(subscription) };
+    const { error: upErr } = await supabase.from("ipos").update(update).eq("id", row.id);
     if (upErr) {
       writeErrors++;
       failures.push({ slug: row.slug, reason: `write: ${upErr.message}` });
@@ -198,7 +240,7 @@ Deno.serve(async (req) => {
 
   for (const row of due) {
     if (Date.now() - started > RUN_BUDGET_MS) break;
-    const result = await fetchDirect(row.detail_url!);
+    const result = parseDetail(await fetchDirect(row.detail_url!));
     if ("detail" in result) await store(row, result.detail, "chittorgarh");
     else failedDirect.push(Object.assign({}, row, { details_error: result.reason }) as Row);
     await sleep(PACING_MS);
@@ -211,7 +253,7 @@ Deno.serve(async (req) => {
       await recordFailure(row, `${directReason}${apifyToken ? "; Apify fallback deferred to a later run" : "; no APIFY_API_KEY"}`);
       continue;
     }
-    const result = await fetchViaApify(row.detail_url!, apifyToken);
+    const result = parseDetail(await fetchViaApify(row.detail_url!, apifyToken), "via Apify: ");
     if ("detail" in result) {
       viaApify++;
       await store(row, result.detail, "chittorgarh via apify");
@@ -223,5 +265,5 @@ Deno.serve(async (req) => {
   // Nothing readable at all from a non-empty batch is an outage; a few pages
   // failing is not, and is reported per slug.
   const status = (due.length > 0 && fetched === 0) || writeErrors > 0 ? 500 : 200;
-  return json({ ok: status === 200, due: due.length, fetched, viaApify, failed: failures }, status);
+  return json({ ok: status === 200, due: due.length, fetched, viaApify, subscriptions, failed: failures }, status);
 });
