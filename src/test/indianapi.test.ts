@@ -22,6 +22,8 @@ import {
  * symbol unless the response is provably about that company.
  */
 
+const last = <T,>(items: T[]): T => items[items.length - 1];
+
 const fixture = (name: string) =>
   JSON.parse(readFileSync(`src/test/fixtures/indianapi/${name}.json`, "utf-8"));
 
@@ -45,26 +47,26 @@ describe("parseStatement", () => {
     const s = parseStatement(fixture("reliance-quarter_results"))!;
     expect(s.periods).toHaveLength(13);
     expect(s.periods[0]).toBe("Jun 2023");
-    expect(s.periods.at(-1)).toBe("Jun 2026");
-    expect(s.period_ends.at(-1)).toBe("2026-06-30");
+    expect(last(s.periods)).toBe("Jun 2026");
+    expect(last(s.period_ends)).toBe("2026-06-30");
     const sales = s.rows.find((r) => r.label === "Sales")!;
     expect(sales.values).toHaveLength(13);
-    expect(sales.values.at(-1)).toBe(309468);
+    expect(last(sales.values)).toBe(309468);
     expect(s.rows.map((r) => r.label)).toContain("EPS in Rs");
   });
 
   it("keeps TTM as the last column with no period end", () => {
     const s = parseStatement(fixture("reliance-yoy_results"))!;
-    expect(s.periods.at(-1)).toBe("TTM");
-    expect(s.period_ends.at(-1)).toBeNull();
-    expect(s.periods.at(-2)).toBe("Mar 2026");
+    expect(last(s.periods)).toBe("TTM");
+    expect(last(s.period_ends)).toBeNull();
+    expect(s.periods[s.periods.length - 2]).toBe("Mar 2026");
   });
 
   it("reads a bank's layout, which has Revenue and Financing Profit instead of Sales", () => {
     const s = parseStatement(fixture("hdfcbank-quarter_results"))!;
     expect(s.rows[0].label).toBe("Revenue");
     expect(s.rows.map((r) => r.label)).toContain("Financing Profit");
-    expect(s.rows[0].values.at(-1)).toBe(90575);
+    expect(last(s.rows[0].values)).toBe(90575);
   });
 
   it("keeps a missing figure as null rather than zero", () => {
@@ -120,7 +122,7 @@ describe("parseShareholding", () => {
   it("reads each holder category as a dated series", () => {
     const sh = parseShareholding(fixture("reliance-stock").shareholding);
     const promoter = sh.find((c) => c.category === "Promoter")!;
-    expect(promoter.points.at(-1)).toEqual({ date: "2026-06-30", pct: 50.48 });
+    expect(last(promoter.points)).toEqual({ date: "2026-06-30", pct: 50.48 });
   });
 });
 
@@ -137,8 +139,7 @@ describe("verifyIdentity", () => {
     // company, and saving its financials under this symbol would be worse
     // than showing nothing.
     const result = verifyIdentity(stock, "RELINFRA");
-    expect(result.ok).toBe(false);
-    expect(result.reason).toMatch(/RELIANCE/);
+    expect(result).toEqual({ ok: false, reason: expect.stringMatching(/RELIANCE/) });
   });
 
   it("refuses a response with no NSE code at all", () => {

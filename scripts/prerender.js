@@ -68,9 +68,10 @@ const routes = [
 // ships noindex,nofollow even if the status code ever regresses to 200.
 const ERROR_ROUTE = '/404';
 
-// Only the income statement renders a <td> on a stock page, so a table cell
-// holding a signed number - "₹1,28,260.00 Cr", "₹6.44", "0.41" - is a real
-// financial figure and nothing else on the page can forge one.
+// Only the financial tables render a <td> on a stock page - the NSE income
+// table, or the IndianAPI statements, shareholding and moving averages - so a
+// table cell holding a signed number ("₹1,28,260.00 Cr", "3,09,468", "50.48%")
+// is a real financial figure and nothing else on the page can forge one.
 const FINANCIAL_FIGURE = /<td[^>]*>\s*-?(?:₹\s*)?\d/;
 
 /**

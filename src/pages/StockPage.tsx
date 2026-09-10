@@ -18,6 +18,7 @@ import type { StockForAnalysis } from "@/components/AIAnalysisModal";
 import { revealSection } from "@/lib/motion";
 import { formatCrore } from "@/lib/fundamentals";
 import { useStockFundamentals } from "@/hooks/useStockFundamentals";
+import { useStockStatements } from "@/hooks/useStockStatements";
 import QuoteMetrics from "@/components/stock/QuoteMetrics";
 import StockPriceChart from "@/components/stock/StockPriceChart";
 import IncomeStatementTable from "@/components/stock/IncomeStatementTable";
@@ -25,6 +26,9 @@ import RatiosPanel from "@/components/stock/RatiosPanel";
 import CorporateActionsList from "@/components/stock/CorporateActionsList";
 import StockProvenance from "@/components/stock/StockProvenance";
 import SymbolSwitcher from "@/components/stock/SymbolSwitcher";
+import StatementsSection from "@/components/stock/StatementsSection";
+import KeyMetricsGrid from "@/components/stock/KeyMetricsGrid";
+import ShareholdingTable from "@/components/stock/ShareholdingTable";
 
 // Same split the screener, comparison and search surfaces make: the modal drags
 // in recharts and react-markdown, which is more JS than this whole page ships.
@@ -33,6 +37,7 @@ const AIAnalysisModal = lazy(() => import("@/components/AIAnalysisModal"));
 export default function StockPage() {
   const { symbol } = useParams<{ symbol: string }>();
   const s = useStockFundamentals(symbol);
+  const st = useStockStatements(symbol);
   const [askingAI, setAskingAI] = useState(false);
 
   // `synced` and `basis` are set together by selectBasis() inside the hook
@@ -41,7 +46,14 @@ export default function StockPage() {
   // means a future change that breaks the invariant falls back to the unsynced
   // card rather than silently mislabelling the table's basis badge.
   const basis = s.synced ? s.basis : null;
-  const hasFinancials = basis !== null;
+  // IndianAPI statements (current to the latest quarter) take over from the
+  // NSE-filing tables wherever the sync has reached a symbol; the NSE tables
+  // remain the fallback. Either one is real financials for the state marker.
+  const hasStatements = Object.keys(st.statements).length > 0;
+  const hasFinancials = basis !== null || hasStatements;
+  // Both sources must have answered before the page declares a state, or the
+  // prerender could capture "not yet synced" moments before statements land.
+  const loading = s.loading || st.loading;
 
   // The modal wants a live quote; this page holds a filings-first subset of one,
   // so only the fields that genuinely exist here are handed over. Price is
@@ -105,7 +117,7 @@ export default function StockPage() {
         title={`${title} | Shri Parasram Holdings Panipat`}
         description={
           s.header
-            ? `Quarterly results, EPS and corporate actions for ${s.header.name} (${s.header.symbol}), sourced from NSE XBRL filings.`
+            ? `Quarterly results, profit & loss, balance sheet, cash flow, ratios and shareholding for ${s.header.name} (${s.header.symbol}).`
             : `Quarterly financial results and corporate actions.`
         }
       />
@@ -119,7 +131,7 @@ export default function StockPage() {
           ]}
         />
 
-        {s.loading ? (
+        {loading ? (
           <div className="space-y-4" aria-busy="true" data-stock-state="loading">
             <Skeleton className="h-12 w-2/3" />
             <Skeleton className="h-64 w-full" />
@@ -205,7 +217,21 @@ export default function StockPage() {
 
             {/* Tracked but unreached by the sync cursor. Ordinary, not broken -
                 the backfill covers ~2 symbols an hour. */}
-            {basis === null ? (
+            {hasStatements ? (
+              <>
+                {st.profile && (
+                  <KeyMetricsGrid
+                    keyMetrics={st.profile.key_metrics}
+                    roe={st.profile.roe_history}
+                    ratios={st.statements.ratios?.rows ?? []}
+                    movingAverages={st.profile.moving_averages}
+                    price={s.header?.price ?? null}
+                  />
+                )}
+                <StatementsSection statements={st.statements} />
+                {st.profile && <ShareholdingTable shareholding={st.profile.shareholding} />}
+              </>
+            ) : basis === null ? (
               <Card className="p-6">
                 <h2 className="font-semibold mb-1">Financials not yet synced</h2>
                 <p className="text-sm text-muted-foreground">
