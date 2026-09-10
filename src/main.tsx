@@ -14,6 +14,17 @@ registerSW({ immediate: true });
 // static splash covers the gap until React paints.
 applyMotionPreference(readMotionPreference());
 
+// The app decides where a new route starts, not the browser. With the default
+// "auto", the browser re-applies a remembered scroll offset after a history
+// entry changes, racing useScrollToHash's reset - which is why links
+// intermittently landed partway down, or near the bottom of, a shorter page.
+// Guarded: some embedded browsers expose `history` without this property.
+try {
+  if ("scrollRestoration" in history) history.scrollRestoration = "manual";
+} catch {
+  /* restoration stays browser-managed; useScrollToHash still resets on its own */
+}
+
 createRoot(document.getElementById("root")!).render(<App />);
 
 // Fade out the static splash once React has painted, so users never see the
