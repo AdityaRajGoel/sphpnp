@@ -59,6 +59,41 @@ export function toYahooSymbol(nseSymbol: string): string {
   return nseSymbol.includes(".") ? nseSymbol : `${nseSymbol}.NS`;
 }
 
+/**
+ * Yahoo's timeseries endpoint, the modern replacement for the quoteSummary
+ * statement modules.
+ *
+ * Needed because balanceSheetHistoryQuarterly has been gutted upstream: it
+ * still returns one object per quarter, but each carries only `maxAge` and
+ * `endDate` - every financial figure has been stripped. Verified from the
+ * deployed function, which is the only place here that Yahoo does not
+ * rate-limit. That is why fundamentals_balance holds 664 rows in which
+ * total_equity is null for every single one.
+ *
+ * `type` is a comma-separated list of series names (quarterlyTotalAssets,
+ * quarterlyStockholdersEquity, ...). period1/period2 bound the window in epoch
+ * seconds; Yahoo returns nothing without them.
+ */
+export async function fetchTimeseries(
+  symbol: string,
+  types: string,
+  yearsBack = 3,
+): Promise<unknown | null> {
+  const cc = await getYahooCrumb();
+  const now = Math.floor(Date.now() / 1000);
+  const from = now - yearsBack * 365 * 24 * 60 * 60;
+  const url =
+    `https://query1.finance.yahoo.com/ws/fundamentals-timeseries/v1/finance/timeseries/${encodeURIComponent(symbol)}` +
+    `?symbol=${encodeURIComponent(symbol)}&type=${encodeURIComponent(types)}` +
+    `&period1=${from}&period2=${now}&merge=false` +
+    `${cc ? `&crumb=${encodeURIComponent(cc.crumb)}` : ""}`;
+  const res = await fetch(url, {
+    headers: { "User-Agent": YAHOO_UA, ...(cc ? { Cookie: cc.cookie } : {}) },
+  });
+  if (!res.ok) return null;
+  return await res.json();
+}
+
 export async function fetchQuoteSummary(
   symbol: string,
   modules: string,
@@ -135,6 +170,117 @@ export function parseBalanceSheet(json: unknown): BalanceRow[] {
         cashAndEquivalents: num(s.cash),
         currentAssets: num(s.totalCurrentAssets),
         currentLiabilities: num(s.totalCurrentLiabilities),
+      }];
+    });
+}
+
+export type IncomeRow = {
+  periodEnd: string;
+  revenue: number | null;
+  profitBeforeTax: number | null;
+  profitAfterTax: number | null;
+};
+
+/**
+ * Quarterly income, from the same quoteSummary call that already returns the
+ * balance sheet and cash flow.
+ *
+ * Added because NSE's corporates-financial-results endpoint stopped returning
+ * filings after 31-Dec-2024 for every symbol tested, while these Yahoo
+ * statements reach 30-Jun-2026. alignPeriods joins income to balance on an
+ * exact period_end match, so with income frozen 21 months behind, the two
+ * series never met: derived ratios existed for 3 rows out of ~1,800 and no
+ * stock on the site showed a ROE. Sourcing income from the same place as the
+ * balance sheet makes the periods align by construction.
+ *
+ * These rows are written with source 'yahoo' and coexist with NSE XBRL rather
+ * than replacing it - the unique key now includes source. A filing is still
+ * the better number wherever one exists.
+ *
+ * A statement with no endDate is dropped rather than dated: a row keyed to the
+ * wrong quarter would join against the wrong balance sheet and yield a
+ * confident wrong ratio, which is worse than an absent one. Missing figures
+ * stay null for the same reason computeRatios treats null as "cannot compute".
+ */
+/** The timeseries series names this parser reads, mapped to BalanceRow fields. */
+const TIMESERIES_BALANCE_FIELDS = {
+  quarterlyTotalAssets: "totalAssets",
+  quarterlyStockholdersEquity: "totalEquity",
+  quarterlyTotalDebt: "totalDebt",
+  quarterlyCashAndCashEquivalents: "cashAndEquivalents",
+  quarterlyCurrentAssets: "currentAssets",
+  quarterlyCurrentLiabilities: "currentLiabilities",
+} as const;
+
+export const TIMESERIES_BALANCE_TYPES = Object.keys(TIMESERIES_BALANCE_FIELDS).join(",");
+
+/**
+ * Balance-sheet quarters from Yahoo's fundamentals-timeseries endpoint.
+ *
+ * The shape, captured from the deployed function rather than assumed:
+ *
+ *   timeseries.result[i] = {
+ *     meta: { type: ["quarterlyStockholdersEquity"] },
+ *     quarterlyStockholdersEquity: [
+ *       { asOfDate: "2026-03-31", periodType: "3M", currencyCode: "INR",
+ *         reportedValue: { raw: 273615000000, fmt: "273.62B" } } ] }
+ *
+ * One result entry per requested series, each carrying its own observations, so
+ * the parser pivots them onto a single row per period.
+ *
+ * A series Yahoo omits stays null rather than becoming 0: computeRatios reads
+ * null as "cannot compute", while a 0 equity divides and a 0 debt asserts that
+ * a company carries none. An observation with no asOfDate is dropped rather
+ * than dated - a row keyed to the wrong quarter would join against the wrong
+ * income statement and produce a confident wrong ratio.
+ */
+export function parseTimeseriesBalance(json: unknown): BalanceRow[] {
+  const result = (json as { timeseries?: { result?: unknown[] } })?.timeseries?.result;
+  if (!Array.isArray(result)) return [];
+
+  const byPeriod = new Map<string, BalanceRow>();
+
+  for (const entry of result) {
+    const row = entry as Record<string, unknown>;
+    for (const [seriesName, field] of Object.entries(TIMESERIES_BALANCE_FIELDS)) {
+      const observations = row[seriesName];
+      if (!Array.isArray(observations)) continue;
+
+      for (const raw of observations as Record<string, unknown>[]) {
+        const periodEnd = typeof raw?.asOfDate === "string" ? raw.asOfDate : null;
+        if (!periodEnd) continue;
+        // num() unwraps Yahoo's { raw, fmt } itself, so hand it the wrapper.
+        const value = num(raw.reportedValue);
+        if (value === null) continue;
+
+        const existing = byPeriod.get(periodEnd) ?? {
+          periodEnd,
+          totalAssets: null,
+          totalDebt: null,
+          totalEquity: null,
+          cashAndEquivalents: null,
+          currentAssets: null,
+          currentLiabilities: null,
+        };
+        existing[field] = value;
+        byPeriod.set(periodEnd, existing);
+      }
+    }
+  }
+
+  return [...byPeriod.values()];
+}
+
+export function parseIncomeStatement(json: unknown): IncomeRow[] {
+  return statements(json, "incomeStatementHistoryQuarterly", "incomeStatementHistory")
+    .flatMap((s) => {
+      const periodEnd = toIso(s.endDate);
+      if (!periodEnd) return [];
+      return [{
+        periodEnd,
+        revenue: num(s.totalRevenue),
+        profitBeforeTax: num(s.incomeBeforeTax),
+        profitAfterTax: num(s.netIncome),
       }];
     });
 }

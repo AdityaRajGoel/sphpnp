@@ -16,8 +16,12 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 import {
   fetchQuoteSummary,
   toYahooSymbol,
-  parseBalanceSheet,
   parseCashflow,
+  parseIncomeStatement,
+  fetchTimeseries,
+  parseTimeseriesBalance,
+  TIMESERIES_BALANCE_TYPES,
+  type IncomeRow,
   type BalanceRow,
   type CashflowRow,
 } from "../_shared/yahoo.ts";
@@ -176,6 +180,7 @@ Deno.serve(async (req) => {
 
     let json: unknown | null = null;
     let balance: BalanceRow[] = [];
+    let income: IncomeRow[] = [];
     let cashflow: CashflowRow[] = [];
     // Recorded separately from the fetch failure below: a fetch failure means
     // Yahoo (or the crumb flow) refused us, while a parse failure means Yahoo
@@ -188,7 +193,7 @@ Deno.serve(async (req) => {
     try {
       json = await fetchQuoteSummary(
         yahooSymbol,
-        "balanceSheetHistoryQuarterly,cashflowStatementHistoryQuarterly",
+        "balanceSheetHistoryQuarterly,cashflowStatementHistoryQuarterly,incomeStatementHistoryQuarterly",
       );
     } catch (err) {
       console.error(`yahoo fetch failed for ${symbol}:`, (err as Error).message);
@@ -202,8 +207,22 @@ Deno.serve(async (req) => {
       // and abort the rest of the batch, rather than costing only this
       // symbol the way a fetch failure does.
       try {
-        balance = parseBalanceSheet(json);
+        /*
+         * Balance sheet comes from the timeseries endpoint, not from
+         * quoteSummary's balanceSheetHistoryQuarterly.
+         *
+         * That module has been gutted upstream: it still returns one object per
+         * quarter, but each carries only maxAge and endDate - every financial
+         * figure is stripped. Verified from this deployed function, which is the
+         * only place here Yahoo does not rate-limit. It is why
+         * fundamentals_balance accumulated 664 rows with total_equity null in
+         * every single one, and why no stock on the site could show a ROE: the
+         * rows existed, so nothing looked broken.
+         */
+        const tsJson = await fetchTimeseries(yahooSymbol, TIMESERIES_BALANCE_TYPES);
+        balance = parseTimeseriesBalance(tsJson);
         cashflow = parseCashflow(json);
+        income = parseIncomeStatement(json);
       } catch (err) {
         console.error(`yahoo parse failed for ${symbol}:`, (err as Error).message);
         parseFailed = true;
@@ -219,6 +238,31 @@ Deno.serve(async (req) => {
       observation.recordFailure(parseFailed ? "parse" : "yahoo", 1);
       await advanceCursor(symbol);
       continue;
+    }
+
+    /*
+     * Income is written with source 'yahoo' and does NOT displace NSE XBRL.
+     * The unique key now carries source, so a filing and a vendor figure for
+     * the same quarter coexist and the reader picks. Writing these under the
+     * default source would have silently overwritten authoritative filings.
+     */
+    if (income.length > 0) {
+      const { error: incErr } = await supabase.from("fundamentals_income").upsert(
+        income.map((r) => ({
+          symbol,
+          period_end: r.periodEnd,
+          // Yahoo's quarterly statements are the consolidated series; saying so
+          // keeps the basis badge on the stock page honest rather than letting
+          // it default to standalone.
+          is_consolidated: true,
+          revenue: r.revenue,
+          profit_before_tax: r.profitBeforeTax,
+          profit_after_tax: r.profitAfterTax,
+          source: "yahoo",
+        })),
+        { onConflict: "symbol,period_end,is_consolidated,source" },
+      );
+      if (incErr) console.error(`income upsert failed for ${symbol}:`, incErr.message);
     }
 
     if (balance.length > 0) {
