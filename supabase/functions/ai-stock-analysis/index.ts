@@ -1,12 +1,11 @@
 /// <reference lib="deno.ns" />
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { shouldServeCachedReport } from "../_shared/report-cache.ts";
 
-// Cached AI reports are served for this long before recomputing.
-const REPORT_CACHE_TTL_MS = 15 * 60 * 1000;
-// Recompute early if the live price has drifted more than this from the
-// cached report's price (keeps the verdict aligned with current price).
-const REPORT_CACHE_PRICE_DRIFT = 0.02;
+// Cached AI reports: one report per symbol per Indian (Asia/Kolkata) trading
+// day. No TTL, no price-drift recompute - see supabase/functions/_shared/
+// report-cache.ts for the freshness rule and its rationale.
 
 // Per-client rate limit: max requests per rolling window (protects LLM spend).
 const RATE_LIMIT_MAX = 20;
@@ -1544,26 +1543,22 @@ serve(async (req) => {
     // vs "SYM") so each mode stays fresh without clobbering the other.
     const cacheKey = committeeMode ? `${stockData.symbol}#committee` : stockData.symbol;
 
-    // ── Serve a fresh cached report if one exists and the price hasn't
-    //    drifted materially. One computation serves every viewer for the TTL. ──
+    // ── Serve today's cached report if one already exists. One report per
+    //    symbol per IST trading day - chat mode is never served from this
+    //    cache (shouldServeCachedReport enforces both rules). ──
     if (!is_chat && stockData.symbol) {
       try {
         const { data: cached } = await sb
           .from("ai_stock_reports")
-          .select("report, model, price, created_at")
+          .select("report, model, created_at")
           .eq("symbol", cacheKey)
-          .gte("created_at", new Date(Date.now() - REPORT_CACHE_TTL_MS).toISOString())
           .maybeSingle();
-        if (cached) {
-          const drift = cached.price > 0 ? Math.abs(currentPrice - cached.price) / cached.price : 1;
-          if (drift <= REPORT_CACHE_PRICE_DRIFT) {
-            const ageS = Math.round((Date.now() - new Date(cached.created_at).getTime()) / 1000);
-            console.log(`✓ Cache hit ${stockData.symbol} (age ${ageS}s, drift ${(drift * 100).toFixed(1)}%)`);
-            return new Response(
-              JSON.stringify({ success: true, verdict: cached.report, model: cached.model, cached: true }),
-              { headers: { ...corsHeaders, "Content-Type": "application/json" } },
-            );
-          }
+        if (shouldServeCachedReport({ isChat: !!is_chat, cachedCreatedAt: cached?.created_at })) {
+          console.log(`✓ Cache hit ${stockData.symbol} (today's report, generated ${cached!.created_at})`);
+          return new Response(
+            JSON.stringify({ success: true, verdict: cached!.report, model: cached!.model, cached: true }),
+            { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+          );
         }
       } catch (e) {
         console.warn("Cache read failed (non-fatal):", e instanceof Error ? e.message : e);
