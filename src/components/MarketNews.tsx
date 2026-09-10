@@ -17,23 +17,7 @@ type NewsItem = {
   url?: string;
 };
 
-const fallbackIndian: NewsItem[] = [
-  { title: "Sensex rallies 400 pts as IT stocks surge on strong Q4 results", summary: "Benchmark indices rose sharply led by gains in IT heavyweights after better-than-expected quarterly earnings.", category: "Markets", timeAgo: "2h ago", source: "Economic Times" },
-  { title: "RBI keeps repo rate unchanged at 6.5% for eighth consecutive time", summary: "The central bank maintained its accommodative stance citing inflation concerns and global uncertainty.", category: "Policy", timeAgo: "4h ago", source: "LiveMint" },
-  { title: "Reliance Industries crosses ₹20 lakh crore market cap milestone", summary: "The conglomerate became the first Indian company to achieve this historic valuation.", category: "Business", timeAgo: "5h ago", source: "Moneycontrol" },
-  { title: "FIIs turn net buyers, pump ₹3,500 crore into Indian equities", summary: "Foreign institutional investors reversed their selling trend amid improved global risk appetite.", category: "Markets", timeAgo: "6h ago", source: "NDTV Profit" },
-  { title: "India's GDP growth projected at 7.2% for FY26 by IMF", summary: "The International Monetary Fund raised India's growth forecast citing strong domestic demand.", category: "Economy", timeAgo: "8h ago", source: "Business Standard" },
-  { title: "HDFC Bank reports 20% jump in net profit for Q4 FY25", summary: "The private lender posted strong results with improved asset quality and loan growth.", category: "Banking", timeAgo: "10h ago", source: "Financial Express" },
-];
 
-const fallbackWorld: NewsItem[] = [
-  { title: "Fed signals potential rate cut in September amid cooling inflation", summary: "Federal Reserve Chair hinted at easing monetary policy as US inflation shows signs of moderating.", category: "Global", timeAgo: "1h ago", source: "Reuters" },
-  { title: "Wall Street hits record high as tech stocks lead broad rally", summary: "S&P 500 and Nasdaq reached new all-time highs driven by AI-related tech gains.", category: "Markets", timeAgo: "3h ago", source: "Bloomberg" },
-  { title: "Crude oil prices drop 3% on rising US inventory data", summary: "Brent crude fell below $80/barrel as unexpected build in US crude stockpiles weighed on prices.", category: "Commodities", timeAgo: "4h ago", source: "CNBC" },
-  { title: "European markets close higher on positive economic data", summary: "Major European indices rallied after strong PMI data suggested economic recovery.", category: "Global", timeAgo: "6h ago", source: "Financial Times" },
-  { title: "Bitcoin surges past $70,000 as institutional adoption grows", summary: "The largest cryptocurrency hit new highs amid increasing ETF inflows and institutional interest.", category: "Tech", timeAgo: "7h ago", source: "CoinDesk" },
-  { title: "Bank of Japan maintains ultra-loose monetary policy stance", summary: "BOJ kept interest rates negative despite growing pressure to normalize monetary policy.", category: "Policy", timeAgo: "9h ago", source: "Nikkei Asia" },
-];
 
 const categoryColors: Record<string, string> = {
   Markets: "bg-secondary/20 text-secondary",
@@ -157,9 +141,27 @@ const NewsCard = ({ item, index }: { item: NewsItem; index: number }) => {
 
 const MarketNews = () => {
   const [activeTab, setActiveTab] = useState<"indian" | "world">("indian");
-  const [indianNews, setIndianNews] = useState<NewsItem[]>(fallbackIndian);
-  const [worldNews, setWorldNews] = useState<NewsItem[]>(fallbackWorld);
-  const [loading, setLoading] = useState(false);
+  /*
+   * Empty until the feed answers - never seeded with sample content.
+   *
+   * These two arrays used to hold invented headlines attributed to real
+   * publications ("Sensex rallies 400 pts" credited to Economic Times, an RBI
+   * rate decision to LiveMint, an HDFC Bank profit figure to Financial
+   * Express). Being the INITIAL state, they rendered on every page load before
+   * the real feed arrived, and stayed put whenever fetch-news failed - so the
+   * site of a SEBI-registered intermediary published fabricated market news,
+   * and fabricated numbers, under other publications' bylines.
+   *
+   * This is the same rule ClientMarquee and GoogleReviews were rewritten
+   * around: no invented content, and no substitute content standing in for a
+   * feed that has not answered. An empty list renders a loading state, then
+   * either real news or an honest "unavailable" - all three are true, which
+   * sample content never is.
+   */
+  const [indianNews, setIndianNews] = useState<NewsItem[]>([]);
+  const [worldNews, setWorldNews] = useState<NewsItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [failed, setFailed] = useState(false);
   const [activeCategory, setActiveCategory] = useState("All");
   const [activeSource, setActiveSource] = useState("All");
   const [query, setQuery] = useState("");
@@ -170,11 +172,16 @@ const MarketNews = () => {
     try {
       const { data, error } = await supabase.functions.invoke("fetch-news");
       if (!error && data?.success) {
-        if (data.indian?.length > 0) setIndianNews(data.indian);
-        if (data.world?.length > 0) setWorldNews(data.world);
+        setIndianNews(data.indian ?? []);
+        setWorldNews(data.world ?? []);
+        setFailed(false);
+      } else {
+        setFailed(true);
       }
     } catch {
-      // fall through to fallback content
+      // Recorded, not swallowed into sample content: the section says the feed
+      // is unavailable rather than showing something that looks like news.
+      setFailed(true);
     } finally {
       setLoading(false);
     }
@@ -300,10 +307,35 @@ const MarketNews = () => {
         <AnimatePresence mode="wait">
           <motion.div key={`${activeTab}-${activeCategory}-${activeSource}-${query}`} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.3 }}>
             {filtered.length === 0 ? (
+              /*
+               * Three different reasons produce an empty list, and telling a
+               * reader "no stories match your filter" while the feed is still
+               * loading - or while it is down - is simply untrue. Each state
+               * says what is actually happening.
+               */
               <div className="text-center py-16 text-muted-foreground">
-                <Newspaper className="w-10 h-10 mx-auto mb-3 opacity-20" />
-                <p className="font-semibold">No stories match your filter</p>
-                <p className="text-sm">Try a different category or clear the search</p>
+                <Newspaper
+                  className={`w-10 h-10 mx-auto mb-3 opacity-20 ${loading ? "animate-pulse" : ""}`}
+                />
+                {loading && news.length === 0 ? (
+                  <>
+                    <p className="font-semibold">Loading the latest stories…</p>
+                    <p className="text-sm">Pulling headlines from our news sources</p>
+                  </>
+                ) : failed ? (
+                  <>
+                    <p className="font-semibold">Live news is unavailable right now</p>
+                    <p className="text-sm">
+                      We show real headlines from our sources or none at all — never
+                      placeholder stories. Try refreshing in a moment.
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <p className="font-semibold">No stories match your filter</p>
+                    <p className="text-sm">Try a different category or clear the search</p>
+                  </>
+                )}
               </div>
             ) : (
               <>

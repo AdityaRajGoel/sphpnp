@@ -64,7 +64,11 @@ async function fetchWorldBank(code: string): Promise<unknown | null> {
 }
 
 async function fetchFrankfurter(base: string, quote: string): Promise<unknown | null> {
-  const url = `https://api.frankfurter.app/latest?from=${encodeURIComponent(base)}&to=${encodeURIComponent(quote)}`;
+  // api.frankfurter.app 301s to api.frankfurter.dev/v1. Deno follows the
+  // redirect so the old host still worked, but it cost an extra round trip on
+  // every one of the three FX calls, and a host that only answers with a
+  // redirect is one deprecation away from answering with nothing.
+  const url = `https://api.frankfurter.dev/v1/latest?from=${encodeURIComponent(base)}&to=${encodeURIComponent(quote)}`;
   const res = await fetch(url);
   if (!res.ok) return null;
   return await res.json();
