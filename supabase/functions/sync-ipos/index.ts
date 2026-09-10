@@ -14,18 +14,34 @@
 
 import { createClient } from "npm:@supabase/supabase-js@2";
 import {
-  parseChittorgarh,
-  parseInvestorGain,
   parseIpoWatch,
   toCatalogueRow,
 } from "../_shared/ipo-parse.ts";
 import { reconcileIpos } from "../_shared/ipo-reconcile.ts";
+import { sanitizeChittorgarhRows, sanitizeInvestorGainRows } from "../_shared/ipo-ingest.ts";
 
 const SOURCES = {
   ipowatch: "https://ipowatch.in/ipo-grey-market-premium-latest-ipo-gmp/",
-  investorgain: "https://www.investorgain.com/report/live-ipo-gmp/331/",
-  chittorgarhMainboard: "https://www.chittorgarh.com/report/latest-ipo-gmp-grey-market-premium/15/",
-  chittorgarhSme: "https://www.chittorgarh.com/report/latest-sme-ipo-gmp-grey-market/72/",
+  investorgain: "https://www.investorgain.com/report/ipo-gmp-live/331/",
+  chittorgarh: "https://www.chittorgarh.com/report/ipo-in-india-list-main-board-sme/82/",
+  // IPO Watch is fetched directly from this runtime because it is
+  // server-rendered - a plain fetch sees its real table.
+  //
+  // InvestorGain and Chittorgarh both ship an empty <table> and inject their
+  // rows with JavaScript - fetched raw, InvestorGain's table reads literally
+  // "No data available", and Chittorgarh's report URLs redirect to a list page
+  // with no table at all. A Deno edge function has no DOM and cannot run their
+  // scripts, so no parser written here can ever see those rows. Verified
+  // against both live pages, not assumed.
+  //
+  // Those two sources are instead rendered by a real headless browser in the
+  // `ipo-browser-sync` GitHub Actions workflow (scripts/ipo-browser-scrape.mts),
+  // parsed there with the exact same parseInvestorGain/parseChittorgarh this
+  // file already imports, and POSTed here as plain JSON rows - see the
+  // `browserPayload` handling below. This function is the single place the
+  // catalogue is reconciled and upserted regardless of which runtime collected
+  // each source, so a call with no body (the plain three-times-daily cron in
+  // ipo-sync.yml) still works exactly as before, ipowatch only.
 } as const;
 
 const USER_AGENT = "Mozilla/5.0 (compatible; sphpnp-ipo-monitor/1.0; +https://www.sphpnp.com)";
@@ -96,17 +112,48 @@ Deno.serve(async (req) => {
     return json({ error: "Unauthorized" }, 401);
   }
 
+  // The plain three-times-daily cron (ipo-sync.yml) POSTs with no body at all,
+  // which must keep working exactly as it always has. The ipo-browser-sync
+  // workflow POSTs a JSON body of rows it rendered in a real browser and
+  // parsed with parseInvestorGain/parseChittorgarh - never raw HTML, so this
+  // function does not need to duplicate parsing for a second runtime. A
+  // malformed body degrades to "neither browser source ran this call" rather
+  // than 500ing the whole request: IPO Watch alone must still get through.
+  let browserPayload: { investorgain?: unknown; chittorgarh?: unknown } = {};
+  const rawBody = await req.text();
+  if (rawBody) {
+    try {
+      const parsed = JSON.parse(rawBody);
+      if (parsed && typeof parsed === "object") browserPayload = parsed;
+    } catch {
+      console.error("sync-ipos: ignoring malformed JSON body, proceeding with ipowatch only");
+    }
+  }
+  const investorgainAttempted = Array.isArray(browserPayload.investorgain);
+  const chittorgarhAttempted = Array.isArray(browserPayload.chittorgarh);
+  const investorgainRows = sanitizeInvestorGainRows(browserPayload.investorgain);
+  const chittorgarhRows = sanitizeChittorgarhRows(browserPayload.chittorgarh);
+
   try {
     // Fetched in parallel: they are independent sites and one slow response
     // should not push the whole run toward the function's time budget.
-    const [watch, gain, cgMain, cgSme] = await Promise.all([
+    const [watch] = await Promise.all([
       collect("ipowatch", SOURCES.ipowatch, (html) => parseIpoWatch(html)),
-      collect("investorgain", SOURCES.investorgain, (html) => parseInvestorGain(html)),
-      collect("chittorgarh-mainboard", SOURCES.chittorgarhMainboard, (html) => parseChittorgarh(html, "mainboard")),
-      collect("chittorgarh-sme", SOURCES.chittorgarhSme, (html) => parseChittorgarh(html, "sme")),
     ]);
 
-    const reports = [watch.report, gain.report, cgMain.report, cgSme.report];
+    const reports = [watch.report];
+    // Only reported when this call actually carried that source's rows - a
+    // plain cron call never attempted them and must not be shown as if it did.
+    if (investorgainAttempted) {
+      reports.push(investorgainRows.length > 0
+        ? { source: "investorgain", ok: true, rows: investorgainRows.length }
+        : { source: "investorgain", ok: false, rows: 0, reason: "0 usable rows in browser-rendered payload" });
+    }
+    if (chittorgarhAttempted) {
+      reports.push(chittorgarhRows.length > 0
+        ? { source: "chittorgarh", ok: true, rows: chittorgarhRows.length }
+        : { source: "chittorgarh", ok: false, rows: 0, reason: "0 usable rows in browser-rendered payload" });
+    }
     for (const report of reports) {
       if (!report.ok) console.error(`sync-ipos source failed: ${report.source} - ${report.reason}`);
       else console.log(`sync-ipos source ok: ${report.source} (${report.rows} rows)`);
@@ -128,8 +175,8 @@ Deno.serve(async (req) => {
 
     const reconciled = reconcileIpos({
       ipowatch: ipowatchRows,
-      investorgain: gain.rows,
-      chittorgarh: [...cgMain.rows, ...cgSme.rows],
+      investorgain: investorgainRows,
+      chittorgarh: chittorgarhRows,
     });
 
     // Every source failing is a real outage, not a quiet no-op: fail loudly so
@@ -148,9 +195,15 @@ Deno.serve(async (req) => {
     const capturedAt = new Date().toISOString();
     const contributing = reports.filter((r) => r.ok).map((r) => r.source);
     const sourcesLabel = contributing.join("+") || "none";
+    // Multiple sources may have contributed to this run - one URL column can
+    // no longer name a single source, so it lists every one that actually did.
+    const sourceUrl = contributing
+      .map((source) => SOURCES[source as keyof typeof SOURCES])
+      .filter(Boolean)
+      .join(" | ") || SOURCES.ipowatch;
 
     const catalogueRows = reconciled.map((ipo) =>
-      toCatalogueRow(ipo, sourcesLabel, SOURCES.ipowatch, capturedAt),
+      toCatalogueRow(ipo, sourcesLabel, sourceUrl, capturedAt),
     );
 
     // PostgREST derives one column list per bulk upsert from the batch it is

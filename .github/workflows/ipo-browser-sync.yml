@@ -1,0 +1,67 @@
+# Renders InvestorGain and Chittorgarh in a real headless browser and folds
+# them into the IPO catalogue alongside IPO Watch, which ipo-sync.yml already
+# collects straight from the edge (that source is server-rendered).
+#
+# WHY THIS WORKFLOW EXISTS: InvestorGain and Chittorgarh both ship an empty
+# <table> and inject their rows with client-side JavaScript. Fetched raw,
+# InvestorGain's table reads literally "No data available", and Chittorgarh's
+# report URLs redirect to a list page with no table at all - verified against
+# both live pages, not assumed. A Deno edge function has no DOM, so no parser
+# running there can ever see those rows; a real browser is required, and
+# GitHub Actions runners are where this repo's Python/browser workloads live
+# (see docs/HANDOFF.md, "Settled decisions").
+#
+# scripts/ipo-browser-scrape.mts does the rendering and runs the exact parsers
+# this repo already tests (parseInvestorGain / parseChittorgarh in
+# supabase/functions/_shared/ipo-parse.ts) against the rendered HTML, then
+# POSTs the parsed rows - plain JSON, never raw HTML - to the sync-ipos edge
+# function, which is still the only place the catalogue is reconciled
+# (reconcileIpos) and upserted (toCatalogueRow). Reusing that endpoint means:
+#   - the service-role key never leaves Supabase's own secret store; this
+#     workflow holds only the same anon key + shared secret every other sync
+#     workflow in this repo already uses.
+#   - upsert-shape-grouping and null-omission (never write null over a stored
+#     value - see toCatalogueRow's module comment) exist in exactly one
+#     place, not reimplemented per-runtime.
+#
+# Same repo secrets as every other sync-*.yml, no new ones required:
+#   SUPABASE_ANON_KEY   - the project's anon/publishable key (passes the edge gateway)
+#   MARKET_SYNC_SECRET  - must match the SYNC_SECRET set on the edge function
+#
+# Scheduled 5 minutes after ipo-sync.yml's cron so the two never race the same
+# upsert at the same instant; both are safe to run independently regardless -
+# a call with no body from ipo-sync.yml is unaffected by whatever this
+# workflow last posted, and vice versa.
+name: IPO Browser Sync
+
+on:
+  schedule:
+    - cron: "20 3,8,13 * * 1-6" # 08:50, 13:50, 18:50 IST, Mon-Sat
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  render-and-sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Render InvestorGain + Chittorgarh, parse, and sync
+        env:
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          MARKET_SYNC_SECRET: ${{ secrets.MARKET_SYNC_SECRET }}
+        run: node --experimental-strip-types scripts/ipo-browser-scrape.mts
