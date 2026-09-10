@@ -398,7 +398,10 @@ Deno.serve(async (req) => {
         filing_id: filingRow.id,
         source: "nse_xbrl",
         fetched_at: new Date().toISOString(),
-      }, { onConflict: "symbol,period_end,is_consolidated" });
+        // `source` is part of the key since 20260910020000_income_source_key.sql,
+        // so an NSE filing and Yahoo's figure for the same quarter coexist. The
+        // old three-column key no longer exists; naming it failed every write.
+      }, { onConflict: "symbol,period_end,is_consolidated,source" });
 
       if (!iErr) observation.recordWrite("fundamentals_income");
 
