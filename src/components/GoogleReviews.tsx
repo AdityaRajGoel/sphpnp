@@ -1,67 +1,31 @@
 import { Star, ExternalLink, MessageSquare } from "lucide-react";
 import { motion, Variants, useScroll, useTransform } from "motion/react";
 import { Button } from "@/components/ui/button";
-import { useEffect, useRef, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { useRef } from "react";
 import { EASE_OUT, revealBar, revealFade, revealPop, revealSection, revealSpin } from "@/lib/motion";
 import { GOOGLE_REVIEWS_SNAPSHOT } from "@/data/googleReviewsSnapshot";
 
-// Reviews come from the live Google Business Profile via the google-reviews
-// edge function. This component previously shipped a hardcoded array of
-// invented 5-star testimonials with invented author names - a false claim shown
-// to real users, and an advertising-code exposure for a SEBI-registered
-// intermediary. There is deliberately NO placeholder fallback: if the feed is
-// unavailable we render the section without the grid and without a rating,
-// never with substitute content.
-type Review = {
-  name: string;
-  photo: string;
-  profileUrl: string;
-  rating: number;
-  time: string;
-  content: string;
-};
-
-type ReviewFeed = {
-  rating: number | null;
-  totalReviews: number | null;
-  mapsUrl: string;
-  reviews: Review[];
-};
+// Reviews come from the committed capture of the Google Business Profile
+// (googleReviewsSnapshot.ts), not from a live API.
+//
+// The Places API path was removed after it started returning PERMISSION_DENIED:
+// a review section whose content depends on a billing-linked key nobody is
+// watching is a section that silently empties itself, and it did. The capture is
+// the same real reviews, read off the public profile, with the capture date
+// shown on screen so a stale figure is never passed off as today's.
+//
+// What has not changed is the rule this component was rewritten around. It once
+// shipped a hardcoded array of invented 5-star testimonials with invented author
+// names - a false claim shown to real users, and an advertising-code exposure
+// for a SEBI-registered intermediary. There is still NO placeholder fallback:
+// every name and quote below was written by the person it is attributed to.
 
 const GoogleReviews = () => {
   const sectionRef = useRef<HTMLDivElement>(null);
-  const [feed, setFeed] = useState<ReviewFeed | null>(null);
 
-  useEffect(() => {
-    let active = true;
-    supabase.functions
-      .invoke("google-reviews")
-      .then(({ data, error }) => {
-        if (!active) return;
-        if (error) {
-          console.error("Google reviews unavailable:", error.message);
-          return;
-        }
-        setFeed(data as ReviewFeed);
-      })
-      .catch((err) => {
-        if (active) console.error("Google reviews request failed:", err);
-      });
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  const reviews = feed?.reviews ?? [];
-
-  // Fall back to the verified snapshot only for the headline figures, and only
-  // when the feed did not supply them. The snapshot carries no review text, so
-  // the grid below still renders nothing rather than substitute content - the
-  // rule this component was rewritten around is unchanged.
-  const usingSnapshot = feed?.rating == null;
-  const rating = feed?.rating ?? GOOGLE_REVIEWS_SNAPSHOT.rating;
-  const totalReviews = feed?.totalReviews ?? GOOGLE_REVIEWS_SNAPSHOT.totalReviews;
+  const reviews = GOOGLE_REVIEWS_SNAPSHOT.reviews;
+  const rating = GOOGLE_REVIEWS_SNAPSHOT.rating;
+  const totalReviews = GOOGLE_REVIEWS_SNAPSHOT.totalReviews;
   const { scrollYProgress } = useScroll({
     target: sectionRef,
     offset: ["start end", "end start"],
@@ -164,7 +128,10 @@ const GoogleReviews = () => {
               </div>
               <div className="text-sm text-muted-foreground">
                 {`Based on ${totalReviews.toLocaleString("en-IN")} Google review${totalReviews === 1 ? "" : "s"}`}
-                {usingSnapshot && (
+                {/* Always dated, not conditionally: these figures are a capture
+                    rather than a live feed, and a visitor is entitled to know
+                    how old they are without having to guess. */}
+                {
                   <>
                     {" "}
                     <span className="whitespace-nowrap">
@@ -176,7 +143,7 @@ const GoogleReviews = () => {
                       )
                     </span>
                   </>
-                )}
+                }
               </div>
             </div>
             <img

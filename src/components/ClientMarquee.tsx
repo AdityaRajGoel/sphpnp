@@ -1,9 +1,8 @@
 import { Star, Quote } from "lucide-react";
-import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { GOOGLE_REVIEWS_SNAPSHOT } from "@/data/googleReviewsSnapshot";
 
-// Testimonials come from the live Google Business Profile via the
-// google-reviews edge function. This strip previously carried six invented
+// Testimonials come from the committed capture of the Google Business Profile
+// (googleReviewsSnapshot.ts). This strip previously carried six invented
 // testimonials - one of which advertised "my portfolio grew 40% in 2 years",
 // a performance claim a SEBI-registered intermediary must not publish - plus a
 // hardcoded "5.0 on Google" badge unconnected to the real profile. Nothing here
@@ -31,31 +30,16 @@ const ReviewCard = ({ t }: { t: Testimonial }) => (
 );
 
 const ClientMarquee = () => {
-  const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
-  const [rating, setRating] = useState<number | null>(null);
-
-  useEffect(() => {
-    let active = true;
-    supabase.functions
-      .invoke("google-reviews")
-      .then(({ data, error }) => {
-        if (!active || error || !data) return;
-        const feed = data as {
-          rating: number | null;
-          reviews: { name: string; rating: number; content: string }[];
-        };
-        setRating(feed.rating);
-        setTestimonials(
-          (feed.reviews ?? []).map((r) => ({ name: r.name, text: r.content, rating: r.rating })),
-        );
-      })
-      .catch(() => {
-        /* leave the section hidden - never substitute sample testimonials */
-      });
-    return () => {
-      active = false;
-    };
-  }, []);
+  // Sourced from the committed Google capture rather than the live Places API,
+  // which was removed after it started failing closed. Never sample content:
+  // this strip once carried six invented testimonials, and real names attached
+  // to words they did not write is not a styling problem but a false claim.
+  const testimonials: Testimonial[] = GOOGLE_REVIEWS_SNAPSHOT.reviews.map((r) => ({
+    name: r.name,
+    text: r.content,
+    rating: r.rating,
+  }));
+  const rating = GOOGLE_REVIEWS_SNAPSHOT.rating;
 
   // Nothing real to show yet: render nothing rather than an empty shell.
   if (testimonials.length === 0) return null;
