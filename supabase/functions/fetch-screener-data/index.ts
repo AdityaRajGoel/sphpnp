@@ -167,7 +167,6 @@ const NSE_SYMBOLS: { symbol: string; yahoo: string; name: string; sector: string
   { symbol: "CONCOR", yahoo: "CONCOR.NS", name: "Container Corp", sector: "Defence" },
 
   // Tech / New Age
-  { symbol: "ZOMATO", yahoo: "ZOMATO.NS", name: "Zomato", sector: "Tech" },
   { symbol: "PAYTM", yahoo: "PAYTM.NS", name: "One97 Communications", sector: "Tech" },
   { symbol: "NYKAA", yahoo: "NYKAA.NS", name: "FSN E-Commerce", sector: "Tech" },
   { symbol: "POLICYBZR", yahoo: "POLICYBZR.NS", name: "PB Fintech", sector: "Tech" },
@@ -183,7 +182,6 @@ const NSE_SYMBOLS: { symbol: string; yahoo: string; name: string; sector: string
   { symbol: "HINDPETRO", yahoo: "HINDPETRO.NS", name: "Hindustan Petroleum", sector: "Diversified" },
   { symbol: "INDIGO", yahoo: "INDIGO.NS", name: "InterGlobe Aviation", sector: "Diversified" },
   { symbol: "SBICARD", yahoo: "SBICARD.NS", name: "SBI Cards", sector: "Diversified" },
-  { symbol: "MCDOWELL", yahoo: "MCDOWELL-N.NS", name: "United Spirits", sector: "Diversified" },
   { symbol: "TATACOMM", yahoo: "TATACOMM.NS", name: "Tata Communications", sector: "Diversified" },
   { symbol: "TATAELXSI", yahoo: "TATAELXSI.NS", name: "Tata Elxsi", sector: "Diversified" },
   { symbol: "POLYCAB", yahoo: "POLYCAB.NS", name: "Polycab India", sector: "Diversified" },
@@ -224,13 +222,90 @@ const NSE_SYMBOLS: { symbol: string; yahoo: string; name: string; sector: string
   { symbol: "TATAINVEST", yahoo: "TATAINVEST.NS", name: "Tata Investment Corp", sector: "NBFC" },
   { symbol: "PATANJALI", yahoo: "PATANJALI.NS", name: "Patanjali Foods", sector: "FMCG" },
   { symbol: "AWL", yahoo: "AWL.NS", name: "Adani Wilmar", sector: "FMCG" },
-  { symbol: "ADANITRANS", yahoo: "ADANITRANS.NS", name: "Adani Energy Solutions", sector: "Energy" },
   { symbol: "ATGL", yahoo: "ATGL.NS", name: "Adani Total Gas", sector: "Energy" },
   { symbol: "YESBANK", yahoo: "YESBANK.NS", name: "Yes Bank", sector: "Banking" },
   { symbol: "SUZLON", yahoo: "SUZLON.NS", name: "Suzlon Energy", sector: "Energy" },
   { symbol: "MRF", yahoo: "MRF.NS", name: "MRF Ltd", sector: "Auto" },
   { symbol: "3MINDIA", yahoo: "3MINDIA.NS", name: "3M India", sector: "Diversified" },
   { symbol: "BOSCHLTD", yahoo: "BOSCHLTD.NS", name: "Bosch", sector: "Auto" },
+
+  // Three renamed symbols were removed here rather than left in place: ZOMATO
+  // (now ETERNAL), MCDOWELL (now UNITDSPR) and ADANITRANS (now ADANIENSOL).
+  // Each was absent from NSE's live equity master, absent from the F&O list,
+  // and sitting at price 0 in screener_stocks - their Yahoo tickers resolve to
+  // nothing, which is the actual cause of the "stuck at price 0" rows noted
+  // during the August market-cap work and attributed then to partial Yahoo
+  // responses. Their live replacements are in the block below.
+
+  // ---- F&O universe completion -------------------------------------------
+  // NSE's live derivatives list carries 210 symbols; this array held 191, and
+  // not the same 191 - 58 F&O-eligible names were absent entirely, so
+  // /stock/SWIGGY and 57 others 404'd while the site claimed to cover the F&O
+  // universe. Company names are taken verbatim from NSE's own EQUITY_L.csv
+  // master rather than typed from memory, since several are recent listings or
+  // renames that are easy to get wrong (ETERNAL is the renamed Zomato, TMPV the
+  // Tata Motors passenger-vehicle entity).
+  //
+  // The ~39 entries above that are NOT in the F&O list are deliberate
+  // cash-market breadth and stay.
+  { symbol: "360ONE", yahoo: "360ONE.NS", name: "360 ONE WAM", sector: "NBFC" },
+  { symbol: "ABCAPITAL", yahoo: "ABCAPITAL.NS", name: "Aditya Birla Capital", sector: "NBFC" },
+  { symbol: "ADANIENSOL", yahoo: "ADANIENSOL.NS", name: "Adani Energy Solutions", sector: "Energy" },
+  { symbol: "AMBER", yahoo: "AMBER.NS", name: "Amber Enterprises India", sector: "Consumer" },
+  { symbol: "ANGELONE", yahoo: "ANGELONE.NS", name: "Angel One", sector: "NBFC" },
+  { symbol: "ASTRAL", yahoo: "ASTRAL.NS", name: "Astral", sector: "Infra" },
+  { symbol: "ATHERENERG", yahoo: "ATHERENERG.NS", name: "Ather Energy", sector: "Auto" },
+  { symbol: "BAJAJHLDNG", yahoo: "BAJAJHLDNG.NS", name: "Bajaj Holdings & Investment", sector: "NBFC" },
+  { symbol: "BDL", yahoo: "BDL.NS", name: "Bharat Dynamics", sector: "Defence" },
+  { symbol: "BHARATFORG", yahoo: "BHARATFORG.NS", name: "Bharat Forge", sector: "Auto" },
+  { symbol: "BLUESTARCO", yahoo: "BLUESTARCO.NS", name: "Blue Star", sector: "Consumer" },
+  { symbol: "ETERNAL", yahoo: "ETERNAL.NS", name: "Eternal", sector: "Tech" },
+  { symbol: "FORCEMOT", yahoo: "FORCEMOT.NS", name: "FORCE Motors", sector: "Auto" },
+  { symbol: "FORTIS", yahoo: "FORTIS.NS", name: "Fortis Healthcare", sector: "Pharma" },
+  { symbol: "GLENMARK", yahoo: "GLENMARK.NS", name: "Glenmark Pharmaceuticals", sector: "Pharma" },
+  { symbol: "GMRAIRPORT", yahoo: "GMRAIRPORT.NS", name: "GMR Airports", sector: "Infra" },
+  { symbol: "GODFRYPHLP", yahoo: "GODFRYPHLP.NS", name: "Godfrey Phillips India", sector: "FMCG" },
+  { symbol: "GVT&D", yahoo: "GVT&D.NS", name: "GE Vernova T&D India", sector: "Infra" },
+  { symbol: "HDFCAMC", yahoo: "HDFCAMC.NS", name: "HDFC Asset Management Company", sector: "NBFC" },
+  { symbol: "HINDZINC", yahoo: "HINDZINC.NS", name: "Hindustan Zinc", sector: "Metals" },
+  { symbol: "HYUNDAI", yahoo: "HYUNDAI.NS", name: "Hyundai Motor India", sector: "Auto" },
+  { symbol: "IEX", yahoo: "IEX.NS", name: "Indian Energy Exchange", sector: "NBFC" },
+  { symbol: "INDHOTEL", yahoo: "INDHOTEL.NS", name: "The Indian Hotels Company", sector: "Consumer" },
+  { symbol: "INDIANB", yahoo: "INDIANB.NS", name: "Indian Bank", sector: "Banking" },
+  { symbol: "INDUSTOWER", yahoo: "INDUSTOWER.NS", name: "Indus Towers", sector: "Telecom" },
+  { symbol: "INOXWIND", yahoo: "INOXWIND.NS", name: "Inox Wind", sector: "Energy" },
+  { symbol: "KALYANKJIL", yahoo: "KALYANKJIL.NS", name: "Kalyan Jewellers India", sector: "Consumer" },
+  { symbol: "KEI", yahoo: "KEI.NS", name: "KEI Industries", sector: "Infra" },
+  { symbol: "KFINTECH", yahoo: "KFINTECH.NS", name: "Kfin Technologies", sector: "Tech" },
+  { symbol: "KPITTECH", yahoo: "KPITTECH.NS", name: "KPIT Technologies", sector: "IT" },
+  { symbol: "LAURUSLABS", yahoo: "LAURUSLABS.NS", name: "Laurus Labs", sector: "Pharma" },
+  { symbol: "LICHSGFIN", yahoo: "LICHSGFIN.NS", name: "LIC Housing Finance", sector: "NBFC" },
+  { symbol: "LTF", yahoo: "LTF.NS", name: "L&T Finance", sector: "NBFC" },
+  { symbol: "LTM", yahoo: "LTM.NS", name: "LTM", sector: "IT" },
+  { symbol: "MANAPPURAM", yahoo: "MANAPPURAM.NS", name: "Manappuram Finance", sector: "NBFC" },
+  { symbol: "MCX", yahoo: "MCX.NS", name: "Multi Commodity Exchange of India", sector: "NBFC" },
+  { symbol: "MFSL", yahoo: "MFSL.NS", name: "Max Financial Services", sector: "Insurance" },
+  { symbol: "MOTILALOFS", yahoo: "MOTILALOFS.NS", name: "Motilal Oswal Financial Services", sector: "NBFC" },
+  { symbol: "NAM-INDIA", yahoo: "NAM-INDIA.NS", name: "Nippon Life India Asset Management", sector: "NBFC" },
+  { symbol: "NAUKRI", yahoo: "NAUKRI.NS", name: "Info Edge (India)", sector: "Tech" },
+  { symbol: "OIL", yahoo: "OIL.NS", name: "Oil India", sector: "Energy" },
+  { symbol: "PGEL", yahoo: "PGEL.NS", name: "PG Electroplast", sector: "Consumer" },
+  { symbol: "PHOENIXLTD", yahoo: "PHOENIXLTD.NS", name: "The Phoenix Mills", sector: "Infra" },
+  { symbol: "PIIND", yahoo: "PIIND.NS", name: "PI Industries", sector: "Chemicals" },
+  { symbol: "PNBHOUSING", yahoo: "PNBHOUSING.NS", name: "PNB Housing Finance", sector: "NBFC" },
+  { symbol: "POWERINDIA", yahoo: "POWERINDIA.NS", name: "Hitachi Energy India", sector: "Infra" },
+  { symbol: "PREMIERENE", yahoo: "PREMIERENE.NS", name: "Premier Energies", sector: "Energy" },
+  { symbol: "PRESTIGE", yahoo: "PRESTIGE.NS", name: "Prestige Estates Projects", sector: "Infra" },
+  { symbol: "RADICO", yahoo: "RADICO.NS", name: "Radico Khaitan", sector: "FMCG" },
+  { symbol: "RBLBANK", yahoo: "RBLBANK.NS", name: "RBL Bank", sector: "Banking" },
+  { symbol: "SAGILITY", yahoo: "SAGILITY.NS", name: "Sagility", sector: "Tech" },
+  { symbol: "SWIGGY", yahoo: "SWIGGY.NS", name: "Swiggy", sector: "Tech" },
+  { symbol: "TIINDIA", yahoo: "TIINDIA.NS", name: "Tube Investments of India", sector: "Auto" },
+  { symbol: "TMPV", yahoo: "TMPV.NS", name: "Tata Motors Passenger Vehicles", sector: "Auto" },
+  { symbol: "UNITDSPR", yahoo: "UNITDSPR.NS", name: "United Spirits", sector: "FMCG" },
+  { symbol: "UNOMINDA", yahoo: "UNOMINDA.NS", name: "UNO Minda", sector: "Auto" },
+  { symbol: "VMM", yahoo: "VMM.NS", name: "Vishal Mega Mart", sector: "Consumer" },
+  { symbol: "WAAREEENER", yahoo: "WAAREEENER.NS", name: "Waaree Energies", sector: "Energy" },
 ];
 
 // Get Yahoo Finance crumb + cookies for authenticated API access
