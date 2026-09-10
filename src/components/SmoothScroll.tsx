@@ -1,7 +1,7 @@
-import { ReactLenis } from "lenis/react";
+import { ReactLenis, type LenisRef } from "lenis/react";
 import { useLocation } from "react-router-dom";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import type { ReactNode } from "react";
 import { usePrefersReducedMotion } from "@/contexts/MotionPreferenceContext";
 
@@ -40,6 +40,7 @@ export const isDataRoute = (pathname: string) =>
 const SmoothScroll = ({ children }: { children: ReactNode }) => {
   const { pathname } = useLocation();
   const prefersReducedMotion = usePrefersReducedMotion();
+  const lenisRef = useRef<LenisRef>(null);
   const enabled = !prefersReducedMotion && !isDataRoute(pathname);
 
   // `html { scroll-behavior: smooth }` and Lenis both want to own easing; run
@@ -64,10 +65,28 @@ const SmoothScroll = ({ children }: { children: ReactNode }) => {
     };
   }, [enabled]);
 
-  if (!enabled) return <>{children}</>;
+  /*
+   * Lenis is stopped and started on its instance rather than mounted and
+   * unmounted.
+   *
+   * Returning a bare fragment when disabled and <ReactLenis> when enabled puts
+   * two different component types at the same position, so React tears down and
+   * rebuilds the entire app underneath on every flip: lazy sections re-suspend,
+   * component state is lost, every reveal replays. That never showed while the
+   * value came only from the OS and was fixed for the session - the in-app
+   * motion toggle made it something a user does, and it read as the page
+   * hanging for a second or two. Guarded by e2e/reduced-motion.spec.ts.
+   */
+  useEffect(() => {
+    const lenis = lenisRef.current?.lenis;
+    if (!lenis) return;
+    if (enabled) lenis.start();
+    else lenis.stop();
+  }, [enabled]);
 
   return (
     <ReactLenis
+      ref={lenisRef}
       root
       options={{
         // Roughly a half-second glide: enough to read as eased, short enough

@@ -222,3 +222,45 @@ test.describe("motion override", () => {
     expect(rootClass).toContain("lenis");
   });
 });
+
+/*
+ * Toggling motion must update the page, not rebuild it.
+ *
+ * SmoothScroll returned either <ReactLenis>{children}</ReactLenis> or a bare
+ * fragment depending on whether motion was enabled. Those are different
+ * component types at the same position, so flipping the preference made React
+ * unmount and remount the entire app: every lazy section re-suspended, all
+ * component state was lost and every reveal replayed. That was invisible while
+ * the value came only from the OS and never changed mid-session; the in-app
+ * toggle made it a thing a user does, and it read as the page hanging.
+ */
+test.describe("motion toggle cost", () => {
+  test("toggling motion does not remount the page", async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: "no-preference" });
+    // main.tsx deliberately leaves the splash in place when navigator.webdriver
+    // is true, so the prerendered HTML keeps it. Unmasked, #app-splash sits over
+    // the whole page and swallows the click this test needs to make.
+    await page.addInitScript(() => {
+      Object.defineProperty(navigator, "webdriver", { get: () => false });
+      localStorage.setItem("motion-preference", "on");
+    });
+    await page.goto("/");
+    await page.waitForTimeout(2500);
+
+    // Tag a node React does not own. If the subtree is remounted the tag is
+    // gone; if it is merely re-rendered the same DOM node survives.
+    await page.evaluate(() => {
+      const el = document.querySelector("main section");
+      if (el) el.setAttribute("data-remount-probe", "1");
+    });
+    expect(await page.locator("[data-remount-probe]").count()).toBe(1);
+
+    await page.getByRole("button", { name: /reduce animations|turn on animations/i }).click();
+    await page.waitForTimeout(1200);
+
+    expect(
+      await page.locator("[data-remount-probe]").count(),
+      "flipping the motion preference rebuilt the page instead of updating it",
+    ).toBe(1);
+  });
+});
