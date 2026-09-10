@@ -2,7 +2,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { useState, useEffect, useCallback } from "react";
 import {
   Calendar, TrendingUp, ArrowUpRight, ArrowDownRight,
-  ChevronRight, Rocket, CheckCircle2, Timer, Star, IndianRupee,
+  ChevronRight, Rocket, CheckCircle2, Timer, Hourglass, IndianRupee,
   RefreshCw, Loader2
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
@@ -11,30 +11,21 @@ import { supabase } from "@/integrations/supabase/client";
 import { Link } from "react-router-dom";
 
 import { revealBar, revealItem, revealSection } from "@/lib/motion";
-type IPO = {
-  slug?: string;
-  name: string;
-  price: string;
-  date: string;
-  size: string;
-  status: "upcoming" | "open" | "listed";
-  gmp?: string | number | null;
-  gmpUp?: boolean;
-  listingGain?: string;
-  listingUp?: boolean;
-  rating?: number;
-  type: "Mainboard" | "SME";
-};
+import { formatGmp, formatListingGain, formatSourceList, type Ipo } from "@/lib/ipo";
 
-type TabKey = "upcoming" | "open" | "listed";
+/** The reconciled catalogue row plus the two display-only fields derived from it. */
+type DisplayIpo = Ipo & { listingGain: string | null };
+
+type TabKey = Ipo["status"];
 
 const tabs: { key: TabKey; label: string; icon: LucideIcon }[] = [
   { key: "upcoming", label: "Upcoming", icon: Timer },
   { key: "open", label: "Open Now", icon: Rocket },
+  { key: "closed", label: "Closed", icon: Hourglass },
   { key: "listed", label: "Recently Listed", icon: CheckCircle2 },
 ];
 
-const IPOCard = ({ ipo, index }: { ipo: IPO; index: number }) => (
+const IPOCard = ({ ipo, index }: { ipo: DisplayIpo; index: number }) => (
   <motion.div
     className="bg-card border border-border/50 rounded-xl p-4 hover:shadow-lg hover:border-brand-orange/30 transition-[box-shadow,color,background-color,border-color] cursor-pointer group"
     {...revealItem()}
@@ -54,13 +45,6 @@ const IPOCard = ({ ipo, index }: { ipo: IPO; index: number }) => (
           <span>{ipo.date}</span>
         </div>
       </div>
-      {ipo.rating && (
-        <div className="flex items-center gap-0.5">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <Star key={i} className={`w-3 h-3 ${i < ipo.rating! ? "text-brand-gold fill-brand-gold" : "text-muted"}`} />
-          ))}
-        </div>
-      )}
     </div>
 
     <div className="grid grid-cols-3 gap-3">
@@ -73,27 +57,27 @@ const IPOCard = ({ ipo, index }: { ipo: IPO; index: number }) => (
         <div className="text-xs font-bold text-foreground">{ipo.size}</div>
       </div>
       <div>
-        {ipo.status === "listed" && ipo.listingGain ? (
+        {ipo.status === "listed" && ipo.listingGain !== null ? (
           <>
             <div className="text-[10px] text-muted-foreground mb-0.5">Listing Gain</div>
-            <div className={`text-xs font-bold flex items-center gap-0.5 ${ipo.listingUp ? "text-secondary" : "text-destructive"}`}>
-              {ipo.listingUp ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
+            <div className={`text-xs font-bold flex items-center gap-0.5 ${ipo.listingGain.startsWith("-") ? "text-destructive" : "text-secondary"}`}>
+              {ipo.listingGain.startsWith("-") ? <ArrowDownRight className="w-3 h-3" /> : <ArrowUpRight className="w-3 h-3" />}
               {ipo.listingGain}
             </div>
           </>
         ) : (
           <>
             <div className="text-[10px] text-muted-foreground mb-0.5">GMP</div>
-            <div className={`text-xs font-bold flex items-center gap-0.5 ${(typeof ipo.gmp === "number" ? ipo.gmp >= 0 : ipo.gmpUp) ? "text-secondary" : "text-destructive"}`}>
-              {(typeof ipo.gmp === "number" ? ipo.gmp >= 0 : ipo.gmpUp) ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
-              {typeof ipo.gmp === "number" ? `${ipo.gmp >= 0 ? "+" : "-"}₹${Math.abs(ipo.gmp)}` : ipo.gmp ?? "Awaited"}
+            <div className={`text-xs font-bold flex items-center gap-0.5 ${ipo.gmp === null ? "text-muted-foreground" : ipo.gmp >= 0 ? "text-secondary" : "text-destructive"}`}>
+              {ipo.gmp !== null && (ipo.gmp >= 0 ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />)}
+              {formatGmp(ipo.gmp)}
             </div>
           </>
         )}
       </div>
     </div>
 
-    {ipo.status === "open" && (
+    {(ipo.status === "open" || ipo.status === "closed") && (
       <motion.div className="mt-3 pt-3 border-t border-border/30">
         <Link
           to={ipo.slug ? `/ipo/${ipo.slug}` : "/ipo"}
@@ -108,9 +92,11 @@ const IPOCard = ({ ipo, index }: { ipo: IPO; index: number }) => (
   </motion.div>
 );
 
+type FetchIposResponse = { success: boolean; ipos?: Ipo[]; error?: string; fetchedAt?: string };
+
 const IPOTracker = () => {
   const [activeTab, setActiveTab] = useState<TabKey>("upcoming");
-  const [ipos, setIpos] = useState<IPO[]>([]);
+  const [ipos, setIpos] = useState<DisplayIpo[]>([]);
   const [loading, setLoading] = useState(true);
   const [source, setSource] = useState<string>("");
   const [fetchedAt, setFetchedAt] = useState<string>("");
@@ -118,48 +104,14 @@ const IPOTracker = () => {
   const fetchIPOs = useCallback(async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('fetch-ipos');
-      if (!error && data?.success && data.ipos?.length > 0) {
-        // Dynamically recalculate status based on current date
-        const now = new Date();
-        const currentYear = now.getFullYear();
-        const months: Record<string, number> = { jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5, jul: 6, aug: 7, sep: 8, oct: 9, nov: 10, dec: 11 };
-        
-        const processedIpos = data.ipos.map((ipo: IPO) => {
-          let calculatedStatus = ipo.status;
-          
-          if (ipo.date && ipo.date !== 'TBA') {
-            let dateRange = ipo.date.match(/(\d{1,2})\s*[-–]\s*(\d{1,2})\s*(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)/i);
-            if (!dateRange) {
-              const altRange = ipo.date.match(/(\d{1,2})\s*(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s*[-–]\s*(\d{1,2})\s*(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)/i);
-              if (altRange) {
-                dateRange = [altRange[0], altRange[1], altRange[3], altRange[4]];
-              }
-            }
-
-            if (dateRange) {
-              const monthNum = months[dateRange[3].toLowerCase()];
-              const startDay = parseInt(dateRange[1]);
-              const endDay = parseInt(dateRange[2]);
-              
-              const startDate = new Date(currentYear, monthNum, startDay);
-              const endDate = new Date(currentYear, monthNum, endDay, 23, 59, 59);
-
-              if (now >= startDate && now <= endDate) {
-                calculatedStatus = 'open';
-              } else if (now > endDate) {
-                calculatedStatus = 'listed';
-              } else {
-                calculatedStatus = 'upcoming';
-              }
-            }
-          }
-          
-          return { ...ipo, status: calculatedStatus };
-        });
-
-        setIpos(processedIpos);
-        setSource(data.source || "");
+      const { data, error } = await supabase.functions.invoke<FetchIposResponse>('fetch-ipos');
+      // Status is reconciled server-side by sync-ipos from three independent
+      // sources — trusted as-is rather than re-derived from a formatted date
+      // string, which used to miscategorise every "closed" (bidding shut,
+      // not yet listed) issue as either upcoming or already listed.
+      if (!error && data?.success && data.ipos && data.ipos.length > 0) {
+        setIpos(data.ipos.map((ipo) => ({ ...ipo, listingGain: formatListingGain(ipo.listing_gain_pct) })));
+        setSource(formatSourceList(data.ipos.map((ipo) => ipo.source).join("+")));
         setFetchedAt(data.fetchedAt || "");
       }
     } catch {
@@ -174,9 +126,10 @@ const IPOTracker = () => {
   }, [fetchIPOs]);
 
   const filtered = ipos.filter(i => i.status === activeTab);
-  const tabCounts = {
+  const tabCounts: Record<TabKey, number> = {
     upcoming: ipos.filter(i => i.status === "upcoming").length,
     open: ipos.filter(i => i.status === "open").length,
+    closed: ipos.filter(i => i.status === "closed").length,
     listed: ipos.filter(i => i.status === "listed").length,
   };
 
@@ -200,8 +153,7 @@ const IPOTracker = () => {
           {fetchedAt && (
             <div className="flex items-center justify-center gap-2 mt-3 text-[10px] text-muted-foreground">
               <span>Last updated: {new Date(fetchedAt).toLocaleString("en-IN", { hour: "2-digit", minute: "2-digit", day: "numeric", month: "short" })}</span>
-              <span>•</span>
-              <span className="capitalize">{source} data</span>
+              {source && <><span>•</span><span>Reconciled from {source}</span></>}
               <button onClick={fetchIPOs} className="ml-1 p-0.5 rounded hover:bg-muted transition-colors" title="Refresh">
                 <RefreshCw className={`w-3 h-3 ${loading ? "animate-spin" : ""}`} />
               </button>
@@ -249,7 +201,7 @@ const IPOTracker = () => {
               className="grid md:grid-cols-2 lg:grid-cols-3 gap-4"
             >
               {filtered.length > 0 ? filtered.map((ipo, i) => (
-                <IPOCard key={ipo.name} ipo={ipo} index={i} />
+                <IPOCard key={ipo.id} ipo={ipo} index={i} />
               )) : (
                 <div className="col-span-full text-center py-12 text-muted-foreground">
                   <p className="text-sm">No {activeTab} IPOs at the moment.</p>

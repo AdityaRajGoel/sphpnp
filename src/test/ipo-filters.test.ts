@@ -1,0 +1,203 @@
+import { describe, it, expect } from "vitest";
+import {
+  DEFAULT_FILTERS,
+  GMP_BAND_OPTIONS,
+  MAX_COMPARE,
+  compareSlugsToParam,
+  filterIpos,
+  ipoFiltersFromSearchParams,
+  ipoFiltersToSearchParams,
+  matchesListingWindow,
+  parseCompareSlugs,
+  sortIpos,
+  toggleCompareSlug,
+  type IpoFilters,
+} from "@/lib/ipo-filters";
+import type { Ipo } from "@/lib/ipo";
+
+/*
+ * IPO hub filtering, sorting and URL persistence.
+ *
+ * The rule under test throughout: a missing figure (null lot_size, null gmp,
+ * null listing_date) must never be treated as zero or as the smallest/largest
+ * value — it must be excluded from bands that require a value, and sorted to
+ * the end rather than to either extreme.
+ */
+
+const makeIpo = (overrides: Partial<Ipo>): Ipo => ({
+  id: overrides.slug ?? "id",
+  slug: "acme",
+  name: "Acme Industries",
+  board: "mainboard",
+  type: "Mainboard",
+  status: "open",
+  price_band_min: 100,
+  price_band_max: 110,
+  price: "₹100–110",
+  lot_size: 100,
+  issue_size_crore: 500,
+  size: "₹500 Cr",
+  open_date: "2026-09-10",
+  close_date: "2026-09-12",
+  date: "10 Sep 2026 – 12 Sep 2026",
+  allotment_date: null,
+  listing_date: "2026-09-17",
+  registrar: null,
+  rhp_url: null,
+  drhp_url: null,
+  subscription_qib: null,
+  subscription_nii: null,
+  subscription_retail: null,
+  listing_price: null,
+  listing_gain_pct: null,
+  source: "chittorgarh",
+  source_url: null,
+  data_as_of: "2026-09-10T00:00:00Z",
+  gmp: 50,
+  est_listing_price: null,
+  gmp_history: [],
+  field_sources: null,
+  ...overrides,
+});
+
+describe("filterIpos", () => {
+  it("returns every row when filters are all 'all'", () => {
+    const ipos = [makeIpo({ slug: "a" }), makeIpo({ slug: "b", status: "listed" })];
+    expect(filterIpos(ipos, DEFAULT_FILTERS)).toHaveLength(2);
+  });
+
+  it("filters by status", () => {
+    const ipos = [makeIpo({ slug: "a", status: "open" }), makeIpo({ slug: "b", status: "closed" })];
+    const filters: IpoFilters = { ...DEFAULT_FILTERS, status: "closed" };
+    expect(filterIpos(ipos, filters).map((i) => i.slug)).toEqual(["b"]);
+  });
+
+  it("filters by board", () => {
+    const ipos = [makeIpo({ slug: "a", board: "mainboard" }), makeIpo({ slug: "b", board: "sme" })];
+    const filters: IpoFilters = { ...DEFAULT_FILTERS, board: "sme" };
+    expect(filterIpos(ipos, filters).map((i) => i.slug)).toEqual(["b"]);
+  });
+
+  it("treats a null GMP as its own band, not as zero or as 'below par'", () => {
+    const ipos = [makeIpo({ slug: "no-gmp", gmp: null }), makeIpo({ slug: "zero-gmp", gmp: 0 }), makeIpo({ slug: "has-gmp", gmp: 30 })];
+    const awaited: IpoFilters = { ...DEFAULT_FILTERS, gmpBand: "awaited" };
+    expect(filterIpos(ipos, awaited).map((i) => i.slug)).toEqual(["no-gmp"]);
+
+    const belowPar: IpoFilters = { ...DEFAULT_FILTERS, gmpBand: "negative" };
+    expect(filterIpos(ipos, belowPar).map((i) => i.slug)).toEqual(["zero-gmp"]);
+  });
+
+  it("buckets GMP bands correctly at the boundaries", () => {
+    const modest = GMP_BAND_OPTIONS.find((o) => o.id === "modest")!;
+    const strong = GMP_BAND_OPTIONS.find((o) => o.id === "strong")!;
+    const hot = GMP_BAND_OPTIONS.find((o) => o.id === "hot")!;
+    expect(modest.test(50)).toBe(true);
+    expect(modest.test(51)).toBe(false);
+    expect(strong.test(51)).toBe(true);
+    expect(strong.test(150)).toBe(true);
+    expect(hot.test(150)).toBe(false);
+    expect(hot.test(151)).toBe(true);
+  });
+
+  it("excludes IPOs with no listing_date from any specific listing window", () => {
+    const ipos = [makeIpo({ slug: "unknown", listing_date: null })];
+    const now = new Date("2026-09-10T00:00:00Z");
+    for (const window of ["past", "next7", "next30", "later"] as const) {
+      expect(filterIpos(ipos, { ...DEFAULT_FILTERS, listingWindow: window }, now)).toHaveLength(0);
+    }
+    // But "all" still includes it — the absence isn't hidden by default.
+    expect(filterIpos(ipos, DEFAULT_FILTERS, now)).toHaveLength(1);
+  });
+
+  it("buckets listing windows relative to now", () => {
+    const now = new Date("2026-09-10T00:00:00Z");
+    expect(matchesListingWindow("2026-09-05", "past", now)).toBe(true);
+    expect(matchesListingWindow("2026-09-15", "next7", now)).toBe(true);
+    expect(matchesListingWindow("2026-09-25", "next7", now)).toBe(false);
+    expect(matchesListingWindow("2026-09-25", "next30", now)).toBe(true);
+    expect(matchesListingWindow("2026-11-01", "later", now)).toBe(true);
+    expect(matchesListingWindow("2026-11-01", "next30", now)).toBe(false);
+  });
+
+  it("combines multiple active filters with AND", () => {
+    const ipos = [
+      makeIpo({ slug: "match", board: "sme", status: "open", gmp: 80 }),
+      makeIpo({ slug: "wrong-board", board: "mainboard", status: "open", gmp: 80 }),
+      makeIpo({ slug: "wrong-status", board: "sme", status: "closed", gmp: 80 }),
+    ];
+    const filters: IpoFilters = { status: "open", board: "sme", gmpBand: "strong", listingWindow: "all" };
+    expect(filterIpos(ipos, filters).map((i) => i.slug)).toEqual(["match"]);
+  });
+});
+
+describe("sortIpos", () => {
+  it("sorts a numeric field ascending and descending", () => {
+    const ipos = [makeIpo({ slug: "a", issue_size_crore: 300 }), makeIpo({ slug: "b", issue_size_crore: 900 }), makeIpo({ slug: "c", issue_size_crore: 100 })];
+    expect(sortIpos(ipos, "issue_size_crore", "asc").map((i) => i.slug)).toEqual(["c", "a", "b"]);
+    expect(sortIpos(ipos, "issue_size_crore", "desc").map((i) => i.slug)).toEqual(["b", "a", "c"]);
+  });
+
+  it("always sorts missing lot_size to the end, in both directions", () => {
+    const ipos = [makeIpo({ slug: "known", lot_size: 50 }), makeIpo({ slug: "unknown", lot_size: null }), makeIpo({ slug: "known2", lot_size: 10 })];
+    const asc = sortIpos(ipos, "lot_size", "asc");
+    const desc = sortIpos(ipos, "lot_size", "desc");
+    expect(asc[asc.length - 1].slug).toBe("unknown");
+    expect(desc[desc.length - 1].slug).toBe("unknown");
+  });
+
+  it("sorts by name case-insensitively", () => {
+    const ipos = [makeIpo({ slug: "a", name: "zeta" }), makeIpo({ slug: "b", name: "Alpha" })];
+    expect(sortIpos(ipos, "name", "asc").map((i) => i.slug)).toEqual(["b", "a"]);
+  });
+
+  it("does not mutate the input array", () => {
+    const ipos = [makeIpo({ slug: "a", issue_size_crore: 300 }), makeIpo({ slug: "b", issue_size_crore: 100 })];
+    const original = [...ipos];
+    sortIpos(ipos, "issue_size_crore", "asc");
+    expect(ipos).toEqual(original);
+  });
+});
+
+describe("URL persistence", () => {
+  it("round-trips filters through search params", () => {
+    const filters: IpoFilters = { status: "open", board: "sme", gmpBand: "hot", listingWindow: "next7" };
+    const params = ipoFiltersToSearchParams(filters);
+    expect(ipoFiltersFromSearchParams(params)).toEqual(filters);
+  });
+
+  it("omits default values from the URL", () => {
+    const params = ipoFiltersToSearchParams(DEFAULT_FILTERS);
+    expect([...params.keys()]).toEqual([]);
+  });
+
+  it("falls back to defaults for unrecognised or missing params", () => {
+    const params = new URLSearchParams("status=bogus&gmp=nonsense");
+    expect(ipoFiltersFromSearchParams(params)).toEqual(DEFAULT_FILTERS);
+  });
+});
+
+describe("compare selection", () => {
+  it("adds a slug, then removes it on a second toggle", () => {
+    let selection = toggleCompareSlug([], "acme");
+    expect(selection).toEqual(["acme"]);
+    selection = toggleCompareSlug(selection, "acme");
+    expect(selection).toEqual([]);
+  });
+
+  it("refuses to add beyond the max", () => {
+    const full = ["a", "b", "c", "d"];
+    expect(full).toHaveLength(MAX_COMPARE);
+    expect(toggleCompareSlug(full, "e")).toEqual(full);
+  });
+
+  it("parses and caps a comma-separated URL param", () => {
+    expect(parseCompareSlugs("a,b,b, c ,d,e")).toEqual(["a", "b", "c", "d"]);
+    expect(parseCompareSlugs(null)).toEqual([]);
+    expect(parseCompareSlugs("")).toEqual([]);
+  });
+
+  it("serialises an empty selection to undefined so it drops from the URL", () => {
+    expect(compareSlugsToParam([])).toBeUndefined();
+    expect(compareSlugsToParam(["a", "b"])).toBe("a,b");
+  });
+});
