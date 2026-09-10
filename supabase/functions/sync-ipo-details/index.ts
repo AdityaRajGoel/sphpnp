@@ -46,6 +46,7 @@ type Row = {
   id: string; slug: string; status: "upcoming" | "open" | "closed" | "listed";
   detail_url: string | null; open_date: string | null; close_date: string | null; listing_date: string | null;
   registrar: string | null; allotment_date: string | null;
+  lot_size: number | null; price_band_max: number | null;
   details_fetched_at: string | null; details_attempted_at: string | null;
 };
 
@@ -126,6 +127,11 @@ function updateFor(row: Row, detail: IpoDetail, source: string, now: string): Re
   set("promoter_holding_post", f.promoter_holding_post);
   set("allotment_date", f.allotment_date);
   set("registrar", f.registrar);
+  if (row.lot_size === null) set("lot_size", f.lot_size);
+  if (row.price_band_max === null) {
+    set("price_band_min", f.price_band_min);
+    set("price_band_max", f.price_band_max);
+  }
   if (!row.open_date) set("open_date", f.open_date);
   if (!row.close_date) set("close_date", f.close_date);
   if (!row.listing_date) set("listing_date", f.listing_date);
@@ -141,7 +147,7 @@ Deno.serve(async (req) => {
   const apifyToken = Deno.env.get("APIFY_API_KEY") ?? null;
 
   const { data, error } = await supabase.from("ipos").select(
-    "id,slug,status,detail_url,open_date,close_date,listing_date,registrar,allotment_date,details_fetched_at,details_attempted_at",
+    "id,slug,status,detail_url,open_date,close_date,listing_date,registrar,allotment_date,lot_size,price_band_max,details_fetched_at,details_attempted_at",
   ).not("detail_url", "is", null);
   if (error) return json({ error: error.message }, 500);
 
@@ -162,7 +168,11 @@ Deno.serve(async (req) => {
       }
       return attempted < liveCutoff;
     })
-    .sort((a, b) => (a.details_attempted_at ?? "").localeCompare(b.details_attempted_at ?? ""))
+    // Live issues before listed ones - a visitor deciding whether to apply needs
+    // the minimum investment now; a listing's page is history. Then stalest first.
+    .sort((a, b) =>
+      Number(deriveIpoStatus(a, a.status, today) === "listed") - Number(deriveIpoStatus(b, b.status, today) === "listed") ||
+      (a.details_attempted_at ?? "").localeCompare(b.details_attempted_at ?? ""))
     .slice(0, BATCH_SIZE);
 
   const started = Date.now();

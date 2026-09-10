@@ -53,6 +53,9 @@ describe("parseChittorgarhDetail - issue facts", () => {
   it("reads the issue structure", () => {
     expect(d.facts).toMatchObject({
       face_value: 10,
+      lot_size: 161,
+      price_band_min: 88,
+      price_band_max: 93,
       issue_type: "Bookbuilding IPO",
       sale_type: "Fresh capital cum OFS",
       listing_exchanges: "BSE, NSE",

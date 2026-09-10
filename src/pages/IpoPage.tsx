@@ -14,7 +14,7 @@ import IPOFilterBar from "@/components/ipo/IPOFilterBar";
 import IPOTable from "@/components/ipo/IPOTable";
 import IPOCompareBar from "@/components/ipo/IPOCompareBar";
 import IPOCompareDialog from "@/components/ipo/IPOCompareDialog";
-import { formatGmp, getIpos, type Ipo } from "@/lib/ipo";
+import { formatGmp, formatMinInvestment, getIpos, type Ipo } from "@/lib/ipo";
 import {
   compareSlugsToParam,
   filterIpos,
@@ -144,7 +144,7 @@ function IpoCard({ ipo, selected, compareDisabled, onToggleCompare }: IpoCardPro
     </label>
     <Link to={`/ipo/${ipo.slug}`} className="group block"><CardContent className="p-5">
       <div className="flex items-start justify-between gap-3 pr-16"><div><div className="flex gap-2 items-center"><Badge variant="outline">{ipo.type}</Badge><span className="text-xs font-semibold text-muted-foreground">{statusLabel[ipo.status]}</span></div><h3 className="mt-3 font-heading text-xl font-bold group-hover:text-secondary transition-colors">{ipo.name}</h3></div><ArrowRight className="w-5 h-5 mt-1 text-muted-foreground group-hover:text-secondary group-hover:translate-x-1 transition-[color,transform] shrink-0" /></div>
-      <div className="grid grid-cols-2 gap-4 mt-6 text-sm"><div><span className="text-muted-foreground">Price band</span><p className="font-semibold mt-1">{ipo.price}</p></div><div><span className="text-muted-foreground">Latest GMP</span><p className={`font-semibold mt-1 ${ipo.gmp === null ? "text-muted-foreground" : ipo.gmp >= 0 ? "text-secondary" : "text-destructive"}`}>{formatGmp(ipo.gmp)}</p></div><div className="col-span-2 flex items-center gap-2 text-muted-foreground"><CalendarDays className="w-4 h-4" />{ipo.date}</div></div>
+      <div className="grid grid-cols-2 gap-4 mt-6 text-sm"><div><span className="text-muted-foreground">Price band</span><p className="font-semibold mt-1">{ipo.price}</p></div><div><span className="text-muted-foreground">Latest GMP</span><p className={`font-semibold mt-1 ${ipo.gmp === null ? "text-muted-foreground" : ipo.gmp >= 0 ? "text-secondary" : "text-destructive"}`}>{formatGmp(ipo.gmp)}</p></div><div><span className="text-muted-foreground">Min. investment</span><p className="font-semibold mt-1">{formatMinInvestment(ipo)?.amount ?? <span className="text-muted-foreground font-normal">Not yet published</span>}</p></div><div><span className="text-muted-foreground">Lot size</span><p className="font-semibold mt-1">{ipo.lot_size === null ? <span className="text-muted-foreground font-normal">Not disclosed</span> : `${ipo.lot_size.toLocaleString("en-IN")} shares`}</p></div><div className="col-span-2 flex items-center gap-2 text-muted-foreground"><CalendarDays className="w-4 h-4" />{ipo.date}</div></div>
     </CardContent></Link>
   </Card>;
 }

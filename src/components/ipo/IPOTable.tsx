@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { formatDate, formatGmp, formatLotSize, type Ipo } from "@/lib/ipo";
+import { formatDate, formatGmp, formatLotSize, formatMinInvestment, type Ipo } from "@/lib/ipo";
 import { MAX_COMPARE, type SortDir, type SortKey } from "@/lib/ipo-filters";
 
 const STATUS_LABEL: Record<Ipo["status"], string> = { upcoming: "Upcoming", open: "Open", closed: "Closed", listed: "Listed" };
@@ -15,6 +15,7 @@ const COLUMNS: { key: SortKey; label: string; align?: "right" }[] = [
   { key: "price_band_max", label: "Price band", align: "right" },
   { key: "issue_size_crore", label: "Issue size", align: "right" },
   { key: "lot_size", label: "Lot size", align: "right" },
+  { key: "min_investment", label: "Min. investment", align: "right" },
   { key: "close_date", label: "Closes", align: "right" },
   { key: "listing_date", label: "Listing", align: "right" },
   { key: "gmp", label: "GMP", align: "right" },
@@ -72,6 +73,7 @@ export default function IPOTable({ ipos, sortKey, sortDir, onSort, compareSlugs,
                 <TableCell className="text-right tabular-nums">{ipo.price}</TableCell>
                 <TableCell className="text-right tabular-nums">{ipo.size}</TableCell>
                 <TableCell className="text-right tabular-nums">{formatLotSize(ipo.lot_size)}</TableCell>
+                <TableCell className="text-right tabular-nums whitespace-nowrap">{formatMinInvestment(ipo)?.amount ?? <span className="text-muted-foreground">—</span>}</TableCell>
                 <TableCell className="text-right tabular-nums whitespace-nowrap">{formatDate(ipo.close_date)}</TableCell>
                 <TableCell className="text-right tabular-nums whitespace-nowrap">{formatDate(ipo.listing_date)}</TableCell>
                 <TableCell className={`text-right tabular-nums font-semibold ${ipo.gmp === null ? "text-muted-foreground" : ipo.gmp >= 0 ? "text-secondary" : "text-destructive"}`}>

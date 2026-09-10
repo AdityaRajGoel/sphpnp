@@ -52,7 +52,30 @@ export type Ipo = {
   est_listing_price: number | null;
   gmp_history: GmpSnapshot[];
   field_sources: IpoFieldSources | null;
+  // From the issue's own Chittorgarh page (sync-ipo-details); null until read.
+  detail_url: string | null;
+  min_investment: number | null;
+  min_investment_lots: number | null;
+  min_investment_shares: number | null;
+  min_investment_category: string | null;
+  face_value: number | null;
+  issue_type: string | null;
+  sale_type: string | null;
+  listing_exchanges: string | null;
+  fresh_issue_crore: number | null;
+  ofs_crore: number | null;
+  refund_date: string | null;
+  credit_date: string | null;
+  lead_managers: string[] | null;
+  promoter_holding_pre: number | null;
+  promoter_holding_post: number | null;
+  details: { sections: IpoPageSection[] } | null;
+  details_source: string | null;
+  details_fetched_at: string | null;
 };
+
+/** One section of the issue page as it was published: tables as rows of cells, text as lines. */
+export type IpoPageSection = { title: string; tables: string[][][]; lines: string[] };
 
 type IpoResponse = { success: boolean; ipos?: Ipo[]; error?: string; fetchedAt?: string };
 
@@ -101,3 +124,29 @@ export function formatSourceList(value: string): string {
   const unique = [...new Set(value.split("+").map((token) => token.trim()).filter(Boolean))];
   return unique.map((token) => SOURCE_LABELS[token as IpoSourceName] ?? token).join(", ");
 }
+
+type MinInvestmentFields = Pick<Ipo, "min_investment" | "min_investment_lots" | "min_investment_shares" | "min_investment_category">;
+
+/**
+ * The smallest application, exactly as the issue page publishes it. Never
+ * computed from lot size x price: an SME application must be at least two
+ * lots, so that arithmetic would understate an SME minimum by half.
+ */
+export function formatMinInvestment(ipo: MinInvestmentFields): { amount: string; basis: string | null } | null {
+  if (ipo.min_investment === null) return null;
+  const lots = ipo.min_investment_lots;
+  const shares = ipo.min_investment_shares;
+  const parts = [
+    lots === null ? null : `${lots} ${lots === 1 ? "lot" : "lots"}`,
+    shares === null ? null : `${shares.toLocaleString("en-IN")} shares`,
+  ].filter(Boolean);
+  return { amount: formatRupees(ipo.min_investment), basis: parts.length > 0 ? parts.join(" · ") : null };
+}
+
+/**
+ * Whether an issue-page table opens with a header row. Grids of three or more
+ * columns do (financials, lot sizes, KPIs); two-column tables are label/value
+ * pairs and do not.
+ */
+export const sectionTableHasHeader = (rows: string[][]): boolean =>
+  rows.length > 1 && (rows[0]?.length ?? 0) >= 3;

@@ -1,0 +1,96 @@
+import { FileText } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { sectionTableHasHeader, type IpoPageSection } from "@/lib/ipo";
+
+/** "IPO Open Fri, Sep 18, 2026" -> ["IPO Open", "Fri, Sep 18, 2026"]: the timetable's one-line steps. */
+const DATED_STEP = /^(.+?)\s+((?:Mon|Tue|Wed|Thu|Fri|Sat|Sun),\s+[A-Z][a-z]{2}\s+\d{1,2},\s+\d{4})$/;
+
+/** Sections that read better across the full width: wide tables and long prose. */
+const isWide = (section: IpoPageSection) =>
+  section.tables.some((rows) => (rows[0]?.length ?? 0) >= 4) || section.lines.join(" ").length > 400;
+
+function SectionTable({ rows }: { rows: string[][] }) {
+  const hasHeader = sectionTableHasHeader(rows);
+  const header = hasHeader ? rows[0] : null;
+  const body = hasHeader ? rows.slice(1) : rows;
+  return (
+    <div className="overflow-x-auto rounded-lg border border-border">
+      <table className="w-full text-sm">
+        {header && (
+          <thead className="bg-muted/40">
+            <tr>
+              {header.map((cell, i) => (
+                <th key={i} scope="col" className={`p-2.5 font-semibold whitespace-nowrap ${i === 0 ? "text-left" : "text-right"}`}>{cell}</th>
+              ))}
+            </tr>
+          </thead>
+        )}
+        <tbody>
+          {body.map((row, r) => (
+            <tr key={r} className="border-t border-border first:border-t-0">
+              {row.map((cell, i) =>
+                i === 0 ? (
+                  <th key={i} scope="row" className="p-2.5 text-left font-normal text-muted-foreground align-top">{cell}</th>
+                ) : (
+                  <td key={i} className={`p-2.5 align-top tabular-nums ${header ? "text-right whitespace-nowrap" : "text-right"}`}>{cell || "—"}</td>
+                ),
+              )}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+/**
+ * Every section of the issue's Chittorgarh page, as the page published it:
+ * lot sizes per category, timetable, reservation, anchor investors, company
+ * financials, objects of the issue, KPIs, valuation, shareholding, selling
+ * shareholders, registrar, lead managers and contact details. Rendered from
+ * what was stored, not re-interpreted - the figures are the page's own.
+ */
+export default function IPOPageSections({ sections, fetchedAt }: { sections: IpoPageSection[]; fetchedAt: string | null }) {
+  if (sections.length === 0) return null;
+  return (
+    <section className="mt-8" aria-labelledby="issue-page-heading">
+      <div className="flex items-center gap-2">
+        <FileText className="w-5 h-5 text-secondary" />
+        <div>
+          <h2 id="issue-page-heading" className="font-heading text-xl font-bold">Everything the issue page lists</h2>
+          <p className="text-xs text-muted-foreground">
+            From the issue's page on Chittorgarh{fetchedAt ? `, read ${new Intl.DateTimeFormat("en-IN", { dateStyle: "medium", timeStyle: "short" }).format(new Date(fetchedAt))}` : ""}.
+            Verify against the RHP before applying.
+          </p>
+        </div>
+      </div>
+      <div className="grid lg:grid-cols-2 gap-4 mt-5">
+        {sections.map((section) => (
+          <Card key={section.title} className={isWide(section) ? "lg:col-span-2" : ""}>
+            <CardContent className="p-5 space-y-3">
+              <h3 className="font-heading text-base font-bold">{section.title}</h3>
+              {section.tables.map((rows, i) => <SectionTable key={i} rows={rows} />)}
+              {section.lines.length > 0 && section.lines.every((line) => DATED_STEP.test(line)) ? (
+                <dl className="text-sm divide-y divide-border rounded-lg border border-border">
+                  {section.lines.map((line) => {
+                    const [, label, date] = DATED_STEP.exec(line)!;
+                    return (
+                      <div key={line} className="flex justify-between gap-4 p-2.5">
+                        <dt className="text-muted-foreground">{label}</dt>
+                        <dd className="font-medium tabular-nums text-right">{date}</dd>
+                      </div>
+                    );
+                  })}
+                </dl>
+              ) : section.lines.length > 0 && (
+                <div className="space-y-2 text-sm text-muted-foreground leading-relaxed">
+                  {section.lines.map((line, i) => <p key={i} className="break-words">{line}</p>)}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    </section>
+  );
+}

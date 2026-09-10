@@ -58,6 +58,10 @@ const makeIpo = (overrides: Partial<Ipo>): Ipo => ({
   est_listing_price: null,
   gmp_history: [],
   field_sources: null,
+  detail_url: null, min_investment: null, min_investment_lots: null, min_investment_shares: null,
+  min_investment_category: null, face_value: null, issue_type: null, sale_type: null, listing_exchanges: null,
+  fresh_issue_crore: null, ofs_crore: null, refund_date: null, credit_date: null, lead_managers: null,
+  promoter_holding_pre: null, promoter_holding_post: null, details: null, details_source: null, details_fetched_at: null,
   ...overrides,
 });
 

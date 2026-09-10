@@ -1,6 +1,6 @@
 import { ExternalLink, FileText, Landmark } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
-import { formatDate, formatListingGain, formatLotSize, formatRegistrar, formatRupees, type Ipo } from "@/lib/ipo";
+import { formatDate, formatListingGain, formatLotSize, formatMinInvestment, formatRegistrar, formatRupees, type Ipo } from "@/lib/ipo";
 import IPOFieldSource from "@/components/ipo/IPOFieldSource";
 
 const Detail = ({ label, value, field, ipo }: { label: string; value: string; field?: string; ipo?: Ipo }) => (
@@ -13,6 +13,9 @@ const Detail = ({ label, value, field, ipo }: { label: string; value: string; fi
   </div>
 );
 
+const crore = (value: number | null) => (value === null ? null : `₹${value.toLocaleString("en-IN")} Cr`);
+const percent = (value: number | null) => (value === null ? null : `${value}%`);
+
 /**
  * Everything the reconciled `ipos` row holds for one issue, with provenance
  * tags on every figure `field_sources` tracks. Every value is a real column
@@ -21,6 +24,24 @@ const Detail = ({ label, value, field, ipo }: { label: string; value: string; fi
  */
 export default function IPOIssueDetailsCard({ ipo }: { ipo: Ipo }) {
   const hasDocuments = Boolean(ipo.rhp_url || ipo.drhp_url);
+  const min = formatMinInvestment(ipo);
+  // Facts from the issue's own page. Each renders only when the page gave it,
+  // so a row appears the moment sync-ipo-details has read the page.
+  const pageFacts: [string, string | null][] = [
+    ["Minimum investment", min ? `${min.amount}${min.basis ? ` (${min.basis})` : ""}` : null],
+    ["Face value", ipo.face_value === null ? null : `₹${ipo.face_value} per share`],
+    ["Issue type", ipo.issue_type],
+    ["Sale type", ipo.sale_type],
+    ["Fresh issue", crore(ipo.fresh_issue_crore)],
+    ["Offer for sale", crore(ipo.ofs_crore)],
+    ["Listing at", ipo.listing_exchanges],
+    ["Refunds", ipo.refund_date ? formatDate(ipo.refund_date) : null],
+    ["Shares credited", ipo.credit_date ? formatDate(ipo.credit_date) : null],
+    ["Promoter holding", ipo.promoter_holding_pre !== null || ipo.promoter_holding_post !== null
+      ? `${percent(ipo.promoter_holding_pre) ?? "—"} before · ${percent(ipo.promoter_holding_post) ?? "—"} after`
+      : null],
+    ["Lead managers", ipo.lead_managers && ipo.lead_managers.length > 0 ? ipo.lead_managers.join(", ") : null],
+  ];
 
   return (
     <Card>
@@ -43,6 +64,9 @@ export default function IPOIssueDetailsCard({ ipo }: { ipo: Ipo }) {
           <Detail label="Listing price" value={ipo.listing_price === null ? "Awaited" : formatRupees(ipo.listing_price)} field="listing_price" ipo={ipo} />
           <Detail label="Listing gain" value={formatListingGain(ipo.listing_gain_pct) ?? "Awaited"} />
           <Detail label="Registrar" value={formatRegistrar(ipo.registrar)} />
+          {pageFacts.filter((fact): fact is [string, string] => fact[1] !== null).map(([label, value]) => (
+            <Detail key={label} label={label} value={value} />
+          ))}
         </dl>
 
         <div className="mt-5 pt-4 border-t border-border">

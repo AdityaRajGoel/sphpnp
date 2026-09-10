@@ -20,6 +20,7 @@ export type SortKey =
   | "price_band_max"
   | "issue_size_crore"
   | "lot_size"
+  | "min_investment"
   | "open_date"
   | "close_date"
   | "listing_date"
@@ -159,6 +160,8 @@ export function sortIpos(ipos: Ipo[], key: SortKey, dir: SortDir): Ipo[] {
         return ipo.issue_size_crore;
       case "lot_size":
         return ipo.lot_size;
+      case "min_investment":
+        return ipo.min_investment;
       case "open_date":
         return ipo.open_date;
       case "close_date":

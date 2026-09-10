@@ -7,7 +7,7 @@ import { describe, it, expect, vi } from "vitest";
 // file never touches a real client for functions that need no network at all.
 vi.mock("@/integrations/supabase/client", () => ({ supabase: {} }));
 
-import { fieldSourceLabel, formatGmp, formatListingGain, formatLotSize, formatRegistrar, formatSourceList } from "@/lib/ipo";
+import { fieldSourceLabel, formatGmp, formatListingGain, formatLotSize, formatMinInvestment, formatRegistrar, formatSourceList, sectionTableHasHeader } from "@/lib/ipo";
 
 /*
  * Formatting helpers for the IPO surfaces. The one rule every one of these
@@ -75,5 +75,32 @@ describe("fieldSourceLabel", () => {
   });
   it("labels the source that supplied the field", () => {
     expect(fieldSourceLabel({ lot_size: "investorgain" }, "lot_size")).toBe("InvestorGain");
+  });
+});
+
+describe("formatMinInvestment", () => {
+  const base = { min_investment: 14973, min_investment_lots: 1, min_investment_shares: 161, min_investment_category: "Retail" };
+
+  it("states the amount with the lots and shares it buys", () => {
+    expect(formatMinInvestment(base)).toEqual({ amount: "₹14,973", basis: "1 lot · 161 shares" });
+  });
+
+  it("pluralises lots, as an SME issue's two-lot minimum needs", () => {
+    expect(formatMinInvestment({ ...base, min_investment: 212000, min_investment_lots: 2, min_investment_shares: 4000 }))
+      .toEqual({ amount: "₹2,12,000", basis: "2 lots · 4,000 shares" });
+  });
+
+  it("is absent, not computed, when the issue page did not publish it", () => {
+    expect(formatMinInvestment({ ...base, min_investment: null })).toBeNull();
+  });
+});
+
+describe("sectionTableHasHeader", () => {
+  it("treats a multi-column grid's first row as its header", () => {
+    expect(sectionTableHasHeader([["Application", "Lots", "Shares", "Amount"], ["Retail (Min)", "1", "161", "₹14,973"]])).toBe(true);
+  });
+
+  it("treats a two-column label/value table as having no header", () => {
+    expect(sectionTableHasHeader([["Face Value", "₹ 10 per share"], ["Lot Size", "161 Shares"]])).toBe(false);
   });
 });

@@ -56,7 +56,7 @@ describe("reconcileIpos", () => {
     const merged = reconcileIpos({
       ipowatch: [{ ...base, price_band_min: 90, price_band_max: 95, open_date: null, close_date: null, gmp: 10, est_listing_price: null }],
       investorgain: [],
-      chittorgarh: [{ ...base, price_band_min: 100, price_band_max: 105, open_date: "2026-09-10", close_date: "2026-09-12", listing_date: "2026-09-17", issue_size_crore: 500 }],
+      chittorgarh: [{ ...base, price_band_min: 100, price_band_max: 105, open_date: "2026-09-10", close_date: "2026-09-12", listing_date: "2026-09-17", issue_size_crore: 500 , detail_url: null }],
     });
 
     const row = merged.find((r) => r.slug === "acme-industries")!;
@@ -72,7 +72,7 @@ describe("reconcileIpos", () => {
     const merged = reconcileIpos({
       ipowatch: [{ ...base, price_band_min: 90, price_band_max: 95, open_date: "2026-09-10", close_date: "2026-09-12", gmp: 10, est_listing_price: null }],
       investorgain: [],
-      chittorgarh: [{ ...base, price_band_min: null, price_band_max: null, open_date: null, close_date: null, listing_date: null, issue_size_crore: null }],
+      chittorgarh: [{ ...base, price_band_min: null, price_band_max: null, open_date: null, close_date: null, listing_date: null, issue_size_crore: null , detail_url: null }],
     });
 
     const row = merged.find((r) => r.slug === "acme-industries")!;
@@ -96,7 +96,7 @@ describe("reconcileIpos", () => {
     const merged = reconcileIpos({
       ipowatch: [],
       investorgain: [],
-      chittorgarh: [{ ...base, slug: "solo-issue", name: "Solo Issue", price_band_min: 10, price_band_max: 12, open_date: null, close_date: null, listing_date: null, issue_size_crore: null }],
+      chittorgarh: [{ ...base, slug: "solo-issue", name: "Solo Issue", price_band_min: 10, price_band_max: 12, open_date: null, close_date: null, listing_date: null, issue_size_crore: null , detail_url: null }],
     });
     expect(merged.map((r) => r.slug)).toContain("solo-issue");
   });

@@ -42,7 +42,8 @@ describe("every NSE caller", () => {
   // encountered" - which read as a Deno/HTTP2 incompatibility and was nearly
   // worked around with a separate GitHub runner. Any file that talks to NSE
   // must use NSE_HEADERS rather than a UA of its own.
-  const root = join(__dirname, "..", "..");
+  // Repo-root-relative: vitest runs from the project root.
+  const root = ".";
   const walk = (dir: string): string[] =>
     readdirSync(dir).flatMap((entry) => {
       const path = join(dir, entry);
@@ -56,7 +57,7 @@ describe("every NSE caller", () => {
     expect(callers.length).toBeGreaterThanOrEqual(3);
   });
 
-  it.each(callers.map((path) => [path.slice(root.length + 1)]))("%s declares no bot user-agent", (file) => {
+  it.each(callers.map((path) => [path.replace(/^\.\//, "")]))("%s declares no bot user-agent", (file) => {
     const source = readFileSync(join(root, file), "utf8");
     const declared = [...source.matchAll(/(?:User-Agent["']?\s*:|USER_AGENT\s*=)\s*["'`]([^"'`]+)["'`]/g)].map((m) => m[1]);
     for (const ua of declared) expect(ua).not.toMatch(/sphpnp|compatible;|\+https?:|bot|crawler|spider|^curl\//i);

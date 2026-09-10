@@ -23,6 +23,9 @@ export type MinInvestment = { category: string; lots: number; shares: number; am
 export type IpoDetailFacts = {
   min_investment: MinInvestment | null;
   face_value: number | null;
+  lot_size: number | null;
+  price_band_min: number | null;
+  price_band_max: number | null;
   issue_type: string | null;
   sale_type: string | null;
   listing_exchanges: string | null;
@@ -176,6 +179,13 @@ function minInvestment(section: DetailSection | undefined): MinInvestment | null
   return null;
 }
 
+/** "₹88 to ₹93" -> both ends; a fixed-price "₹93" -> the same figure twice. */
+function priceBand(value: string | null): { price_band_min: number | null; price_band_max: number | null } {
+  const numbers = [...(value ?? "").matchAll(/₹\s*([\d,]+(?:\.\d+)?)/g)].map((m) => Number(m[1].replace(/,/g, "")));
+  if (numbers.length === 0) return { price_band_min: null, price_band_max: null };
+  return { price_band_min: Math.min(...numbers), price_band_max: Math.max(...numbers) };
+}
+
 function promoterHolding(section: DetailSection | undefined): [number | null, number | null] {
   for (const table of section?.tables ?? []) {
     const row = table.find((cells) => /^Promoter/i.test(cells[0] ?? ""));
@@ -204,6 +214,8 @@ export function parseChittorgarhDetail(html: string): IpoDetail {
     facts: {
       min_investment: minInvestment(findSection(sections, /^IPO Lot Size$/i)),
       face_value: detail("Face Value") ? firstNumber(detail("Face Value")!) : null,
+      lot_size: detail("Lot Size") ? firstNumber(detail("Lot Size")!) : null,
+      ...priceBand(detail("Price Band")),
       issue_type: detail("Issue Type"),
       sale_type: detail("Sale Type"),
       listing_exchanges: detail("Listing At"),

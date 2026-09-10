@@ -20,7 +20,8 @@ import { join } from "node:path";
  * source alone, so they are checked here rather than discovered in production.
  */
 
-const ROOT = join(__dirname, "..", "..");
+// Repo-root-relative: vitest runs from the project root (see ipo-reconcile.test.ts).
+const ROOT = ".";
 const MIGRATIONS = join(ROOT, "supabase", "migrations");
 const FUNCTIONS = join(ROOT, "supabase", "functions");
 
@@ -154,7 +155,7 @@ export function upsertsInSource(file: string, source: string): Upsert[] {
   for (let m = conflict.exec(source); m; m = conflict.exec(source)) {
     const before = source.slice(0, m.index);
     const froms = [...before.matchAll(/\.from\(\s*["'`]([\w.]+)["'`]\s*\)/g)];
-    const table = froms.at(-1)?.[1];
+    const table = froms[froms.length - 1]?.[1];
     if (!table) throw new Error(`${file}: onConflict with no preceding .from()`);
     found.push({
       file,
@@ -214,7 +215,7 @@ describe("edge function upserts", () => {
   const keys = uniqueKeysFromMigrations(migrationFiles);
 
   const upserts = walk(FUNCTIONS).flatMap((path) =>
-    upsertsInSource(path.slice(ROOT.length + 1), readFileSync(path, "utf8")),
+    upsertsInSource(path.replace(/^\.\//, ""), readFileSync(path, "utf8")),
   );
 
   it("finds the upserts it is meant to police", () => {

@@ -67,7 +67,7 @@ describe("reconcileIpos", () => {
       chittorgarh: [{
         slug: "glass-wall-systems-india", name: "Glass Wall Systems (India)", board: "sme",
         price_band_min: 100, price_band_max: 105, open_date: "2026-09-08", close_date: "2026-09-10",
-        listing_date: "2026-09-15", issue_size_crore: 50,
+        listing_date: "2026-09-15", issue_size_crore: 50, detail_url: null,
       }],
     });
     expect(merged).toHaveLength(1);
@@ -82,7 +82,7 @@ const stored = (over: Partial<StoredIpo> & Pick<StoredIpo, "id" | "slug" | "name
   price_band_min: null, price_band_max: null, lot_size: null, issue_size_crore: null,
   registrar: null, rhp_url: null, drhp_url: null,
   subscription_qib: null, subscription_nii: null, subscription_retail: null,
-  listing_price: null, listing_gain_pct: null,
+  listing_price: null, listing_gain_pct: null, detail_url: null,
   ...over,
 });
 
