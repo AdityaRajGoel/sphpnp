@@ -26,6 +26,9 @@ verify_jwt = false
 [functions.sync-fundamentals]
 verify_jwt = false
 
+[functions.sync-stock-statements]
+verify_jwt = false
+
 # Same self-guard as sync-fundamentals above: SYNC_SECRET protects the
 # service-role writes, so verify_jwt must stay declared and off here from the
 # first deploy rather than silently defaulting to true.

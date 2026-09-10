@@ -1,0 +1,61 @@
+# Financial statements and profile data per stock, from IndianAPI.
+#
+# Each run takes the stalest symbols (never fetched first) and costs six API
+# requests per symbol: /stock plus five /historical_stats statements. The
+# batch size and refresh interval are edge-function settings
+# (STATEMENTS_BATCH_SIZE, STATEMENTS_REFRESH_DAYS), so this schedule and the
+# plan's monthly quota have to be read together - see sync-stock-statements.
+#
+# The `symbols` input re-syncs specific stocks immediately, e.g. "HDFCBANK,M&M".
+#
+# Same two secrets as every other sync-*.yml:
+#   SUPABASE_ANON_KEY   - the project's anon/publishable key (passes the gateway)
+#   MARKET_SYNC_SECRET  - must match SYNC_SECRET on the edge function
+name: Stock statements sync
+
+on:
+  # Schedule deliberately off until it is sized against the IndianAPI plan's
+  # monthly quota: at the default 6 symbols a run, twice daily is ~2,200
+  # requests a month, and a full pass of the 246-stock universe is ~1,500.
+  # schedule:
+  #   - cron: "40 1,13 * * *" # 07:10 and 19:10 IST daily
+  workflow_dispatch:
+    inputs:
+      symbols:
+        description: "Comma-separated NSE symbols to re-sync now (blank = next due batch)"
+        required: false
+        default: ""
+
+permissions: {}
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger sync-stock-statements
+        env:
+          # Passed through the environment, never interpolated into the script,
+          # so a symbol list cannot inject shell.
+          SYMBOLS: ${{ inputs.symbols }}
+        run: |
+          body=$(jq -cn --arg s "$SYMBOLS" \
+            'if ($s | length) > 0 then {symbols: ($s | split(",") | map(gsub("^\\s+|\\s+$"; "")) | map(select(length > 0)))} else {} end')
+          echo "request: $body"
+          resp=$(curl -sS -w "\n%{http_code}" --max-time 150 \
+            -X POST "https://zbkjbbujsdlpujotgltm.supabase.co/functions/v1/sync-stock-statements" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "x-sync-secret: ${{ secrets.MARKET_SYNC_SECRET }}" \
+            -H "Content-Type: application/json" \
+            -d "$body")
+          body=$(echo "$resp" | sed '$d'); code=$(echo "$resp" | tail -1)
+          echo "$body"
+
+          # Unresolvable or unverifiable symbols are annotated, not failed on:
+          # they are recorded in stock_profiles.last_attempt_error and rotate to
+          # the back of the queue. A refusal or a batch that stored nothing is a
+          # 500 from the function and fails below.
+          failed=$(echo "$body" | jq -r '(.failed // []) | length' 2>/dev/null || echo 0)
+          if [ -n "$failed" ] && [ "$failed" != "0" ]; then
+            echo "::warning title=Symbols not stored::$(echo "$body" | jq -r '[.failed[] | .symbol] | join(", ")' 2>/dev/null)"
+          fi
+          [ "$code" = "200" ] || exit 1
