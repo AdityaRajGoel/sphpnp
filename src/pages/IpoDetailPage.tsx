@@ -9,6 +9,7 @@ import ScrollProgress from "@/components/ScrollProgress";
 import WhatsAppButton from "@/components/WhatsAppButton";
 import VisibleBreadcrumbs from "@/components/VisibleBreadcrumbs";
 import IPOGmpChart from "@/components/ipo/IPOGmpChart";
+import IPOGmpHistoryTable from "@/components/ipo/IPOGmpHistoryTable";
 import IPOIssueDetailsCard from "@/components/ipo/IPOIssueDetailsCard";
 import IPOFieldSource from "@/components/ipo/IPOFieldSource";
 import { Badge } from "@/components/ui/badge";
@@ -59,6 +60,7 @@ export default function IpoDetailPage() {
           <Card className="lg:col-span-2"><CardContent className="p-5 md:p-6">
             <SectionTitle icon={BarChart3} title="GMP history" subtitle="Each point is a recorded observation from the scheduled data sync." />
             <div className="mt-5"><IPOGmpChart history={ipo.gmp_history} /></div>
+            <IPOGmpHistoryTable history={ipo.gmp_history} />
             <p className="mt-3 text-xs text-muted-foreground">
               {gmpSourceLabel && `Sources: ${gmpSourceLabel}. `}
               GMP is an unofficial, unregulated grey-market estimate — not a prediction of listing performance.
