@@ -1,6 +1,6 @@
 # Handoff — where the work stands and how to continue
 
-**Last updated:** 2026-09-09
+**Last updated:** 2026-09-11 (see §0 for what changed since 2026-09-09)
 **Purpose:** Let a different model or session (Codex, a fresh Claude session, a human) pick this up
 without re-deriving context or re-litigating settled decisions.
 
@@ -8,6 +8,32 @@ Read this file top to bottom before touching anything. The "Settled decisions" s
 specifically so you don't reopen questions the user has already answered.
 
 ---
+
+## 0. Update 2026-09-11 - data sources and what is live
+
+Everything below §0 predates this update; where they disagree, §0 wins.
+
+**Stock fundamentals** no longer come from NSE XBRL (frozen at Dec 2024) or Yahoo:
+- `sync-stock-statements` (IndianAPI, primary) -> `stock_statements` + `stock_profiles`.
+  Screener-layout quarterly/annual/balance/cash flow/ratios, key metrics, DMAs,
+  shareholding. Identity-guarded (NSE code + revenue or all-quarter EPS). Its
+  plan returned HTTP 429 after ~480 requests; schedule is commented out in
+  `stock-statements-sync.yml` until the user states the plan's limit.
+- `sync-google-finance` (SerpApi, fallback) -> `gf_*` statements + key stats for
+  stocks IndianAPI missed. 250 searches/month, keeps 25 in reserve.
+- Stock pages show IndianAPI's statements if present, else Google's; the NSE
+  tables are the last fallback.
+
+**IPOs**: status is derived from dates (`_shared/ipo-status.ts`); one row per
+issue via `ipoMatchKey` + self-healing merges (`_shared/ipo-identity.ts`);
+`sync-ipo-details` reads each live issue's Chittorgarh page (minimum investment
+as published - SME minimum is two lots - plus every section), Apify's
+rag-web-browser as the fallback fetch.
+
+**Fixed traps**: NSE feeds need a browser UA (a `+https://` bot UA makes Deno
+report an HTTP/2 stream error); every `onConflict` is checked against the
+migrations by `src/test/upsert-conflict-keys.test.ts`; the Docker HEALTHCHECK
+now probes 127.0.0.1 and CI smoke-tests the image on every push.
 
 ## 1. What this repo is
 
