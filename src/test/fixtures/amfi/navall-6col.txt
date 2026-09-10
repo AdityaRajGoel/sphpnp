@@ -1,0 +1,5 @@
+Scheme Code;ISIN Div Payout/ ISIN Growth;ISIN Div Reinvestment;Scheme Name;Net Asset Value;Date
+
+Axis Mutual Fund
+
+122639;INF879O01019;-;Parag Parikh Flexi Cap Fund - Direct Plan - Growth;89.3946;09-Sep-2026

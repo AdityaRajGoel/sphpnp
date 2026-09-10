@@ -1,0 +1,9 @@
+Scheme Code;ISIN Div Payout/ ISIN Growth;ISIN Div Reinvestment;Scheme Name;Plan;Option;Net Asset Value;Date
+
+ 
+
+122639;INF879O01027;-;Parag Parikh Flexi Cap Fund;Direct Plan;Growth;89.3946;09-Sep-2026
+118989;INF179K01XQ0;-;HDFC Mid Cap Fund;Direct Plan;Growth Option;232.269;09-Sep-2026
+135762;INF846K01WO1;-;Axis Children's Fund;Direct Plan;Growth Option;30.0313;09-Sep-2026
+135765;INF846K01WP8;-;Axis Children's Fund;Direct Plan;IDCW Option;27.6642;09-Sep-2026
+135759;INF846K01WJ1;-;Axis Children's Fund;Regular Plan;Growth Option;26.1570;09-Sep-2026

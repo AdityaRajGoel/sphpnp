@@ -15,6 +15,7 @@
 // RLS stays authenticated-only for everyone else. Safe to re-run (upserts).
 
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { AMFI_NAVALL_URL, parseAmfiNavAll } from "../_shared/amfi.ts";
 import * as XLSX from "npm:xlsx@0.18.5";
 
 const BROWSER_HEADERS = {
@@ -152,25 +153,38 @@ const CURATED_SCHEMES: Record<string, string> = {
 type MfNav = { scheme_code: string; scheme_name: string; nav: number; nav_date: string };
 
 async function fetchMfNavs(): Promise<MfNav[]> {
-  const res = await fetch("https://portal.amfiindia.com/spages/NAVAll.txt", {
+  const res = await fetch(AMFI_NAVALL_URL, {
     headers: { "User-Agent": BROWSER_HEADERS["User-Agent"] },
   });
   if (!res.ok) throw new Error(`AMFI -> ${res.status}`);
-  const text = await res.text();
+
+  const { rows, headerFound } = parseAmfiNavAll(await res.text());
+
+  // Distinguishing these two is the whole point. AMFI publishing nothing today
+  // is a quiet non-event; AMFI publishing a file we can no longer read is a
+  // defect that must be shouted about. Conflating them is how the previous
+  // parser hid a column shift for weeks behind a green daily workflow.
+  if (!headerFound) {
+    throw new Error("AMFI: no recognisable header - NAVAll.txt changed shape");
+  }
+  if (rows.length === 0) {
+    throw new Error("AMFI: header parsed but the file carried no NAV rows");
+  }
 
   const navs: MfNav[] = [];
-  for (const line of text.split("\n")) {
-    const parts = line.split(";");
-    if (parts.length < 6) continue;
-    const code = parts[0].trim();
-    const friendly = CURATED_SCHEMES[code];
+  for (const row of rows) {
+    const friendly = CURATED_SCHEMES[row.scheme_code];
     if (!friendly) continue;
-    const nav = parseFloat(parts[4]);
-    const iso = nseDateToISO(parts[5].trim());
-    if (!isFinite(nav) || !iso) continue;
-    navs.push({ scheme_code: code, scheme_name: friendly, nav, nav_date: iso });
+    navs.push({
+      scheme_code: row.scheme_code,
+      scheme_name: friendly,
+      nav: row.nav,
+      nav_date: row.nav_date,
+    });
   }
-  if (navs.length === 0) throw new Error("AMFI: no curated schemes matched");
+  if (navs.length === 0) {
+    throw new Error(`AMFI: parsed ${rows.length} rows but matched none of the curated schemes`);
+  }
   return navs;
 }
 
@@ -317,7 +331,12 @@ Deno.serve(async (req) => {
       const prev = prevByCode.get(n.scheme_code);
       // new trading day -> yesterday's nav becomes prev; same day re-run -> keep old prev
       const prev_nav = prev ? (prev.nav_date !== n.nav_date ? prev.nav : prev.prev_nav) : null;
-      return { ...n, prev_nav };
+      // updated_at is set explicitly: the column defaults only on INSERT, so an
+      // upsert that omits it leaves the original write time in place. That is
+      // worse than having no column at all - it is the field you would consult
+      // to ask "is this data stale?", answering with a date from months ago
+      // while the NAV beside it is current.
+      return { ...n, prev_nav, updated_at: new Date().toISOString() };
     });
     const { error } = await supabase.from("mf_navs").upsert(rows, { onConflict: "scheme_code" });
     if (error) throw error;
