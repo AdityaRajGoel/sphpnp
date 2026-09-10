@@ -46,3 +46,6 @@ verify_jwt = false
 # the same SYNC_SECRET guard as the other service-role writer functions.
 [functions.sync-ipos]
 verify_jwt = false
+
+[functions.sync-announcements]
+verify_jwt = false

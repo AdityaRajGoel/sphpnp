@@ -1,0 +1,29 @@
+# NSE's own corporate-action, results-filing and announcement feeds.
+#
+# Runs through the trading day rather than daily: announcements are filed
+# continuously while the market is open, and a once-a-day pull would show a
+# visitor yesterday's disclosures. The edge function holds the service-role key;
+# this workflow carries only the anon key and the shared sync secret, exactly as
+# the other scheduled producers do.
+name: Announcements Sync
+
+on:
+  schedule:
+    - cron: "5 4,7,10,13 * * 1-6" # 09:35, 12:35, 15:35, 18:35 IST, Mon-Sat
+  workflow_dispatch: {}
+
+permissions: {}
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger sync-announcements
+        run: |
+          resp=$(curl -sS -w "\n%{http_code}" --max-time 120 \
+            -X POST "https://zbkjbbujsdlpujotgltm.supabase.co/functions/v1/sync-announcements" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "x-sync-secret: ${{ secrets.MARKET_SYNC_SECRET }}")
+          body=$(echo "$resp" | sed '$d'); code=$(echo "$resp" | tail -1)
+          echo "$body"
+          [ "$code" = "200" ] || exit 1
