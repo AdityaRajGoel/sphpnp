@@ -82,4 +82,4 @@ jobs:
             sleep 1
           done
           echo "health: $status"
-          [ "$status" = "healthy" ]
+          [ "$status" = "healthy" ] || { docker inspect --format '{{json .State.Health}}' web; exit 1; }
