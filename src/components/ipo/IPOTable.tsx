@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { formatDate, formatGmp, formatLotSize, formatMinInvestment, type Ipo } from "@/lib/ipo";
+import { formatDate, formatGmp, formatGmpPercent, formatLotSize, formatMinInvestment, formatSubscription, gmpPercent, type Ipo } from "@/lib/ipo";
 import { MAX_COMPARE, type SortDir, type SortKey } from "@/lib/ipo-filters";
 
 const STATUS_LABEL: Record<Ipo["status"], string> = { upcoming: "Upcoming", open: "Open", closed: "Closed", listed: "Listed" };
@@ -19,6 +19,8 @@ const COLUMNS: { key: SortKey; label: string; align?: "right" }[] = [
   { key: "close_date", label: "Closes", align: "right" },
   { key: "listing_date", label: "Listing", align: "right" },
   { key: "gmp", label: "GMP", align: "right" },
+  { key: "gmp_pct", label: "GMP %", align: "right" },
+  { key: "subscription_total", label: "Subscribed", align: "right" },
 ];
 
 type Props = {
@@ -78,6 +80,12 @@ export default function IPOTable({ ipos, sortKey, sortDir, onSort, compareSlugs,
                 <TableCell className="text-right tabular-nums whitespace-nowrap">{formatDate(ipo.listing_date)}</TableCell>
                 <TableCell className={`text-right tabular-nums font-semibold ${ipo.gmp === null ? "text-muted-foreground" : ipo.gmp >= 0 ? "text-secondary" : "text-destructive"}`}>
                   {formatGmp(ipo.gmp)}
+                </TableCell>
+                <TableCell className={`text-right tabular-nums whitespace-nowrap ${gmpPercent(ipo) === null ? "text-muted-foreground" : gmpPercent(ipo)! >= 0 ? "text-secondary" : "text-destructive"}`}>
+                  {formatGmpPercent(gmpPercent(ipo)) ?? "—"}
+                </TableCell>
+                <TableCell className="text-right tabular-nums whitespace-nowrap">
+                  {formatSubscription(ipo.subscription_total) ?? <span className="text-muted-foreground">—</span>}
                 </TableCell>
               </TableRow>
             );

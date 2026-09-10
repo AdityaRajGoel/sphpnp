@@ -7,7 +7,7 @@
  * figure as "excluded from a band that requires a value", never as zero.
  */
 
-import type { Ipo } from "@/lib/ipo";
+import { gmpPercent, type Ipo } from "@/lib/ipo";
 
 export type StatusFilter = "all" | Ipo["status"];
 export type BoardFilter = "all" | Ipo["board"];
@@ -24,7 +24,9 @@ export type SortKey =
   | "open_date"
   | "close_date"
   | "listing_date"
-  | "gmp";
+  | "gmp"
+  | "gmp_pct"
+  | "subscription_total";
 export type SortDir = "asc" | "desc";
 
 export type IpoFilters = {
@@ -170,6 +172,10 @@ export function sortIpos(ipos: Ipo[], key: SortKey, dir: SortDir): Ipo[] {
         return ipo.listing_date;
       case "gmp":
         return ipo.gmp;
+      case "gmp_pct":
+        return gmpPercent(ipo);
+      case "subscription_total":
+        return ipo.subscription_total;
       default:
         return null;
     }

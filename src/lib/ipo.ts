@@ -72,6 +72,11 @@ export type Ipo = {
   details: { sections: IpoPageSection[] } | null;
   details_source: string | null;
   details_fetched_at: string | null;
+  // Chittorgarh's subscription page, once bidding opens; null before then.
+  subscription_total: number | null;
+  subscription_employee: number | null;
+  subscription_categories: { category: string; times: number }[] | null;
+  subscription_as_of: string | null;
 };
 
 /** One section of the issue page as it was published: tables as rows of cells, text as lines. */
@@ -103,7 +108,13 @@ export const formatLotSize = (value: number | null) => (value === null ? "Not di
 /** Registrar is likewise a static fact a source either recorded or didn't. */
 export const formatRegistrar = (value: string | null) => value ?? "Not disclosed";
 
-export const formatGmp = (value: number | null) => (value === null ? "Not yet quoted" : formatRupees(value));
+/**
+ * Paise are kept when there are any: GMP is often the median of two sources
+ * (Rs 139.50), and rounding it to Rs 140 beside a percentage computed from
+ * 139.5 made the two figures disagree on the same card.
+ */
+export const formatGmp = (value: number | null) =>
+  value === null ? "Not yet quoted" : formatRupees(value, Number.isInteger(value) ? 0 : 2);
 
 export const formatListingGain = (pct: number | null) =>
   pct === null ? null : `${pct >= 0 ? "+" : ""}${pct.toFixed(1)}%`;
@@ -150,3 +161,20 @@ export function formatMinInvestment(ipo: MinInvestmentFields): { amount: string;
  */
 export const sectionTableHasHeader = (rows: string[][]): boolean =>
   rows.length > 1 && (rows[0]?.length ?? 0) >= 3;
+
+/**
+ * GMP as a percentage of the upper price band - the price an applicant bidding
+ * at cut-off pays, and so the base any listing gain is measured from. Absent
+ * unless both figures are known and the band is a real price.
+ */
+export function gmpPercent(ipo: Pick<Ipo, "gmp" | "price_band_max">): number | null {
+  if (ipo.gmp === null || ipo.price_band_max === null || ipo.price_band_max <= 0) return null;
+  return (ipo.gmp / ipo.price_band_max) * 100;
+}
+
+export const formatGmpPercent = (pct: number | null): string | null =>
+  pct === null ? null : `${pct > 0 ? "+" : ""}${pct.toFixed(1)}%`;
+
+/** A subscription multiple as the market quotes it: "4.71x". */
+export const formatSubscription = (times: number | null): string | null =>
+  times === null ? null : `${times.toFixed(2)}x`;

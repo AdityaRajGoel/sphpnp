@@ -3,7 +3,7 @@ import { X } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { formatDate, formatGmp, formatLotSize, type Ipo } from "@/lib/ipo";
+import { formatDate, formatGmp, formatGmpPercent, formatLotSize, formatMinInvestment, formatSubscription, gmpPercent, type Ipo } from "@/lib/ipo";
 
 type Row = { label: string; render: (ipo: Ipo) => React.ReactNode };
 
@@ -13,6 +13,9 @@ const ROWS: Row[] = [
   { label: "Price band", render: (ipo) => ipo.price },
   { label: "Issue size", render: (ipo) => ipo.size },
   { label: "Lot size", render: (ipo) => formatLotSize(ipo.lot_size) },
+  { label: "Min. investment", render: (ipo) => formatMinInvestment(ipo)?.amount ?? "Not yet published" },
+  { label: "GMP %", render: (ipo) => formatGmpPercent(gmpPercent(ipo)) ?? "—" },
+  { label: "Subscribed", render: (ipo) => formatSubscription(ipo.subscription_total) ?? "—" },
   { label: "Opens", render: (ipo) => formatDate(ipo.open_date) },
   { label: "Closes", render: (ipo) => formatDate(ipo.close_date) },
   { label: "Listing date", render: (ipo) => formatDate(ipo.listing_date) },

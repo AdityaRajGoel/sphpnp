@@ -62,6 +62,7 @@ const makeIpo = (overrides: Partial<Ipo>): Ipo => ({
   min_investment_category: null, face_value: null, issue_type: null, sale_type: null, listing_exchanges: null,
   fresh_issue_crore: null, ofs_crore: null, refund_date: null, credit_date: null, lead_managers: null,
   promoter_holding_pre: null, promoter_holding_post: null, details: null, details_source: null, details_fetched_at: null,
+  subscription_total: null, subscription_employee: null, subscription_categories: null, subscription_as_of: null,
   ...overrides,
 });
 
@@ -276,5 +277,27 @@ describe("compare selection", () => {
   it("serialises an empty selection to undefined so it drops from the URL", () => {
     expect(compareSlugsToParam([])).toBeUndefined();
     expect(compareSlugsToParam(["a", "b"])).toBe("a,b");
+  });
+});
+
+describe("sorting by GMP % and subscription", () => {
+  it("ranks by GMP relative to the issue price, not by rupee GMP", () => {
+    // Rs 50 on a Rs 1,000 issue is 5%; Rs 20 on a Rs 50 issue is 40%.
+    const ipos = [
+      makeIpo({ slug: "big-rupees", gmp: 50, price_band_max: 1000 }),
+      makeIpo({ slug: "big-percent", gmp: 20, price_band_max: 50 }),
+      makeIpo({ slug: "unquoted", gmp: null, price_band_max: 100 }),
+    ];
+    expect(sortIpos(ipos, "gmp_pct", "desc").map((i) => i.slug)).toEqual(["big-percent", "big-rupees", "unquoted"]);
+  });
+
+  it("puts issues not yet bid on after subscribed ones, in both directions", () => {
+    const ipos = [
+      makeIpo({ slug: "none", subscription_total: null }),
+      makeIpo({ slug: "hot", subscription_total: 173.17 }),
+      makeIpo({ slug: "cold", subscription_total: 0.29 }),
+    ];
+    expect(sortIpos(ipos, "subscription_total", "desc").map((i) => i.slug)).toEqual(["hot", "cold", "none"]);
+    expect(sortIpos(ipos, "subscription_total", "asc").map((i) => i.slug)).toEqual(["cold", "hot", "none"]);
   });
 });

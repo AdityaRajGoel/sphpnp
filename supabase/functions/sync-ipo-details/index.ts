@@ -200,8 +200,11 @@ Deno.serve(async (req) => {
     })
     // Live issues before listed ones - a visitor deciding whether to apply needs
     // the minimum investment now; a listing's page is history. Then stalest first.
+    // Under force every issue is due, so live-first would re-read the same live
+    // issues on every run and never reach a listed one; stalest-first alone
+    // then walks the whole list across runs.
     .sort((a, b) =>
-      Number(deriveIpoStatus(a, a.status, today) === "listed") - Number(deriveIpoStatus(b, b.status, today) === "listed") ||
+      (force ? 0 : Number(deriveIpoStatus(a, a.status, today) === "listed") - Number(deriveIpoStatus(b, b.status, today) === "listed")) ||
       (a.details_attempted_at ?? "").localeCompare(b.details_attempted_at ?? ""))
     .slice(0, BATCH_SIZE);
 

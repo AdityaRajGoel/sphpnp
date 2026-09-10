@@ -7,7 +7,7 @@ import { describe, it, expect, vi } from "vitest";
 // file never touches a real client for functions that need no network at all.
 vi.mock("@/integrations/supabase/client", () => ({ supabase: {} }));
 
-import { fieldSourceLabel, formatGmp, formatListingGain, formatLotSize, formatMinInvestment, formatRegistrar, formatSourceList, sectionTableHasHeader } from "@/lib/ipo";
+import { fieldSourceLabel, formatGmp, formatGmpPercent, formatListingGain, formatLotSize, formatMinInvestment, formatRegistrar, formatSourceList, formatSubscription, gmpPercent, sectionTableHasHeader } from "@/lib/ipo";
 
 /*
  * Formatting helpers for the IPO surfaces. The one rule every one of these
@@ -39,6 +39,11 @@ describe("formatGmp", () => {
   });
   it("formats a real GMP as rupees", () => {
     expect(formatGmp(45)).toContain("45");
+  });
+
+  it("keeps a median GMP's paise, so it agrees with its percentage", () => {
+    expect(formatGmp(139.5)).toBe("₹139.50");
+    expect(formatGmp(140)).toBe("₹140");
   });
 });
 
@@ -102,5 +107,39 @@ describe("sectionTableHasHeader", () => {
 
   it("treats a two-column label/value table as having no header", () => {
     expect(sectionTableHasHeader([["Face Value", "₹ 10 per share"], ["Lot Size", "161 Shares"]])).toBe(false);
+  });
+});
+
+describe("gmpPercent", () => {
+  it("is GMP over the upper price band - the price a cut-off applicant pays", () => {
+    // LCC Projects: GMP 48 on a 139-146 band.
+    expect(gmpPercent({ gmp: 48, price_band_max: 146 })).toBeCloseTo(32.88, 2);
+  });
+
+  it("is negative when the grey market is below the issue price", () => {
+    expect(gmpPercent({ gmp: -5, price_band_max: 100 })).toBe(-5);
+  });
+
+  it("is absent without both figures, never computed against a zero price", () => {
+    expect(gmpPercent({ gmp: null, price_band_max: 146 })).toBeNull();
+    expect(gmpPercent({ gmp: 48, price_band_max: null })).toBeNull();
+    expect(gmpPercent({ gmp: 48, price_band_max: 0 })).toBeNull();
+  });
+});
+
+describe("formatGmpPercent", () => {
+  it("signs the figure to one decimal", () => {
+    expect(formatGmpPercent(32.876)).toBe("+32.9%");
+    expect(formatGmpPercent(-5)).toBe("-5.0%");
+    expect(formatGmpPercent(0)).toBe("0.0%");
+    expect(formatGmpPercent(null)).toBeNull();
+  });
+});
+
+describe("formatSubscription", () => {
+  it("writes a multiple the way the market quotes it", () => {
+    expect(formatSubscription(4.71)).toBe("4.71x");
+    expect(formatSubscription(459.2)).toBe("459.20x");
+    expect(formatSubscription(null)).toBeNull();
   });
 });

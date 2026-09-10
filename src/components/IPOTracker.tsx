@@ -11,7 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Link } from "react-router-dom";
 
 import { revealBar, revealItem, revealSection } from "@/lib/motion";
-import { formatGmp, formatListingGain, formatSourceList, type Ipo } from "@/lib/ipo";
+import { formatGmp, formatGmpPercent, formatListingGain, formatSourceList, formatSubscription, gmpPercent, type Ipo } from "@/lib/ipo";
 import { trackerTab } from "@/lib/ipo-filters";
 
 /** The reconciled catalogue row plus the two display-only fields derived from it. */
@@ -72,11 +72,18 @@ const IPOCard = ({ ipo, index }: { ipo: DisplayIpo; index: number }) => (
             <div className={`text-xs font-bold flex items-center gap-0.5 ${ipo.gmp === null ? "text-muted-foreground" : ipo.gmp >= 0 ? "text-secondary" : "text-destructive"}`}>
               {ipo.gmp !== null && (ipo.gmp >= 0 ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />)}
               {formatGmp(ipo.gmp)}
+              {gmpPercent(ipo) !== null && <span className="font-medium">({formatGmpPercent(gmpPercent(ipo))})</span>}
             </div>
           </>
         )}
       </div>
     </div>
+
+    {ipo.subscription_total !== null && (
+      <div className="mt-2 text-[10px] text-muted-foreground">
+        Subscribed <span className="font-bold text-foreground">{formatSubscription(ipo.subscription_total)}</span>
+      </div>
+    )}
 
     {(ipo.status === "open" || ipo.status === "closed") && (
       <motion.div className="mt-3 pt-3 border-t border-border/30">
