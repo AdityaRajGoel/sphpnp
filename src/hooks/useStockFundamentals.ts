@@ -10,6 +10,20 @@ export type CorporateAction = {
   description: string;
 };
 
+/**
+ * A quote figure, or null when the sync had nothing to write.
+ *
+ * Zero is treated as absent on purpose: it is this pipeline's "unknown"
+ * sentinel for legacy rows written before the sync started omitting unusable
+ * fields, and no listed company on this universe genuinely trades at zero or
+ * has a zero 52-week high.
+ */
+const num = (value: unknown): number | null => {
+  if (value === null || value === undefined) return null;
+  const n = Number(value);
+  return Number.isFinite(n) && n !== 0 ? n : null;
+};
+
 export type StockHeader = {
   symbol: string;
   name: string;
@@ -18,6 +32,24 @@ export type StockHeader = {
   change_pct: number | null;
   market_cap: number | null;
   updated_at: string | null;
+  /*
+   * Quote metrics the screener already syncs. They were previously fetched but
+   * never selected here, so the stock page showed price and market cap while
+   * P/E, the ranges and volume sat one column away in the same row.
+   *
+   * Every one is nullable and must stay that way. The sync now OMITS a field it
+   * could not read rather than writing 0, so absent means "Yahoo did not give
+   * us this", never "the value is zero" - and a 0 P/E rendered as a number is a
+   * statement about a listed company that nobody made.
+   */
+  pe: number | null;
+  high_52: number | null;
+  low_52: number | null;
+  day_high: number | null;
+  day_low: number | null;
+  volume: number | null;
+  open_price: number | null;
+  prev_close: number | null;
 };
 
 export type FilingMeta = {
@@ -87,7 +119,7 @@ export function useStockFundamentals(symbol: string | undefined): StockFundament
       try {
         // The universe row decides 404 vs render, so it is awaited first.
         const { data: headerRow, error: headerErr } = await table("screener_stocks")
-          .select("symbol,name,sector,price,change_pct,market_cap,updated_at")
+          .select("symbol,name,sector,price,change_pct,market_cap,updated_at,pe,high_52,low_52,day_high,day_low,volume,open_price,prev_close")
           .eq("symbol", upper)
           .maybeSingle();
         if (cancelled) return;
@@ -143,6 +175,14 @@ export function useStockFundamentals(symbol: string | undefined): StockFundament
             change_pct: h.change_pct === null ? null : Number(h.change_pct),
             market_cap: h.market_cap === null ? null : Number(h.market_cap),
             updated_at: (h.updated_at as string) ?? null,
+            pe: num(h.pe),
+            high_52: num(h.high_52),
+            low_52: num(h.low_52),
+            day_high: num(h.day_high),
+            day_low: num(h.day_low),
+            volume: num(h.volume),
+            open_price: num(h.open_price),
+            prev_close: num(h.prev_close),
           },
           basis: picked.basis,
           bothAvailable: picked.bothAvailable,

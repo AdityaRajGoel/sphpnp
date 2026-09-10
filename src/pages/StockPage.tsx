@@ -18,6 +18,8 @@ import type { StockForAnalysis } from "@/components/AIAnalysisModal";
 import { revealSection } from "@/lib/motion";
 import { formatCrore } from "@/lib/fundamentals";
 import { useStockFundamentals } from "@/hooks/useStockFundamentals";
+import QuoteMetrics from "@/components/stock/QuoteMetrics";
+import StockPriceChart from "@/components/stock/StockPriceChart";
 import IncomeStatementTable from "@/components/stock/IncomeStatementTable";
 import RatiosPanel from "@/components/stock/RatiosPanel";
 import CorporateActionsList from "@/components/stock/CorporateActionsList";
@@ -189,7 +191,17 @@ export default function StockPage() {
                   Market cap {formatCrore(s.header.market_cap)}
                 </p>
               ) : null}
+              {s.header && <QuoteMetrics header={s.header} />}
             </motion.header>
+
+            {/* The chart is deliberately OUTSIDE the financials gate below: it
+                reads live quotes, not filings, so a symbol the fundamentals
+                cursor has not reached yet still has a price history worth
+                showing. Gating it would have hidden the chart on exactly the
+                stocks whose page is otherwise emptiest. */}
+            {s.header && (
+              <StockPriceChart symbol={s.header.symbol} name={s.header.name} />
+            )}
 
             {/* Tracked but unreached by the sync cursor. Ordinary, not broken -
                 the backfill covers ~2 symbols an hour. */}
