@@ -161,6 +161,16 @@ export function verifyIdentity(stock: unknown, symbol: string): Check {
 const REVENUE_TOLERANCE = 0.25;
 
 /**
+ * The second opinion when revenue is defined differently - GODFRYPHLP's
+ * TotalRevenue includes excise duty, 3x Screener's Sales. EPS is per share, so
+ * it is specific to one company, and for the same company the two endpoints
+ * agree to the paisa (RELIANCE: 15.48 and 15.48). Profit was tried first and
+ * rejected: HDFC Bank's and Reliance's quarterly profits are within 3%.
+ * EVERY shared quarter must agree, because one can coincide by chance.
+ */
+const EPS_TOLERANCE = 0.05;
+
+/**
  * /historical_stats carries no identity of its own - it is a name search like
  * /stock - so its quarterly revenue is checked against the verified /stock
  * response's own quarterly statements. `verified: false` means the two share
@@ -183,15 +193,35 @@ export function crossCheckRevenue(stock: unknown, quarters: Statement): { ok: tr
     const statementValue = valueAt(quarters, topLine.label, String(period.EndDate));
     if (reference === null || statementValue === null || reference === 0) continue;
     const gap = Math.abs(statementValue - reference) / Math.abs(reference);
-    return gap <= REVENUE_TOLERANCE
-      ? { ok: true, verified: true }
-      : {
-        ok: false,
-        reason: `${topLine.label} for ${period.EndDate} is ${statementValue} Cr against ${reference} Cr from /stock ` +
-          `(${Math.round(gap * 100)}% apart) - likely a different company`,
-      };
+    if (gap <= REVENUE_TOLERANCE) return { ok: true, verified: true };
+
+    // Revenue disagrees. Same company with differently defined revenue? Then
+    // its EPS agrees in every quarter both endpoints report.
+    if (epsAgrees(interims, quarters)) return { ok: true, verified: true };
+    return {
+      ok: false,
+      reason: `${topLine.label} for ${period.EndDate} is ${statementValue} Cr against ${reference} Cr from /stock ` +
+        `(${Math.round(gap * 100)}% apart), and EPS does not agree either - likely a different company`,
+    };
   }
   return { ok: true, verified: false };
+}
+
+/** Whether every quarter both endpoints report has matching EPS (at least one must). */
+function epsAgrees(interims: Record<string, unknown>[], quarters: Statement): boolean {
+  let compared = 0;
+  for (const period of interims) {
+    const income = isRecord(period.stockFinancialMap) && Array.isArray(period.stockFinancialMap.INC)
+      ? period.stockFinancialMap.INC.filter(isRecord)
+      : [];
+    const lookup = (key: string) => toNumber(income.find((item) => item.key === key)?.value);
+    const reference = lookup("DilutedEPSExcludingExtraOrdItems") ?? lookup("DilutedNormalizedEPS");
+    const eps = valueAt(quarters, "EPS in Rs", String(period.EndDate));
+    if (reference === null || eps === null || reference === 0) continue;
+    if (Math.abs(eps - reference) / Math.abs(reference) > EPS_TOLERANCE) return false;
+    compared++;
+  }
+  return compared > 0;
 }
 
 export type RoePoint = { period_end: string; roe: number };

@@ -162,6 +162,27 @@ describe("crossCheckRevenue", () => {
     expect(crossCheckRevenue(stock, other)).toMatchObject({ ok: false });
   });
 
+  it("accepts a company whose revenue is reported gross of excise when its profit agrees", () => {
+    // GODFRYPHLP: /stock's TotalRevenue included excise duty (3,819.56 Cr against
+    // Screener's Sales of 1,206 Cr) and the revenue check alone rejected a
+    // correct match. EPS is per share, so it still identifies the company.
+    const excise = parseStatement({
+      Sales: { "Jun 2026": 309468 / 3, "Mar 2026": 294059 / 3 },
+      "EPS in Rs": { "Jun 2026": 15.48, "Mar 2026": 12.54 },
+    })!;
+    expect(crossCheckRevenue(stock, excise)).toMatchObject({ ok: true, verified: true });
+  });
+
+  it("fails when EPS agrees in one quarter but not another", () => {
+    // HDFC Bank's EPS happens to sit within 5% of Reliance's in Mar 2026 (13.22
+    // against 12.54) but is 19% off in Jun 2026 - one coincidence is not a match.
+    const wrong = parseStatement({
+      Sales: { "Jun 2026": 90575, "Mar 2026": 87182 },
+      "EPS in Rs": { "Jun 2026": 12.5, "Mar 2026": 12.9 },
+    })!;
+    expect(crossCheckRevenue(stock, wrong)).toMatchObject({ ok: false });
+  });
+
   it("passes but reports unverified when the two share no quarter", () => {
     const disjoint = parseStatement({ Sales: { "Mar 2010": 5 } })!;
     expect(crossCheckRevenue(stock, disjoint)).toEqual({ ok: true, verified: false });

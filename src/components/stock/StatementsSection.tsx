@@ -5,16 +5,9 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { revealSection } from "@/lib/motion";
 import {
-  ABSENT, formatStatementValue, visibleColumns, type StatementGrid, type StatementKind,
+  ABSENT, formatStatementValue, statementTabs, visibleColumns, type StatementGrid, type StatementKind,
 } from "@/lib/statements";
 
-const TABS: { kind: StatementKind; label: string; caption: string }[] = [
-  { kind: "quarter_results", label: "Quarterly", caption: "Quarterly results" },
-  { kind: "yoy_results", label: "Profit & loss", caption: "Annual profit and loss, with trailing twelve months" },
-  { kind: "balancesheet", label: "Balance sheet", caption: "Balance sheet at each fiscal year end" },
-  { kind: "cashflow", label: "Cash flow", caption: "Cash flows for each fiscal year" },
-  { kind: "ratios", label: "Ratios", caption: "Efficiency and return ratios for each fiscal year" },
-];
 
 /** Twelve columns keeps three years of quarters or a decade of years on screen. */
 const MAX_COLUMNS = 12;
@@ -92,7 +85,7 @@ const asOf = (iso: string) =>
  * has stored at least one statement for the symbol.
  */
 export default function StatementsSection({ statements }: { statements: Partial<Record<StatementKind, StatementGrid>> }) {
-  const available = TABS.filter((tab) => statements[tab.kind]);
+  const { source, tabs: available } = statementTabs(statements);
   if (available.length === 0) return null;
   const fetchedAt = available.map((tab) => statements[tab.kind]!.fetched_at).sort().reverse()[0];
 
@@ -115,7 +108,8 @@ export default function StatementsSection({ statements }: { statements: Partial<
         ))}
       </Tabs>
       <p className="text-xs text-muted-foreground mt-3">
-        Source: IndianAPI, updated {asOf(fetchedAt)}. Consolidated figures where the company reports them.
+        Source: {source === "google_finance" ? "Google Finance via SerpApi" : "IndianAPI"}, updated {asOf(fetchedAt)}.
+        {source === "indianapi" ? " Consolidated figures where the company reports them." : " Rupee amounts converted to crore."}
         Information only, not investment advice.
       </p>
     </motion.section>

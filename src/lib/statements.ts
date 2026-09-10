@@ -7,7 +7,12 @@
  * figure is written and which columns fit.
  */
 
-export type StatementKind = "quarter_results" | "yoy_results" | "balancesheet" | "cashflow" | "ratios";
+export type IndianApiKind = "quarter_results" | "yoy_results" | "balancesheet" | "cashflow" | "ratios";
+export type GoogleFinanceKind =
+  | "gf_income_quarterly" | "gf_income_annual"
+  | "gf_balance_quarterly" | "gf_balance_annual"
+  | "gf_cashflow_quarterly" | "gf_cashflow_annual";
+export type StatementKind = IndianApiKind | GoogleFinanceKind;
 
 export type StatementRow = { label: string; values: (number | null)[] };
 
@@ -58,9 +63,15 @@ export function visibleColumns(grid: StatementGrid, max: number): number[] {
 
 type Card = { label: string; value: string; hint?: string };
 
+/** Google Finance's key stats (via SerpApi) - the fallback for metrics IndianAPI did not report. */
+export type FallbackStats = { pe: number | null; eps: number | null; dividend_yield_pct: number | null; roe_pct: number | null };
+
+const NO_FALLBACK: FallbackStats = { pe: null, eps: null, dividend_yield_pct: null, roe_pct: null };
+
 const metric = (km: KeyMetrics, group: string, key: string): number | null => km[group]?.[key] ?? null;
 const fixed = (n: number | null, digits: number, suffix = "") => (n === null ? ABSENT : `${n.toFixed(digits)}${suffix}`);
 const fiscalLabel = (periodEnd: string) => `FY${periodEnd.slice(2, 4)}`;
+const rupeesOrAbsent = (n: number | null) => (n === null ? ABSENT : `₹${n.toFixed(2)}`);
 
 /**
  * The headline ratios, each from the most direct source available. ROE is
@@ -68,20 +79,24 @@ const fiscalLabel = (periodEnd: string) => `FY${periodEnd.slice(2, 4)}`;
  * than taken from keyMetrics, whose figure is a 5-year average - a different
  * question. A metric the source did not report shows as absent.
  */
-export function keyMetricCards(km: KeyMetrics, roe: RoePoint[], ratios: StatementRow[]): Card[] {
+export function keyMetricCards(km: KeyMetrics, roe: RoePoint[], ratios: StatementRow[], fallback: FallbackStats = NO_FALLBACK): Card[] {
   const latestRoe = roe.length > 0 ? roe[roe.length - 1] : null;
+  // IndianAPI first; Google Finance only where IndianAPI reported nothing.
+  const or = (primary: number | null, secondary: number | null) => primary ?? secondary;
   const roceRow = ratios.find((r) => r.label === "ROCE %");
   const roce = roceRow ? [...roceRow.values].reverse().find((v): v is number => v !== null) ?? null : null;
   return [
-    { label: "P/E (TTM)", value: fixed(metric(km, "valuation", "pPerEBasicExcludingExtraordinaryItemsTTM"), 1) },
+    { label: "P/E (TTM)", value: fixed(or(metric(km, "valuation", "pPerEBasicExcludingExtraordinaryItemsTTM"), fallback.pe), 1) },
+    // Upstream's own key, typos included ("Iitems", "12onth").
+    { label: "EPS (TTM)", value: rupeesOrAbsent(or(metric(km, "persharedata", "eEPSExcludingExtraordinaryIitemsTrailing12onth"), fallback.eps)) },
     { label: "Price / Book", value: fixed(metric(km, "valuation", "priceToBookMostRecentFiscalYear"), 2) },
     {
       label: latestRoe ? `ROE (${fiscalLabel(latestRoe.period_end)})` : "ROE",
-      value: latestRoe ? `${latestRoe.roe.toFixed(1)}%` : ABSENT,
+      value: latestRoe ? `${latestRoe.roe.toFixed(1)}%` : fallback.roe_pct === null ? ABSENT : `${fallback.roe_pct.toFixed(1)}%`,
       hint: "Net profit over average shareholders' equity",
     },
     { label: "ROCE (latest year)", value: roce === null ? ABSENT : `${Number.isInteger(roce) ? roce : roce.toFixed(1)}%` },
-    { label: "Dividend yield", value: fixed(metric(km, "valuation", "currentDividendYieldCommonStockPrimaryIssueLTM"), 2, "%") },
+    { label: "Dividend yield", value: fixed(or(metric(km, "valuation", "currentDividendYieldCommonStockPrimaryIssueLTM"), fallback.dividend_yield_pct), 2, "%") },
     { label: "Net margin (TTM)", value: fixed(metric(km, "margins", "netProfitMarginPercentTrailing12Month"), 1, "%") },
     { label: "Current ratio", value: fixed(metric(km, "financialstrength", "currentRatioMostRecentFiscalYear"), 2) },
     { label: "Debt / Equity", value: fixed(metric(km, "financialstrength", "ltDebtPerEquityMostRecentFiscalYear"), 2), hint: "Long-term debt, latest fiscal year" },
@@ -101,4 +116,42 @@ export function latestHolding(series: HolderSeries): { date: string; pct: number
     pct: last.pct,
     change: previous ? Math.round((last.pct - previous.pct) * 100) / 100 : null,
   };
+}
+
+export type StatementTab = { kind: StatementKind; label: string; caption: string };
+
+const INDIANAPI_TABS: StatementTab[] = [
+  { kind: "quarter_results", label: "Quarterly", caption: "Quarterly results" },
+  { kind: "yoy_results", label: "Profit & loss", caption: "Annual profit and loss, with trailing twelve months" },
+  { kind: "balancesheet", label: "Balance sheet", caption: "Balance sheet at each fiscal year end" },
+  { kind: "cashflow", label: "Cash flow", caption: "Cash flows for each fiscal year" },
+  { kind: "ratios", label: "Ratios", caption: "Efficiency and return ratios for each fiscal year" },
+];
+
+const GOOGLE_TABS: StatementTab[] = [
+  { kind: "gf_income_quarterly", label: "Quarterly", caption: "Quarterly income statement" },
+  { kind: "gf_income_annual", label: "Profit & loss", caption: "Annual income statement by fiscal year" },
+  { kind: "gf_balance_annual", label: "Balance sheet", caption: "Balance sheet at each fiscal year end" },
+  { kind: "gf_balance_quarterly", label: "Balance sheet (quarterly)", caption: "Balance sheet at each quarter end" },
+  { kind: "gf_cashflow_annual", label: "Cash flow", caption: "Cash flows for each fiscal year" },
+  { kind: "gf_cashflow_quarterly", label: "Cash flow (quarterly)", caption: "Cash flows for each quarter" },
+];
+
+/**
+ * The statement tabs to show, from one source only. IndianAPI's when the stock
+ * has any - they are Screener's layout and the primary source - and Google
+ * Finance's otherwise. Never both: two sets of figures for the same quarter,
+ * defined differently, would read as a contradiction.
+ */
+export function statementTabs(statements: Partial<Record<StatementKind, StatementGrid>>): { source: "indianapi" | "google_finance" | null; tabs: StatementTab[] } {
+  const indian = INDIANAPI_TABS.filter((tab) => statements[tab.kind]);
+  if (indian.length > 0) return { source: "indianapi", tabs: indian };
+  const google = GOOGLE_TABS.filter((tab) => statements[tab.kind]);
+  return google.length > 0 ? { source: "google_finance", tabs: google } : { source: null, tabs: [] };
+}
+
+/** The latest annual "Return on equity %" in Google's balance sheet, for the ROE fallback. */
+export function googleRoe(statements: Partial<Record<StatementKind, StatementGrid>>): number | null {
+  const row = statements.gf_balance_annual?.rows.find((r) => /^Return on equity/.test(r.label));
+  return row ? [...row.values].reverse().find((v): v is number => v !== null) ?? null : null;
 }

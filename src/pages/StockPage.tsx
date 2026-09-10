@@ -19,6 +19,7 @@ import { revealSection } from "@/lib/motion";
 import { formatCrore } from "@/lib/fundamentals";
 import { useStockFundamentals } from "@/hooks/useStockFundamentals";
 import { useStockStatements } from "@/hooks/useStockStatements";
+import { googleRoe } from "@/lib/statements";
 import QuoteMetrics from "@/components/stock/QuoteMetrics";
 import StockPriceChart from "@/components/stock/StockPriceChart";
 import IncomeStatementTable from "@/components/stock/IncomeStatementTable";
@@ -226,6 +227,12 @@ export default function StockPage() {
                     ratios={st.statements.ratios?.rows ?? []}
                     movingAverages={st.profile.moving_averages}
                     price={s.header?.price ?? null}
+                    fallback={{
+                      pe: st.profile.google_finance?.pe ?? null,
+                      eps: st.profile.google_finance?.eps ?? null,
+                      dividend_yield_pct: st.profile.google_finance?.dividend_yield_pct ?? null,
+                      roe_pct: googleRoe(st.statements),
+                    }}
                   />
                 )}
                 <StatementsSection statements={st.statements} />

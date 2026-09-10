@@ -1,7 +1,7 @@
 import { motion } from "motion/react";
 import { Card } from "@/components/ui/card";
 import { revealItem, revealSection } from "@/lib/motion";
-import { ABSENT, keyMetricCards, type KeyMetrics, type MovingAverage, type RoePoint, type StatementRow } from "@/lib/statements";
+import { ABSENT, keyMetricCards, type FallbackStats, type KeyMetrics, type MovingAverage, type RoePoint, type StatementRow } from "@/lib/statements";
 
 type Props = {
   keyMetrics: KeyMetrics;
@@ -9,6 +9,8 @@ type Props = {
   ratios: StatementRow[];
   movingAverages: MovingAverage[];
   price: number | null;
+  /** Google Finance's figures, used only where IndianAPI reported nothing. */
+  fallback?: FallbackStats;
 };
 
 const rupees = (n: number) => `₹${n.toLocaleString("en-IN", { maximumFractionDigits: 2 })}`;
@@ -22,8 +24,8 @@ const rupees = (n: number) => `₹${n.toLocaleString("en-IN", { maximumFractionD
  * reported". ROE and ROCE come from the stored statements, so they survive a
  * missing metrics block.
  */
-export default function KeyMetricsGrid({ keyMetrics, roe, ratios, movingAverages, price }: Props) {
-  const cards = keyMetricCards(keyMetrics, roe, ratios).filter((card) => card.value !== ABSENT);
+export default function KeyMetricsGrid({ keyMetrics, roe, ratios, movingAverages, price, fallback }: Props) {
+  const cards = keyMetricCards(keyMetrics, roe, ratios, fallback).filter((card) => card.value !== ABSENT);
   const averages = movingAverages.filter((m) => m.nse !== null);
   if (cards.length === 0 && averages.length === 0) return null;
 

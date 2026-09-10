@@ -4,6 +4,7 @@ import {
   visibleColumns,
   keyMetricCards,
   latestHolding,
+  statementTabs,
   type StatementGrid,
 } from "@/lib/statements";
 
@@ -100,5 +101,40 @@ describe("latestHolding", () => {
   it("has no change for a single observation", () => {
     expect(latestHolding({ category: "FII", points: [{ date: "2026-06-30", pct: 19.1 }] }))
       .toEqual({ date: "2026-06-30", pct: 19.1, change: null });
+  });
+});
+
+describe("keyMetricCards with Google Finance as the fallback", () => {
+  it("fills the ratios IndianAPI did not report from Google's key stats", () => {
+    // M&M: IndianAPI returned no key metrics at all.
+    const cards = keyMetricCards({}, [], [], { pe: 18.97, eps: 164.44, dividend_yield_pct: 1.06, roe_pct: 17.2 });
+    const byLabel = Object.fromEntries(cards.map((c) => [c.label, c.value]));
+    expect(byLabel["P/E (TTM)"]).toBe("19.0");
+    expect(byLabel["Dividend yield"]).toBe("1.06%");
+    expect(byLabel["EPS (TTM)"]).toBe("₹164.44");
+    expect(byLabel["ROE"]).toBe("17.2%");
+  });
+
+  it("prefers IndianAPI's figure when both have one", () => {
+    const cards = keyMetricCards({ valuation: { pPerEBasicExcludingExtraordinaryItemsTTM: 23.43 } }, [], [], { pe: 99, eps: null, dividend_yield_pct: null, roe_pct: null });
+    expect(cards.find((c) => c.label === "P/E (TTM)")?.value).toBe("23.4");
+  });
+});
+
+describe("statementTabs", () => {
+  const grid = (statement: StatementGrid["statement"]): StatementGrid => ({
+    statement, periods: ["Mar 2026"], period_ends: ["2026-03-31"], rows: [{ label: "Sales", values: [1] }], verified: true, fetched_at: "2026-09-10T00:00:00Z",
+  });
+
+  it("shows IndianAPI's statements when the stock has them, never both sources", () => {
+    const tabs = statementTabs({ quarter_results: grid("quarter_results"), gf_income_quarterly: grid("gf_income_quarterly") });
+    expect(tabs.source).toBe("indianapi");
+    expect(tabs.tabs.map((t) => t.kind)).toEqual(["quarter_results"]);
+  });
+
+  it("falls back to Google Finance's statements otherwise", () => {
+    const tabs = statementTabs({ gf_income_quarterly: grid("gf_income_quarterly"), gf_balance_annual: grid("gf_balance_annual") });
+    expect(tabs.source).toBe("google_finance");
+    expect(tabs.tabs.map((t) => t.kind)).toEqual(["gf_income_quarterly", "gf_balance_annual"]);
   });
 });

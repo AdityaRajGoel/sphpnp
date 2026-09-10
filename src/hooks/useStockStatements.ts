@@ -13,6 +13,9 @@ export type StockProfile = {
   shareholding: HolderSeries[];
   roe_history: RoePoint[];
   fetched_at: string | null;
+  /** Google Finance key stats (via SerpApi), for stocks IndianAPI covered thinly or not at all. */
+  google_finance: { pe: number | null; eps: number | null; dividend_yield_pct: number | null } | null;
+  google_finance_fetched_at: string | null;
 };
 
 export type StockStatementsState = {
@@ -52,7 +55,7 @@ export function useStockStatements(symbol: string | undefined): StockStatementsS
             .select("statement,periods,period_ends,rows,verified,fetched_at")
             .eq("symbol", upper),
           table("stock_profiles")
-            .select("company_name,industry,description,key_metrics,moving_averages,shareholding,roe_history,fetched_at")
+            .select("company_name,industry,description,key_metrics,moving_averages,shareholding,roe_history,fetched_at,google_finance,google_finance_fetched_at")
             .eq("symbol", upper)
             .maybeSingle(),
         ]);
@@ -68,8 +71,8 @@ export function useStockStatements(symbol: string | undefined): StockStatementsS
           loading: false,
           error: null,
           statements,
-          // A profile row that only records a failed attempt has no fetch yet.
-          profile: profile?.fetched_at ? profile : null,
+          // A profile row that only records failed attempts has nothing to show.
+          profile: profile?.fetched_at || profile?.google_finance_fetched_at ? profile : null,
         });
       } catch (error) {
         if (!cancelled) setState({ ...EMPTY, loading: false, error: (error as Error).message });

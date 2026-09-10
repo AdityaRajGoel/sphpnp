@@ -1,0 +1,38 @@
+# Google Finance statements and key stats (via SerpApi) for the stocks
+# IndianAPI cannot cover: ones it failed to identify, ones it returned no key
+# metrics for, and ones it has not reached.
+#
+# SerpApi's free plan is 250 searches a month. sync-google-finance reads the
+# month's remaining searches before spending any, keeps SERPAPI_RESERVE unspent
+# and takes at most SERPAPI_PER_RUN a run - so this daily schedule cannot run
+# the allowance dry.
+#
+# Same two secrets as every other sync-*.yml:
+#   SUPABASE_ANON_KEY   - the project's anon/publishable key (passes the gateway)
+#   MARKET_SYNC_SECRET  - must match SYNC_SECRET on the edge function
+name: Google Finance sync
+
+on:
+  schedule:
+    - cron: "10 2 * * *" # 07:40 IST daily
+  workflow_dispatch: {}
+
+permissions: {}
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger sync-google-finance
+        run: |
+          resp=$(curl -sS -w "\n%{http_code}" --max-time 150 \
+            -X POST "https://zbkjbbujsdlpujotgltm.supabase.co/functions/v1/sync-google-finance" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "x-sync-secret: ${{ secrets.MARKET_SYNC_SECRET }}")
+          body=$(echo "$resp" | sed '$d'); code=$(echo "$resp" | tail -1)
+          echo "$body"
+          failed=$(echo "$body" | jq -r '(.failed // []) | length' 2>/dev/null || echo 0)
+          if [ -n "$failed" ] && [ "$failed" != "0" ]; then
+            echo "::warning title=Stocks not stored::$(echo "$body" | jq -r '[.failed[] | .symbol] | join(", ")' 2>/dev/null)"
+          fi
+          [ "$code" = "200" ] || exit 1
