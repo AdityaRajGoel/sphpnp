@@ -80,7 +80,14 @@ async function fetchRss(url: string, sourceName: string, defaultCategory: string
       // Handle CDATA or regular text
       const titleMatch = itemStr.match(/<title>\s*<!\[CDATA\[([\s\S]*?)\]\]>\s*<\/title>/i) || itemStr.match(/<title>\s*([\s\S]*?)\s*<\/title>/i);
       const descMatch = itemStr.match(/<description>\s*<!\[CDATA\[([\s\S]*?)\]\]>\s*<\/description>/i) || itemStr.match(/<description>\s*([\s\S]*?)\s*<\/description>/i);
-      const dateMatch = itemStr.match(/<pubDate>\s*([\s\S]*?)\s*<\/pubDate>/i);
+      // CDATA-aware, like title/description above. Without the first branch the
+      // regex captured the literal "<![CDATA[Thu, 10 Sep 2026 ...]]>" string,
+      // new Date() could not parse it, and parseFeedDate fell back to "now" -
+      // so every item from LiveMint, BusinessLine and NDTV Profit (which all
+      // wrap pubDate in CDATA) was stamped with the fetch instant and wrongly
+      // flagged as breaking news by the "New" badge.
+      const dateMatch = itemStr.match(/<pubDate>\s*<!\[CDATA\[([\s\S]*?)\]\]>\s*<\/pubDate>/i)
+        || itemStr.match(/<pubDate>\s*([\s\S]*?)\s*<\/pubDate>/i);
       // Article link: <link> text, or an atom <link href="..."/>. Only keep http(s).
       const linkMatch = itemStr.match(/<link>\s*<!\[CDATA\[([\s\S]*?)\]\]>\s*<\/link>/i)
         || itemStr.match(/<link>\s*([\s\S]*?)\s*<\/link>/i)
@@ -167,7 +174,13 @@ async function getLiveNews() {
   // a successful fetch.
   const results = await Promise.all([
     fetchRss("https://economictimes.indiatimes.com/markets/rssfeeds/1977021501.cms", "Economic Times", "Markets"),
-    fetchRss("https://www.moneycontrol.com/rss/MCtopnews.xml", "Moneycontrol", "Business"),
+    // Moneycontrol's MCtopnews.xml is DELIBERATELY not here. It still returns
+    // HTTP 200 and well-formed RSS with real <item> tags, so every health check
+    // passes - but its lastBuildDate and every pubDate are frozen at
+    // 2016-10-05. It was feeding decade-old stories into the live feed, which
+    // is where the "3627d ago" cards came from. A stale mirror is worse than a
+    // dead feed: it looks healthy. Restore it only if the URL starts serving
+    // current items again.
     fetchRss("https://www.business-standard.com/rss/markets-106.rss", "Business Standard", "Markets"),
     fetchRss("https://www.livemint.com/rss/markets", "LiveMint", "Markets"),
     // financialexpress.com/market/feed/ now 301s to /market/ (an HTML page) and
@@ -185,18 +198,28 @@ async function getLiveNews() {
     // Yahoo's own front-end RSS index, which isn't gated the same way.
     fetchRss("https://finance.yahoo.com/news/rssindex", "Yahoo Finance", "Markets"),
   ]);
-  const [
-    etMarkets, moneyControl, businessStandard, liveMint, businessLine, ndtvProfit, businessToday,
-    cnbcWorld, yahooFinance,
-  ] = results;
+  /*
+   * Looked up BY NAME, not by position.
+   *
+   * This was a positional destructure, so removing a single feed from the array
+   * above shifted every name after it by one and left the last binding
+   * undefined - a 500 on the very next call. Feeds get added and dropped here
+   * routinely (four URLs in this file have already rotted and been swapped), so
+   * the list must be safe to edit. Same failure this codebase hit in the IPO
+   * parser, which read table columns by index until the columns moved.
+   */
+  const by = (name: string) => results.find((r) => r.name === name)?.items ?? [];
+
+  const INDIAN_SOURCES = [
+    "Economic Times", "Business Standard", "LiveMint",
+    "BusinessLine", "NDTV Profit", "Business Today",
+  ];
+  const WORLD_SOURCES = ["CNBC", "Yahoo Finance"];
 
   // Deep enough that the client's featured story + 9-card grid still leaves
   // stories behind the "Show more" button.
-  const indian = interleave(
-    [etMarkets, moneyControl, businessStandard, liveMint, businessLine, ndtvProfit, businessToday].map(r => r.items),
-    24,
-  );
-  const world = interleave([cnbcWorld, yahooFinance].map(r => r.items), 14);
+  const indian = interleave(INDIAN_SOURCES.map(by), 24);
+  const world = interleave(WORLD_SOURCES.map(by), 14);
 
   const sourcesTotal = results.length;
   const sourcesOk = results.filter(r => r.ok).length;
