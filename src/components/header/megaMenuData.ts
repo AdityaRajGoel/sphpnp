@@ -44,6 +44,14 @@ export const megaMenuItems: MegaMenuItem[] = [
     highlight: true,
   },
   {
+    // Promoted out of the Markets dropdown to a top-level entry. IPO is one of
+    // the few reasons a first-time visitor arrives at all, and a live GMP page
+    // buried two levels down is a page nobody finds.
+    label: "IPO",
+    href: "/ipo",
+    highlight: true,
+  },
+  {
     label: "Markets",
     href: "/screener",
     subItems: [

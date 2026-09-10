@@ -69,7 +69,7 @@ const itemVariants: Variants = {
 
 const WhyChooseUs = () => {
   return (
-    <section className="py-12 md:py-20 bg-background overflow-hidden relative">
+    <section id="why-us" className="py-12 md:py-20 bg-background overflow-hidden relative">
       {/* Background ornaments */}
       <div className="absolute inset-0 pointer-events-none">
         <div

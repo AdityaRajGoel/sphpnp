@@ -548,7 +548,7 @@ const MarketDashboard = () => {
   const { marketOverview, commodities } = useLiveMarket();
   const [activeTab, setActiveTab] = useState<MiTabId>("sentiment");
   return (
-    <section className="py-8 md:py-16 bg-background relative overflow-hidden">
+    <section id="market-watch" className="py-8 md:py-16 bg-background relative overflow-hidden">
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-gradient-to-bl from-brand-orange/5 to-transparent rounded-full blur-3xl" />
         <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-gradient-to-tr from-brand-gold/5 to-transparent rounded-full blur-3xl" />

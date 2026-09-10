@@ -291,7 +291,7 @@ const MarketOverview = () => {
   }, []);
 
   return (
-    <section ref={sectionRef} className="py-8 md:py-16 bg-muted/30 relative overflow-hidden">
+    <section id="market-overview" ref={sectionRef} className="py-8 md:py-16 bg-muted/30 relative overflow-hidden">
       {/* Subtle background */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-[0.03]">
         <div style={{ backgroundImage: `linear-gradient(hsl(213 80% 25%) 1px, transparent 1px), linear-gradient(90deg, hsl(213 80% 25%) 1px, transparent 1px)`, backgroundSize: '60px 60px', width: '100%', height: '100%' }} />

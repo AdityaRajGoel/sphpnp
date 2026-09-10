@@ -12,7 +12,16 @@ const features = [
   "Real-Time Portfolio Tracking",
 ];
 
-const About = () => {
+/**
+ * `headingLevel` exists because this section is reused on the home page, where
+ * the hero already owns the <h1>. Two <h1>s on one document is a real defect,
+ * not a lint nit: it breaks the heading outline screen readers navigate by, and
+ * it muddies which page a search engine thinks this heading belongs to. On its
+ * own /about page this is still the page's main heading, so h1 stays default.
+ */
+const About = ({ headingLevel = "h1" }: { headingLevel?: "h1" | "h2" } = {}) => {
+  const Heading = motion[headingLevel];
+
   const sectionRef = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({
     target: sectionRef,
@@ -101,7 +110,7 @@ const About = () => {
             viewport={{ once: true, margin: "-100px" }}
             variants={containerVariants}
           >
-            <motion.h1
+            <Heading
               className="font-heading text-3xl md:text-4xl lg:text-5xl font-bold text-foreground mb-6"
               variants={itemVariants}
             >
@@ -113,7 +122,7 @@ const About = () => {
               >
                Panipat Branch Since 1997
               </motion.span>
-            </motion.h1>
+            </Heading>
 
             <motion.p className="text-muted-foreground text-lg mb-6" variants={itemVariants}>
               Parasram India is one of India's most trusted stock broking firms with over

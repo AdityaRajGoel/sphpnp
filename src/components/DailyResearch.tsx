@@ -41,7 +41,7 @@ const researchCards = [
 
 const DailyResearch = () => {
   return (
-    <section className="py-12 md:py-20 bg-muted/30 overflow-hidden relative">
+    <section id="research" className="py-12 md:py-20 bg-muted/30 overflow-hidden relative">
       {/* Background accents */}
       <div className="absolute inset-0 pointer-events-none">
         <div

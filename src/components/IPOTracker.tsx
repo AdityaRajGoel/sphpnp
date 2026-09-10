@@ -181,7 +181,7 @@ const IPOTracker = () => {
   };
 
   return (
-    <section className="py-8 md:py-16 bg-muted/20 relative overflow-hidden">
+    <section id="ipo-corner" className="py-8 md:py-16 bg-muted/20 relative overflow-hidden">
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-gradient-to-br from-brand-orange/5 to-transparent rounded-full blur-3xl" />
       </div>
