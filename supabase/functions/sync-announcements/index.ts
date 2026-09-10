@@ -7,8 +7,10 @@
 // company filed, which is what a per-ticker announcements surface needs.
 //
 // Reachable from this runtime because, unlike NSE's JSON APIs, the RSS
-// endpoints need no cookie or session priming - verified against the live
-// feeds. Nothing here needs the browser runner.
+// endpoints need no cookie or session priming - verified from the deployed
+// function (102 corporate actions, 4 result filings, 1,904 announcements).
+// Nothing here needs the browser runner. What they DO need is a browser UA:
+// see FEED_HEADERS.
 //
 // Triggered by GitHub Actions. Announcements move through the trading day, so
 // this runs more often than the daily syncs.
@@ -19,6 +21,7 @@ import {
   parseCorporateActions,
   parseFinancialResults,
 } from "../_shared/nse-announcements.ts";
+import { NSE_HEADERS } from "../_shared/nse.ts";
 
 const FEEDS = {
   corporateActions: "https://nsearchives.nseindia.com/content/RSS/Corporate_action.xml",
@@ -26,7 +29,18 @@ const FEEDS = {
   announcements: "https://nsearchives.nseindia.com/content/RSS/Online_announcements.xml",
 } as const;
 
-const USER_AGENT = "Mozilla/5.0 (compatible; sphpnp-announcements/1.0; +https://www.sphpnp.com)";
+/**
+ * NSE's browser UA, never one of our own. A "+https://www.sphpnp.com" bot
+ * string here is what broke this function on its first deploy: NSE's CDN drops
+ * the stream for it, and Deno reports that as "http2 error: stream error
+ * received: unexpected internal error encountered" - which reads like a Deno
+ * HTTP/2 bug and is not one. src/test/nse.test.ts fails any NSE caller that
+ * declares a bot UA.
+ */
+const FEED_HEADERS = {
+  "User-Agent": NSE_HEADERS["User-Agent"],
+  Accept: "application/rss+xml, application/xml, text/xml",
+};
 const FETCH_TIMEOUT_MS = 25_000;
 
 const cors = {
@@ -54,7 +68,7 @@ async function collect<T>(
 ): Promise<{ rows: T[]; report: SourceReport }> {
   try {
     const response = await fetch(url, {
-      headers: { "User-Agent": USER_AGENT, Accept: "application/rss+xml, application/xml, text/xml" },
+      headers: FEED_HEADERS,
       signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
     });
     if (!response.ok) {
@@ -75,6 +89,23 @@ async function collect<T>(
   } catch (error) {
     return { rows: [], report: { source, ok: false, rows: 0, reason: error instanceof Error ? error.message : String(error) } };
   }
+}
+
+/**
+ * Last row wins for any key that repeats inside one batch.
+ *
+ * Not defensive padding: an upsert whose payload contains the same conflict key
+ * twice is rejected outright by Postgres ("ON CONFLICT DO UPDATE command cannot
+ * affect row a second time"), which would fail the whole write over one company
+ * re-filing the same document. The feeds repeat heavily: a debenture trustee
+ * files one Security Cover Certificate PDF once per bond ISIN, a second apart
+ * - one Sammaan Capital certificate appeared 157 times in a single feed, and
+ * 1,459 announcements with attachments came down to 807 distinct documents.
+ */
+function dedupe<T>(rows: T[], key: (row: T) => string): T[] {
+  const byKey = new Map<string, T>();
+  for (const row of rows) byKey.set(key(row), row);
+  return [...byKey.values()];
 }
 
 Deno.serve(async (req) => {
@@ -113,13 +144,14 @@ Deno.serve(async (req) => {
      * key column - they would collide with each other on every run and each
      * overwrite the last.
      */
-    const actionRows = actions.rows
-      .filter((a) => a.exDate)
-      .map((a) => ({
-        company: a.company, purpose: a.purpose, series: a.series, face_value: a.faceValue,
-        ex_date: a.exDate, record_date: a.recordDate, published_at: a.publishedAt, link: a.link,
-        fetched_at: new Date().toISOString(),
-      }));
+    const actionRows = dedupe(
+      actions.rows.filter((a) => a.exDate),
+      (a) => `${a.company}|${a.purpose}|${a.exDate}`,
+    ).map((a) => ({
+      company: a.company, purpose: a.purpose, series: a.series, face_value: a.faceValue,
+      ex_date: a.exDate, record_date: a.recordDate, published_at: a.publishedAt, link: a.link,
+      fetched_at: new Date().toISOString(),
+    }));
     if (actionRows.length > 0) {
       const { error } = await supabase.from("nse_corporate_actions")
         .upsert(actionRows, { onConflict: "company,purpose,ex_date" });
@@ -130,7 +162,7 @@ Deno.serve(async (req) => {
     // parsed_at is deliberately NOT set here: it belongs to whatever later reads
     // the XBRL, and setting it now would mark every filing as processed before
     // anything had looked at one.
-    const filingRows = results.rows.map((f) => ({
+    const filingRows = dedupe(results.rows, (f) => f.xbrlUrl).map((f) => ({
       company: f.company, xbrl_url: f.xbrlUrl, period_ended: f.periodEnded, period: f.period,
       is_consolidated: f.isConsolidated, is_audited: f.isAudited, published_at: f.publishedAt,
       fetched_at: new Date().toISOString(),
@@ -148,13 +180,14 @@ Deno.serve(async (req) => {
      * same document re-published keeps one row rather than accumulating a
      * duplicate on every run.
      */
-    const annRows = announcements.rows
-      .filter((a) => a.attachmentUrl)
-      .map((a) => ({
-        company: a.company, subject: a.subject, detail: a.detail,
-        attachment_url: a.attachmentUrl, published_at: a.publishedAt,
-        fetched_at: new Date().toISOString(),
-      }));
+    const annRows = dedupe(
+      announcements.rows.filter((a) => a.attachmentUrl),
+      (a) => a.attachmentUrl,
+    ).map((a) => ({
+      company: a.company, subject: a.subject, detail: a.detail,
+      attachment_url: a.attachmentUrl, published_at: a.publishedAt,
+      fetched_at: new Date().toISOString(),
+    }));
     for (let i = 0; i < annRows.length; i += 500) {
       const { error } = await supabase.from("nse_announcements")
         .upsert(annRows.slice(i, i + 500), { onConflict: "attachment_url" });

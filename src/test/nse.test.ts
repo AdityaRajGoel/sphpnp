@@ -1,4 +1,6 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
+import { readdirSync, readFileSync, statSync } from "node:fs";
+import { join } from "node:path";
 import {
   NSE_HEADERS,
   toIsoDate,
@@ -28,6 +30,36 @@ describe("NSE_HEADERS", () => {
     expect(ua).toMatch(/AppleWebKit\/[\d.]+ \(KHTML, like Gecko\)/);
     expect(ua).toMatch(/Chrome\/[\d.]+/);
     expect(ua).toMatch(/Safari\/[\d.]+/);
+  });
+});
+
+describe("every NSE caller", () => {
+  // NSE_HEADERS being right was not enough. sync-announcements and its runner
+  // script declared their own "+https://www.sphpnp.com" UA and reproduced the
+  // outage above on nsearchives.nseindia.com: from a laptop Node's fetch simply
+  // hung, and from the edge runtime Deno reported the dropped stream as
+  // "http2 error: stream error received: unexpected internal error
+  // encountered" - which read as a Deno/HTTP2 incompatibility and was nearly
+  // worked around with a separate GitHub runner. Any file that talks to NSE
+  // must use NSE_HEADERS rather than a UA of its own.
+  const root = join(__dirname, "..", "..");
+  const walk = (dir: string): string[] =>
+    readdirSync(dir).flatMap((entry) => {
+      const path = join(dir, entry);
+      if (statSync(path).isDirectory()) return entry === "node_modules" ? [] : walk(path);
+      return /\.(ts|mts|js|mjs)$/.test(entry) ? [path] : [];
+    });
+  const callers = [...walk(join(root, "supabase", "functions")), ...walk(join(root, "scripts"))]
+    .filter((path) => readFileSync(path, "utf8").includes("nseindia.com"));
+
+  it("finds the files it is meant to police", () => {
+    expect(callers.length).toBeGreaterThanOrEqual(3);
+  });
+
+  it.each(callers.map((path) => [path.slice(root.length + 1)]))("%s declares no bot user-agent", (file) => {
+    const source = readFileSync(join(root, file), "utf8");
+    const declared = [...source.matchAll(/(?:User-Agent["']?\s*:|USER_AGENT\s*=)\s*["'`]([^"'`]+)["'`]/g)].map((m) => m[1]);
+    for (const ua of declared) expect(ua).not.toMatch(/sphpnp|compatible;|\+https?:|bot|crawler|spider|^curl\//i);
   });
 });
 
