@@ -77,9 +77,32 @@ export function matchesListingWindow(listingDate: string | null, window: Listing
   return diffDays > 30;
 }
 
+/**
+ * How long a listed issue stays "recent". The hub and the homepage are a
+ * calendar of live issues; the catalogue itself reaches back months, because
+ * Chittorgarh publishes the year's whole list.
+ */
+export const RECENT_LISTING_DAYS = 30;
+
+/**
+ * Whether a listed issue listed within RECENT_LISTING_DAYS. The close date
+ * stands in when no listing date was recorded, and an issue with neither
+ * cannot be shown to be recent, so it is not.
+ */
+export function isRecentlyListed(ipo: Ipo, now: Date): boolean {
+  const anchor = ipo.listing_date ?? ipo.close_date;
+  if (anchor === null) return false;
+  const today = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+  return (today - new Date(`${anchor}T00:00:00Z`).getTime()) / DAY_MS <= RECENT_LISTING_DAYS;
+}
+
 export function filterIpos(ipos: Ipo[], filters: IpoFilters, now: Date = new Date()): Ipo[] {
   const gmpTest = GMP_BAND_OPTIONS.find((option) => option.id === filters.gmpBand)?.test ?? (() => true);
+  // Asking for listed issues (by status or by listing window) is asking for the
+  // archive; only the unfiltered calendar view hides long-listed ones.
+  const wantsArchive = filters.status === "listed" || filters.listingWindow !== "all";
   return ipos.filter((ipo) => {
+    if (!wantsArchive && ipo.status === "listed" && !isRecentlyListed(ipo, now)) return false;
     if (filters.status !== "all" && ipo.status !== filters.status) return false;
     if (filters.board !== "all" && ipo.board !== filters.board) return false;
     if (!gmpTest(ipo.gmp)) return false;
@@ -91,18 +114,43 @@ export function filterIpos(ipos: Ipo[], filters: IpoFilters, now: Date = new Dat
 const STATUS_RANK: Record<Ipo["status"], number> = { open: 0, upcoming: 1, closed: 2, listed: 3 };
 
 /**
+ * Within one status, the date a visitor actually cares about, and which way:
+ * an open issue by when bidding shuts, an upcoming one by when it opens, a
+ * closed one by when it lists - and a listed one newest first, because the
+ * listing that happened last week is the news, not the oldest on record.
+ */
+const LIFECYCLE_DATE: Record<Ipo["status"], { date: (ipo: Ipo) => string | null; newestFirst: boolean }> = {
+  open: { date: (ipo) => ipo.close_date, newestFirst: false },
+  upcoming: { date: (ipo) => ipo.open_date, newestFirst: false },
+  closed: { date: (ipo) => ipo.listing_date ?? ipo.close_date, newestFirst: false },
+  listed: { date: (ipo) => ipo.listing_date ?? ipo.close_date, newestFirst: true },
+};
+
+/** Lifecycle order with each status's own date as the tiebreak; undated rows last within their status. */
+function compareLifecycle(a: Ipo, b: Ipo): number {
+  const byStatus = STATUS_RANK[a.status] - STATUS_RANK[b.status];
+  if (byStatus !== 0) return byStatus;
+  const { date, newestFirst } = LIFECYCLE_DATE[a.status];
+  const da = date(a);
+  const db = date(b);
+  if (da === db) return 0;
+  if (da === null) return 1;
+  if (db === null) return -1;
+  return (da < db ? -1 : 1) * (newestFirst ? -1 : 1);
+}
+
+/**
  * Null-safe comparator. Missing values always sort to the end regardless of
  * direction — a "—" is not a low or high value, it is an absence, and it
  * should never masquerade as the smallest or largest row in the table.
  */
 export function sortIpos(ipos: Ipo[], key: SortKey, dir: SortDir): Ipo[] {
   const factor = dir === "asc" ? 1 : -1;
+  if (key === "status") return [...ipos].sort((a, b) => compareLifecycle(a, b) * factor);
   const withValue = (ipo: Ipo): number | string | null => {
     switch (key) {
       case "name":
         return ipo.name.toLowerCase();
-      case "status":
-        return STATUS_RANK[ipo.status];
       case "board":
         return ipo.board;
       case "price_band_max":
@@ -188,4 +236,16 @@ export function parseCompareSlugs(param: string | null): string[] {
 
 export function compareSlugsToParam(slugs: string[]): string | undefined {
   return slugs.length > 0 ? slugs.join(",") : undefined;
+}
+
+// --- Homepage tracker --------------------------------------------------------
+
+/**
+ * One tab of the homepage tracker: that status's issues in lifecycle order,
+ * with "Recently Listed" held to RECENT_LISTING_DAYS so it means what it says.
+ */
+export function trackerTab<T extends Ipo>(ipos: T[], tab: Ipo["status"], now: Date = new Date()): T[] {
+  return ipos
+    .filter((ipo) => ipo.status === tab && (tab !== "listed" || isRecentlyListed(ipo, now)))
+    .sort(compareLifecycle);
 }

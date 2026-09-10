@@ -18,6 +18,8 @@ import {
   toCatalogueRow,
 } from "../_shared/ipo-parse.ts";
 import { reconcileIpos } from "../_shared/ipo-reconcile.ts";
+import { deriveIpoStatus, istDate } from "../_shared/ipo-status.ts";
+import { FILLABLE, planIpoMerges, resolveSlug, type IpoMerge, type StoredIpo } from "../_shared/ipo-identity.ts";
 import { sanitizeChittorgarhRows, sanitizeInvestorGainRows } from "../_shared/ipo-ingest.ts";
 
 const SOURCES = {
@@ -102,6 +104,44 @@ async function collect<T, E extends Record<string, unknown> = Record<string, nev
     const reason = error instanceof Error ? error.message : String(error);
     return { rows: [], report: { source, ok: false, rows: 0, reason } };
   }
+}
+
+type Db = ReturnType<typeof createClient>;
+
+/**
+ * Folds one duplicate row into its survivor, deleting the duplicate LAST.
+ *
+ * ipo_gmp_snapshots cascade-delete with their IPO, so the duplicate's GMP
+ * history is moved across before the row goes. A snapshot at an instant the
+ * survivor already has is dropped rather than moved: unique (ipo_id,
+ * captured_at) would reject it, and both were written by the same run, for the
+ * same issue. Any failure stops this merge before the delete, so the worst case
+ * is a duplicate that survives until the next run retries it - never lost
+ * history.
+ */
+async function applyMerge(supabase: Db, merge: IpoMerge): Promise<string | null> {
+  const { data: kept, error: keptErr } = await supabase
+    .from("ipo_gmp_snapshots").select("captured_at").eq("ipo_id", merge.intoId);
+  if (keptErr) return `reading survivor snapshots: ${keptErr.message}`;
+
+  const clashing = (kept ?? []).map((row: { captured_at: string }) => row.captured_at);
+  if (clashing.length > 0) {
+    const { error } = await supabase
+      .from("ipo_gmp_snapshots").delete().eq("ipo_id", merge.fromId).in("captured_at", clashing);
+    if (error) return `dropping clashing snapshots: ${error.message}`;
+  }
+
+  const { error: moveErr } = await supabase
+    .from("ipo_gmp_snapshots").update({ ipo_id: merge.intoId }).eq("ipo_id", merge.fromId);
+  if (moveErr) return `moving snapshots: ${moveErr.message}`;
+
+  if (Object.keys(merge.patch).length > 0) {
+    const { error } = await supabase.from("ipos").update(merge.patch).eq("id", merge.intoId);
+    if (error) return `filling survivor fields: ${error.message}`;
+  }
+
+  const { error: deleteErr } = await supabase.from("ipos").delete().eq("id", merge.fromId);
+  return deleteErr ? `deleting duplicate: ${deleteErr.message}` : null;
 }
 
 Deno.serve(async (req) => {
@@ -192,6 +232,23 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
+    // One stored row per issue: fold existing duplicates, then write each
+    // incoming issue under the slug already on record for it. Without the
+    // second step a source dropping out would mint a fresh row for an issue
+    // the catalogue already holds. See _shared/ipo-identity.ts.
+    const { data: storedRows, error: storedErr } = await supabase
+      .from("ipos").select(["id", "slug", "name", "created_at", "status", ...FILLABLE].join(","));
+    if (storedErr) throw new Error(`reading stored IPOs failed: ${storedErr.message}`);
+    const { merges, survivors } = planIpoMerges((storedRows ?? []) as unknown as StoredIpo[]);
+    const mergeFailures: string[] = [];
+    for (const merge of merges) {
+      const failure = await applyMerge(supabase, merge);
+      if (failure) mergeFailures.push(`${merge.fromSlug} -> ${merge.intoSlug}: ${failure}`);
+      else console.log(`sync-ipos merged duplicate ${merge.fromSlug} into ${merge.intoSlug}`);
+    }
+    for (const failure of mergeFailures) console.error(`sync-ipos merge failed: ${failure}`);
+    const resolved = reconciled.map((ipo) => ({ ...ipo, slug: resolveSlug(ipo, survivors) }));
+
     const capturedAt = new Date().toISOString();
     const contributing = reports.filter((r) => r.ok).map((r) => r.source);
     const sourcesLabel = contributing.join("+") || "none";
@@ -202,8 +259,17 @@ Deno.serve(async (req) => {
       .filter(Boolean)
       .join(" | ") || SOURCES.ipowatch;
 
-    const catalogueRows = reconciled.map((ipo) =>
-      toCatalogueRow(ipo, sourcesLabel, sourceUrl, capturedAt),
+    // Status from the calendar, with the reconciled label only able to move it
+    // forward. Reconciling labels alone stored every Chittorgarh-only issue as
+    // "upcoming" indefinitely - see _shared/ipo-status.ts.
+    const today = istDate();
+    const catalogueRows = resolved.map((ipo) =>
+      toCatalogueRow(
+        { ...ipo, status: deriveIpoStatus(ipo, ipo.status, today) },
+        sourcesLabel,
+        sourceUrl,
+        capturedAt,
+      ),
     );
 
     // PostgREST derives one column list per bulk upsert from the batch it is
@@ -231,7 +297,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    const snapshots = reconciled.flatMap((ipo) => {
+    const snapshots = resolved.flatMap((ipo) => {
       const ipoId = idsBySlug.get(ipo.slug);
       if (!ipoId || ipo.gmp === null) return [];
       return [{
@@ -251,8 +317,10 @@ Deno.serve(async (req) => {
 
     return json({
       ok: true,
-      ipos: reconciled.length,
+      ipos: resolved.length,
       snapshots: snapshots.length,
+      merged: merges.length - mergeFailures.length,
+      mergeFailures,
       sources: reports,
       capturedAt,
     });

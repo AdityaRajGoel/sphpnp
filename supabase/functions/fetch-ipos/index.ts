@@ -2,6 +2,7 @@
 // visitors never trigger third-party scraping or create GMP observations.
 
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { deriveIpoStatus, istDate } from "../_shared/ipo-status.ts";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -77,11 +78,16 @@ Deno.serve(async (req) => {
       group.push(snapshot);
       snapshotMap.set(snapshot.ipo_id, group);
     }
+    // Re-derived on every read, not just at sync time: sync-ipos runs three times
+    // a day on weekdays, so a stored status can be up to a weekend old. The
+    // stored value only ever moves the answer forward (see ipo-status.ts).
+    const today = istDate();
     const payload = ipos.map((ipo) => {
       const history = snapshotMap.get(ipo.id) ?? [];
       const latest = history.at(-1) ?? null;
       return {
         ...ipo,
+        status: deriveIpoStatus(ipo, ipo.status, today),
         type: ipo.board === "sme" ? "SME" : "Mainboard",
         price: formatPriceBand(ipo),
         date: formatDateRange(ipo),

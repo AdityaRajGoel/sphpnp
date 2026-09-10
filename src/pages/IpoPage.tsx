@@ -29,6 +29,12 @@ import {
   type SortKey,
 } from "@/lib/ipo-filters";
 
+/**
+ * Lifecycle order - open issues first, recent listings newest first - rather
+ * than open_date ascending, which put issues from April at the top of the page.
+ */
+const DEFAULT_SORT: SortKey = "status";
+
 const statusLabel: Record<Ipo["status"], string> = { upcoming: "Upcoming", open: "Open now", closed: "Closed", listed: "Listed" };
 type ViewMode = "cards" | "table";
 
@@ -40,7 +46,7 @@ export default function IpoPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [filters, setFilters] = useState<IpoFilters>(() => ipoFiltersFromSearchParams(searchParams));
   const [view, setView] = useState<ViewMode>(searchParams.get("view") === "table" ? "table" : "cards");
-  const [sortKey, setSortKey] = useState<SortKey>((searchParams.get("sort") as SortKey) || "open_date");
+  const [sortKey, setSortKey] = useState<SortKey>((searchParams.get("sort") as SortKey) || DEFAULT_SORT);
   const [sortDir, setSortDir] = useState<SortDir>(searchParams.get("dir") === "desc" ? "desc" : "asc");
   const [compareSlugs, setCompareSlugs] = useState<string[]>(() => parseCompareSlugs(searchParams.get("compare")));
   const [compareOpen, setCompareOpen] = useState(false);
@@ -52,7 +58,7 @@ export default function IpoPage() {
   useEffect(() => {
     const params = ipoFiltersToSearchParams(filters);
     if (view !== "cards") params.set("view", view); else params.delete("view");
-    if (sortKey !== "open_date") params.set("sort", sortKey); else params.delete("sort");
+    if (sortKey !== DEFAULT_SORT) params.set("sort", sortKey); else params.delete("sort");
     if (sortDir !== "asc") params.set("dir", sortDir); else params.delete("dir");
     const compareParam = compareSlugsToParam(compareSlugs);
     if (compareParam) params.set("compare", compareParam); else params.delete("compare");

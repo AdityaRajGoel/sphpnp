@@ -144,6 +144,41 @@ export const slugify = (value: string): string => value
 export const cleanIpoName = (value: string): string =>
   value.replace(/\s*(IPO|Limited|Ltd\.?)\s*/gi, " ").replace(/\s+/g, " ").trim();
 
+/**
+ * Status markers the list sites glue to the end of a name with no separator:
+ * O(pen), U(pcoming), C(losed), L(isted), P and CT (closing today).
+ */
+const STATUS_MARKER = /\s+(?:CT|[OUCLP])$/;
+
+/**
+ * The key two sources' names for one issue have in common.
+ *
+ * A slug of the printed name is not an identity: the sites decorate names
+ * differently - "Glass Wall Systems (India) CT" on Chittorgarh is "Glass Wall
+ * Systems" on IPO Watch, "Steamhouse India" is "Steamhouse" on InvestorGain -
+ * and every difference split one issue into two half-complete rows. This drops
+ * what the sources disagree about: parentheticals, status markers, legal
+ * suffixes, a trailing "India", punctuation and "&" versus "and".
+ *
+ * A trailing "India" only, deliberately: "India Glycols" must not collapse onto
+ * some "Glycols". The key only ever groups rows - a false match is still
+ * refused downstream when the two rows' open dates disagree.
+ */
+export function ipoMatchKey(name: string): string {
+  return name
+    .replace(/\([^)]*\)/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(STATUS_MARKER, "")
+    .toLowerCase()
+    .replace(/&/g, " and ")
+    .replace(/\b(?:ipo|limited|ltd|private|pvt)\b\.?/g, " ")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim()
+    .replace(/\s+india$/, "")
+    .replace(/\s+/g, "");
+}
+
 export const amount = (value: string): number | null => {
   const match = value.replace(/,/g, "").match(/-?\d+(?:\.\d+)?/);
   return match ? Number(match[0]) : null;
@@ -406,7 +441,7 @@ export type ChittorgarhRow = {
 };
 
 const cleanChittorgarhName = (raw: string): string =>
-  cleanIpoName(raw).replace(/\s+[OUCL]$/, "").trim();
+  cleanIpoName(raw).replace(STATUS_MARKER, "").trim();
 
 export function parseChittorgarh(html: string, board: Board): { rows: ChittorgarhRow[]; tablesMatched: number } {
   const rows: ChittorgarhRow[] = [];

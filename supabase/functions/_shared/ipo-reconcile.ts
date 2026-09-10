@@ -24,6 +24,7 @@ import type {
   ReconciledIpo,
   SourceName,
 } from "./ipo-parse.ts";
+import { ipoMatchKey } from "./ipo-parse.ts";
 
 export type SourceBundle = {
   ipowatch: IpoWatchGmpRow[];
@@ -140,20 +141,36 @@ export type ReconciledWithGmp = ReconciledIpo & {
 };
 
 /**
- * One entry per distinct slug across all three sources.
+ * The shortest slug any source produced for an issue - the least decorated
+ * name. Only a starting point: sync-ipos swaps in the stored slug when the issue
+ * is already on record (see resolveSlug), which is what keeps URLs stable as
+ * sources come and go.
+ */
+const pickSlug = (candidates: Candidate[]): string =>
+  candidates
+    .map((c) => String(c.row.slug))
+    .sort((a, b) => a.length - b.length || a.localeCompare(b))[0];
+
+/**
+ * One entry per distinct issue across all three sources.
+ *
+ * Grouped by ipoMatchKey, not by slug: the sites decorate the same name
+ * differently, and grouping on the raw slug split nine live issues into a row
+ * with the dates and another with the GMP.
  *
  * An IPO seen by only one source is still returned: a partially known issue is
  * better than a missing one, and `field_sources` makes the thinness visible.
  */
 export function reconcileIpos(bundle: SourceBundle): ReconciledWithGmp[] {
-  const bySlug = new Map<string, Candidate[]>();
+  const byKey = new Map<string, Candidate[]>();
   const add = (source: SourceName, rows: Record<string, unknown>[]) => {
     for (const row of rows) {
       const slug = String(row.slug ?? "");
       if (!slug) continue;
-      const existing = bySlug.get(slug);
+      const key = ipoMatchKey(String(row.name ?? "")) || slug;
+      const existing = byKey.get(key);
       if (existing) existing.push({ source, row });
-      else bySlug.set(slug, [{ source, row }]);
+      else byKey.set(key, [{ source, row }]);
     }
   };
 
@@ -162,7 +179,8 @@ export function reconcileIpos(bundle: SourceBundle): ReconciledWithGmp[] {
   add("ipowatch", bundle.ipowatch as unknown as Record<string, unknown>[]);
 
   const merged: ReconciledWithGmp[] = [];
-  for (const [slug, candidates] of bySlug) {
+  for (const candidates of byKey.values()) {
+    const slug = pickSlug(candidates);
     const field_sources: Partial<Record<string, SourceName>> = {};
     const values: Record<string, unknown> = {};
 

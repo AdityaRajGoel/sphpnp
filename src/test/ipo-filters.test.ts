@@ -11,6 +11,7 @@ import {
   parseCompareSlugs,
   sortIpos,
   toggleCompareSlug,
+  trackerTab,
   type IpoFilters,
 } from "@/lib/ipo-filters";
 import type { Ipo } from "@/lib/ipo";
@@ -61,9 +62,37 @@ const makeIpo = (overrides: Partial<Ipo>): Ipo => ({
 });
 
 describe("filterIpos", () => {
-  it("returns every row when filters are all 'all'", () => {
+  it("returns every current row when filters are all 'all'", () => {
     const ipos = [makeIpo({ slug: "a" }), makeIpo({ slug: "b", status: "listed" })];
-    expect(filterIpos(ipos, DEFAULT_FILTERS)).toHaveLength(2);
+    expect(filterIpos(ipos, DEFAULT_FILTERS, new Date("2026-09-10T06:00:00Z"))).toHaveLength(2);
+  });
+
+  describe("long-listed issues", () => {
+    // The hub is a calendar of live issues. With every status filter at "all",
+    // an issue that listed back in April is history, not news - it buried the
+    // open and upcoming issues a visitor came for.
+    const now = new Date("2026-09-10T06:00:00Z");
+    const ipos = [
+      makeIpo({ slug: "april", status: "listed", open_date: "2026-04-01", close_date: "2026-04-03", listing_date: "2026-04-08" }),
+      makeIpo({ slug: "last-week", status: "listed", open_date: "2026-08-28", close_date: "2026-09-01", listing_date: "2026-09-04" }),
+      makeIpo({ slug: "undated", status: "listed", open_date: null, close_date: null, listing_date: null }),
+      makeIpo({ slug: "open", status: "open" }),
+    ];
+
+    it("drops issues listed more than 30 days ago from the default view", () => {
+      expect(filterIpos(ipos, DEFAULT_FILTERS, now).map((i) => i.slug)).toEqual(["last-week", "open"]);
+    });
+
+    it("keeps the full archive when a visitor asks for listed issues", () => {
+      expect(filterIpos(ipos, { ...DEFAULT_FILTERS, status: "listed" }, now)).toHaveLength(3);
+      expect(filterIpos(ipos, { ...DEFAULT_FILTERS, listingWindow: "past" }, now).map((i) => i.slug))
+        .toEqual(["april", "last-week"]);
+    });
+
+    it("falls back to the close date when a listed issue has no listing date", () => {
+      const noListingDate = makeIpo({ slug: "x", status: "listed", close_date: "2026-09-02", listing_date: null });
+      expect(filterIpos([noListingDate], DEFAULT_FILTERS, now)).toHaveLength(1);
+    });
   });
 
   it("filters by status", () => {
@@ -155,6 +184,50 @@ describe("sortIpos", () => {
     const original = [...ipos];
     sortIpos(ipos, "issue_size_crore", "asc");
     expect(ipos).toEqual(original);
+  });
+});
+
+describe("lifecycle order (the hub default)", () => {
+  it("puts open first, then upcoming, closed and listed, each by its most relevant date", () => {
+    const ipos = [
+      makeIpo({ slug: "listed-old", status: "listed", listing_date: "2026-08-20" }),
+      makeIpo({ slug: "upcoming-late", status: "upcoming", open_date: "2026-09-20" }),
+      makeIpo({ slug: "listed-new", status: "listed", listing_date: "2026-09-08" }),
+      makeIpo({ slug: "closed", status: "closed", listing_date: "2026-09-12" }),
+      makeIpo({ slug: "upcoming-soon", status: "upcoming", open_date: "2026-09-12" }),
+      makeIpo({ slug: "open-closing-later", status: "open", close_date: "2026-09-15" }),
+      makeIpo({ slug: "open-closing-soon", status: "open", close_date: "2026-09-11" }),
+    ];
+    expect(sortIpos(ipos, "status", "asc").map((i) => i.slug)).toEqual([
+      "open-closing-soon", "open-closing-later",
+      "upcoming-soon", "upcoming-late",
+      "closed",
+      // Most recent listing first: last week's listing is what "listed" means
+      // to a visitor, not the oldest one on record.
+      "listed-new", "listed-old",
+    ]);
+  });
+});
+
+describe("trackerTab (homepage)", () => {
+  const now = new Date("2026-09-10T06:00:00Z");
+
+  it("limits Recently Listed to the last 30 days, newest first", () => {
+    const ipos = [
+      makeIpo({ slug: "april", status: "listed", listing_date: "2026-04-08" }),
+      makeIpo({ slug: "sep-4", status: "listed", listing_date: "2026-09-04" }),
+      makeIpo({ slug: "sep-8", status: "listed", listing_date: "2026-09-08" }),
+      makeIpo({ slug: "open", status: "open" }),
+    ];
+    expect(trackerTab(ipos, "listed", now).map((i) => i.slug)).toEqual(["sep-8", "sep-4"]);
+  });
+
+  it("orders upcoming issues by when they open", () => {
+    const ipos = [
+      makeIpo({ slug: "later", status: "upcoming", open_date: "2026-09-18" }),
+      makeIpo({ slug: "sooner", status: "upcoming", open_date: "2026-09-11" }),
+    ];
+    expect(trackerTab(ipos, "upcoming", now).map((i) => i.slug)).toEqual(["sooner", "later"]);
   });
 });
 

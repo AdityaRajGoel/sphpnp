@@ -12,6 +12,7 @@ import { Link } from "react-router-dom";
 
 import { revealBar, revealItem, revealSection } from "@/lib/motion";
 import { formatGmp, formatListingGain, formatSourceList, type Ipo } from "@/lib/ipo";
+import { trackerTab } from "@/lib/ipo-filters";
 
 /** The reconciled catalogue row plus the two display-only fields derived from it. */
 type DisplayIpo = Ipo & { listingGain: string | null };
@@ -105,10 +106,10 @@ const IPOTracker = () => {
     setLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke<FetchIposResponse>('fetch-ipos');
-      // Status is reconciled server-side by sync-ipos from three independent
-      // sources — trusted as-is rather than re-derived from a formatted date
-      // string, which used to miscategorise every "closed" (bidding shut,
-      // not yet listed) issue as either upcoming or already listed.
+      // Status is derived server-side by fetch-ipos from the stored ISO dates
+      // (see supabase/functions/_shared/ipo-status.ts) — trusted as-is rather
+      // than re-derived here from the formatted date string, which used to
+      // miscategorise every "closed" (bidding shut, not yet listed) issue.
       if (!error && data?.success && data.ipos && data.ipos.length > 0) {
         setIpos(data.ipos.map((ipo) => ({ ...ipo, listingGain: formatListingGain(ipo.listing_gain_pct) })));
         setSource(formatSourceList(data.ipos.map((ipo) => ipo.source).join("+")));
@@ -125,12 +126,15 @@ const IPOTracker = () => {
     fetchIPOs();
   }, [fetchIPOs]);
 
-  const filtered = ipos.filter(i => i.status === activeTab);
+  // "Recently Listed" is held to the last 30 days: the catalogue reaches back
+  // months, and a tab of that name must not open on an issue from April.
+  const now = new Date();
+  const filtered = trackerTab(ipos, activeTab, now);
   const tabCounts: Record<TabKey, number> = {
-    upcoming: ipos.filter(i => i.status === "upcoming").length,
-    open: ipos.filter(i => i.status === "open").length,
-    closed: ipos.filter(i => i.status === "closed").length,
-    listed: ipos.filter(i => i.status === "listed").length,
+    upcoming: trackerTab(ipos, "upcoming", now).length,
+    open: trackerTab(ipos, "open", now).length,
+    closed: trackerTab(ipos, "closed", now).length,
+    listed: trackerTab(ipos, "listed", now).length,
   };
 
   return (
