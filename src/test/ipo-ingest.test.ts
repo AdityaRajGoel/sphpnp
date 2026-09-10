@@ -72,10 +72,19 @@ describe("sanitizeChittorgarhRows", () => {
     close_date: "2026-09-21",
     listing_date: "2026-09-26",
     issue_size_crore: 47.28,
+    detail_url: "https://www.chittorgarh.com/ipo/example-co-ipo/2101/",
   };
 
   it("keeps a well-formed row unchanged", () => {
     expect(sanitizeChittorgarhRows([validRow])).toEqual([validRow]);
+  });
+
+  it("refuses a detail link that is not a Chittorgarh issue page", () => {
+    // sync-ipo-details fetches this URL, so the payload must not be able to
+    // point it anywhere else.
+    for (const url of ["https://evil.example/ipo/x/1/", "http://www.chittorgarh.com/ipo/x/1/", "javascript:alert(1)"]) {
+      expect(sanitizeChittorgarhRows([{ ...validRow, detail_url: url }])[0].detail_url).toBeNull();
+    }
   });
 
   it("returns an empty array for non-array input", () => {

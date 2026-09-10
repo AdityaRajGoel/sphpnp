@@ -1,0 +1,37 @@
+# Each live IPO's Chittorgarh page: minimum investment per category, timetable,
+# registrar, lead managers, issue structure, financials, KPIs, valuation,
+# shareholding and objects of the issue.
+#
+# Runs 15 minutes after ipo-browser-sync.yml, which refreshes the catalogue and
+# the detail links this reads. sync-ipo-details fetches pages directly and
+# falls back to Apify only for pages the direct fetch cannot read.
+#
+# Same two secrets as every other sync-*.yml:
+#   SUPABASE_ANON_KEY   - the project's anon/publishable key (passes the gateway)
+#   MARKET_SYNC_SECRET  - must match SYNC_SECRET on the edge function
+name: IPO details sync
+
+on:
+  schedule:
+    - cron: "35 3,8,13 * * 1-6" # 09:05, 14:05, 19:05 IST, Mon-Sat
+  workflow_dispatch: {}
+
+permissions: {}
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger sync-ipo-details
+        run: |
+          resp=$(curl -sS -w "\n%{http_code}" --max-time 150 \
+            -X POST "https://zbkjbbujsdlpujotgltm.supabase.co/functions/v1/sync-ipo-details" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "x-sync-secret: ${{ secrets.MARKET_SYNC_SECRET }}")
+          body=$(echo "$resp" | sed '$d'); code=$(echo "$resp" | tail -1)
+          echo "$body"
+          failed=$(echo "$body" | jq -r '(.failed // []) | length' 2>/dev/null || echo 0)
+          if [ -n "$failed" ] && [ "$failed" != "0" ]; then
+            echo "::warning title=IPO pages not read::$(echo "$body" | jq -r '[.failed[] | .slug] | join(", ")' 2>/dev/null)"
+          fi
+          [ "$code" = "200" ] || exit 1

@@ -438,6 +438,16 @@ export type ChittorgarhRow = {
   close_date: string | null;
   listing_date: string | null;
   issue_size_crore: number | null;
+  /** The issue's own page, where the minimum investment and the rest live (see ipo-detail.ts). */
+  detail_url: string | null;
+};
+
+/** Only Chittorgarh's own issue pages are followed - a link is data from a third party. */
+export const CHITTORGARH_ISSUE_URL = /^https:\/\/www\.chittorgarh\.com\/ipo\/[a-z0-9-]+\/\d+\/$/;
+
+const issueLink = (rowHtml: string): string | null => {
+  const href = /href="([^"]+)"/i.exec(rowHtml)?.[1] ?? null;
+  return href && CHITTORGARH_ISSUE_URL.test(href) ? href : null;
 };
 
 const cleanChittorgarhName = (raw: string): string =>
@@ -458,6 +468,7 @@ export function parseChittorgarh(html: string, board: Board): { rows: Chittorgar
       const values = rowCells(row);
       if (!values || values.length < 10) continue;
       const name = cleanChittorgarhName(values[0] ?? "");
+      const firstCell = /<td[^>]*>([\s\S]*?)<\/td>/i.exec(row)?.[1] ?? "";
       if (name.length < 2) continue;
 
       const [min, max] = priceBand(values[5] ?? "");
@@ -468,6 +479,7 @@ export function parseChittorgarh(html: string, board: Board): { rows: Chittorgar
         close_date: parseSingleDate(values[3] ?? ""),
         listing_date: parseSingleDate(values[4] ?? ""),
         issue_size_crore: positiveAmount(values[9] ?? ""),
+        detail_url: issueLink(firstCell),
       });
     }
   }
@@ -487,6 +499,7 @@ export type ReconciledIpo = CollectedIpo & {
   est_listing_price: number | null;
   listing_price: number | null;
   listing_gain_pct: number | null;
+  detail_url: string | null;
   field_sources: Partial<Record<string, SourceName>>;
 };
 
@@ -536,6 +549,7 @@ export function toCatalogueRow(
     lot_size: reconciled.lot_size,
     listing_price: reconciled.listing_price,
     listing_gain_pct: reconciled.listing_gain_pct,
+    detail_url: reconciled.detail_url,
   };
   for (const [column, value] of Object.entries(optional)) {
     if (value !== null && value !== undefined) row[column] = value;

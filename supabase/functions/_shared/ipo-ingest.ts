@@ -21,6 +21,7 @@
 // runner, and this validation is pure logic worth testing directly.
 
 import type { Board, ChittorgarhRow, InvestorGainRow, IpoStatus } from "./ipo-parse.ts";
+import { CHITTORGARH_ISSUE_URL } from "./ipo-parse.ts";
 
 const BOARDS: readonly Board[] = ["mainboard", "sme"];
 const STATUSES: readonly IpoStatus[] = ["upcoming", "open", "closed", "listed"];
@@ -98,6 +99,9 @@ export function sanitizeChittorgarhRows(input: unknown): ChittorgarhRow[] {
       close_date: isoDateOrNull(row.close_date),
       listing_date: isoDateOrNull(row.listing_date),
       issue_size_crore: numberOrNull(row.issue_size_crore),
+      // A URL is followed later by sync-ipo-details, so only Chittorgarh's own
+      // issue pages are accepted - never an arbitrary link from the payload.
+      detail_url: typeof row.detail_url === "string" && CHITTORGARH_ISSUE_URL.test(row.detail_url) ? row.detail_url : null,
     });
   }
   return rows;

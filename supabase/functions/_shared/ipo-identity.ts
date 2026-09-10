@@ -24,7 +24,7 @@ export const FILLABLE = [
   "price_band_min", "price_band_max", "lot_size", "issue_size_crore",
   "registrar", "rhp_url", "drhp_url",
   "subscription_qib", "subscription_nii", "subscription_retail",
-  "listing_price", "listing_gain_pct",
+  "listing_price", "listing_gain_pct", "detail_url",
 ] as const;
 
 export type StoredIpo = {

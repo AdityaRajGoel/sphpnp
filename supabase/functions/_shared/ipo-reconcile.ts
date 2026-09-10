@@ -62,6 +62,7 @@ export const FIELD_PRECEDENCE: Record<string, SourceName[]> = {
   lot_size: ["investorgain"],
   est_listing_price: ["ipowatch"],
   listing_price: ["ipowatch"],
+  detail_url: ["chittorgarh"],
 };
 
 /** Ranked most to least specific: a real status beats a default guess. */
@@ -214,6 +215,7 @@ export function reconcileIpos(bundle: SourceBundle): ReconciledWithGmp[] {
       est_listing_price: values.est_listing_price as number | null,
       listing_price: values.listing_price as number | null,
       listing_gain_pct: null,
+      detail_url: values.detail_url as string | null,
       field_sources,
       gmp: gmp ? gmp.value : null,
       gmp_sources: gmp ? gmp.sources : [],
