@@ -50,9 +50,36 @@ jobs:
 
   docker:
     runs-on: ubuntu-latest
-    # Only prove the container still builds when its inputs change.
-    if: github.event_name == 'pull_request'
+    # Runs on pushes too. It used to be pull-request only, but changes land on
+    # main directly, so the self-host image went unbuilt by CI - "skipped" on
+    # every commit. A build alone also proves little; the container is started
+    # and asked for real pages.
     steps:
       - uses: actions/checkout@v4
       - name: Build Docker image
         run: docker build -t sphpnp-web .
+      - name: Serve and smoke-test the image
+        run: |
+          docker run -d --name web -p 8090:80 sphpnp-web
+          for i in $(seq 1 30); do curl -fs http://localhost:8090/ >/dev/null && break; sleep 1; done
+          check() {
+            code=$(curl -s -o /tmp/body -w "%{http_code}" "http://localhost:8090$1")
+            echo "$1 -> $code"
+            [ "$code" = "200" ] || { docker logs web; exit 1; }
+          }
+          check /
+          # A deep link only works if nginx's SPA fallback serves index.html.
+          check /ipo
+          check /stock/RELIANCE
+          grep -q '<div id="root">' /tmp/body || { echo "deep link did not get the app shell"; exit 1; }
+          # Security headers must survive the move off Vercel.
+          curl -sI http://localhost:8090/ | grep -qi '^x-content-type-options: nosniff' || { echo "missing security headers"; exit 1; }
+          # The image's own HEALTHCHECK must pass, or orchestrators restart it
+          # forever. Its first probe runs 30s after start (--interval=30s).
+          for i in $(seq 1 70); do
+            status=$(docker inspect --format '{{.State.Health.Status}}' web)
+            [ "$status" = "healthy" ] && break
+            sleep 1
+          done
+          echo "health: $status"
+          [ "$status" = "healthy" ]
