@@ -54,6 +54,7 @@ const urls = [
   // Learning Center articles (original content)
   ...learnArticleSlugs.map(slug => ({ loc: `/learn/${slug}`, changefreq: 'monthly', priority: '0.7', lastmod: today })),
   { loc: '/52-week-tracker',     changefreq: 'daily',   priority: '0.8',  lastmod: today },
+  { loc: '/market-pulse',        changefreq: 'daily',   priority: '0.9',  lastmod: today },
   { loc: '/compare',             changefreq: 'weekly',  priority: '0.7',  lastmod: today },
   { loc: '/products',            changefreq: 'monthly', priority: '0.7',  lastmod: today },
   { loc: '/brokerage-calculator', changefreq: 'monthly', priority: '0.7', lastmod: today },

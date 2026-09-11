@@ -10,7 +10,7 @@ const urls = [
   '/screener', '/fno', '/learn', '/learn/recommendations',
   '/learn/demat-account', '/learn/pe-ratio', '/learn/sip-vs-lumpsum',
   '/learn/power-of-compounding', '/learn/mutual-funds-guide', '/learn/ipo-guide',
-  '/52-week-tracker', '/compare', '/products', '/depository-services',
+  '/52-week-tracker', '/market-pulse', '/compare', '/products', '/depository-services',
   '/brokerage-calculator', '/margin-calculator', '/team', '/contact',
   '/holidays', '/careers', '/privacy-policy', '/cookie-policy',
 ].map(p => `${BASE}${p}`);

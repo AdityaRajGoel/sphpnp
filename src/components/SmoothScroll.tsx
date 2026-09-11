@@ -29,6 +29,7 @@ const DATA_ROUTES = [
   "/fno",
   "/compare",
   "/52-week-tracker",
+  "/market-pulse",
   "/reports",
   "/admin",
   "/banner-manager",

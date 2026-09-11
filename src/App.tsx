@@ -46,6 +46,7 @@ const PricingPage = lazy(() => import("./pages/PricingPage"));
 const StockScreenerPage = lazy(() => import("./pages/StockScreenerPage"));
 const HolidayCalendarPage = lazy(() => import("./pages/HolidayCalendarPage"));
 const Week52TrackerPage = lazy(() => import("./pages/Week52TrackerPage"));
+const MarketPulsePage = lazy(() => import("./pages/MarketPulsePage"));
 const FnODashboardPage = lazy(() => import("./pages/FnODashboardPage"));
 const AuthPage = lazy(() => import("./pages/AuthPage"));
 const ResetPasswordPage = lazy(() => import("./pages/ResetPasswordPage"));
@@ -168,6 +169,7 @@ const AnimatedRoutes = () => {
         <Route path="/fno" element={<FnODashboardPage />} />
         <Route path="/holidays" element={<HolidayCalendarPage />} />
         <Route path="/52-week-tracker" element={<Week52TrackerPage />} />
+        <Route path="/market-pulse" element={<MarketPulsePage />} />
         <Route path="/auth" element={<AuthPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="/margin-calculator" element={<MarginCalculatorPage />} />

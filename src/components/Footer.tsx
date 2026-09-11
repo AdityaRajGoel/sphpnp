@@ -24,6 +24,7 @@ const companyLinks: FooterLink[] = [
 ];
 
 const toolLinks: FooterLink[] = [
+  { label: "Market Pulse", href: "/market-pulse" },
   { label: "Stock Screener", href: "/screener" },
   { label: "IPO Tracker", href: "/ipo" },
   { label: "52-Week Tracker", href: "/52-week-tracker" },

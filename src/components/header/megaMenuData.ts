@@ -1,4 +1,4 @@
-import {
+import { Gauge,
   TrendingUp, BarChart3, PieChart, Landmark, FileText, Coins,
   Calculator, GitCompare, Calendar, ArrowUpDown, Activity,
   BookOpen, GraduationCap, Radio, Newspaper,
@@ -55,6 +55,7 @@ export const megaMenuItems: MegaMenuItem[] = [
     label: "Markets",
     href: "/screener",
     subItems: [
+      { label: "Market Pulse", href: "/market-pulse", icon: Gauge, description: "Valuations, FII positions, FPI flows & deals" },
       { label: "Stock Screener", href: "/screener", icon: Search, description: "Filter stocks by key metrics" },
       { label: "Stock Comparison", href: "/compare", icon: GitCompare, description: "Compare two stocks side-by-side" },
       { label: "52 Week Tracker", href: "/52-week-tracker", icon: ArrowUpDown, description: "Stocks near 52-week highs/lows" },

@@ -45,6 +45,7 @@ const routes = [
   '/learn/recommendations',
   ...learnArticleRoutes,
   '/52-week-tracker',
+  '/market-pulse',
   '/compare',
   '/products',
   '/depository-services',
