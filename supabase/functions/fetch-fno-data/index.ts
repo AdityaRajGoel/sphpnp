@@ -1,5 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { NSE_HEADERS } from "../_shared/nse.ts";
+import { aroundSpot, contractInfoUrl, optionChainUrl, parseContractInfo, parseOptionChainV3, summariseChain } from "../_shared/option-chain.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -45,178 +47,52 @@ async function setCachedData(symbol: string, expiry: string | undefined, payload
   } catch { /* ignore */ }
 }
 
-// ── NSE Data Fetching with improved cookie handling ──
+// ── NSE option chain (v3) ──
+//
+// NSE retired option-chain-indices / option-chain-equities (both 404 since
+// 2026); the chain now comes one expiry at a time from option-chain-v3, with
+// the expiry list from option-chain-contract-info. See _shared/option-chain.ts.
+//
+// A browser User-Agent is enough without cookies (_shared/nse.ts); cookies are
+// primed from the home page only if NSE answers 401/403.
 
-const NSE_HEADERS = {
-  "User-Agent":
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
-  Accept: "application/json, text/plain, */*",
-  "Accept-Language": "en-US,en;q=0.9,hi;q=0.8",
-  "Accept-Encoding": "gzip, deflate, br",
-  Referer: "https://www.nseindia.com/option-chain",
-  Connection: "keep-alive",
-  "sec-ch-ua":
-    '"Google Chrome";v="131", "Chromium";v="131", "Not_A Brand";v="24"',
-  "sec-ch-ua-mobile": "?0",
-  "sec-ch-ua-platform": '"Windows"',
-  "sec-fetch-dest": "empty",
-  "sec-fetch-mode": "cors",
-  "sec-fetch-site": "same-origin",
-};
+const OC_HEADERS = { ...NSE_HEADERS, Referer: "https://www.nseindia.com/option-chain" };
 
-function extractCookies(res: Response): string[] {
-  const cookies: string[] = [];
-  // Try getSetCookie first (Deno standard)
-  if (typeof res.headers.getSetCookie === "function") {
-    cookies.push(...res.headers.getSetCookie());
-  } else {
-    // Fallback: iterate headers
-    res.headers.forEach((value, key) => {
-      if (key.toLowerCase() === "set-cookie") {
-        cookies.push(value);
-      }
-    });
-  }
-  return cookies;
+async function primeCookies(): Promise<string> {
+  const res = await fetch("https://www.nseindia.com/option-chain", { headers: { ...OC_HEADERS, Accept: "text/html" }, signal: AbortSignal.timeout(15_000) });
+  await res.body?.cancel();
+  const cookies = typeof res.headers.getSetCookie === "function" ? res.headers.getSetCookie() : [];
+  return cookies.map((c) => c.split(";")[0]).join("; ");
 }
 
-async function getNSECookies(): Promise<string> {
-  const mainRes = await fetch("https://www.nseindia.com", {
-    headers: { ...NSE_HEADERS, Referer: "https://www.google.com/" },
-    redirect: "follow",
-  });
-  await mainRes.text();
-  const mainCookies = extractCookies(mainRes);
-
-  await new Promise((r) => setTimeout(r, 300));
-
-  const res = await fetch("https://www.nseindia.com/option-chain", {
-    headers: {
-      ...NSE_HEADERS,
-      Cookie: mainCookies.map((c) => c.split(";")[0]).join("; "),
-    },
-    redirect: "follow",
-  });
-  await res.text();
-  const setCookies = extractCookies(res);
-
-  const allCookies = [...mainCookies, ...setCookies];
-  const cookies = allCookies.map((c) => c.split(";")[0]).join("; ");
-  if (!cookies) throw new Error("Failed to get NSE session cookies");
-  return cookies;
-}
-
-async function fetchNSEOptionChain(symbol: string, cookies: string) {
-  const endpoint = ["NIFTY", "BANKNIFTY", "FINNIFTY", "MIDCPNIFTY"].includes(symbol)
-    ? `https://www.nseindia.com/api/option-chain-indices?symbol=${symbol}`
-    : `https://www.nseindia.com/api/option-chain-equities?symbol=${symbol}`;
-
-  const res = await fetch(endpoint, {
-    headers: { ...NSE_HEADERS, Cookie: cookies },
-  });
-
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`NSE API returned ${res.status}: ${text.substring(0, 200)}`);
+async function nseJson(url: string): Promise<unknown> {
+  const get = (cookie?: string) => fetch(url, { headers: cookie ? { ...OC_HEADERS, Cookie: cookie } : OC_HEADERS, signal: AbortSignal.timeout(20_000) });
+  let res = await get();
+  if (res.status === 401 || res.status === 403) {
+    await res.body?.cancel();
+    res = await get(await primeCookies());
   }
+  if (!res.ok) throw new Error(`NSE ${new URL(url).pathname} returned ${res.status}`);
   return await res.json();
 }
 
-// ── Process real NSE data ──
-
-interface OptionRow {
-  strike: number;
-  callOI: number;
-  callChange: number;
-  callLTP: number;
-  callIV: number;
-  callVolume: number;
-  putOI: number;
-  putChange: number;
-  putLTP: number;
-  putIV: number;
-  putVolume: number;
-}
-
-function processNSEData(nseData: any, selectedExpiry?: string) {
-  const records = nseData?.records;
-  const filtered = nseData?.filtered;
-  if (!records?.data?.length) throw new Error("No options data available from NSE");
-
-  const spot =
-    records.underlyingValue ||
-    filtered?.data?.[0]?.PE?.underlyingValue ||
-    filtered?.data?.[0]?.CE?.underlyingValue ||
-    0;
-  const expiryDates: string[] = records.expiryDates || [];
-  const expiries = expiryDates.map((d: string) => ({ timestamp: d, label: d }));
-  const activeExpiry = selectedExpiry || expiryDates[0];
-  const dataForExpiry = records.data.filter((row: any) => row.expiryDate === activeExpiry);
-
-  const strikeMap = new Map<number, OptionRow>();
-  for (const row of dataForExpiry) {
-    const strike = row.strikePrice;
-    if (!strikeMap.has(strike)) {
-      strikeMap.set(strike, {
-        strike,
-        callOI: 0, callChange: 0, callLTP: 0, callIV: 0, callVolume: 0,
-        putOI: 0, putChange: 0, putLTP: 0, putIV: 0, putVolume: 0,
-      });
-    }
-    const entry = strikeMap.get(strike)!;
-    if (row.CE) {
-      entry.callOI = row.CE.openInterest || 0;
-      entry.callChange = row.CE.changeinOpenInterest || 0;
-      entry.callLTP = row.CE.lastPrice || 0;
-      entry.callIV = row.CE.impliedVolatility || 0;
-      entry.callVolume = row.CE.totalTradedVolume || 0;
-    }
-    if (row.PE) {
-      entry.putOI = row.PE.openInterest || 0;
-      entry.putChange = row.PE.changeinOpenInterest || 0;
-      entry.putLTP = row.PE.lastPrice || 0;
-      entry.putIV = row.PE.impliedVolatility || 0;
-      entry.putVolume = row.PE.totalTradedVolume || 0;
-    }
-  }
-
-  const chain = Array.from(strikeMap.values()).sort((a, b) => a.strike - b.strike);
-  const atmIndex = chain.findIndex((r) => r.strike >= spot);
-  const startIdx = Math.max(0, atmIndex - 15);
-  const endIdx = Math.min(chain.length, atmIndex + 16);
-  const filteredChain = chain.slice(startIdx, endIdx);
-  const maxPain = calculateMaxPain(filteredChain);
-  const totalCallOI = filteredChain.reduce((s, r) => s + r.callOI, 0);
-  const totalPutOI = filteredChain.reduce((s, r) => s + r.putOI, 0);
-  const pcr = totalCallOI > 0 ? totalPutOI / totalCallOI : 0;
-
+async function fetchChain(symbol: string, selectedExpiry?: string) {
+  const expiries = parseContractInfo(await nseJson(contractInfoUrl(symbol)));
+  if (expiries.length === 0) throw new Error(`No expiries listed for ${symbol}`);
+  const activeExpiry = selectedExpiry && expiries.includes(selectedExpiry) ? selectedExpiry : expiries[0];
+  const { spot, rows } = parseOptionChainV3(await nseJson(optionChainUrl(symbol, activeExpiry)), activeExpiry);
+  if (rows.length === 0) throw new Error(`No options data for ${symbol} ${activeExpiry}`);
+  const summary = summariseChain(rows);
   return {
     spot,
-    chain: filteredChain,
-    expiries,
+    chain: aroundSpot(rows, spot, 15),
+    expiries: expiries.map((d) => ({ timestamp: d, label: d })),
     currentExpiry: activeExpiry,
-    maxPain,
-    pcr,
-    totalCallOI,
-    totalPutOI,
+    maxPain: summary.maxPain ?? 0,
+    pcr: summary.pcr ?? 0,
+    totalCallOI: summary.totalCallOI,
+    totalPutOI: summary.totalPutOI,
   };
-}
-
-function calculateMaxPain(chain: OptionRow[]): number {
-  let minPain = Infinity;
-  let maxPainStrike = chain[0]?.strike ?? 0;
-  for (const row of chain) {
-    let totalPain = 0;
-    for (const other of chain) {
-      if (row.strike < other.strike) totalPain += other.putOI * (other.strike - row.strike);
-      if (row.strike > other.strike) totalPain += other.callOI * (row.strike - other.strike);
-    }
-    if (totalPain < minPain) {
-      minPain = totalPain;
-      maxPainStrike = row.strike;
-    }
-  }
-  return maxPainStrike;
 }
 
 // ── Main handler ──
@@ -241,10 +117,7 @@ serve(async (req) => {
     // Strategy 1: Try NSE directly
     let processed;
     try {
-      const cookies = await getNSECookies();
-      await new Promise((r) => setTimeout(r, 500));
-      const nseData = await fetchNSEOptionChain(symbol, cookies);
-      processed = processNSEData(nseData, selectedExpiry);
+      processed = await fetchChain(symbol, selectedExpiry);
       console.log("Successfully fetched from NSE directly");
     } catch (nseErr) {
       console.warn("NSE direct fetch failed:", nseErr);

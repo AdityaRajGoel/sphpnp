@@ -18,6 +18,12 @@ import { downloadCsv, todayStamp } from "@/lib/exportData";
 import PageTransition from "@/components/PageTransition";
 import { EASE_IN_OUT } from "@/lib/motion";
 
+/** Contracts in Indian units, one system across the page: 85,432 · 2.4 L · 1.2 Cr. */
+const fmtOI = (n: number) => (n >= 1e7 ? `${(n / 1e7).toFixed(2)} Cr` : n >= 1e5 ? `${(n / 1e5).toFixed(1)} L` : Math.round(n).toLocaleString("en-IN"));
+/** A change in open interest: whole contracts, signed. */
+const fmtChange = (n: number) => `${n > 0 ? "+" : n < 0 ? "−" : ""}${fmtOI(Math.abs(n))}`;
+
+
 type OptionRow = {
   strike: number;
   callOI: number;
@@ -61,7 +67,7 @@ const FnOLoadingAnimation = () => {
           {columns.slice(0, 10).map((_, i) => (
             <motion.div
               key={`call-${i}`}
-              className="w-2.5 bg-secondary/60 rounded-t-sm"
+              className="w-2.5 bg-destructive/60 rounded-t-sm"
               initial={{ height: 0 }}
               animate={{ height: 15 + Math.random() * 50 }}
               transition={{ duration: 0.5, delay: i * 0.06, repeat: Infinity, repeatType: "reverse", repeatDelay: 1 }}
@@ -73,7 +79,7 @@ const FnOLoadingAnimation = () => {
           {columns.slice(10).map((_, i) => (
             <motion.div
               key={`put-${i}`}
-              className="w-2.5 bg-destructive/60 rounded-t-sm"
+              className="w-2.5 bg-secondary/60 rounded-t-sm"
               initial={{ height: 0 }}
               animate={{ height: 15 + Math.random() * 50 }}
               transition={{ duration: 0.5, delay: i * 0.06, repeat: Infinity, repeatType: "reverse", repeatDelay: 1 }}
@@ -85,10 +91,10 @@ const FnOLoadingAnimation = () => {
       {/* Labels */}
       <div className="flex items-center gap-6 text-xs text-muted-foreground">
         <span className="flex items-center gap-1.5">
-          <div className="w-3 h-3 rounded-sm bg-secondary/60" /> Calls
+          <div className="w-3 h-3 rounded-sm bg-destructive/60" /> Calls
         </span>
         <span className="flex items-center gap-1.5">
-          <div className="w-3 h-3 rounded-sm bg-destructive/60" /> Puts
+          <div className="w-3 h-3 rounded-sm bg-secondary/60" /> Puts
         </span>
       </div>
 
@@ -344,16 +350,16 @@ const FnODashboardPage = () => {
                 </motion.div>
                 <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
                   <Card className="p-4 text-center">
-                    <TrendingUp className="w-5 h-5 mx-auto mb-1 text-secondary" />
+                    <TrendingDown className="w-5 h-5 mx-auto mb-1 text-destructive" aria-hidden="true" />
                     <p className="text-xs text-muted-foreground">Total Call OI</p>
-                    <p className="text-xl font-bold font-mono text-foreground">{totalCallOI > 1000000 ? `${(totalCallOI / 1000000).toFixed(1)}M` : `${(totalCallOI / 1000).toFixed(0)}K`}</p>
+                    <p className="text-xl font-bold font-mono text-foreground">{fmtOI(totalCallOI)}</p>
                   </Card>
                 </motion.div>
                 <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
                   <Card className="p-4 text-center">
-                    <TrendingDown className="w-5 h-5 mx-auto mb-1 text-destructive" />
+                    <TrendingUp className="w-5 h-5 mx-auto mb-1 text-secondary" aria-hidden="true" />
                     <p className="text-xs text-muted-foreground">Total Put OI</p>
-                    <p className="text-xl font-bold font-mono text-foreground">{totalPutOI > 1000000 ? `${(totalPutOI / 1000000).toFixed(1)}M` : `${(totalPutOI / 1000).toFixed(0)}K`}</p>
+                    <p className="text-xl font-bold font-mono text-foreground">{fmtOI(totalPutOI)}</p>
                   </Card>
                 </motion.div>
               </>
@@ -384,9 +390,9 @@ const FnODashboardPage = () => {
                       <table className="w-full text-xs">
                         <thead>
                           <tr className="border-b border-border bg-muted/50">
-                            <th colSpan={4} className="text-center px-2 py-2 font-semibold text-secondary border-r border-border">CALLS</th>
+                            <th colSpan={4} className="text-center px-2 py-2 font-semibold text-destructive border-r border-border">CALLS</th>
                             <th className="px-3 py-2 font-semibold text-foreground">STRIKE</th>
-                            <th colSpan={4} className="text-center px-2 py-2 font-semibold text-destructive border-l border-border">PUTS</th>
+                            <th colSpan={4} className="text-center px-2 py-2 font-semibold text-secondary border-l border-border">PUTS</th>
                           </tr>
                           <tr className="border-b border-border bg-muted/30 text-muted-foreground">
                             <th className="px-2 py-1.5 text-right">OI</th>
@@ -413,14 +419,14 @@ const FnODashboardPage = () => {
                                 transition={{ delay: i * 0.015 }}
                                 className={`border-b border-border/30 transition-colors hover:bg-muted/20 ${isATM ? "bg-brand-gold/10 font-semibold" : ""}`}
                               >
-                                <td className={`px-2 py-2 text-right font-mono ${isITMCall ? "bg-secondary/5" : ""}`}>
-                                  {row.callOI > 0 ? (row.callOI > 100000 ? `${(row.callOI / 100000).toFixed(1)}L` : `${(row.callOI / 1000).toFixed(1)}K`) : "-"}
-                                  {row.callOI > 0 && <div className="h-1 bg-muted rounded-full mt-0.5"><div className="h-full bg-secondary/40 rounded-full" style={{ width: `${(row.callOI / maxCallOI) * 100}%` }} /></div>}
+                                <td className={`px-2 py-2 text-right font-mono ${isITMCall ? "bg-muted/60" : ""}`}>
+                                  {row.callOI > 0 ? fmtOI(row.callOI) : "-"}
+                                  {row.callOI > 0 && <div className="h-1 bg-muted rounded-full mt-0.5"><div className="h-full bg-destructive/50 rounded-full" style={{ width: `${(row.callOI / maxCallOI) * 100}%` }} /></div>}
                                 </td>
                                 <td className={`px-2 py-2 text-right font-mono ${row.callChange >= 0 ? "text-secondary" : "text-destructive"}`}>
-                                  {row.callChange !== 0 ? `${row.callChange >= 0 ? "+" : ""}${row.callChange.toFixed(1)}` : "-"}
+                                  {row.callChange !== 0 ? fmtChange(row.callChange) : "-"}
                                 </td>
-                                <td className={`px-2 py-2 text-right font-mono ${isITMCall ? "bg-secondary/5" : ""}`}>
+                                <td className={`px-2 py-2 text-right font-mono ${isITMCall ? "bg-muted/60" : ""}`}>
                                   {row.callLTP > 0 ? row.callLTP.toFixed(2) : "-"}
                                 </td>
                                 <td className="px-2 py-2 text-right font-mono text-muted-foreground border-r border-border">
@@ -430,14 +436,14 @@ const FnODashboardPage = () => {
                                   {row.strike.toLocaleString("en-IN")}
                                   {isATM && <span className="block text-[9px] text-brand-gold">ATM</span>}
                                 </td>
-                                <td className={`px-2 py-2 text-left font-mono border-l border-border ${isITMPut ? "bg-destructive/5" : ""}`}>
-                                  {row.putOI > 0 ? (row.putOI > 100000 ? `${(row.putOI / 100000).toFixed(1)}L` : `${(row.putOI / 1000).toFixed(1)}K`) : "-"}
-                                  {row.putOI > 0 && <div className="h-1 bg-muted rounded-full mt-0.5"><div className="h-full bg-destructive/40 rounded-full" style={{ width: `${(row.putOI / maxPutOI) * 100}%` }} /></div>}
+                                <td className={`px-2 py-2 text-left font-mono border-l border-border ${isITMPut ? "bg-muted/60" : ""}`}>
+                                  {row.putOI > 0 ? fmtOI(row.putOI) : "-"}
+                                  {row.putOI > 0 && <div className="h-1 bg-muted rounded-full mt-0.5"><div className="h-full bg-secondary/50 rounded-full" style={{ width: `${(row.putOI / maxPutOI) * 100}%` }} /></div>}
                                 </td>
                                 <td className={`px-2 py-2 text-left font-mono ${row.putChange >= 0 ? "text-secondary" : "text-destructive"}`}>
-                                  {row.putChange !== 0 ? `${row.putChange >= 0 ? "+" : ""}${row.putChange.toFixed(1)}` : "-"}
+                                  {row.putChange !== 0 ? fmtChange(row.putChange) : "-"}
                                 </td>
-                                <td className={`px-2 py-2 text-left font-mono ${isITMPut ? "bg-destructive/5" : ""}`}>
+                                <td className={`px-2 py-2 text-left font-mono ${isITMPut ? "bg-muted/60" : ""}`}>
                                   {row.putLTP > 0 ? row.putLTP.toFixed(2) : "-"}
                                 </td>
                                 <td className="px-2 py-2 text-left font-mono text-muted-foreground">
@@ -456,34 +462,7 @@ const FnODashboardPage = () => {
                   <div className="grid md:grid-cols-2 gap-4">
                     <Card className="p-4">
                       <h3 className="text-sm font-semibold mb-3 text-foreground flex items-center gap-2">
-                        <BarChart3 className="w-4 h-4 text-secondary" /> Call OI by Strike
-                      </h3>
-                      <div className="space-y-1.5">
-                        {chain.filter((_, i) => i % 2 === 0).map((row, idx) => (
-                          <motion.div
-                            key={row.strike}
-                            initial={{ opacity: 0, width: 0 }}
-                            animate={{ opacity: 1, width: "100%" }}
-                            transition={{ delay: idx * 0.03 }}
-                            className="flex items-center gap-2 text-xs"
-                          >
-                            <span className="w-14 text-right font-mono text-muted-foreground">{row.strike.toLocaleString("en-IN")}</span>
-                            <div className="flex-1 h-4 bg-muted rounded-sm relative">
-                              <motion.div
-                                className="absolute left-0 top-0 h-full bg-secondary/50 rounded-sm"
-                                initial={{ width: 0 }}
-                                animate={{ width: `${(row.callOI / maxCallOI) * 100}%` }}
-                                transition={{ duration: 0.6, delay: idx * 0.03 }}
-                              />
-                            </div>
-                            <span className="w-14 text-right font-mono">{row.callOI > 100000 ? `${(row.callOI / 100000).toFixed(1)}L` : `${(row.callOI / 1000).toFixed(0)}K`}</span>
-                          </motion.div>
-                        ))}
-                      </div>
-                    </Card>
-                    <Card className="p-4">
-                      <h3 className="text-sm font-semibold mb-3 text-foreground flex items-center gap-2">
-                        <BarChart3 className="w-4 h-4 text-destructive" /> Put OI by Strike
+                        <BarChart3 className="w-4 h-4 text-destructive" /> Call OI by Strike (resistance)
                       </h3>
                       <div className="space-y-1.5">
                         {chain.filter((_, i) => i % 2 === 0).map((row, idx) => (
@@ -499,11 +478,38 @@ const FnODashboardPage = () => {
                               <motion.div
                                 className="absolute left-0 top-0 h-full bg-destructive/50 rounded-sm"
                                 initial={{ width: 0 }}
+                                animate={{ width: `${(row.callOI / maxCallOI) * 100}%` }}
+                                transition={{ duration: 0.6, delay: idx * 0.03 }}
+                              />
+                            </div>
+                            <span className="w-14 text-right font-mono">{fmtOI(row.callOI)}</span>
+                          </motion.div>
+                        ))}
+                      </div>
+                    </Card>
+                    <Card className="p-4">
+                      <h3 className="text-sm font-semibold mb-3 text-foreground flex items-center gap-2">
+                        <BarChart3 className="w-4 h-4 text-secondary" /> Put OI by Strike (support)
+                      </h3>
+                      <div className="space-y-1.5">
+                        {chain.filter((_, i) => i % 2 === 0).map((row, idx) => (
+                          <motion.div
+                            key={row.strike}
+                            initial={{ opacity: 0, width: 0 }}
+                            animate={{ opacity: 1, width: "100%" }}
+                            transition={{ delay: idx * 0.03 }}
+                            className="flex items-center gap-2 text-xs"
+                          >
+                            <span className="w-14 text-right font-mono text-muted-foreground">{row.strike.toLocaleString("en-IN")}</span>
+                            <div className="flex-1 h-4 bg-muted rounded-sm relative">
+                              <motion.div
+                                className="absolute left-0 top-0 h-full bg-secondary/50 rounded-sm"
+                                initial={{ width: 0 }}
                                 animate={{ width: `${(row.putOI / maxPutOI) * 100}%` }}
                                 transition={{ duration: 0.6, delay: idx * 0.03 }}
                               />
                             </div>
-                            <span className="w-14 text-right font-mono">{row.putOI > 100000 ? `${(row.putOI / 100000).toFixed(1)}L` : `${(row.putOI / 1000).toFixed(0)}K`}</span>
+                            <span className="w-14 text-right font-mono">{fmtOI(row.putOI)}</span>
                           </motion.div>
                         ))}
                       </div>
