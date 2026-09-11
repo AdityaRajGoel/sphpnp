@@ -53,3 +53,21 @@ Object.defineProperty(window, "matchMedia", {
     dispatchEvent: () => {},
   }),
 });
+
+// Node 25 defines its own global localStorage, which has no methods unless the
+// process starts with --localstorage-file, and it shadows jsdom's. The Supabase
+// client reads its session from it on import, so any test that imports a module
+// using the client would fail with "storage.getItem is not a function". CI runs
+// Node 22 and never sees this; an in-memory store keeps local runs the same.
+if (typeof globalThis.localStorage?.getItem !== "function") {
+  const store = new Map<string, string>();
+  const memory: Storage = {
+    get length() { return store.size; },
+    clear: () => store.clear(),
+    getItem: (key) => store.get(key) ?? null,
+    key: (index) => [...store.keys()][index] ?? null,
+    removeItem: (key) => { store.delete(key); },
+    setItem: (key, value) => { store.set(key, String(value)); },
+  };
+  Object.defineProperty(globalThis, "localStorage", { value: memory, configurable: true });
+}
