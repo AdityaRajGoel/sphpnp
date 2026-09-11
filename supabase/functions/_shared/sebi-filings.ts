@@ -12,6 +12,9 @@
 
 import { ipoMatchKey } from "./ipo-parse.ts";
 
+/** A character from an entity's code point; nothing for a code point no character has (String.fromCodePoint would throw). */
+const codePoint = (n: number): string => (Number.isInteger(n) && n >= 0 && n <= 0x10ffff ? String.fromCodePoint(n) : "");
+
 export type FilingCategory = "draft" | "rhp";
 export type FilingKind = "drhp" | "udrhp" | "addendum" | "corrigendum" | "rhp" | "prospectus" | "other";
 
@@ -47,7 +50,7 @@ const MONTHS: Record<string, string> = {
 const ENTITIES: Record<string, string> = { amp: "&", nbsp: " ", quot: '"', "#39": "'", apos: "'", ndash: "–", rsquo: "'" };
 const decode = (value: string) =>
   value.replace(/&(#\d+|[a-z]+);/gi, (whole, name: string) => {
-    if (/^#\d+$/.test(name) && !ENTITIES[name]) return String.fromCodePoint(Number(name.slice(1)));
+    if (/^#\d+$/.test(name) && !ENTITIES[name]) return codePoint(Number(name.slice(1)));
     return ENTITIES[name.toLowerCase()] ?? whole;
   });
 const clean = (value: string) => decode(value).replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
