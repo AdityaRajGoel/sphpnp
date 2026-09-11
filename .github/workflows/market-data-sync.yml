@@ -29,7 +29,7 @@ jobs:
       - name: Fetch each dataset
         run: |
           failed=0
-          for ds in index_valuation participant_oi option_chain eq_eod pledges deals nse_ipos fpi week52 movers constituents surveillance lot_sizes calendar; do
+          for ds in index_valuation participant_oi option_chain fo_bhavcopy eq_eod pledges deals nse_ipos fpi fpi_sectors week52 movers constituents surveillance lot_sizes calendar; do
             resp=$(curl -sS -w "\n%{http_code}" --max-time 170 \
               -X POST "https://zbkjbbujsdlpujotgltm.supabase.co/functions/v1/sync-market-data" \
               -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
@@ -49,7 +49,7 @@ jobs:
 
   backfill:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 90
     steps:
       - name: Walk back through history
         run: |
@@ -71,12 +71,15 @@ jobs:
               [ "$(echo "$body" | jq -r '.wrapped // false')" = "true" ] && break
             done
           done
-      - name: Deal history (one year, one call per kind)
+      - name: Deal history and FPI sector flows (one year each, one call)
         run: |
-          curl -sS --max-time 170 -X POST "https://zbkjbbujsdlpujotgltm.supabase.co/functions/v1/sync-market-data" \
-            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
-            -H "x-sync-secret: ${{ secrets.MARKET_SYNC_SECRET }}" \
-            -H "Content-Type: application/json" -d '{"dataset":"deals","backfill":true}' || true
+          for ds in deals fpi_sectors; do
+            curl -sS --max-time 170 -X POST "https://zbkjbbujsdlpujotgltm.supabase.co/functions/v1/sync-market-data" \
+              -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
+              -H "x-sync-secret: ${{ secrets.MARKET_SYNC_SECRET }}" \
+              -H "Content-Type: application/json" -d "{\"dataset\":\"$ds\",\"backfill\":true}" | cut -c1-400 || true
+            echo
+          done
 
   macro:
     runs-on: ubuntu-latest

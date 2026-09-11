@@ -3,8 +3,9 @@ import { useQuery } from "@tanstack/react-query";
 import { Bar, BarChart, CartesianGrid, Cell, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { crore, fpiDaily, fpiEquityNet, macroSeries, shortDate, type FpiRow, type MacroPoint } from "@/lib/market-data";
+import { crore, fpiDaily, fpiEquityNet, fpiSectors, macroSeries, shortDate, type FpiRow, type MacroPoint } from "@/lib/market-data";
 import { CHART, axisTick, tooltipStyle, SectionHeading, EmptyState } from "./chart-kit";
+import SectorFlows from "./SectorFlows";
 
 const signedCr = (v: number | null) => (v === null ? "—" : `${v >= 0 ? "+" : "−"}₹${crore(Math.abs(v))}`);
 const month = (iso: string) => new Date(`${iso}T00:00:00Z`).toLocaleDateString("en-IN", { month: "short", year: "2-digit", timeZone: "UTC" });
@@ -83,6 +84,13 @@ const MACRO: { series: string; title: string; measure: string }[] = [
   { series: "IIP (General)", title: "Industrial output (IIP)", measure: "Year-on-year growth in industrial production" },
 ];
 
+/** Months between a series' latest period and now: a gap past three means the publisher has not released newer figures. */
+const monthsBehind = (period: string) => {
+  const [y, m] = period.split("-").map(Number);
+  const now = new Date();
+  return (now.getUTCFullYear() - y) * 12 + (now.getUTCMonth() + 1 - m);
+};
+
 function MacroView({ points }: { points: MacroPoint[] }) {
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
@@ -97,6 +105,9 @@ function MacroView({ points }: { points: MacroPoint[] }) {
             </div>
             <div className="text-2xl font-bold tabular-nums">{last?.change !== undefined && last.change !== null ? `${last.change.toFixed(2)}%` : "—"}</div>
             <p className="text-xs text-muted-foreground mb-2">{m.measure}</p>
+            {last && monthsBehind(last.period) > 3 && (
+              <p className="text-xs text-amber-600 dark:text-amber-400 mb-2">The latest month MoSPI's data service publishes; newer figures appear once it releases them.</p>
+            )}
             {data.length < 2 ? <EmptyState text="Collected monthly from MoSPI." /> : (
               <ResponsiveContainer width="100%" height={120}>
                 <LineChart data={data} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
@@ -115,15 +126,17 @@ function MacroView({ points }: { points: MacroPoint[] }) {
   );
 }
 
-/** Money flows and the economy: NSDL's daily FPI flows and MoSPI's CPI, WPI and IIP. */
+/** Money flows and the economy: NSDL's daily and sector-wise FPI flows, and MoSPI's CPI, WPI and IIP. */
 export default function FlowsSection() {
   const fpi = useQuery({ queryKey: ["fpi-daily"], queryFn: () => fpiDaily(90), staleTime: 10 * 60_000 });
+  const sectors = useQuery({ queryKey: ["fpi-sectors"], queryFn: fpiSectors, staleTime: 60 * 60_000 });
   const macro = useQuery({ queryKey: ["macro-monthly"], queryFn: macroSeries, staleTime: 60 * 60_000 });
   const hasFpi = useMemo(() => (fpi.data ?? []).length > 0, [fpi.data]);
   return (
     <section id="flows" aria-labelledby="flows-heading" className="scroll-mt-28 space-y-4">
-      <SectionHeading id="flows-heading" title="Flows & the economy" subtitle="Foreign portfolio investment from NSDL; inflation and industrial output from MoSPI." />
+      <SectionHeading id="flows-heading" title="Flows & the economy" subtitle="Foreign portfolio investment from NSDL, daily and by sector each fortnight; inflation and industrial output from MoSPI." />
       {fpi.isLoading ? <Skeleton className="h-60 w-full" /> : hasFpi ? <FpiView rows={fpi.data!} /> : <EmptyState text="FPI flows appear after the first daily collection from NSDL." />}
+      {sectors.isLoading ? <Skeleton className="h-80 w-full" /> : (sectors.data ?? []).length > 0 ? <SectorFlows rows={sectors.data!} /> : <EmptyState text="Sector-wise flows appear after the first fortnightly collection from NSDL." />}
       {macro.isLoading ? <Skeleton className="h-40 w-full" /> : <MacroView points={macro.data ?? []} />}
     </section>
   );

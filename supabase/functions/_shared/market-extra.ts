@@ -77,6 +77,84 @@ export function parseFpiDaily(html: string): FpiRow[] {
 }
 
 // ---------------------------------------------------------------------------
+// NSDL FPI fortnightly, by sector
+// ---------------------------------------------------------------------------
+
+const REPORT_PATH = /^~\/(StaticReports\/Fortnightly_Sector_wise_FII_Investment_Data\/[\w.-]+\.html)$/;
+
+/**
+ * The fortnightly reports the selection page lists, newest first. Each option
+ * points at a static page, so no form post is needed to read one.
+ */
+export function fortnightlyReportLinks(html: string): { date: string; url: string }[] {
+  const select = /<select[^>]*ddlfortnighly[^>]*>([\s\S]*?)<\/select>/i.exec(html)?.[1] ?? "";
+  return [...select.matchAll(/<option[^>]*value="([^"]*)"[^>]*>([^<]*)</gi)].flatMap(([, value, label]) => {
+    const path = REPORT_PATH.exec(value.trim())?.[1];
+    // "JUNE 30, 2026": the month reader expects lower-case after its first three letters.
+    const date = isoDate(cellText(label).toLowerCase());
+    return path && date ? [{ date, url: `https://www.fpi.nsdl.co.in/web/${path}` }] : [];
+  });
+}
+
+export type FpiSectorRow = {
+  fortnight_end: string; sector: string;
+  equity_net_cr: number | null; debt_net_cr: number | null; other_net_cr: number | null; total_net_cr: number | null;
+  equity_net_usd_mn: number | null; total_net_usd_mn: number | null;
+  equity_auc_cr: number | null; total_auc_cr: number | null; total_auc_usd_mn: number | null;
+};
+
+const HEADER_DATE = /([A-Za-z]+)\s+(?:\d{1,2}\s*-\s*)?(\d{1,2}),\s*(\d{4})/;
+const headerDate = (label: string) => {
+  const m = HEADER_DATE.exec(label);
+  return m ? isoDate(`${m[1]} ${m[2]}, ${m[3]}`) : null;
+};
+
+/**
+ * One report covers two fortnights: assets under custody at the start, the
+ * net investment in each fortnight, and custody at the end - each in rupees
+ * and dollars, split by asset class (equity, three debt routes, hybrid, five
+ * mutual-fund kinds, AIF, total). A fortnight's row pairs its net investment
+ * with the custody figure dated the day it ends. "Grand Total" is kept as "Total".
+ */
+export function parseFpiSectorFortnightly(html: string): FpiSectorRow[] {
+  const table = [...html.matchAll(/<table[^>]*>([\s\S]*?)<\/table>/gi)].map(([, t]) => tableRows(t)).find((rows) => rows.some((r) => r[1] === "Sectors"));
+  if (!table) return [];
+  const periods = (table.find((r) => r.some((c) => /^AUC as on/i.test(c))) ?? []).filter((c) => c);
+  const names = table.find((r) => r[1] === "Sectors") ?? [];
+  const blocks = periods.length * 2;
+  const width = blocks > 0 ? (names.length - 2) / blocks : 0;
+  if (periods.length !== 4 || !Number.isInteger(width) || width < 2) return [];
+  const sub = names.slice(2, 2 + width);
+  const firstHybrid = sub.indexOf("Hybrid");
+  const debtCols = sub.map((name, i) => (/^Debt/.test(name) && (firstHybrid === -1 || i < firstHybrid) ? i : -1)).filter((i) => i >= 0);
+  const dates = periods.map(headerDate);
+  // [AUC start, net first half, net second half, AUC end]
+  const fortnights = [{ net: 1, auc: 0 }, { net: 2, auc: 3 }];
+  if (dates.some((d) => !d) || dates[0] !== dates[1] || dates[2] !== dates[3]) return [];
+
+  const out: FpiSectorRow[] = [];
+  for (const row of table) {
+    if (row.length !== names.length || !row[1] || row[1] === "Sectors") continue;
+    const sector = /^grand total$/i.test(row[1]) ? "Total" : row[1];
+    const at = (period: number, usd: boolean, col: number) => num(row[2 + (period * 2 + (usd ? 1 : 0)) * width + col]);
+    const sum = (period: number, cols: number[]) => cols.reduce<number | null>((s, c) => { const v = at(period, false, c); return v === null ? s : (s ?? 0) + v; }, null);
+    for (const f of fortnights) {
+      const equity = at(f.net, false, 0);
+      const debt = sum(f.net, debtCols);
+      const total = at(f.net, false, width - 1);
+      out.push({
+        fortnight_end: dates[f.net]!, sector,
+        equity_net_cr: equity, debt_net_cr: debt,
+        other_net_cr: total === null ? null : Math.round((total - (equity ?? 0) - (debt ?? 0)) * 100) / 100, total_net_cr: total,
+        equity_net_usd_mn: at(f.net, true, 0), total_net_usd_mn: at(f.net, true, width - 1),
+        equity_auc_cr: at(f.auc, false, 0), total_auc_cr: at(f.auc, false, width - 1), total_auc_usd_mn: at(f.auc, true, width - 1),
+      });
+    }
+  }
+  return out;
+}
+
+// ---------------------------------------------------------------------------
 // MoSPI monthly macro
 // ---------------------------------------------------------------------------
 

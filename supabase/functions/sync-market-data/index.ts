@@ -1,7 +1,7 @@
 // Market data from NSE, BSE, niftyindices and NSDL, one dataset per call:
 //
-//   POST { dataset: "index_valuation" | "participant_oi" | "option_chain" | "eq_eod"
-//          | "pledges" | "deals" | "nse_ipos" | "fpi" | "week52" | "movers"
+//   POST { dataset: "index_valuation" | "participant_oi" | "option_chain" | "fo_bhavcopy" | "eq_eod"
+//          | "pledges" | "deals" | "nse_ipos" | "fpi" | "fpi_sectors" | "week52" | "movers"
 //          | "constituents" | "surveillance" | "lot_sizes" | "calendar"
 //          | "macro_ingest", backfill?: true, rows?: [...] }
 //
@@ -24,7 +24,8 @@ import {
   parseLotSizes, parseMovers, parseNseBhavdataFull, parseNseIpos, parseParticipantOi, parsePledges, parseWeek52,
   weekdaysBack, yyyymmdd, type DealKind,
 } from "../_shared/market-files.ts";
-import { parseBseResultsCalendar, parseFpiDaily, parseNseEventCalendar, type MacroMonthly } from "../_shared/market-extra.ts";
+import { fortnightlyReportLinks, parseBseResultsCalendar, parseFpiDaily, parseFpiSectorFortnightly, parseNseEventCalendar, type MacroMonthly } from "../_shared/market-extra.ts";
+import { parseFoBhavcopy, summariseUnderlyings, unzipFirstFile } from "../_shared/fo-bhavcopy.ts";
 import { aroundSpot, contractInfoUrl, INDEX_UNDERLYINGS, optionChainUrl, parseContractInfo, parseOptionChainV3, summariseChain } from "../_shared/option-chain.ts";
 
 const cors = {
@@ -50,6 +51,13 @@ async function fetchText(url: string, headers: Record<string, string> = NSE_HEAD
   return text;
 }
 const fetchJson = async (url: string, headers: Record<string, string> = NSE_HEADERS) => JSON.parse(await fetchText(url, headers));
+
+async function fetchBytes(url: string): Promise<Uint8Array> {
+  const res = await fetch(url, { headers: { ...NSE_HEADERS, Accept: "*/*" }, signal: AbortSignal.timeout(40_000) });
+  if (res.status === 404) { await res.body?.cancel(); throw new NotFound(url); }
+  if (!res.ok) { await res.body?.cancel(); throw new Error(`HTTP ${res.status} for ${new URL(url).pathname}`); }
+  return new Uint8Array(await res.arrayBuffer());
+}
 
 async function upsert(sb: SupabaseClient, table: string, rows: Record<string, unknown>[], onConflict: string): Promise<number> {
   for (let i = 0; i < rows.length; i += 1000) {
@@ -112,6 +120,22 @@ const eqEodFor = (ctx: Ctx, codes: Map<string, string>) => async (date: string) 
   return rows;
 };
 
+/**
+ * Keeps the price table's growth bounded (~100 MB a year for every NSE
+ * security): stocks the site tracks keep their whole history; every other
+ * security keeps 400 days. One day's slice past the cut-off per run.
+ */
+async function pruneUntracked(sb: SupabaseClient): Promise<number | string> {
+  const cutoff = daysAgo(400);
+  const { data: tracked } = await sb.from("screener_stocks").select("symbol");
+  const keep = (tracked ?? []).map((t) => t.symbol as string);
+  if (keep.length === 0) return 0;
+  const { error, count } = await sb.from("eq_eod").delete({ count: "exact" })
+    .lt("trade_date", cutoff).gte("trade_date", daysAgo(430))
+    .not("symbol", "in", `(${keep.map((k) => `"${k.replace(/"/g, '""')}"`).join(",")})`);
+  return error ? `prune failed: ${error.message}` : count ?? 0;
+}
+
 async function universeResolver(sb: SupabaseClient) {
   const { data } = await sb.from("screener_stocks").select("symbol,name");
   return symbolResolver((data ?? []) as { symbol: string; name: string }[]);
@@ -173,11 +197,42 @@ async function run(ctx: Ctx, dataset: string, body: Record<string, unknown>): Pr
       }
       return { rows: await upsert(sb, "option_chain_eod", out, "trade_date,symbol,expiry") };
     }
+    case "fo_bhavcopy": {
+      // Every F&O underlying: option OI by strike for the nearest expiry, and the
+      // near-month future's price and OI change (build-up). ~95 ms of CPU for the file.
+      for (const date of weekdaysBack(today, 7)) {
+        try {
+          const text = await unzipFirstFile(await fetchBytes(`${ARCHIVE}/content/fo/BhavCopy_NSE_FO_0_0_0_${yyyymmdd(date)}_F_0000.csv.zip`));
+          const snaps = summariseUnderlyings(parseFoBhavcopy(text)).map((s) => ({ ...s, captured_at: new Date().toISOString() }));
+          // The live index chains carry implied volatility the bhavcopy does not, so
+          // where one is stored for the day only the futures columns are added to it.
+          const fileDate = snaps[0]?.trade_date ?? date;
+          const { data: live } = await sb.from("option_chain_eod").select("symbol,expiry").eq("trade_date", fileDate).in("symbol", INDEX_UNDERLYINGS);
+          const liveKeys = new Set((live ?? []).map((r) => `${r.symbol}|${r.expiry}`));
+          const futuresOnly = snaps.filter((s) => liveKeys.has(`${s.symbol}|${s.expiry}`));
+          for (const s of futuresOnly) {
+            const { error } = await sb.from("option_chain_eod")
+              .update({ fut_close: s.fut_close, fut_prev_close: s.fut_prev_close, fut_oi: s.fut_oi, fut_oi_change: s.fut_oi_change, build_up: s.build_up, lot_size: s.lot_size })
+              .eq("trade_date", fileDate).eq("symbol", s.symbol).eq("expiry", s.expiry);
+            if (error) throw new Error(`option_chain_eod: ${error.message}`);
+          }
+          const full = snaps.filter((s) => !liveKeys.has(`${s.symbol}|${s.expiry}`));
+          return { date: fileDate, underlyings: await upsert(sb, "option_chain_eod", full, "trade_date,symbol,expiry"), merged: futuresOnly.length };
+        } catch (e) {
+          if (!(e instanceof NotFound) && !/not a zip/.test((e as Error).message)) throw e;
+        }
+        await sleep(600);
+      }
+      return { rows: 0, note: "no F&O bhavcopy in the last week" };
+    }
     case "eq_eod": {
       const codes = await bseCodes(sb);
       if (body.backfill) return await backfill(ctx, dataset, 365, 8, eqEodFor(ctx, codes));
       for (const date of weekdaysBack(today, 7)) {
-        try { return { date, rows: await eqEodFor(ctx, codes)(date) }; } catch (e) { if (!(e instanceof NotFound)) throw e; }
+        try {
+          const rows = await eqEodFor(ctx, codes)(date);
+          return { date, rows, pruned: await pruneUntracked(sb) };
+        } catch (e) { if (!(e instanceof NotFound)) throw e; }
         await sleep(600);
       }
       return { rows: 0, note: "no file in the last week" };
@@ -216,6 +271,24 @@ async function run(ctx: Ctx, dataset: string, body: Record<string, unknown>): Pr
     case "fpi": {
       const rows = parseFpiDaily(await fetchText("https://www.fpi.nsdl.co.in/web/Reports/Latest.aspx", { "User-Agent": NSE_HEADERS["User-Agent"] }));
       return { rows: await upsert(sb, "fpi_daily", rows, "report_date,section,category,route"), date: rows[0]?.report_date ?? null };
+    }
+    case "fpi_sectors": {
+      // The selection page lists every report; each report carries two fortnights,
+      // so a daily call reads the newest two and a backfill every other one for a year.
+      const nsdl = { "User-Agent": NSE_HEADERS["User-Agent"] };
+      const links = fortnightlyReportLinks(await fetchText("https://www.fpi.nsdl.co.in/web/Reports/FPI_Fortnightly_Selection.aspx", nsdl));
+      if (links.length === 0) throw new Error("no fortnightly reports listed");
+      const picked = body.backfill ? links.filter((l) => l.date >= daysAgo(400)).filter((_, i) => i % 2 === 0) : links.slice(0, 2);
+      let rows = 0;
+      const read: string[] = [];
+      for (const link of picked) {
+        if (Date.now() - ctx.started > RUN_BUDGET_MS) break;
+        const parsed = parseFpiSectorFortnightly(await fetchText(link.url, nsdl)).map((r) => ({ ...r, fetched_at: new Date().toISOString() }));
+        rows += await upsert(sb, "fpi_sector_fortnightly", parsed, "fortnight_end,sector");
+        read.push(link.date);
+        await sleep(800);
+      }
+      return { rows, reports: read, wrapped: read.length === picked.length };
     }
     case "week52": {
       const f = await latestFile((d) => `${ARCHIVE}/content/CM_52_wk_High_low_${ddmmyyyy(d)}.csv`);

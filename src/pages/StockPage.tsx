@@ -47,6 +47,7 @@ const AIAnalysisModal = lazy(() => import("@/components/AIAnalysisModal"));
 // recharts is heavy; only a stock with stored statements downloads it.
 const StockCharts = lazy(() => import("@/components/stock/StockCharts"));
 const ExchangeHistory = lazy(() => import("@/components/stock/ExchangeHistory"));
+const StockFnO = lazy(() => import("@/components/stock/StockFnO"));
 
 export default function StockPage() {
   const { symbol } = useParams<{ symbol: string }>();
@@ -234,6 +235,7 @@ export default function StockPage() {
             {s.header && (
               <Suspense fallback={null}>
                 <ExchangeHistory symbol={s.header.symbol} />
+                <StockFnO symbol={s.header.symbol} />
               </Suspense>
             )}
 
