@@ -13,7 +13,7 @@
 
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { nextData, parseTickertape, sitemapCandidates, type TickertapeStock } from "../_shared/tickertape.ts";
-import { TICKERTAPE_PATHS } from "../_shared/tickertape-slugs.ts";
+import { TICKERTAPE_PATHS, TICKERTAPE_RENAMED } from "../_shared/tickertape-slugs.ts";
 import { cursorAfter, nextBatch } from "../_shared/batch-cursor.ts";
 
 const cors = {
@@ -71,7 +71,8 @@ Deno.serve(async (req) => {
   const readPage = async (symbol: string, path: string): Promise<TickertapeStock | null> => {
     const props = nextData(await get(`https://www.tickertape.in${path}`, "text/html"));
     const stock = props ? parseTickertape(props) : null;
-    return stock && stock.ticker === symbol ? { ...stock, url: stock.url ?? `https://www.tickertape.in${path}` } : null;
+    const accepted = [symbol, ...(TICKERTAPE_RENAMED[symbol]?.tickers ?? [])];
+    return stock && stock.ticker && accepted.includes(stock.ticker) ? { ...stock, url: stock.url ?? `https://www.tickertape.in${path}` } : null;
   };
 
   let done = 0;
@@ -84,7 +85,7 @@ Deno.serve(async (req) => {
     if (Date.now() - started > RUN_BUDGET_MS) break;
     const attemptedAt = new Date().toISOString();
     try {
-      const knownPath = storedPath.get(symbol) ?? TICKERTAPE_PATHS[symbol];
+      const knownPath = storedPath.get(symbol) ?? TICKERTAPE_PATHS[symbol] ?? TICKERTAPE_RENAMED[symbol]?.path;
       let stock = knownPath ? await readPage(symbol, knownPath) : null;
       if (!stock) {
         for (const path of (await sitemapPaths(symbol)).filter((p) => p !== knownPath).slice(0, 2)) {
@@ -107,6 +108,9 @@ Deno.serve(async (req) => {
       await supabase.from("stock_profiles").upsert({ symbol, tickertape_error: reason.slice(0, 300) }, { onConflict: "symbol" });
     }
     done++;
+    // Saved per stock, so a worker killed mid-batch resumes after the last
+    // stock done instead of repeating the batch - and dying on it - forever.
+    await supabase.from("sync_cursors").upsert({ job: JOB, cursor: batch[done - 1], updated_at: new Date().toISOString() }, { onConflict: "job" });
     await sleep(PACE_MS);
   }
 

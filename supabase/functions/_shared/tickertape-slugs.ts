@@ -114,4 +114,45 @@ export const TICKERTAPE_PATHS: Record<string, string> = {
   "KOTAKBANK": "/stocks/kotak-mahindra-bank-KTKM",
   "KPITTECH": "/stocks/kpit-technologies-KPIE",
   "LAURUSLABS": "/stocks/laurus-labs-LAUL",
+  "LTTS": "/stocks/landt-technology-services-LTEH",
+  "ONGC": "/stocks/oil-and-natural-gas-corporation-ONGC",
+  "PFC": "/stocks/power-finance-corporation-PWFC",
+  "PHOENIXLTD": "/stocks/phoenix-mills-PHOE",
+  "POWERGRID": "/stocks/power-grid-corporation-of-india-PGRD",
+  "POWERINDIA": "/stocks/abb-power-products-and-systems-india-ABBW",
+  "SIEMENS": "/stocks/siemens-SIEM",
+  "SUNPHARMA": "/stocks/sun-pharmaceutical-industries-SUN",
+  "TATAINVEST": "/stocks/tata-investment-corporation-TINV",
+  "TATAMETALI": "/stocks/tata-metaliks-TMET",
+  "TORNTPHARM": "/stocks/torrent-pharmaceuticals-TORP",
+};
+
+/**
+ * Companies Tickertape still files under a former name or ticker (its search
+ * index and page slugs predate the rename). The page's ticker must be the
+ * stock's own or one of these former tickers.
+ */
+export const TICKERTAPE_RENAMED: Record<string, { path: string; tickers: string[] }> = {
+  "POONAWALLA": { path: "/stocks/magma-fincorp-MAGM", tickers: ["MAGMA"] },
+  "ADANIENSOL": { path: "/stocks/adani-transmission-ADAI", tickers: ["ADANITRANS"] },
+  "ATGL": { path: "/stocks/adani-gas-ADAG", tickers: ["ADANIGAS"] },
+  "INDUSTOWER": { path: "/stocks/bharti-infratel-BHRI", tickers: ["INFRATEL"] },
+  "IREDA": { path: "/stocks/indian-renewable-energy-development-agency-IRE", tickers: [] },
+  "LTM": { path: "/stocks/larsen-and-toubro-infotech-LRTI", tickers: ["LTI", "LTIM"] },
+  "UNOMINDA": { path: "/stocks/minda-industries-MNDA", tickers: ["MINDAIND"] },
+  "TMPV": { path: "/stocks/tata-motors-TAMO", tickers: ["TATAMOTORS"] },
+  "LICI": { path: "/stocks/life-insurance-corporation-of-india-LIC", tickers: [] },
+  "NSDL": { path: "/stocks/national-securities-depository-NSD", tickers: [] },
+  "PATANJALI": { path: "/stocks/ruchi-soya-industries-RCSY", tickers: ["RUCHISOYA"] },
+  "STARHEALTH": { path: "/stocks/star-health-and-allied-insurance-company-STARH", tickers: [] },
+  "LTF": { path: "/stocks/landt-finance-holdings-LTFH", tickers: ["L&TFH"] },
+  "PAYTM": { path: "/stocks/one-97-communications-PAY", tickers: [] },
+  "360ONE": { path: "/stocks/iifl-wealth-management-IIFW", tickers: ["IIFLWAM"] },
+  "ANGELONE": { path: "/stocks/angel-broking-ANGE", tickers: ["ANGELBRKG"] },
+  "CAMS": { path: "/stocks/computer-age-management-services-CAMC", tickers: [] },
+  "SHRIRAMFIN": { path: "/stocks/shriram-transport-finance-company-SRTR", tickers: ["SRTRANSFIN"] },
+  "ETERNAL": { path: "/stocks/zomato-ZOM", tickers: ["ZOMATO"] },
+  "GMRAIRPORT": { path: "/stocks/gmr-infrastructure-GMRI", tickers: ["GMRINFRA"] },
+  "ZYDUSLIFE": { path: "/stocks/cadila-healthcare-CADI", tickers: ["CADILAHC"] },
+  "GVT&D": { path: "/stocks/ge-tandd-india-GETD", tickers: ["GET&D"] },
 };

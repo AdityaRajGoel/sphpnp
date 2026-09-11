@@ -94,7 +94,8 @@ export function toIsoTimestamp(indian: string): string | null {
 
 async function nseGet(url: string, asText = false): Promise<unknown> {
   for (let attempt = 0; attempt < 2; attempt++) {
-    const res = await fetch(url, { headers: NSE_HEADERS });
+    // A stalled response would otherwise hold the worker until it is killed.
+    const res = await fetch(url, { headers: NSE_HEADERS, signal: AbortSignal.timeout(30_000) });
     if (res.ok) return asText ? await res.text() : await res.json();
     // 4xx will not improve on retry.
     if (res.status < 500) {

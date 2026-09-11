@@ -20,10 +20,17 @@ const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...cors, "Content-Type": "application/json" } });
 
 const JOB = "nse-disclosures";
-const BATCH_SIZE = 20;
-const RUN_BUDGET_MS = 100_000;
+const BATCH_SIZE = 12;
+const RUN_BUDGET_MS = 70_000;
 /** Insider trades kept per stock: the latest disclosures, which is what the page shows. */
 const MAX_TRADES = 100;
+/**
+ * The insider-trade window asked for. Without one NSE returns a company's
+ * whole history - thousands of disclosures for a large bank - and a response
+ * that size killed the worker mid-batch (2026-09-11).
+ */
+const TRADE_WINDOW_DAYS = 365;
+const nseDay = (d: Date) => `${String(d.getUTCDate()).padStart(2, "0")}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${d.getUTCFullYear()}`;
 
 async function nseJson(url: string): Promise<unknown> {
   const res = await fetch(url, { headers: NSE_HEADERS, signal: AbortSignal.timeout(20_000) });
@@ -92,7 +99,7 @@ Deno.serve(async (req) => {
 
     try {
       const trades = parseInsiderTrades(
-        await nseJson(`https://www.nseindia.com/api/corporates-pit?index=equities&symbol=${encodeURIComponent(symbol)}`),
+        await nseJson(`https://www.nseindia.com/api/corporates-pit?index=equities&symbol=${encodeURIComponent(symbol)}&from_date=${nseDay(new Date(Date.now() - TRADE_WINDOW_DAYS * 86_400_000))}&to_date=${nseDay(new Date())}`),
         symbol,
       ).slice(0, MAX_TRADES);
       if (trades.length > 0) {
@@ -106,6 +113,9 @@ Deno.serve(async (req) => {
     }
     await sleep(NSE_DELAY_MS);
     done++;
+    // Saved per stock, so a worker killed mid-batch resumes after the last
+    // stock done instead of repeating the batch - and dying on it - forever.
+    await supabase.from("sync_cursors").upsert({ job: JOB, cursor: batch[done - 1], updated_at: new Date().toISOString() }, { onConflict: "job" });
   }
 
   const finished = wrapped && done >= batch.length;

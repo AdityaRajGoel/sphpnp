@@ -63,6 +63,9 @@ Deno.serve(async (req) => {
       failures.push({ symbol, reason: (e as Error).message });
     }
     done++;
+    // Saved per stock, so a worker killed mid-batch resumes after the last
+    // stock done instead of repeating the batch - and dying on it - forever.
+    await supabase.from("sync_cursors").upsert({ job: JOB, cursor: batch[done - 1], updated_at: new Date().toISOString() }, { onConflict: "job" });
     await sleep(PACE_MS);
   }
 
