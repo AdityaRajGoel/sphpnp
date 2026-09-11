@@ -39,6 +39,7 @@ const routes = [
   '/pricing',
   '/screener',
   '/ipo',
+  '/ipo-pipeline',
   '/fno',
   '/learn',
   '/learn/recommendations',
@@ -165,7 +166,7 @@ async function captureOnce(browser, port, route) {
 
     // The IPO pages render from fetch-ipos and mark themselves ready; the
     // detail page is noindex until then, so capturing early would ship noindex.
-    if (route === '/ipo' || route.startsWith('/ipo/')) {
+    if (route === '/ipo' || route === '/ipo-pipeline' || route.startsWith('/ipo/')) {
       await page.waitForSelector('[data-ipo-state="ready"]', { timeout: 25000 }).catch(() => {});
     }
 
@@ -173,7 +174,7 @@ async function captureOnce(browser, port, route) {
     if (route.startsWith('/stock/')) {
       assertStockPageCaptured(route, html);
     }
-    if (route === '/ipo' || route.startsWith('/ipo/')) {
+    if (route === '/ipo' || route === '/ipo-pipeline' || route.startsWith('/ipo/')) {
       assertIpoPageCaptured(route, html);
     }
     return html;

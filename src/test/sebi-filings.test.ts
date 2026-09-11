@@ -102,6 +102,14 @@ describe("buildPipeline", () => {
     expect(c.stage).toBe("rhp_filed");
   });
 
+  it("treats a red herring filing older than a month as a launched issue", () => {
+    // An RHP is filed about a week before an issue opens. One from months ago
+    // means the issue opened long since - it just predates our catalogue - and
+    // "about to launch" would be false.
+    const [c] = buildPipeline([filing({ company: "Old Issue Limited", kind: "rhp", category: "rhp", filed_on: "2025-11-20" })], [], today);
+    expect(c).toMatchObject({ stage: "launched", ipo_slug: null });
+  });
+
   it("links a company to its IPO page once the issue is in the catalogue", () => {
     const [c] = buildPipeline(
       [filing({ company: "LCC PROJECTS LIMITED", kind: "rhp", category: "rhp", filed_on: "2026-09-01" })],

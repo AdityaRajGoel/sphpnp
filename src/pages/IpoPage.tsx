@@ -92,6 +92,7 @@ export default function IpoPage() {
         <Badge className="bg-brand-gold/20 text-brand-gold border-brand-gold/30 mb-5"><Rocket className="w-3.5 h-3.5 mr-1.5" />IPO Central</Badge>
         <h1 className="font-heading text-4xl md:text-6xl font-bold max-w-3xl leading-tight">IPO decisions, grounded in the details.</h1>
         <p className="mt-5 max-w-2xl text-primary-foreground/70 text-base md:text-lg">Issue dates, price bands and a transparent record of observed GMP—not a recommendation to apply, buy or sell.</p>
+        <Link to="/ipo-pipeline" className="mt-6 inline-flex items-center gap-2 rounded-lg border border-primary-foreground/30 px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-foreground/10 transition-colors">See the IPO pipeline: companies that have filed with SEBI <ArrowRight className="h-4 w-4" /></Link>
       </div></section>
       <section className="container mx-auto px-4 max-w-6xl py-10 md:py-14 pb-28">
         <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-foreground"><strong>Important:</strong> Grey market premium (GMP) is unofficial, unregulated and can change quickly. It is shown for information only and is not investment advice or a prediction of listing performance.</div>

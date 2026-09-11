@@ -45,6 +45,7 @@ const urls = [
   { loc: '/about',               changefreq: 'monthly', priority: '0.8',  lastmod: today },
   { loc: '/screener',            changefreq: 'daily',   priority: '0.8',  lastmod: today },
   { loc: '/ipo',                 changefreq: 'daily',   priority: '0.85', lastmod: today },
+  { loc: '/ipo-pipeline',        changefreq: 'daily',   priority: '0.8',  lastmod: today },
   ...ipoRoutes.map(route => ({ loc: route, changefreq: 'daily', priority: '0.6', lastmod: today })),
   // Per-symbol stock pages (the screener's children)
   ...stockRoutes.map(route => ({ loc: route, changefreq: 'weekly', priority: '0.6', lastmod: today })),

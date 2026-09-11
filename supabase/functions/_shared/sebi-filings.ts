@@ -127,6 +127,13 @@ export function parseSebiListing(html: string, category: FilingCategory): { fili
 export const PIPELINE_WINDOW_DAYS = 548;
 
 /**
+ * An RHP is filed about a week before an issue opens. One older than this
+ * means the issue has opened (and usually listed) even when it is not in our
+ * catalogue, so the company is no longer "about to launch".
+ */
+const RHP_LAUNCHED_AFTER_DAYS = 30;
+
+/**
  * One entry per company, most recently active first. The stage is the
  * furthest the filings (and our catalogue) show it has come. An IPO in the
  * catalogue is linked only if it opened on or after the company's first
@@ -137,7 +144,9 @@ export function buildPipeline(
   ipos: { slug: string; name: string; open_date: string | null }[],
   today: string,
 ): PipelineCompany[] {
-  const cutoff = new Date(Date.parse(`${today}T00:00:00Z`) - PIPELINE_WINDOW_DAYS * 86_400_000).toISOString().slice(0, 10);
+  const daysAgo = (days: number) => new Date(Date.parse(`${today}T00:00:00Z`) - days * 86_400_000).toISOString().slice(0, 10);
+  const cutoff = daysAgo(PIPELINE_WINDOW_DAYS);
+  const launchedCutoff = daysAgo(RHP_LAUNCHED_AFTER_DAYS);
   const groups = new Map<string, SebiFiling[]>();
   for (const f of filings) {
     const key = ipoMatchKey(f.company);
@@ -155,9 +164,10 @@ export function buildPipeline(
     const name = displayCompanyName(sorted.find((f) => /[a-z]/.test(f.company))?.company ?? sorted[0].company);
 
     const ipo = ipos.find((i) => ipoMatchKey(i.name) === key && (i.open_date === null || i.open_date >= first));
-    const stage: PipelineStage = ipo
+    const latestRhp = sorted.find((f) => f.category === "rhp")?.filed_on ?? null;
+    const stage: PipelineStage = ipo || (latestRhp !== null && latestRhp < launchedCutoff)
       ? "launched"
-      : group.some((f) => f.category === "rhp")
+      : latestRhp !== null
       ? "rhp_filed"
       : group.some((f) => f.kind === "udrhp")
       ? "udrhp_filed"
