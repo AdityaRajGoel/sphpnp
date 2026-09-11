@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { fetchStockRoutes } from './lib/stock-routes.mjs';
+import { fetchIpoRoutes } from './lib/ipo-routes.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const today = new Date().toISOString().split('T')[0];
@@ -29,6 +30,9 @@ if (learnArticleSlugs.length === 0) {
 // search engines never find. fetchStockRoutes throws on an empty or failed
 // fetch, so a bad response fails the build rather than silently shrinking it.
 const stockRoutes = await fetchStockRoutes();
+// Every IPO page in the catalogue - they were all answering crawlers with the
+// 404 page before the prerender learned about them.
+const ipoRoutes = await fetchIpoRoutes();
 
 const urls = [
   { loc: '/',                    changefreq: 'daily',   priority: '1.0',  lastmod: today },
@@ -40,6 +44,8 @@ const urls = [
   { loc: '/depository-services', changefreq: 'weekly',  priority: '0.85', lastmod: today },
   { loc: '/about',               changefreq: 'monthly', priority: '0.8',  lastmod: today },
   { loc: '/screener',            changefreq: 'daily',   priority: '0.8',  lastmod: today },
+  { loc: '/ipo',                 changefreq: 'daily',   priority: '0.85', lastmod: today },
+  ...ipoRoutes.map(route => ({ loc: route, changefreq: 'daily', priority: '0.6', lastmod: today })),
   // Per-symbol stock pages (the screener's children)
   ...stockRoutes.map(route => ({ loc: route, changefreq: 'weekly', priority: '0.6', lastmod: today })),
   { loc: '/learn',               changefreq: 'weekly',  priority: '0.8',  lastmod: today },

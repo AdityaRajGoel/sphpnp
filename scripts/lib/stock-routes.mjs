@@ -11,7 +11,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
  * The key is read from the client module, where it already lives as a hardcoded
  * fallback and is shipped in the browser bundle - so this adds no exposure.
  */
-function readSupabaseConfig() {
+export function readSupabaseConfig() {
   const src = fs.readFileSync(
     path.resolve(__dirname, '../../src/integrations/supabase/client.ts'),
     'utf-8',

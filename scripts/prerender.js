@@ -3,6 +3,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import express from 'express';
 import { fetchStockRoutes } from './lib/stock-routes.mjs';
+import { fetchIpoRoutes, assertIpoPageCaptured } from './lib/ipo-routes.mjs';
 import { routeToFilePath } from './lib/route-paths.mjs';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DIST_DIR = path.resolve(__dirname, '../dist');
@@ -37,6 +38,7 @@ const routes = [
   '/open-account',
   '/pricing',
   '/screener',
+  '/ipo',
   '/fno',
   '/learn',
   '/learn/recommendations',
@@ -161,9 +163,18 @@ async function captureOnce(browser, port, route) {
         .catch(() => {});
     }
 
+    // The IPO pages render from fetch-ipos and mark themselves ready; the
+    // detail page is noindex until then, so capturing early would ship noindex.
+    if (route === '/ipo' || route.startsWith('/ipo/')) {
+      await page.waitForSelector('[data-ipo-state="ready"]', { timeout: 25000 }).catch(() => {});
+    }
+
     const html = await page.content();
     if (route.startsWith('/stock/')) {
       assertStockPageCaptured(route, html);
+    }
+    if (route === '/ipo' || route.startsWith('/ipo/')) {
+      assertIpoPageCaptured(route, html);
     }
     return html;
   } finally {
@@ -236,8 +247,17 @@ async function prerender() {
 
       const stockRoutes = await fetchStockRoutes();
       console.log(`Derived ${stockRoutes.length} stock routes from screener_stocks.`);
+      const ipoRoutes = await fetchIpoRoutes();
+      console.log(`Derived ${ipoRoutes.length} IPO routes from ipos.`);
 
-      for (const route of [...routes, ...stockRoutes, ERROR_ROUTE]) {
+      // New IPOs arrive several times a day, but pages are only prerendered on
+      // deploy. vercel.json rewrites any /ipo/:slug without a file to this shell,
+      // so an issue added since the last deploy is a 200 that renders in the
+      // browser, not a 404. It is the raw build output - no canonical, no
+      // robots tag - copied now, before the "/" capture below overwrites it.
+      fs.copyFileSync(path.join(DIST_DIR, 'index.html'), path.join(DIST_DIR, 'ipo-shell.html'));
+
+      for (const route of [...routes, ...stockRoutes, ...ipoRoutes, ERROR_ROUTE]) {
         console.log(`Prerendering ${route}...`);
 
         const html = await captureWithRetry(browser, port, route);

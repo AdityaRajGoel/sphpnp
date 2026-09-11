@@ -106,7 +106,8 @@ export default function IpoPage() {
 
         <IPOFilterBar filters={filters} onChange={setFilters} counts={statusCounts} />
 
-        <div className="mt-6">
+        {/* The prerender waits for "ready" before capturing - see scripts/lib/ipo-routes.mjs. */}
+        <div className="mt-6" data-ipo-state={loading ? "loading" : error ? "error" : "ready"}>
           {loading ? (
             <div className="grid md:grid-cols-2 gap-4">{[1, 2, 3, 4].map((item) => <div key={item} className="h-56 animate-pulse rounded-xl bg-muted" />)}</div>
           ) : error ? (
