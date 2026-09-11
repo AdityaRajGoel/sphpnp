@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type {
   HolderSeries, KeyMetrics, MovingAverage, RoePoint, StatementGrid, StatementKind,
 } from "@/lib/statements";
+import type { ScreenerProfile, TickertapeProfile } from "@/lib/stock-disclosures";
 
 export type StockProfile = {
   company_name: string | null;
@@ -16,6 +17,13 @@ export type StockProfile = {
   /** Google Finance key stats (via SerpApi), for stocks IndianAPI covered thinly or not at all. */
   google_finance: { pe: number | null; eps: number | null; dividend_yield_pct: number | null } | null;
   google_finance_fetched_at: string | null;
+  /** screener.in's company page: headline ratios, growth, pros and cons, documents. */
+  screener: ScreenerProfile | null;
+  screener_fetched_at: string | null;
+  /** Tickertape: analysts, fund holdings, scorecard. */
+  tickertape: TickertapeProfile | null;
+  tickertape_fetched_at: string | null;
+  bse_code: string | null;
 };
 
 export type StockStatementsState = {
@@ -52,10 +60,10 @@ export function useStockStatements(symbol: string | undefined): StockStatementsS
       try {
         const [statementsRes, profileRes] = await Promise.all([
           table("stock_statements")
-            .select("statement,periods,period_ends,rows,verified,fetched_at")
+            .select("statement,periods,period_ends,rows,verified,fetched_at,source")
             .eq("symbol", upper),
           table("stock_profiles")
-            .select("company_name,industry,description,key_metrics,moving_averages,shareholding,roe_history,fetched_at,google_finance,google_finance_fetched_at")
+            .select("company_name,industry,description,key_metrics,moving_averages,shareholding,roe_history,fetched_at,google_finance,google_finance_fetched_at,screener,screener_fetched_at,tickertape,tickertape_fetched_at,bse_code")
             .eq("symbol", upper)
             .maybeSingle(),
         ]);
@@ -72,7 +80,7 @@ export function useStockStatements(symbol: string | undefined): StockStatementsS
           error: null,
           statements,
           // A profile row that only records failed attempts has nothing to show.
-          profile: profile?.fetched_at || profile?.google_finance_fetched_at ? profile : null,
+          profile: profile?.fetched_at || profile?.google_finance_fetched_at || profile?.screener_fetched_at || profile?.tickertape_fetched_at ? profile : null,
         });
       } catch (error) {
         if (!cancelled) setState({ ...EMPTY, loading: false, error: (error as Error).message });

@@ -104,7 +104,7 @@ export default function FundamentalsTable({ rows, summaries }: Props) {
       <p className="text-xs text-muted-foreground">
         Fundamentals for {covered} of {rows.length} stocks shown. ROE, ROCE and D/E are from the latest fiscal year;
         OPM and YoY growth compare the latest reported quarter with the same quarter a year earlier. Built daily from
-        company filings via IndianAPI (Screener-style statements) and Google Finance; a dash means the source does not
+        company filings via screener.in, IndianAPI and Google Finance; a dash means the source does not
         report that figure. Not investment advice.
       </p>
     </div>

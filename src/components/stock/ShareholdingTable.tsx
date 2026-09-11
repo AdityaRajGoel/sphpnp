@@ -2,12 +2,16 @@ import { motion } from "motion/react";
 import { Card } from "@/components/ui/card";
 import { revealSection } from "@/lib/motion";
 import { latestHolding, type HolderSeries } from "@/lib/statements";
+import { webHref, type ShareholdingFiling } from "@/lib/stock-disclosures";
 
 const quarter = (iso: string) =>
   new Date(`${iso}T00:00:00Z`).toLocaleDateString("en-IN", { month: "short", year: "numeric", timeZone: "UTC" });
 
-/** Last four quarterly filings per holder category, with the latest change. */
-export default function ShareholdingTable({ shareholding }: { shareholding: HolderSeries[] }) {
+/**
+ * Last four quarterly filings per holder category, with the latest change,
+ * and the promoter share as the company's own filing with NSE states it.
+ */
+export default function ShareholdingTable({ shareholding, filing = null }: { shareholding: HolderSeries[]; filing?: ShareholdingFiling | null }) {
   if (shareholding.length === 0) return null;
   const dates = [...new Set(shareholding.flatMap((s) => s.points.map((p) => p.date)))].sort().slice(-4);
 
@@ -49,6 +53,13 @@ export default function ShareholdingTable({ shareholding }: { shareholding: Hold
           </tbody>
         </table>
       </Card>
+      {filing && filing.promoter_pct !== null && (
+        <p className="mt-3 text-xs text-muted-foreground">
+          Filed with NSE for {quarter(filing.quarter_end)}: promoters {filing.promoter_pct.toFixed(2)}%
+          {filing.public_pct !== null && <>, public {filing.public_pct.toFixed(2)}%</>}
+          {webHref(filing.xbrl_url) && <> · <a href={webHref(filing.xbrl_url)} target="_blank" rel="noopener noreferrer nofollow" className="underline hover:text-primary">XBRL filing</a></>}
+        </p>
+      )}
     </motion.section>
   );
 }

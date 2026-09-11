@@ -19,7 +19,7 @@ import { revealSection } from "@/lib/motion";
 import { formatCrore } from "@/lib/fundamentals";
 import { useStockFundamentals } from "@/hooks/useStockFundamentals";
 import { useStockStatements } from "@/hooks/useStockStatements";
-import { googleRoe } from "@/lib/statements";
+import { googleRoe, statementSourceLabel } from "@/lib/statements";
 import QuoteMetrics from "@/components/stock/QuoteMetrics";
 import StockPriceChart from "@/components/stock/StockPriceChart";
 import IncomeStatementTable from "@/components/stock/IncomeStatementTable";
@@ -27,6 +27,12 @@ import RatiosPanel from "@/components/stock/RatiosPanel";
 import CorporateActionsList from "@/components/stock/CorporateActionsList";
 import SebiActionsList from "@/components/stock/SebiActionsList";
 import StockNews from "@/components/stock/StockNews";
+import CompanyInsights from "@/components/stock/CompanyInsights";
+import CompanyDocuments from "@/components/stock/CompanyDocuments";
+import InsiderTrades from "@/components/stock/InsiderTrades";
+import BseAnnouncements from "@/components/stock/BseAnnouncements";
+import AnalystFundView from "@/components/stock/AnalystFundView";
+import { useStockDisclosures } from "@/hooks/useStockDisclosures";
 import StockProvenance from "@/components/stock/StockProvenance";
 import SymbolSwitcher from "@/components/stock/SymbolSwitcher";
 import StatementsSection from "@/components/stock/StatementsSection";
@@ -43,6 +49,7 @@ export default function StockPage() {
   const { symbol } = useParams<{ symbol: string }>();
   const s = useStockFundamentals(symbol);
   const st = useStockStatements(symbol);
+  const disclosures = useStockDisclosures(symbol);
   const [askingAI, setAskingAI] = useState(false);
 
   // `synced` and `basis` are set together by selectBasis() inside the hook
@@ -246,11 +253,15 @@ export default function StockPage() {
                     statements={st.statements}
                     shareholding={st.profile?.shareholding ?? []}
                     roeHistory={st.profile?.roe_history}
-                    source={st.statements.quarter_results ? "IndianAPI" : "Google Finance"}
+                    source={statementSourceLabel(st.statements)}
                   />
                 </Suspense>
                 <StatementsSection statements={st.statements} />
-                {st.profile && <ShareholdingTable shareholding={st.profile.shareholding} />}
+                {st.profile?.screener && <CompanyInsights screener={st.profile.screener} />}
+                {st.profile && <ShareholdingTable shareholding={st.profile.shareholding} filing={disclosures?.shareholding ?? null} />}
+                {st.profile?.tickertape && (
+                  <AnalystFundView tickertape={st.profile.tickertape} pe={s.header?.pe ?? st.profile.screener?.top_ratios.pe ?? null} />
+                )}
               </>
             ) : basis === null ? (
               <Card className="p-6">
@@ -277,7 +288,10 @@ export default function StockPage() {
             )}
 
             <CorporateActionsList actions={s.actions} />
+            {disclosures && <InsiderTrades trades={disclosures.trades} />}
+            {disclosures && <BseAnnouncements items={disclosures.announcements} bseCode={st.profile?.bse_code ?? null} />}
             {s.header && <SebiActionsList symbol={s.header.symbol} />}
+            {st.profile?.screener && <CompanyDocuments documents={st.profile.screener.documents} />}
             <StockProvenance filing={s.filing} />
           </div>
         )}

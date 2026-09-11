@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { revealSection } from "@/lib/motion";
-import {
+import { statementSourceLabel,
   ABSENT, formatStatementValue, statementTabs, visibleColumns, type StatementGrid, type StatementKind,
 } from "@/lib/statements";
 
@@ -108,7 +108,7 @@ export default function StatementsSection({ statements }: { statements: Partial<
         ))}
       </Tabs>
       <p className="text-xs text-muted-foreground mt-3">
-        Source: {source === "google_finance" ? "Google Finance via SerpApi" : "IndianAPI"}, updated {asOf(fetchedAt)}.
+        Source: {statementSourceLabel(statements)}, updated {asOf(fetchedAt)}.
         {source === "indianapi" ? " Consolidated figures where the company reports them." : " Rupee amounts converted to crore."}
         Information only, not investment advice.
       </p>

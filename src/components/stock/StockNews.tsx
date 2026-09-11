@@ -37,11 +37,11 @@ export default function StockNews({ symbol, name }: Props) {
         )}
       </div>
       {!news ? (
-        <div className="grid gap-3 md:grid-cols-2">
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
           {[0, 1, 2, 3].map((i) => <Skeleton key={i} className="h-20 w-full" />)}
         </div>
       ) : (
-        <ul className="grid gap-3 md:grid-cols-2">
+        <ul className="grid grid-cols-1 gap-3 md:grid-cols-2">
           {news.items.map((item, i) => {
             const href = safeHref(item.url);
             return (

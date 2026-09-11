@@ -130,3 +130,12 @@ describe("cagr", () => {
     expect(cagr(years([-5, 10, 20, 30]), "profit", 3)).toBeNull();
   });
 });
+
+describe("quarterlyPerformance - a bank", () => {
+  it("draws no margin line from a bank's financing margin", () => {
+    const q = quarterlyPerformance({ quarter_results: grid("quarter_results", "hdfcbank-quarter_results") });
+    expect(q.length).toBeGreaterThan(0);
+    expect(q.every((p) => p.margin === null)).toBe(true);
+    expect(q[q.length - 1].revenue).not.toBeNull();
+  });
+});

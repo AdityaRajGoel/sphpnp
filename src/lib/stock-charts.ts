@@ -38,7 +38,8 @@ function performance(grid: StatementGrid | undefined, max: number, google: boole
   if (!grid) return [];
   const revenue = rowOf(grid, google ? /^Revenue$/ : /^(Sales|Revenue)$/);
   const profit = rowOf(grid, google ? /^Net income$/ : /^Net Profit$/);
-  const opm = google ? undefined : rowOf(grid, /^(OPM %|Financing Margin %)$/);
+  // A bank's "Financing Margin %" is not an operating margin; banks get no margin line.
+  const opm = google ? undefined : rowOf(grid, /^OPM %$/);
   const operating = google ? rowOf(grid, /^Operating income$/) : undefined;
   const points = datedColumns(grid, max).map(({ p, i }) => {
     const rev = at(revenue, i);

@@ -7,7 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
  */
 export type FundamentalsSummary = {
   symbol: string;
-  source: "indianapi" | "google_finance";
+  source: "indianapi" | "screener_in" | "google_finance";
   roe: number | null;
   roce: number | null;
   opm: number | null;
@@ -36,6 +36,7 @@ export const FUNDAMENTAL_COLUMNS: { key: FundamentalsKey; label: string; title: 
 
 export const SOURCE_LABEL: Record<FundamentalsSummary["source"], string> = {
   indianapi: "IndianAPI",
+  screener_in: "screener.in",
   google_finance: "Google Finance",
 };
 

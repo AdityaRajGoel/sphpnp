@@ -23,6 +23,8 @@ export type StatementGrid = {
   rows: StatementRow[];
   verified: boolean;
   fetched_at: string;
+  /** Who served the grid: "indianapi", "screener_in" or "google_finance". */
+  source?: string;
 };
 
 export type KeyMetrics = Record<string, Record<string, number | null>>;
@@ -154,4 +156,12 @@ export function statementTabs(statements: Partial<Record<StatementKind, Statemen
 export function googleRoe(statements: Partial<Record<StatementKind, StatementGrid>>): number | null {
   const row = statements.gf_balance_annual?.rows.find((r) => /^Return on equity/.test(r.label));
   return row ? [...row.values].reverse().find((v): v is number => v !== null) ?? null : null;
+}
+
+/** Where the shown statements came from, as the page credits it. */
+export function statementSourceLabel(statements: Partial<Record<StatementKind, StatementGrid>>): string {
+  const { source, tabs } = statementTabs(statements);
+  if (source === "google_finance") return "Google Finance via SerpApi";
+  const served = tabs.length > 0 ? statements[tabs[0].kind]?.source : undefined;
+  return served === "screener_in" ? "screener.in" : "IndianAPI";
 }

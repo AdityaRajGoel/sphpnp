@@ -16,7 +16,8 @@ type Props = {
   statements: Partial<Record<StatementKind, StatementGrid>>;
   shareholding: HolderSeries[];
   roeHistory: RoePoint[] | undefined;
-  source: "IndianAPI" | "Google Finance";
+  /** Who served the statements, as the page credits it. */
+  source: string;
 };
 
 const C = {
@@ -42,7 +43,7 @@ const quarterDate = (iso: string) =>
 
 function ChartCard({ title, subtitle, children, className = "", index }: { title: string; subtitle?: string; children: ReactNode; className?: string; index: number }) {
   return (
-    <motion.div {...revealItem(index)} className={className}>
+    <motion.div {...revealItem(index)} className={`min-w-0 ${className}`}>
       <Card className="p-4 h-full flex flex-col">
         <div className="mb-3">
           <h3 className="font-semibold text-sm">{title}</h3>
@@ -153,7 +154,7 @@ export default function StockCharts({ statements, shareholding, roeHistory, sour
         </div>
       )}
 
-      <div className="grid gap-4 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         {performance.length > 0 && (
           <ChartCard
             index={index++}
