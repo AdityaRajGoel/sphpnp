@@ -5,12 +5,14 @@ import PageTransition from "@/components/PageTransition";
 import ScrollProgress from "@/components/ScrollProgress";
 import WhatsAppButton from "@/components/WhatsAppButton";
 import VisibleBreadcrumbs from "@/components/VisibleBreadcrumbs";
+import GlobalCuesSection from "@/components/markets/GlobalCuesSection";
 import ValuationSection from "@/components/markets/ValuationSection";
 import DerivativesSection from "@/components/markets/DerivativesSection";
 import FlowsSection from "@/components/markets/FlowsSection";
 import ActivitySection from "@/components/markets/ActivitySection";
 
 const SECTIONS = [
+  { id: "global", label: "Global cues" },
   { id: "valuation", label: "Valuation" },
   { id: "derivatives", label: "F&O positioning" },
   { id: "flows", label: "Flows & economy" },
@@ -52,6 +54,7 @@ export default function MarketPulsePage() {
           </ul>
         </nav>
         <div className="space-y-14">
+          <GlobalCuesSection />
           <ValuationSection />
           <DerivativesSection />
           <FlowsSection />
@@ -59,7 +62,7 @@ export default function MarketPulsePage() {
         </div>
         <p className="mt-12 text-xs text-muted-foreground">
           Sources: NSE (index file, participant-wise open interest, option chain, bulk/block/short deals, ASM/GSM, F&amp;O ban, event
-          calendar), niftyindices.com (constituents), BSE (results calendar), NSDL (FPI), MoSPI (CPI, WPI, IIP). Information only, not
+          calendar), NSE Indices (constituents), BSE (results calendar), NSDL (FPI), MoSPI (CPI, WPI, IIP). Information only, not
           investment advice.
         </p>
       </main>

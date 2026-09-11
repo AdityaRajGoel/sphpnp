@@ -82,3 +82,6 @@ verify_jwt = false
 
 [functions.sync-market-data]
 verify_jwt = false
+
+[functions.sync-global-markets]
+verify_jwt = false

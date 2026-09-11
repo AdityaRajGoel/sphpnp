@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
-  ipoItems, moverItems, newsItems, exDateItems, announcementItems, interleave, symbolResolver,
+  ipoItems, moverItems, newsItems, exDateItems, announcementItems, interleave, symbolResolver, globalItems,
   type TickerIpo, type TickerItem,
 } from "../../supabase/functions/_shared/ticker";
 
@@ -125,5 +125,16 @@ describe("ipoItems - closing today", () => {
   it("says an issue closes today rather than giving today's date", () => {
     const [item] = ipoItems([ipo({ name: "Steamhouse India", open_date: "2026-09-09", close_date: TODAY })], new Map(), TODAY);
     expect(item.text).toBe("Steamhouse India IPO open · closes today");
+  });
+});
+
+describe("globalItems", () => {
+  it("writes each market's close and day change, linking to Market Pulse", () => {
+    const items = globalItems([
+      { ticker: "GSPC.INDX", name: "S&P 500", trade_date: "2026-09-09", close: 7600 },
+      { ticker: "GSPC.INDX", name: "S&P 500", trade_date: "2026-09-10", close: 7676 },
+      { ticker: "BTC-USD.CC", name: "Bitcoin", trade_date: "2026-09-10", close: 80000 },
+    ]);
+    expect(items).toEqual([{ kind: "global", tag: "GLOBAL", text: "S&P 500 7,676 +1.0%", href: "/market-pulse#global", tone: "up", external: false }]);
   });
 });

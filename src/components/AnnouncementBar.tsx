@@ -16,6 +16,7 @@ const CHIP: Record<TickerItem["kind"], string> = {
   news: "bg-sky-400/15 text-sky-300",
   ex_date: "bg-violet-400/15 text-violet-300",
   announcement: "bg-white/10 text-white/70",
+  global: "bg-indigo-400/15 text-indigo-300",
   promo: "bg-brand-orange/20 text-orange-300",
 };
 const TONE: Record<TickerItem["tone"], string> = {

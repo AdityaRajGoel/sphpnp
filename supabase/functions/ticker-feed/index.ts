@@ -6,8 +6,9 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { rssItems } from "../_shared/google-news.ts";
 import { istDate } from "../_shared/ipo-status.ts";
+import { GLOBAL_TICKERS } from "../_shared/eodhd.ts";
 import {
-  MARKET_NEWS_QUERY, announcementItems, exDateItems, interleave, ipoItems, moverItems, newsItems, symbolResolver,
+  MARKET_NEWS_QUERY, announcementItems, exDateItems, globalItems, interleave, ipoItems, moverItems, newsItems, symbolResolver,
   type TickerIpo, type TickerItem,
 } from "../_shared/ticker.ts";
 
@@ -53,7 +54,10 @@ Deno.serve(async (req) => {
   if (cached && Date.now() - Date.parse(cached.built_at) < FRESH_MS) return json({ ...cached, cached: true });
 
   const today = istDate();
-  const [ipoRes, stockRes, actionRes, annRes, news] = await Promise.all([
+  // The markets a trader checks first; the rest are on Market Pulse.
+  const TICKER_GLOBALS = ["GSPC.INDX", "IXIC.INDX", "N225.INDX", "HSI.INDX", "USDINR.FOREX", "XAUUSD.FOREX", "BNO.US", "BTC-USD.CC"];
+  const nameOf = new Map(GLOBAL_TICKERS.map((t) => [t.ticker, t.name]));
+  const [ipoRes, stockRes, actionRes, annRes, news, globalRes] = await Promise.all([
     supabase.from("ipos")
       .select("id,slug,name,status,open_date,close_date,listing_date,price_band_min,price_band_max,subscription_total,listing_gain_pct")
       .or(`status.in.(upcoming,open,closed),listing_date.gte.${addDays(today, -3)}`)
@@ -62,7 +66,9 @@ Deno.serve(async (req) => {
     supabase.from("nse_corporate_actions").select("company,purpose,ex_date").gte("ex_date", today).lte("ex_date", addDays(today, 10)).order("ex_date").limit(200),
     supabase.from("nse_announcements").select("company,subject,attachment_url,published_at").not("published_at", "is", null).order("published_at", { ascending: false }).limit(150),
     marketNews().catch((e: Error) => { console.error("ticker news", e.message); return [] as TickerItem[]; }),
+    supabase.from("global_markets_daily").select("ticker,trade_date,close").in("ticker", TICKER_GLOBALS).gte("trade_date", addDays(today, -10)).order("trade_date"),
   ]);
+  const globals = globalItems((globalRes.data ?? []).map((b) => ({ ticker: b.ticker as string, name: nameOf.get(b.ticker as string) ?? (b.ticker as string), trade_date: b.trade_date as string, close: Number(b.close) })));
   const failed = [ipoRes, stockRes, actionRes, annRes].find((r) => r.error);
   if (failed?.error) {
     if (cached) return json({ ...cached, cached: true, stale: true });
@@ -90,6 +96,7 @@ Deno.serve(async (req) => {
     moverItems(stocks),
     exDateItems(actionRes.data ?? [], symbolOf, today),
     announcementItems(annRes.data ?? [], symbolOf),
+    globals,
   ]);
 
   const built_at = new Date().toISOString();

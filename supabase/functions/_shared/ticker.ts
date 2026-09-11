@@ -9,7 +9,7 @@ import { deriveIpoStatus, istDate } from "./ipo-status.ts";
 import { ipoMatchKey, type IpoStatus } from "./ipo-parse.ts";
 import type { NewsItem } from "./google-news.ts";
 
-export type TickerKind = "ipo" | "gainer" | "loser" | "news" | "ex_date" | "announcement";
+export type TickerKind = "ipo" | "gainer" | "loser" | "news" | "ex_date" | "announcement" | "global";
 export type TickerItem = {
   kind: TickerKind;
   /** Short label shown as a chip: "IPO OPEN", "NEWS · Mint". */
@@ -185,3 +185,21 @@ export function interleave(groups: TickerItem[][]): TickerItem[] {
 
 /** The ticker's headline search: today's Indian market news. */
 export const MARKET_NEWS_QUERY = '(Sensex OR Nifty OR "Dalal Street" OR "Indian stock market") when:1d';
+
+/** World markets' last close and day change, from the latest two closes per ticker. */
+export function globalItems(bars: { ticker: string; name: string; trade_date: string; close: number }[]): TickerItem[] {
+  const byTicker = new Map<string, typeof bars>();
+  for (const b of bars) byTicker.set(b.ticker, [...(byTicker.get(b.ticker) ?? []), b]);
+  return [...byTicker.values()].flatMap((series) => {
+    const sorted = [...series].sort((a, b) => a.trade_date.localeCompare(b.trade_date));
+    const last = sorted[sorted.length - 1];
+    const prev = sorted[sorted.length - 2];
+    if (!last || !prev || prev.close <= 0) return [];
+    const change = (last.close / prev.close - 1) * 100;
+    return [{
+      kind: "global" as const, tag: "GLOBAL",
+      text: `${last.name} ${last.close.toLocaleString("en-US", { maximumFractionDigits: 2 })} ${signedPct(change)}`,
+      href: "/market-pulse#global", tone: change >= 0 ? "up" as const : "down" as const, external: false,
+    }];
+  });
+}

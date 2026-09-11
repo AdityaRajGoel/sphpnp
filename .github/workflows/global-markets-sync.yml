@@ -1,0 +1,28 @@
+# World indices, currencies, metals, oil and bitcoin from EODHD's free plan
+# (sync-global-markets). Once a day only: the plan allows 20 calls a day and
+# the function counts every call, stopping at 18.
+#
+#   SUPABASE_ANON_KEY   - the project's anon/publishable key (passes the gateway)
+#   MARKET_SYNC_SECRET  - must match SYNC_SECRET on the edge function
+name: Global markets sync
+
+on:
+  schedule:
+    - cron: "15 1 * * 2-6" # 06:45 IST Tue-Sat, after each US session closes
+  workflow_dispatch: {}
+
+permissions: {}
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger sync-global-markets
+        run: |
+          resp=$(curl -sS -w "\n%{http_code}" --max-time 150 \
+            -X POST "https://zbkjbbujsdlpujotgltm.supabase.co/functions/v1/sync-global-markets" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "x-sync-secret: ${{ secrets.MARKET_SYNC_SECRET }}")
+          body=$(echo "$resp" | sed '$d'); code=$(echo "$resp" | tail -1)
+          echo "$body"
+          [ "$code" = "200" ] || exit 1

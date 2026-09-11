@@ -2,7 +2,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 /** One line of the live-updates ticker, as ticker-feed composes it (supabase/functions/_shared/ticker.ts). */
 export type TickerItem = {
-  kind: "ipo" | "gainer" | "loser" | "news" | "ex_date" | "announcement" | "promo";
+  kind: "ipo" | "gainer" | "loser" | "news" | "ex_date" | "announcement" | "global" | "promo";
   tag: string;
   text: string;
   href: string | null;

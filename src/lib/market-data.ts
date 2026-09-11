@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { INDEX_UNDERLYINGS } from "../../supabase/functions/_shared/option-chain";
 
 /**
  * Reads for the market tables sync-market-data fills (see
@@ -27,6 +28,18 @@ export type ParticipantOi = {
 };
 export type ChainStrike = { k: number; c: number; p: number; dc: number; dp: number; ci: number; pi: number };
 export type OptionChainEod = { trade_date: string; symbol: string; expiry: string; spot: number | null; pcr: number | null; max_pain: number | null; total_call_oi: number | null; total_put_oi: number | null; call_wall: number | null; put_wall: number | null; strikes: ChainStrike[] };
+export type BuildUp = "long_buildup" | "short_buildup" | "short_covering" | "long_unwinding" | "neutral";
+/** One F&O underlying's close from NSE's F&O bhavcopy: the near-month future and the nearest expiry's options. */
+export type FoSnapshot = {
+  trade_date: string; symbol: string; expiry: string; spot: number | null; pcr: number | null; max_pain: number | null;
+  call_wall: number | null; put_wall: number | null; total_call_oi: number | null; total_put_oi: number | null;
+  fut_close: number | null; fut_prev_close: number | null; fut_oi: number | null; fut_oi_change: number | null; build_up: BuildUp | null; lot_size: number | null;
+};
+export type FoChain = FoSnapshot & { strikes: ChainStrike[] };
+export type FpiSector = {
+  fortnight_end: string; sector: string; equity_net_cr: number | null; debt_net_cr: number | null; other_net_cr: number | null; total_net_cr: number | null;
+  equity_net_usd_mn: number | null; total_net_usd_mn: number | null; equity_auc_cr: number | null; total_auc_cr: number | null; total_auc_usd_mn: number | null;
+};
 export type FpiRow = { report_date: string; section: "cash" | "derivatives"; category: string; route: string; buy_cr: number | null; sell_cr: number | null; net_cr: number | null; net_usd_mn: number | null; buy_contracts: number | null; sell_contracts: number | null; oi_contracts: number | null; oi_cr: number | null };
 export type MacroPoint = { series: string; period: string; value: number; change_pct: number | null };
 export type Mover = { symbol: string; name: string | null; price: number | null; change_pct: number | null; value_cr: number | null; volume: number | null; volume_vs_week: number | null };
@@ -65,11 +78,42 @@ export async function participantOi(days = 60): Promise<ParticipantOi[]> {
   return rows<ParticipantOi>(table("participant_oi_daily").select("*").order("trade_date", { ascending: false }).limit(days * 5));
 }
 
-/** The latest end-of-day chain per underlying and expiry. */
+/** The latest end-of-day chain per index underlying and expiry (stocks are read through latestFoSnapshots). */
 export async function latestOptionChains(): Promise<OptionChainEod[]> {
-  const all = await rows<OptionChainEod>(table("option_chain_eod").select("*").order("trade_date", { ascending: false }).limit(40));
+  const all = await rows<OptionChainEod>(table("option_chain_eod").select("*").in("symbol", INDEX_UNDERLYINGS).order("trade_date", { ascending: false }).limit(40));
   const latest = all[0]?.trade_date;
   return all.filter((c) => c.trade_date === latest).sort((a, b) => a.symbol.localeCompare(b.symbol) || a.expiry.localeCompare(b.expiry));
+}
+
+const SNAPSHOT_COLUMNS = "trade_date,symbol,expiry,spot,pcr,max_pain,call_wall,put_wall,total_call_oi,total_put_oi,fut_close,fut_prev_close,fut_oi,fut_oi_change,build_up,lot_size";
+
+/** Every F&O underlying's latest close from the F&O bhavcopy, without strikes (about 220 rows). */
+export async function latestFoSnapshots(): Promise<FoSnapshot[]> {
+  const [latest] = await rows<{ trade_date: string }>(table("option_chain_eod").select("trade_date").not("build_up", "is", null).order("trade_date", { ascending: false }).limit(1));
+  if (!latest) return [];
+  const all = await rows<FoSnapshot>(table("option_chain_eod").select(SNAPSHOT_COLUMNS).eq("trade_date", latest.trade_date).not("build_up", "is", null).order("symbol").order("expiry").limit(1000));
+  // An index has a row per expiry; keep its nearest.
+  return [...new Map(all.map((r) => [r.symbol, r] as const).reverse()).values()].sort((a, b) => a.symbol.localeCompare(b.symbol));
+}
+
+/** One underlying's latest chain with strikes, nearest expiry first. */
+export async function latestFoChain(symbol: string): Promise<FoChain | null> {
+  const [row] = await rows<FoChain>(table("option_chain_eod").select(`${SNAPSHOT_COLUMNS},strikes`).eq("symbol", symbol).order("trade_date", { ascending: false }).order("expiry").limit(1));
+  return row ?? null;
+}
+
+/** One underlying's daily snapshots, oldest first, one per trading day (its nearest expiry). */
+export async function foHistory(symbol: string, days = 90): Promise<FoSnapshot[]> {
+  const data = await rows<FoSnapshot>(table("option_chain_eod").select(SNAPSHOT_COLUMNS).eq("symbol", symbol).order("trade_date", { ascending: false }).order("expiry").limit(days * 2));
+  const byDay = new Map<string, FoSnapshot>();
+  for (const r of data) if (!byDay.has(r.trade_date)) byDay.set(r.trade_date, r);
+  return [...byDay.values()].slice(0, days).reverse();
+}
+
+/** NSDL's fortnightly sector-wise FPI flows for the last year, oldest fortnight first. */
+export async function fpiSectors(): Promise<FpiSector[]> {
+  const since = new Date(Date.now() - 400 * 86_400_000).toISOString().slice(0, 10);
+  return rows<FpiSector>(table("fpi_sector_fortnightly").select("fortnight_end,sector,equity_net_cr,debt_net_cr,other_net_cr,total_net_cr,equity_net_usd_mn,total_net_usd_mn,equity_auc_cr,total_auc_cr,total_auc_usd_mn").gte("fortnight_end", since).order("fortnight_end").order("sector").limit(1000));
 }
 
 export async function fpiDaily(days = 60): Promise<FpiRow[]> {
@@ -197,6 +241,44 @@ export function fpiEquityNet(rows: FpiRow[]): { date: string; net_cr: number }[]
     .sort((a, b) => a.date.localeCompare(b.date));
 }
 
+export const BUILD_UP_LABEL: Record<BuildUp, string> = {
+  long_buildup: "Long build-up", short_buildup: "Short build-up", short_covering: "Short covering", long_unwinding: "Long unwinding", neutral: "Neutral",
+};
+/** Long build-up and short covering push prices up; short build-up and long unwinding push them down. */
+export const BUILD_UP_TONE: Record<BuildUp, "up" | "down" | "flat"> = {
+  long_buildup: "up", short_covering: "up", short_buildup: "down", long_unwinding: "down", neutral: "flat",
+};
+
+/** Percentage change, or null when either side is missing or the base is zero. */
+export const pctChange = (now: number | null, before: number | null) => (now === null || before === null || before === 0 ? null : (now / before - 1) * 100);
+
+/** The future's open-interest change as a share of the day before's open interest. */
+export const oiChangePct = (s: Pick<FoSnapshot, "fut_oi" | "fut_oi_change">) => {
+  if (s.fut_oi === null || s.fut_oi_change === null) return null;
+  const before = s.fut_oi - s.fut_oi_change;
+  return before > 0 ? (s.fut_oi_change / before) * 100 : null;
+};
+
+/** How many underlyings closed in each build-up. */
+export function buildUpCounts(snaps: FoSnapshot[]): Record<BuildUp, number> {
+  const out: Record<BuildUp, number> = { long_buildup: 0, short_buildup: 0, short_covering: 0, long_unwinding: 0, neutral: 0 };
+  for (const s of snaps) if (s.build_up) out[s.build_up]++;
+  return out;
+}
+
+/** Each sector's net equity flow for one fortnight, biggest buying first; the grand total is left out. */
+export function sectorFlowsFor(rows: FpiSector[], fortnight: string): FpiSector[] {
+  return rows.filter((r) => r.fortnight_end === fortnight && r.sector !== "Total" && r.equity_net_cr !== null)
+    .sort((a, b) => (b.equity_net_cr ?? 0) - (a.equity_net_cr ?? 0));
+}
+
+/** Net equity flow per fortnight across all sectors (the report's grand total), oldest first. */
+export function fpiFortnightTotals(rows: FpiSector[]): { fortnight: string; equity: number; total: number | null }[] {
+  return rows.filter((r) => r.sector === "Total" && r.equity_net_cr !== null)
+    .map((r) => ({ fortnight: r.fortnight_end, equity: r.equity_net_cr!, total: r.total_net_cr }))
+    .sort((a, b) => a.fortnight.localeCompare(b.fortnight));
+}
+
 /** Crore written short: 12,345 -> "12,345 Cr"; a lakh crore as "1.2L Cr". */
 export const crore = (v: number | null) =>
   v === null ? "—" : Math.abs(v) >= 100000 ? `${(v / 100000).toFixed(2)}L Cr` : `${v.toLocaleString("en-IN", { maximumFractionDigits: 0 })} Cr`;
@@ -212,3 +294,42 @@ export const istToday = () => new Intl.DateTimeFormat("en-CA", { timeZone: "Asia
 
 export const shortDate = (iso: string | null) =>
   iso ? new Date(`${iso.slice(0, 10)}T00:00:00Z`).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" }) : "—";
+
+// ---------------------------------------------------------------------------
+// Global markets (EODHD)
+// ---------------------------------------------------------------------------
+
+export type GlobalBar = { ticker: string; trade_date: string; close: number };
+
+/** A year of daily closes for every global ticker, oldest first (paged past the 1,000-row cap). */
+export async function globalMarkets(): Promise<GlobalBar[]> {
+  const since = new Date(Date.now() - 370 * 86_400_000).toISOString().slice(0, 10);
+  const out: GlobalBar[] = [];
+  for (let from = 0; from < 20_000; from += 1000) {
+    const page = await rows<GlobalBar>(table("global_markets_daily").select("ticker,trade_date,close").gte("trade_date", since).order("trade_date").order("ticker").range(from, from + 999));
+    out.push(...page);
+    if (page.length < 1000) break;
+  }
+  return out;
+}
+
+export type GlobalSummary = { ticker: string; close: number; date: string; day: number | null; month: number | null; year: number | null; spark: number[] };
+
+/** Last close with its one-day, one-month and one-year change, and a 3-month sparkline. */
+export function summariseGlobal(bars: GlobalBar[], ticker: string): GlobalSummary | null {
+  const series = bars.filter((b) => b.ticker === ticker);
+  if (series.length === 0) return null;
+  const last = series[series.length - 1];
+  const change = (daysBack: number) => {
+    const cutoff = new Date(Date.parse(`${last.trade_date}T00:00:00Z`) - daysBack * 86_400_000).toISOString().slice(0, 10);
+    const base = [...series].reverse().find((b) => b.trade_date <= cutoff);
+    return base && base.close > 0 ? (last.close / base.close - 1) * 100 : null;
+  };
+  const prev = series.length > 1 ? series[series.length - 2] : null;
+  return {
+    ticker, close: last.close, date: last.trade_date,
+    day: prev && prev.close > 0 ? (last.close / prev.close - 1) * 100 : null,
+    month: change(30), year: change(365),
+    spark: series.slice(-65).map((b) => b.close),
+  };
+}
