@@ -1,0 +1,31 @@
+# SEBI enforcement orders and corporate-action filings (buybacks, open offers,
+# rights issues) for each tracked stock.
+#
+# Twenty stocks a run, four SEBI searches each, on a cursor through the
+# universe - three runs a day cover all 246 stocks about every four days.
+#
+# Same two secrets as every other sync-*.yml:
+#   SUPABASE_ANON_KEY   - the project's anon/publishable key (passes the gateway)
+#   MARKET_SYNC_SECRET  - must match SYNC_SECRET on the edge function
+name: SEBI actions sync
+
+on:
+  schedule:
+    - cron: "45 2,8,14 * * *" # 08:15, 14:15, 20:15 IST daily
+  workflow_dispatch: {}
+
+permissions: {}
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger sync-sebi-actions
+        run: |
+          resp=$(curl -sS -w "\n%{http_code}" --max-time 150 \
+            -X POST "https://zbkjbbujsdlpujotgltm.supabase.co/functions/v1/sync-sebi-actions" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "x-sync-secret: ${{ secrets.MARKET_SYNC_SECRET }}")
+          body=$(echo "$resp" | sed '$d'); code=$(echo "$resp" | tail -1)
+          echo "$body"
+          [ "$code" = "200" ] || exit 1
