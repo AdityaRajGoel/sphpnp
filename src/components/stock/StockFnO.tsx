@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Bar, BarChart, CartesianGrid, ComposedChart, Legend, Line, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { Card } from "@/components/ui/card";
-import { foHistory, lakhs, latestFoChain, oiChangePct, pctChange, shortDate } from "@/lib/market-data";
+import { foHistory, latestFoChain, oiChangePct, pctChange, shareCount, shortDate } from "@/lib/market-data";
 import { CHART, axisTick, tooltipStyle } from "@/components/markets/chart-kit";
 import { BuildUpBadge } from "@/components/markets/FoBuildUp";
 
@@ -31,7 +31,7 @@ export default function StockFnO({ symbol }: { symbol: string }) {
     { label: "Near-month future", value: price(c.fut_close) },
     { label: "Change", value: signedPct(move), className: tone(move) },
     { label: "Basis over spot", value: basis === null ? "—" : `${basis >= 0 ? "+" : "−"}₹${Math.abs(basis).toFixed(2)}` },
-    { label: "Futures OI (shares)", value: lakhs(c.fut_oi) },
+    { label: "Futures OI (shares)", value: shareCount(c.fut_oi) },
     { label: "OI change", value: signedPct(oiMove), className: tone(oiMove) },
     { label: "Put-call ratio", value: c.pcr?.toFixed(2) ?? "—" },
     { label: "Max pain", value: price(c.max_pain) },
@@ -60,13 +60,13 @@ export default function StockFnO({ symbol }: { symbol: string }) {
       <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
         <div className="min-w-0">
           <h3 className="text-sm font-semibold">Open interest by strike</h3>
-          <p className="text-xs text-muted-foreground mb-2">Calls open above (resistance) and puts below (support)</p>
+          <p className="text-xs text-muted-foreground mb-2">Calls open above (resistance) and puts below (support), in shares</p>
           <ResponsiveContainer width="100%" height={220}>
             <BarChart data={strikes} margin={{ top: 8, right: 8, left: 0, bottom: 0 }} barGap={0}>
               <CartesianGrid strokeDasharray="3 3" stroke={CHART.grid} vertical={false} />
               <XAxis dataKey="strike" tick={axisTick} tickLine={false} axisLine={false} minTickGap={16} />
-              <YAxis tick={axisTick} tickLine={false} axisLine={false} width={48} tickFormatter={lakhs} />
-              <Tooltip {...tooltipStyle} formatter={(v: unknown) => (typeof v === "number" ? lakhs(v) : "—")} labelFormatter={(k) => `Strike ₹${Number(k).toLocaleString("en-IN")}`} />
+              <YAxis tick={axisTick} tickLine={false} axisLine={false} width={52} tickFormatter={shareCount} />
+              <Tooltip {...tooltipStyle} formatter={(v: unknown) => (typeof v === "number" ? shareCount(v) : "—")} labelFormatter={(k) => `Strike ₹${Number(k).toLocaleString("en-IN")}`} />
               <Legend wrapperStyle={{ fontSize: 12 }} />
               {spotStrike !== null && <ReferenceLine x={spotStrike} stroke={CHART.primary} strokeDasharray="4 4" label={{ value: "spot", fill: CHART.axis, fontSize: 10, position: "insideTopRight" }} />}
               <Bar dataKey="calls" name="Call OI" fill={CHART.down} maxBarSize={12} />
@@ -84,10 +84,10 @@ export default function StockFnO({ symbol }: { symbol: string }) {
               <ComposedChart data={trend} margin={{ top: 8, right: 0, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke={CHART.grid} vertical={false} />
                 <XAxis dataKey="date" tick={axisTick} tickLine={false} axisLine={false} minTickGap={24} tickFormatter={(d: string) => shortDate(d).replace(/ \d{4}$/, "")} />
-                <YAxis yAxisId="oi" tick={axisTick} tickLine={false} axisLine={false} width={44} tickFormatter={lakhs} />
+                <YAxis yAxisId="oi" tick={axisTick} tickLine={false} axisLine={false} width={52} tickFormatter={shareCount} />
                 <YAxis yAxisId="px" orientation="right" tick={axisTick} tickLine={false} axisLine={false} width={52} domain={["auto", "auto"]} tickFormatter={(v: number) => `₹${v.toLocaleString("en-IN", { maximumFractionDigits: 0 })}`} />
                 <Tooltip {...tooltipStyle} labelFormatter={(d: string) => shortDate(d)}
-                  formatter={(v: unknown, name: string) => (typeof v !== "number" ? "—" : name === "Open interest" ? lakhs(v) : price(v))} />
+                  formatter={(v: unknown, name: string) => (typeof v !== "number" ? "—" : name === "Open interest" ? shareCount(v) : price(v))} />
                 <Legend wrapperStyle={{ fontSize: 12 }} />
                 <Bar yAxisId="oi" dataKey="oi" name="Open interest" fill={CHART.muted} fillOpacity={0.35} maxBarSize={10} />
                 <Line yAxisId="px" dataKey="close" name="Future" stroke={CHART.primary} strokeWidth={2} dot={false} />

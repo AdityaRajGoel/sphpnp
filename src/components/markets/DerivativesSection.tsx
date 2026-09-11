@@ -113,6 +113,8 @@ function ChainView({ chains, snapshots, symbol, onSymbol }: ChainProps) {
   const data = chain.strikes.map((s) => ({ strike: s.k, calls: s.c, puts: s.p }));
   const basis = chain.fut_close != null && chain.spot !== null ? chain.fut_close - chain.spot : null;
   const futMove = pctChange(chain.fut_close ?? null, chain.fut_prev_close ?? null);
+  // NSE's live chain counts open interest in contracts and carries IV; the F&O bhavcopy counts shares and has none.
+  const unit = chain.strikes.some((s) => s.ci > 0 || s.pi > 0) ? "contracts" : "shares";
 
   return (
     <div id="fo-chain" className="grid grid-cols-1 gap-4 lg:grid-cols-3 scroll-mt-28">
@@ -155,7 +157,7 @@ function ChainView({ chains, snapshots, symbol, onSymbol }: ChainProps) {
       </Card>
       <Card className="min-w-0 p-4 lg:col-span-2">
         <h3 className="font-semibold">{chain.symbol} open interest by strike</h3>
-        <p className="text-xs text-muted-foreground mb-3">Calls (resistance) and puts (support) open at each strike, {shortDate(chain.trade_date)} close</p>
+        <p className="text-xs text-muted-foreground mb-3">Calls (resistance) and puts (support) open at each strike, in {unit}, {shortDate(chain.trade_date)} close</p>
         <ResponsiveContainer width="100%" height={300}>
           <BarChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }} barGap={0}>
             <CartesianGrid strokeDasharray="3 3" stroke={CHART.grid} vertical={false} />

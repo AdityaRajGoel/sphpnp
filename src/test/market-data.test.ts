@@ -126,3 +126,13 @@ describe("FPI sector helpers", () => {
     expect(fpiFortnightTotals(rows)).toEqual([{ fortnight: "2026-08-15", equity: 100, total: 100 }, { fortnight: "2026-08-31", equity: 1931, total: 1931 }]);
   });
 });
+
+import { shareCount } from "@/lib/market-data";
+
+describe("shareCount", () => {
+  it("writes crores past one crore and lakhs below", () => {
+    expect(shareCount(128_790_000)).toBe("12.88 Cr");
+    expect(shareCount(3_460_539)).toBe("34.6 L");
+    expect(shareCount(null)).toBe("—");
+  });
+});

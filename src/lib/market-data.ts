@@ -286,6 +286,9 @@ export const crore = (v: number | null) =>
 /** Contracts in lakh: 3,460,539 -> "34.6 L". */
 export const lakhs = (v: number | null) => (v === null ? "—" : Math.abs(v) >= 100000 ? `${(v / 100000).toFixed(1)} L` : v.toLocaleString("en-IN"));
 
+/** A share count in Indian units: 12,87,90,000 -> "12.88 Cr", 34,60,539 -> "34.6 L". */
+export const shareCount = (v: number | null) => (v !== null && Math.abs(v) >= 10_000_000 ? `${(v / 10_000_000).toFixed(2)} Cr` : lakhs(v));
+
 export const SURVEILLANCE_LABEL: Record<SurveillanceFlag["flag"], string> = {
   fo_ban: "F&O ban", asm_long: "Long-term ASM", asm_short: "Short-term ASM", gsm: "GSM",
 };
