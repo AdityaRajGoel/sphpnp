@@ -94,6 +94,6 @@
     { "source": "/auth", "destination": "/" },
     { "source": "/reset-password", "destination": "/" },
     { "source": "/banner-manager", "destination": "/" },
-    { "source": "/ipo/:slug", "destination": "/ipo-shell.html" }
+    { "source": "/ipo/:slug", "destination": "/ipo-shell" }
   ]
 }
