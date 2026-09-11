@@ -1,4 +1,4 @@
-import { ArrowRight, TrendingUp, TrendingDown, Sparkles, Award, Lock, Star } from "lucide-react";
+import { ArrowRight, ChevronDown, TrendingUp, TrendingDown, Sparkles, Award, Lock, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence, useMotionValue, useTransform, useSpring } from "motion/react";
 import { useEffect, useState, useRef, useMemo, memo } from "react";
@@ -11,6 +11,7 @@ import { useCountUp } from "@/hooks/useCountUp";
 import { EASE_OUT } from "@/lib/motion";
 import { HIGH_FETCH_PRIORITY } from "@/lib/fetch-priority";
 import { usePrefersReducedMotion } from "@/contexts/MotionPreferenceContext";
+import WebTradeMenu from "@/components/WebTradeMenu";
 
 const TIP_INTERVAL_MS = 6000;
 
@@ -415,16 +416,16 @@ const Hero = () => {
                   <ArrowRight className="ml-2 h-4 w-4 md:h-5 md:w-5" />
                 </Link>
               </Button>
-              <Button
-                asChild
-                variant="outline"
-                size="lg"
-                className="w-full border-2 border-secondary/60 bg-secondary/20 px-6 py-4 text-sm font-bold text-primary-foreground backdrop-blur-sm hover:bg-secondary/40 hover:text-primary-foreground sm:w-auto md:px-10 md:py-6 md:text-lg"
-              >
-                <a href="https://webtrade.parasramindia.com/#!/app" target="_blank" rel="noopener noreferrer">
+              <WebTradeMenu align="start">
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="w-full border-2 border-secondary/60 bg-secondary/20 px-6 py-4 text-sm font-bold text-primary-foreground backdrop-blur-sm hover:bg-secondary/40 hover:text-primary-foreground sm:w-auto md:px-10 md:py-6 md:text-lg"
+                >
                   {t("hero.ctaTrade")}
-                </a>
-              </Button>
+                  <ChevronDown className="ml-2 h-4 w-4 md:h-5 md:w-5" aria-hidden />
+                </Button>
+              </WebTradeMenu>
             </motion.div>
 
             {/* Market panel sits in the text column at every size: the right

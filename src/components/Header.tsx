@@ -11,6 +11,8 @@ import MegaDropdown from "@/components/header/MegaDropdown";
 import { megaMenuItems } from "@/components/header/megaMenuData";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { useT } from "@/i18n/LanguageContext";
+import WebTradeMenu from "@/components/WebTradeMenu";
+import { TRADING_PLATFORMS } from "@/lib/trading-platforms";
 import { NAV_LABEL_KEYS } from "@/i18n/config";
 import { useWatchlist } from "@/hooks/useWatchlist";
 
@@ -209,11 +211,11 @@ const Header = () => {
                 <LogIn className="w-4 h-4 mr-1" />{t("cta.clientLogin")}
               </a>
             </Button>
-            <Button asChild size="sm" className="hidden sm:inline-flex bg-secondary hover:bg-secondary/90 text-secondary-foreground font-semibold">
-              <a href="https://webtrade.parasramindia.com/#!/app" target="_blank" rel="noopener noreferrer">
-                <BarChart3 className="w-4 h-4 mr-1" />{t("cta.webTrade")}
-              </a>
-            </Button>
+            <WebTradeMenu>
+              <Button size="sm" className="hidden sm:inline-flex bg-secondary hover:bg-secondary/90 text-secondary-foreground font-semibold">
+                <BarChart3 className="w-4 h-4 mr-1" />{t("cta.webTrade")}<ChevronDown className="w-3.5 h-3.5 ml-1" aria-hidden />
+              </Button>
+            </WebTradeMenu>
             <Button asChild className="hidden sm:inline-flex btn-shine bg-gradient-to-r from-secondary to-brand-green hover:from-secondary/90 hover:to-brand-green/90 text-secondary-foreground font-bold shadow-md shadow-secondary/25 hover:shadow-lg hover:shadow-secondary/30">
               <Link to="/open-account">{t("cta.openAccount")}</Link>
             </Button>
@@ -345,11 +347,15 @@ const Header = () => {
                       <LogIn className="w-4 h-4 mr-1" />{t("cta.clientLogin")}
                     </a>
                   </Button>
-                  <Button asChild className="bg-secondary hover:bg-secondary/90 text-secondary-foreground font-semibold w-full">
-                    <a href="https://webtrade.parasramindia.com/#!/app" target="_blank" rel="noopener noreferrer" onClick={() => setMobileMenuOpen(false)}>
-                      <BarChart3 className="w-4 h-4 mr-1" />{t("cta.webTrade")}
-                    </a>
-                  </Button>
+                  {/* Both platforms as buttons here - a dropdown inside an open
+                      mobile menu is a menu in a menu. */}
+                  {TRADING_PLATFORMS.map((platform) => (
+                    <Button key={platform.href} asChild className="bg-secondary hover:bg-secondary/90 text-secondary-foreground font-semibold w-full">
+                      <a href={platform.href} target="_blank" rel="noopener noreferrer" onClick={() => setMobileMenuOpen(false)}>
+                        <BarChart3 className="w-4 h-4 mr-1" />{t(platform.labelKey)}
+                      </a>
+                    </Button>
+                  ))}
                   <Button asChild className="bg-brand-navy hover:bg-brand-navy/90 text-white font-semibold w-full">
                     <Link to="/open-account" onClick={() => setMobileMenuOpen(false)}>{t("cta.openAccount")}</Link>
                   </Button>
