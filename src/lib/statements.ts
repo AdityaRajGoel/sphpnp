@@ -158,10 +158,10 @@ export function googleRoe(statements: Partial<Record<StatementKind, StatementGri
   return row ? [...row.values].reverse().find((v): v is number => v !== null) ?? null : null;
 }
 
-/** Where the shown statements came from, as the page credits it. */
-export function statementSourceLabel(statements: Partial<Record<StatementKind, StatementGrid>>): string {
-  const { source, tabs } = statementTabs(statements);
-  if (source === "google_finance") return "Google Finance via SerpApi";
-  const served = tabs.length > 0 ? statements[tabs[0].kind]?.source : undefined;
-  return served === "screener_in" ? "screener.in" : "IndianAPI";
+/**
+ * How the page credits the statements. The providers they are collected
+ * through are not named on the site; the figures are the companies' own filings.
+ */
+export function statementSourceLabel(_statements: Partial<Record<StatementKind, StatementGrid>>): string {
+  return "company filings";
 }

@@ -1,7 +1,7 @@
 import { motion } from "motion/react";
 import { Card } from "@/components/ui/card";
 import { revealItem, revealSection } from "@/lib/motion";
-import { webHref, type TickertapeProfile } from "@/lib/stock-disclosures";
+import type { TickertapeProfile } from "@/lib/stock-disclosures";
 
 type Holding = TickertapeProfile["holdings"][number];
 
@@ -134,7 +134,7 @@ export default function AnalystFundView({ tickertape, pe }: { tickertape: Ticker
                     {funds.map((f) => (
                       <tr key={f.name} className="border-b last:border-0">
                         <td className="px-3 py-2">
-                          {webHref(f.url) ? <a href={webHref(f.url)} target="_blank" rel="noopener noreferrer nofollow" className="hover:text-primary hover:underline">{f.name}</a> : f.name}
+                          {f.name}
                         </td>
                         <td className="px-3 py-2 text-right tabular-nums">{f.pct_of_company === null ? "—" : `${f.pct_of_company.toFixed(2)}%`}</td>
                         <td className="px-3 py-2 text-right tabular-nums">{f.weight_in_fund === null ? "—" : `${f.weight_in_fund.toFixed(2)}%`}</td>
@@ -166,7 +166,7 @@ export default function AnalystFundView({ tickertape, pe }: { tickertape: Ticker
         </div>
       )}
       <p className="text-xs text-muted-foreground">
-        From Tickertape{webHref(tickertape.url) ? <> (<a href={webHref(tickertape.url)} target="_blank" rel="noopener noreferrer nofollow" className="underline">stock page</a>)</> : null}. Analyst counts and scorecards are Tickertape's; not a recommendation by Parasram India.
+        Analyst coverage, holdings and scorecard from market data; not a recommendation by Parasram India.
       </p>
     </motion.section>
   );

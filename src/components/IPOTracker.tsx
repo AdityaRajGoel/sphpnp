@@ -11,7 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Link } from "react-router-dom";
 
 import { revealBar, revealItem, revealSection } from "@/lib/motion";
-import { formatGmp, formatGmpPercent, formatListingGain, formatSourceList, formatSubscription, gmpPercent, type Ipo } from "@/lib/ipo";
+import { formatGmp, formatGmpPercent, formatListingGain, formatSubscription, gmpPercent, type Ipo } from "@/lib/ipo";
 import { trackerTab } from "@/lib/ipo-filters";
 
 /** The reconciled catalogue row plus the two display-only fields derived from it. */
@@ -106,7 +106,6 @@ const IPOTracker = () => {
   const [activeTab, setActiveTab] = useState<TabKey>("upcoming");
   const [ipos, setIpos] = useState<DisplayIpo[]>([]);
   const [loading, setLoading] = useState(true);
-  const [source, setSource] = useState<string>("");
   const [fetchedAt, setFetchedAt] = useState<string>("");
 
   const fetchIPOs = useCallback(async () => {
@@ -119,7 +118,6 @@ const IPOTracker = () => {
       // miscategorise every "closed" (bidding shut, not yet listed) issue.
       if (!error && data?.success && data.ipos && data.ipos.length > 0) {
         setIpos(data.ipos.map((ipo) => ({ ...ipo, listingGain: formatListingGain(ipo.listing_gain_pct) })));
-        setSource(formatSourceList(data.ipos.map((ipo) => ipo.source).join("+")));
         setFetchedAt(data.fetchedAt || "");
       }
     } catch {
@@ -164,7 +162,6 @@ const IPOTracker = () => {
           {fetchedAt && (
             <div className="flex items-center justify-center gap-2 mt-3 text-[10px] text-muted-foreground">
               <span>Last updated: {new Date(fetchedAt).toLocaleString("en-IN", { hour: "2-digit", minute: "2-digit", day: "numeric", month: "short" })}</span>
-              {source && <><span>•</span><span>Reconciled from {source}</span></>}
               <button onClick={fetchIPOs} className="ml-1 p-0.5 rounded hover:bg-muted transition-colors" title="Refresh">
                 <RefreshCw className={`w-3 h-3 ${loading ? "animate-spin" : ""}`} />
               </button>

@@ -57,9 +57,9 @@ export default function IPOPageSections({ sections, fetchedAt }: { sections: Ipo
       <div className="flex items-center gap-2">
         <FileText className="w-5 h-5 text-secondary" />
         <div>
-          <h2 id="issue-page-heading" className="font-heading text-xl font-bold">Everything the issue page lists</h2>
+          <h2 id="issue-page-heading" className="font-heading text-xl font-bold">Full issue details</h2>
           <p className="text-xs text-muted-foreground">
-            From the issue's page on Chittorgarh{fetchedAt ? `, read ${new Intl.DateTimeFormat("en-IN", { dateStyle: "medium", timeStyle: "short" }).format(new Date(fetchedAt))}` : ""}.
+            Details as published for this issue{fetchedAt ? `, read ${new Intl.DateTimeFormat("en-IN", { dateStyle: "medium", timeStyle: "short" }).format(new Date(fetchedAt))}` : ""}.
             Verify against the RHP before applying.
           </p>
         </div>

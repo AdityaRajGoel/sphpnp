@@ -13,12 +13,6 @@ export type GmpSnapshot = {
 /** The three sources sync-ipos reconciles. Keep in step with `SourceName` in supabase/functions/_shared/ipo-parse.ts. */
 export type IpoSourceName = "ipowatch" | "investorgain" | "chittorgarh";
 
-export const SOURCE_LABELS: Record<IpoSourceName, string> = {
-  ipowatch: "IPO Watch",
-  investorgain: "InvestorGain",
-  chittorgarh: "Chittorgarh",
-};
-
 /** Which source supplied a reconciled field. Absent key = not tracked for that field. */
 export type IpoFieldSources = Partial<Record<string, IpoSourceName>>;
 
@@ -133,23 +127,6 @@ export const formatGmp = (value: number | null) =>
 export const formatListingGain = (pct: number | null) =>
   pct === null ? null : `${pct >= 0 ? "+" : ""}${pct.toFixed(1)}%`;
 
-/** Which source(s) back one reconciled field, for the provenance tags on the detail page. */
-export function fieldSourceLabel(fieldSources: IpoFieldSources | null | undefined, field: string): string | null {
-  const source = fieldSources?.[field];
-  return source ? SOURCE_LABELS[source] : null;
-}
-
-/**
- * `ipos.source` and `ipo_gmp_snapshots.source` are both `"+"`-joined lists of
- * whichever sources contributed (see sync-ipos), e.g. "ipowatch+chittorgarh".
- * This turns that internal join key into the human-readable, deduplicated
- * list a visitor should see: "IPO Watch, Chittorgarh".
- */
-export function formatSourceList(value: string): string {
-  const unique = [...new Set(value.split("+").map((token) => token.trim()).filter(Boolean))];
-  return unique.map((token) => SOURCE_LABELS[token as IpoSourceName] ?? token).join(", ");
-}
-
 type MinInvestmentFields = Pick<Ipo, "min_investment" | "min_investment_lots" | "min_investment_shares" | "min_investment_category">;
 
 /**
@@ -210,3 +187,12 @@ export function decodeEntities(value: string): string {
     return NAMED_ENTITIES[name.toLowerCase()] ?? whole;
   });
 }
+
+/**
+ * The websites IPO data is collected from. None of them is named on the site:
+ * a document hosted on one, or a news item one of them published, is left out.
+ */
+const COLLECTED_FROM = /chittorgarh|ipo ?watch|investorgain/i;
+
+/** Whether a link or a publisher name points at one of the sites IPO data is collected from. */
+export const isCollectionSource = (value: string | null | undefined): boolean => !!value && COLLECTED_FROM.test(value);

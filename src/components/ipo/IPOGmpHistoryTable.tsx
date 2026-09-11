@@ -1,5 +1,5 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { formatRupees, formatSourceList, type GmpSnapshot } from "@/lib/ipo";
+import { formatRupees, type GmpSnapshot } from "@/lib/ipo";
 
 /**
  * The chart plots `gmp` over time, but each observation also carries an
@@ -20,7 +20,6 @@ export default function IPOGmpHistoryTable({ history }: { history: GmpSnapshot[]
             <TableHead>Observed</TableHead>
             <TableHead className="text-right">GMP</TableHead>
             <TableHead className="text-right">Est. listing price</TableHead>
-            <TableHead>Source</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -31,7 +30,6 @@ export default function IPOGmpHistoryTable({ history }: { history: GmpSnapshot[]
               </TableCell>
               <TableCell className={`text-right font-semibold tabular-nums ${point.gmp >= 0 ? "text-secondary" : "text-destructive"}`}>{formatRupees(point.gmp)}</TableCell>
               <TableCell className="text-right tabular-nums">{formatRupees(point.est_listing_price)}</TableCell>
-              <TableCell className="whitespace-nowrap text-muted-foreground">{formatSourceList(point.source)}</TableCell>
             </TableRow>
           ))}
         </TableBody>

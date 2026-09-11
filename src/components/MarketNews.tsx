@@ -359,7 +359,7 @@ const MarketNews = () => {
 
         <p className="text-center text-xs text-muted-foreground/50 mt-8">
           <Newspaper className="w-3 h-3 inline mr-1" />
-          News auto-refreshes every 5 minutes • Sources: ET, Moneycontrol, Business Standard, LiveMint, Reuters, Bloomberg
+          News auto-refreshes every 5 minutes • Headlines link to their publishers
         </p>
       </div>
     </section>

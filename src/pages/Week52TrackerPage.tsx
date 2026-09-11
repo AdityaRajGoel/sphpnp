@@ -191,7 +191,7 @@ const Week52TrackerPage = () => {
           </TabsContent>
         </Tabs>
 
-        <p className="text-xs text-muted-foreground mt-6 text-center">Live data from Yahoo Finance. Auto-refreshes every 5 minutes.</p>
+        <p className="text-xs text-muted-foreground mt-6 text-center">Live market data. Auto-refreshes every 5 minutes.</p>
       </main>
       <Footer />
       <WhatsAppButton />

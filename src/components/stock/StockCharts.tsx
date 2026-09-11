@@ -130,7 +130,7 @@ export default function StockCharts({ statements, shareholding, roeHistory, sour
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h2 id="charts-heading" className="text-2xl font-bold">Charts &amp; trends</h2>
-          <p className="text-xs text-muted-foreground">From company filings via {source}. Amounts in ₹ crore.</p>
+          <p className="text-xs text-muted-foreground">From {source}. Amounts in ₹ crore.</p>
         </div>
         {quarterly.length > 0 && annual.length > 0 && (
           <div className="flex bg-muted rounded-lg p-1" role="group" aria-label="Chart period">

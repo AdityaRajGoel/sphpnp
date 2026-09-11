@@ -7,7 +7,7 @@ import { describe, it, expect, vi } from "vitest";
 // file never touches a real client for functions that need no network at all.
 vi.mock("@/integrations/supabase/client", () => ({ supabase: {} }));
 
-import { fieldSourceLabel, formatGmp, formatGmpPercent, formatListingGain, formatLotSize, formatMinInvestment, formatRegistrar, formatSourceList, formatSubscription, gmpPercent, sectionTableHasHeader } from "@/lib/ipo";
+import { formatGmp, formatGmpPercent, formatListingGain, formatLotSize, formatMinInvestment, formatRegistrar, formatSubscription, gmpPercent, sectionTableHasHeader } from "@/lib/ipo";
 
 /*
  * Formatting helpers for the IPO surfaces. The one rule every one of these
@@ -56,30 +56,6 @@ describe("formatListingGain", () => {
   });
   it("does not double-sign a negative gain", () => {
     expect(formatListingGain(-5)).toBe("-5.0%");
-  });
-});
-
-describe("formatSourceList", () => {
-  it("turns the internal '+'-joined key into a readable, deduplicated list", () => {
-    expect(formatSourceList("ipowatch+investorgain+ipowatch")).toBe("IPO Watch, InvestorGain");
-  });
-  it("labels a single source", () => {
-    expect(formatSourceList("chittorgarh")).toBe("Chittorgarh");
-  });
-  it("falls back to the raw token for anything unrecognised, rather than dropping it", () => {
-    expect(formatSourceList("mystery-source")).toBe("mystery-source");
-  });
-});
-
-describe("fieldSourceLabel", () => {
-  it("returns null when field_sources is null", () => {
-    expect(fieldSourceLabel(null, "lot_size")).toBeNull();
-  });
-  it("returns null when the field has no recorded source", () => {
-    expect(fieldSourceLabel({ price_band_min: "chittorgarh" }, "lot_size")).toBeNull();
-  });
-  it("labels the source that supplied the field", () => {
-    expect(fieldSourceLabel({ lot_size: "investorgain" }, "lot_size")).toBe("InvestorGain");
   });
 });
 

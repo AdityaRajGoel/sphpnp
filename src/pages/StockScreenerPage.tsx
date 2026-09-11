@@ -316,7 +316,7 @@ const StockScreenerPage = () => {
         jsonLd={{
           "@type": "WebApplication",
           "name": "Stock Screener - Parasram India",
-          "description": "Free live Indian stock screener. Filter NSE/BSE stocks by sector, market cap, P/E ratio, and 52-week range with real-time Yahoo Finance prices.",
+          "description": "Free live Indian stock screener. Filter NSE/BSE stocks by sector, market cap, P/E ratio, and 52-week range with live prices.",
           "applicationCategory": "FinanceApplication",
           "operatingSystem": "Web Browser",
           "url": "https://www.sphpnp.com/screener",
@@ -709,8 +709,8 @@ const StockScreenerPage = () => {
               )}
 
               <p className="text-xs text-muted-foreground mt-4 text-center">
-                Prices from Yahoo Finance and NSE (may be delayed up to 15 minutes, auto-refresh every 5). Fundamentals from company
-                filings via IndianAPI and Google Finance, rebuilt daily. Delivery % from NSE's end-of-day bhavcopy.
+                Prices may be delayed up to 15 minutes and refresh every 5. Fundamentals from company filings, rebuilt daily.
+                Delivery % from NSE's end-of-day bhavcopy.
               </p>
             </motion.div>
           )}

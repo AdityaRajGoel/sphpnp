@@ -33,7 +33,7 @@ export default function StockNews({ symbol, name }: Props) {
           <Newspaper className="w-5 h-5 text-brand-orange" aria-hidden="true" /> Latest news
         </h2>
         {news?.fetched_at && (
-          <span className="text-xs text-muted-foreground">Google News · updated {relativeTime(news.fetched_at)}</span>
+          <span className="text-xs text-muted-foreground">Updated {relativeTime(news.fetched_at)}</span>
         )}
       </div>
       {!news ? (
@@ -68,7 +68,7 @@ export default function StockNews({ symbol, name }: Props) {
         </ul>
       )}
       <p className="mt-3 text-xs text-muted-foreground">
-        Headlines about {name} from the last two weeks, gathered by Google News. Stories belong to their publishers; Parasram India does not endorse them.
+        Headlines about {name} from the last two weeks in the financial press. Stories belong to their publishers; Parasram India does not endorse them.
       </p>
     </motion.section>
   );

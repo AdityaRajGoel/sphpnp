@@ -60,7 +60,7 @@ export default function CompanyInsights({ screener }: { screener: ScreenerProfil
         </div>
       )}
       <p className="text-xs text-muted-foreground">
-        From screener.in: strengths and risks are a machine-generated checklist, not advice; growth is compounded annually over each period.
+        Strengths and risks are a machine-generated checklist, not advice; growth is compounded annually over each period.
       </p>
     </motion.section>
   );

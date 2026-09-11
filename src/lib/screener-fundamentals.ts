@@ -34,12 +34,6 @@ export const FUNDAMENTAL_COLUMNS: { key: FundamentalsKey; label: string; title: 
   { key: "eps_ttm", label: "EPS (TTM)", title: "Earnings per share, trailing twelve months", kind: "rupees" },
 ];
 
-export const SOURCE_LABEL: Record<FundamentalsSummary["source"], string> = {
-  indianapi: "IndianAPI",
-  screener_in: "screener.in",
-  google_finance: "Google Finance",
-};
-
 export function formatFundamental(value: number | null, kind: "pct" | "ratio" | "rupees"): string {
   if (value === null || !Number.isFinite(value)) return "—";
   if (kind === "pct") return `${value.toFixed(1)}%`;

@@ -46,6 +46,8 @@ export function rssItems(xml: string): NewsItem[] {
     const url = tag(item, "link");
     const published = Date.parse(tag(item, "pubDate"));
     if (!title || !/^https:\/\//.test(url) || Number.isNaN(published)) continue;
+    // Stories published by the sites our IPO data is collected from are not shown.
+    if (/chittorgarh|ipo ?watch|investorgain/i.test(source)) continue;
     items.push({ title, source, url, published_at: new Date(published).toISOString() });
   }
   return items;

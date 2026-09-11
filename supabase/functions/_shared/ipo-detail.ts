@@ -184,6 +184,8 @@ export function detailDocuments(html: string): IpoDocument[] {
       const url = decode(link[1]);
       const label = text(link[2]);
       if (NOT_A_DOCUMENT.test(url)) continue;
+      // A document hosted by the site the page came from would name that site on ours.
+      if (/chittorgarh|ipowatch|investorgain/i.test(url)) continue;
       let kind: DocumentKind | null = null;
       if (/\bDRHP\b|Draft Red Herring/i.test(label)) kind = "drhp";
       else if (/\bRHP\b|Red Herring/i.test(label)) kind = "rhp";

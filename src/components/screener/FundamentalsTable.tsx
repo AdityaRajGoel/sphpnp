@@ -5,7 +5,6 @@ import { Card } from "@/components/ui/card";
 import type { ScreenerStock } from "@/hooks/useScreenerStocks";
 import {
   FUNDAMENTAL_COLUMNS,
-  SOURCE_LABEL,
   formatFundamental,
   sortByFundamental,
   toneOf,
@@ -62,7 +61,6 @@ export default function FundamentalsTable({ rows, summaries, onOpen }: Props) {
                 </th>
               ))}
               <th className="text-right px-3 py-3 font-medium text-muted-foreground whitespace-nowrap">Latest qtr</th>
-              <th className="text-right px-4 py-3 font-medium text-muted-foreground">Source</th>
             </tr>
           </thead>
           <tbody>
@@ -90,13 +88,6 @@ export default function FundamentalsTable({ rows, summaries, onOpen }: Props) {
                     );
                   })}
                   <td className="px-3 py-2.5 text-right text-xs text-muted-foreground whitespace-nowrap">{quarterLabel(f?.latest_quarter ?? null)}</td>
-                  <td className="px-4 py-2.5 text-right">
-                    {f ? (
-                      <span className="text-[10px] font-semibold uppercase tracking-wide rounded-full border border-border px-2 py-0.5 text-muted-foreground whitespace-nowrap">
-                        {SOURCE_LABEL[f.source]}
-                      </span>
-                    ) : <span className="text-xs text-muted-foreground">—</span>}
-                  </td>
                 </tr>
               );
             })}
@@ -106,7 +97,7 @@ export default function FundamentalsTable({ rows, summaries, onOpen }: Props) {
       <p className="text-xs text-muted-foreground">
         Fundamentals for {covered} of {rows.length} stocks shown. ROE, ROCE and D/E are from the latest fiscal year;
         OPM and YoY growth compare the latest reported quarter with the same quarter a year earlier. Built daily from
-        company filings via screener.in, IndianAPI and Google Finance; a dash means the source does not
+        company filings; a dash means the company does not
         report that figure. Not investment advice.
       </p>
     </div>

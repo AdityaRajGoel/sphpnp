@@ -190,9 +190,11 @@ describe("detailDocuments", () => {
       .toBe("https://axiomgas.com/uploads/investors/Red_Herring_Prospectus_AXIOM.pdf");
   });
 
-  it("finds the anchor investors letter, the registrar's allotment page and the company site", () => {
+  it("finds the registrar's allotment page and the company site", () => {
     const docs = detailDocuments(page("rentomojo"));
-    expect(docs.find((d) => d.kind === "anchor")?.url).toBe("https://www.chittorgarh.net/reports/anchor-investor/rentmojo-anchor-investor.pdf");
+    // The anchor letter is hosted by the site the page comes from, whose name the site does not show.
+    expect(docs.find((d) => d.kind === "anchor")).toBeUndefined();
+    expect(docs.some((d) => /chittorgarh/i.test(d.url))).toBe(false);
     expect(docs.find((d) => d.kind === "allotment")?.url).toBe("https://ipostatus.kfintech.com/");
     expect(docs.find((d) => d.kind === "company")?.url).toBe("https://www.rentomojo.com/");
   });

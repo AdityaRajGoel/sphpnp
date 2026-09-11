@@ -108,7 +108,7 @@ export default function StatementsSection({ statements }: { statements: Partial<
         ))}
       </Tabs>
       <p className="text-xs text-muted-foreground mt-3">
-        Source: {statementSourceLabel(statements)}, updated {asOf(fetchedAt)}.
+        From {statementSourceLabel(statements)}, updated {asOf(fetchedAt)}.
         {source === "indianapi" ? " Consolidated figures where the company reports them." : " Rupee amounts converted to crore."}
         Information only, not investment advice.
       </p>

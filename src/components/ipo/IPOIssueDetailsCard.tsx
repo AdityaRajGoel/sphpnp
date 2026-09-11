@@ -1,14 +1,12 @@
 import { ExternalLink, FileText, Landmark } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
-import { formatDate, formatListingGain, formatLotSize, formatMinInvestment, formatRegistrar, formatRupees, isWebUrl, type Ipo } from "@/lib/ipo";
-import IPOFieldSource from "@/components/ipo/IPOFieldSource";
+import { formatDate, formatListingGain, formatLotSize, formatMinInvestment, formatRegistrar, formatRupees, isCollectionSource, isWebUrl, type Ipo } from "@/lib/ipo";
 
-const Detail = ({ label, value, field, ipo }: { label: string; value: string; field?: string; ipo?: Ipo }) => (
+const Detail = ({ label, value }: { label: string; value: string }) => (
   <div className="flex items-start justify-between gap-4">
     <dt className="text-muted-foreground shrink-0">{label}</dt>
     <dd className="font-medium text-right min-w-0 break-words">
       {value}
-      {field && ipo && <span className="block leading-tight"><IPOFieldSource ipo={ipo} field={field} /></span>}
     </dd>
   </div>
 );
@@ -30,7 +28,7 @@ export default function IPOIssueDetailsCard({ ipo }: { ipo: Ipo }) {
     : [
       ...(ipo.rhp_url ? [{ kind: "rhp" as const, label: "Red Herring Prospectus (RHP)", url: ipo.rhp_url }] : []),
       ...(ipo.drhp_url ? [{ kind: "drhp" as const, label: "Draft Red Herring Prospectus (DRHP)", url: ipo.drhp_url }] : []),
-    ]).filter((doc) => isWebUrl(doc.url));
+    ]).filter((doc) => isWebUrl(doc.url) && !isCollectionSource(doc.url));
   const min = formatMinInvestment(ipo);
   // Facts from the issue's own page. Each renders only when the page gave it,
   // so a row appears the moment sync-ipo-details has read the page.
@@ -60,15 +58,15 @@ export default function IPOIssueDetailsCard({ ipo }: { ipo: Ipo }) {
 
         <dl className="mt-5 space-y-3 text-sm">
           <Detail label="Board" value={ipo.board === "sme" ? "SME" : "Mainboard"} />
-          <Detail label="Price band" value={ipo.price} field="price_band_min" ipo={ipo} />
-          <Detail label="Issue size" value={ipo.size} field="issue_size_crore" ipo={ipo} />
-          <Detail label="Lot size" value={formatLotSize(ipo.lot_size)} field="lot_size" ipo={ipo} />
-          <Detail label="Opens" value={formatDate(ipo.open_date)} field="open_date" ipo={ipo} />
-          <Detail label="Closes" value={formatDate(ipo.close_date)} field="close_date" ipo={ipo} />
+          <Detail label="Price band" value={ipo.price} />
+          <Detail label="Issue size" value={ipo.size} />
+          <Detail label="Lot size" value={formatLotSize(ipo.lot_size)} />
+          <Detail label="Opens" value={formatDate(ipo.open_date)} />
+          <Detail label="Closes" value={formatDate(ipo.close_date)} />
           <Detail label="Allotment" value={formatDate(ipo.allotment_date)} />
-          <Detail label="Listing" value={formatDate(ipo.listing_date)} field="listing_date" ipo={ipo} />
-          <Detail label="Est. listing price" value={formatRupees(ipo.est_listing_price)} field="est_listing_price" ipo={ipo} />
-          <Detail label="Listing price" value={ipo.listing_price === null ? "Awaited" : formatRupees(ipo.listing_price)} field="listing_price" ipo={ipo} />
+          <Detail label="Listing" value={formatDate(ipo.listing_date)} />
+          <Detail label="Est. listing price" value={formatRupees(ipo.est_listing_price)} />
+          <Detail label="Listing price" value={ipo.listing_price === null ? "Awaited" : formatRupees(ipo.listing_price)} />
           <Detail label="Listing gain" value={formatListingGain(ipo.listing_gain_pct) ?? "Awaited"} />
           <Detail label="Registrar" value={formatRegistrar(ipo.registrar)} />
           {pageFacts.filter((fact): fact is [string, string] => fact[1] !== null).map(([label, value]) => (

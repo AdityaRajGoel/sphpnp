@@ -89,3 +89,13 @@ describe("stockNewsQuery", () => {
     expect(stockNewsQuery("Tata Motors Limited")).toBe('"Tata Motors" (share OR shares OR stock OR results) when:14d');
   });
 });
+
+describe("rssItems - collection sources", () => {
+  it("leaves out stories published by the sites IPO data is collected from", () => {
+    const xml = `<rss><channel>
+      <item><title>X IPO GMP today - IPO Watch</title><link>https://news.google.com/a</link><pubDate>Thu, 10 Sep 2026 10:00:00 GMT</pubDate><source url="x">IPO Watch</source></item>
+      <item><title>X IPO opens - Mint</title><link>https://news.google.com/b</link><pubDate>Thu, 10 Sep 2026 10:00:00 GMT</pubDate><source url="x">Mint</source></item>
+    </channel></rss>`;
+    expect(parseGoogleNewsRss(xml, "X").map((i) => i.source)).toEqual(["Mint"]);
+  });
+});

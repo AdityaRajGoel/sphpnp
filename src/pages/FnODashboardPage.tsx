@@ -535,7 +535,7 @@ const FnODashboardPage = () => {
         </div>
 
         <p className="text-xs text-muted-foreground mt-6 text-center">
-          Live options data sourced from Yahoo Finance. Values update on refresh.
+          Live options data from NSE. Values update on refresh.
         </p>
       </main>
       <Footer />

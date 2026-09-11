@@ -62,7 +62,7 @@ export default function CompanyDocuments({ documents }: { documents: ScreenerPro
           </Card>
         )}
       </div>
-      <p className="mt-3 text-xs text-muted-foreground">Links to BSE filings and rating agencies, collected by screener.in.</p>
+      <p className="mt-3 text-xs text-muted-foreground">Documents open at BSE or the rating agency that issued them.</p>
     </motion.section>
   );
 }
