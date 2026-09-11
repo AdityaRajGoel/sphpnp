@@ -14,7 +14,7 @@
 //
 // Both are pure so the rules are unit tested; sync-ipos does the I/O.
 
-import { ipoMatchKey } from "./ipo-parse.ts";
+import { canonicalIpoKey, ipoAliases, ipoMatchKey } from "./ipo-parse.ts";
 import { advanceStatus } from "./ipo-status.ts";
 import type { IpoStatus } from "./ipo-parse.ts";
 
@@ -53,10 +53,17 @@ export type IpoMerge = {
 const compatible = (a: { open_date: string | number | null }, b: { open_date: string | number | null }) =>
   a.open_date === null || b.open_date === null || a.open_date === b.open_date;
 
+const aliasEntry = (row: { name: string; open_date?: string | number | null; price_band_max?: string | number | null }) => ({
+  name: row.name,
+  open_date: typeof row.open_date === "string" ? row.open_date : null,
+  price_band_max: row.price_band_max === null || row.price_band_max === undefined ? null : Number(row.price_band_max),
+});
+
 const groupByKey = (rows: StoredIpo[]): StoredIpo[][] => {
   const groups = new Map<string, StoredIpo[]>();
+  const aliases = ipoAliases(rows.map(aliasEntry));
   for (const row of rows) {
-    const key = ipoMatchKey(row.name) || row.slug;
+    const key = canonicalIpoKey(row.name, aliases) || row.slug;
     groups.set(key, [...(groups.get(key) ?? []), row]);
   }
   return [...groups.values()];
@@ -101,10 +108,24 @@ export function planIpoMerges(rows: StoredIpo[]): { merges: IpoMerge[]; survivor
  * one is the same issue, otherwise its own.
  */
 export function resolveSlug(
-  incoming: { slug: string; name: string; open_date: string | null },
+  incoming: { slug: string; name: string; open_date: string | null; price_band_max?: number | null },
   survivors: StoredIpo[],
 ): string {
-  const key = ipoMatchKey(incoming.name) || incoming.slug;
-  const match = survivors.find((row) => (ipoMatchKey(row.name) || row.slug) === key && compatible(row, incoming));
+  const aliases = ipoAliases([aliasEntry(incoming), ...survivors.map(aliasEntry)]);
+  const key = canonicalIpoKey(incoming.name, aliases) || incoming.slug;
+  const match = survivors.find((row) => (canonicalIpoKey(row.name, aliases) || row.slug) === key && compatible(row, incoming));
   return match?.slug ?? incoming.slug;
+}
+
+/**
+ * The name to write for an issue already on record. A source that truncates
+ * ("Manipal Payment") must not overwrite the full name another source gave
+ * ("Manipal Payment and Identity Solutions"), or the page title flips with
+ * every run that lacks the fuller source.
+ */
+export function preferFullName(incoming: string, stored: string | null | undefined): string {
+  if (!stored) return incoming;
+  const inKey = ipoMatchKey(incoming);
+  const storedKey = ipoMatchKey(stored);
+  return inKey && storedKey.length > inKey.length && storedKey.startsWith(inKey) ? stored : incoming;
 }

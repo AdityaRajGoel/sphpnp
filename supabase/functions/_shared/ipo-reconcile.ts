@@ -24,7 +24,7 @@ import type {
   ReconciledIpo,
   SourceName,
 } from "./ipo-parse.ts";
-import { ipoMatchKey } from "./ipo-parse.ts";
+import { canonicalIpoKey, ipoAliases } from "./ipo-parse.ts";
 
 export type SourceBundle = {
   ipowatch: IpoWatchGmpRow[];
@@ -164,11 +164,21 @@ const pickSlug = (candidates: Candidate[]): string =>
  */
 export function reconcileIpos(bundle: SourceBundle): ReconciledWithGmp[] {
   const byKey = new Map<string, Candidate[]>();
+  const aliases = ipoAliases(
+    [bundle.chittorgarh, bundle.investorgain, bundle.ipowatch].flatMap((rows) => rows.map((row) => {
+      const r = row as unknown as Record<string, unknown>;
+      return {
+        name: String(r.name ?? ""),
+        open_date: typeof r.open_date === "string" ? r.open_date : null,
+        price_band_max: typeof r.price_band_max === "number" ? r.price_band_max : null,
+      };
+    })),
+  );
   const add = (source: SourceName, rows: Record<string, unknown>[]) => {
     for (const row of rows) {
       const slug = String(row.slug ?? "");
       if (!slug) continue;
-      const key = ipoMatchKey(String(row.name ?? "")) || slug;
+      const key = canonicalIpoKey(String(row.name ?? ""), aliases) || slug;
       const existing = byKey.get(key);
       if (existing) existing.push({ source, row });
       else byKey.set(key, [{ source, row }]);

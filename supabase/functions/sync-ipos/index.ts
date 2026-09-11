@@ -19,7 +19,7 @@ import {
 } from "../_shared/ipo-parse.ts";
 import { reconcileIpos } from "../_shared/ipo-reconcile.ts";
 import { deriveIpoStatus, istDate } from "../_shared/ipo-status.ts";
-import { FILLABLE, planIpoMerges, resolveSlug, type IpoMerge, type StoredIpo } from "../_shared/ipo-identity.ts";
+import { FILLABLE, planIpoMerges, preferFullName, resolveSlug, type IpoMerge, type StoredIpo } from "../_shared/ipo-identity.ts";
 import { sanitizeChittorgarhRows, sanitizeInvestorGainRows } from "../_shared/ipo-ingest.ts";
 
 const SOURCES = {
@@ -247,7 +247,11 @@ Deno.serve(async (req) => {
       else console.log(`sync-ipos merged duplicate ${merge.fromSlug} into ${merge.intoSlug}`);
     }
     for (const failure of mergeFailures) console.error(`sync-ipos merge failed: ${failure}`);
-    const resolved = reconciled.map((ipo) => ({ ...ipo, slug: resolveSlug(ipo, survivors) }));
+    const storedName = new Map(survivors.map((row) => [row.slug, row.name]));
+    const resolved = reconciled.map((ipo) => {
+      const slug = resolveSlug(ipo, survivors);
+      return { ...ipo, slug, name: preferFullName(ipo.name, storedName.get(slug)) };
+    });
 
     const capturedAt = new Date().toISOString();
     const contributing = reports.filter((r) => r.ok).map((r) => r.source);

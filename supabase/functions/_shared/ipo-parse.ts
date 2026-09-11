@@ -142,7 +142,7 @@ export const slugify = (value: string): string => value
   .slice(0, 96);
 
 export const cleanIpoName = (value: string): string =>
-  value.replace(/\s*(IPO|Limited|Ltd\.?)\s*/gi, " ").replace(/\s+/g, " ").trim();
+  value.replace(/\s*(IPO|Limited|Ltd\.?)\s*/gi, " ").replace(/\s+/g, " ").replace(/\(\s+/g, "(").replace(/\s+\)/g, ")").trim();
 
 /**
  * Status markers the list sites glue to the end of a name with no separator:
@@ -164,8 +164,72 @@ const STATUS_MARKER = /\s+(?:CT|[OUCLP])$/;
  * some "Glycols". The key only ever groups rows - a false match is still
  * refused downstream when the two rows' open dates disagree.
  */
+/**
+ * The abbreviation a name spells out in brackets - "National Stock Exchange of
+ * India (NSE )" -> the key of "NSE" - or null. Only an all-capitals token
+ * counts: "(India)" describes, it does not abbreviate.
+ */
+export function ipoAbbreviationKey(name: string): string | null {
+  const inner = /\(\s*([^)]*?)\s*\)/.exec(name)?.[1] ?? "";
+  return /^[A-Z][A-Z0-9&]{1,9}$/.test(inner) ? ipoMatchKey(inner) || null : null;
+}
+
+export type AliasEntry = { name: string; open_date?: string | null; price_band_max?: number | null };
+
+/**
+ * Short key -> full-name key, for the two ways one source names an issue
+ * differently from another:
+ *
+ * - by the abbreviation the full name spells out in brackets (IPO Watch's
+ *   "NSE" for "National Stock Exchange of India (NSE)");
+ * - by a truncated name ("Manipal Payment" for "Manipal Payment and Identity
+ *   Solutions"). A prefix alone is not an identity - "Tata Capital" and "Tata
+ *   Capital Housing Finance" are different issuers - so the shorter name must
+ *   be at least two words, the prefix of exactly one other name, at the same
+ *   known upper price band, with open dates that do not disagree.
+ */
+export function ipoAliases(entries: (string | AliasEntry)[]): Map<string, string> {
+  const aliases = new Map<string, string>();
+  const rows = entries.map((e) => (typeof e === "string" ? { name: e } : e));
+  for (const { name } of rows) {
+    const abbreviation = ipoAbbreviationKey(name);
+    const full = ipoMatchKey(name);
+    if (abbreviation && full && abbreviation !== full) aliases.set(abbreviation, full);
+  }
+
+  const known = rows
+    .filter((r) => typeof r.price_band_max === "number" && r.price_band_max > 0)
+    .map((r) => ({ ...r, words: ipoMatchWords(r.name) }))
+    .filter((r) => r.words.length > 0);
+  for (const short of known) {
+    if (short.words.length < 2 || aliases.has(short.words.join(""))) continue;
+    const longer = new Set(
+      known
+        .filter((long) =>
+          long.words.length > short.words.length &&
+          short.words.every((w, i) => long.words[i] === w) &&
+          long.price_band_max === short.price_band_max &&
+          (!short.open_date || !long.open_date || short.open_date === long.open_date))
+        .map((long) => long.words.join("")),
+    );
+    if (longer.size === 1) aliases.set(short.words.join(""), [...longer][0]);
+  }
+  return aliases;
+}
+
+/** ipoMatchKey, with an abbreviation resolved to the full name it stands for. */
+export function canonicalIpoKey(name: string, aliases: Map<string, string>): string {
+  const key = ipoMatchKey(name);
+  return aliases.get(key) ?? key;
+}
+
 export function ipoMatchKey(name: string): string {
-  return name
+  return ipoMatchWords(name).join("");
+}
+
+/** ipoMatchKey before its spaces are dropped: the name's words, normalised. */
+function ipoMatchWords(name: string): string[] {
+  const words = name
     .replace(/\([^)]*\)/g, " ")
     .replace(/\s+/g, " ")
     .trim()
@@ -175,8 +239,10 @@ export function ipoMatchKey(name: string): string {
     .replace(/\b(?:ipo|limited|ltd|private|pvt)\b\.?/g, " ")
     .replace(/[^a-z0-9]+/g, " ")
     .trim()
-    .replace(/\s+india$/, "")
-    .replace(/\s+/g, "");
+    // Trailing "India", "Co." and "Company" are how different sources write the
+    // same issuer: "Asset Reconstruction Co.(India)" is "Asset Reconstruction".
+    .replace(/(?:\s+(?:india|co|company))+$/, "");
+  return words ? words.split(" ") : [];
 }
 
 export const amount = (value: string): number | null => {

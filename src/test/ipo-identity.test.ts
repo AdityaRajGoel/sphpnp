@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
-import { ipoMatchKey, parseChittorgarh } from "../../supabase/functions/_shared/ipo-parse";
+import { cleanIpoName, ipoMatchKey, parseChittorgarh } from "../../supabase/functions/_shared/ipo-parse";
 import { reconcileIpos } from "../../supabase/functions/_shared/ipo-reconcile";
-import { planIpoMerges, resolveSlug, type StoredIpo } from "../../supabase/functions/_shared/ipo-identity";
+import { planIpoMerges, preferFullName, resolveSlug, type StoredIpo } from "../../supabase/functions/_shared/ipo-identity";
 
 /*
  * One IPO, one row.
@@ -23,6 +23,9 @@ const PRODUCTION_PAIRS: [string, string][] = [
   ["Steamhouse India", "Steamhouse"],
   ["Maharaja & Speedex India", "Maharaja & Speedex"],
   ["Jindal Supreme (India)", "Jindal Supreme"],
+  // Two rows on 2026-09-11: GMP on one, subscription on the other.
+  ["Asset Reconstruction Co.(India)", "Asset Reconstruction"],
+  ["Asset Reconstruction Company (India) Limited", "Asset Reconstruction"],
 ];
 
 describe("ipoMatchKey", () => {
@@ -134,5 +137,107 @@ describe("resolveSlug", () => {
 
   it("keeps its own slug for an issue never seen before", () => {
     expect(resolveSlug({ slug: "new-co", name: "New Co", open_date: null }, survivors)).toBe("new-co");
+  });
+});
+
+describe("issues known by an abbreviation", () => {
+  // IPO Watch lists the exchange's own IPO as "NSE"; Chittorgarh as "National
+  // Stock Exchange of India (NSE )". The bracketed abbreviation is the only
+  // thing the two names share, and ignoring it listed the issue twice.
+  it("merges a row named by the abbreviation with the row that spells it out", () => {
+    const merged = reconcileIpos({
+      ipowatch: [{
+        slug: "nse", name: "NSE", board: "mainboard", status: "upcoming",
+        price_band_min: null, price_band_max: null, open_date: null, close_date: null, gmp: 222, est_listing_price: null,
+      }],
+      investorgain: [],
+      chittorgarh: [{
+        slug: "national-stock-exchange-of-india-nse", name: "National Stock Exchange of India (NSE )", board: "mainboard",
+        price_band_min: null, price_band_max: null, open_date: "2026-09-17", close_date: "2026-09-21",
+        listing_date: null, issue_size_crore: null, detail_url: null,
+      }],
+    });
+    expect(merged).toHaveLength(1);
+    expect(merged[0]).toMatchObject({ open_date: "2026-09-17", gmp: 222 });
+  });
+
+  it("folds the stored duplicate into the first-seen row", () => {
+    const plan = planIpoMerges([
+      stored({ id: "a", slug: "nse", name: "NSE", created_at: "2026-09-09T17:09:46Z" }),
+      stored({ id: "b", slug: "national-stock-exchange-of-india-nse", name: "National Stock Exchange of India (NSE )", created_at: "2026-09-10T11:20:39Z", open_date: "2026-09-17" }),
+    ]);
+    expect(plan.merges).toEqual([expect.objectContaining({ fromSlug: "national-stock-exchange-of-india-nse", intoSlug: "nse" })]);
+  });
+
+  it("writes an incoming issue under the stored abbreviated slug", () => {
+    const survivors = [stored({ id: "a", slug: "nse", name: "NSE" })];
+    expect(resolveSlug({ slug: "national-stock-exchange-of-india-nse", name: "National Stock Exchange of India (NSE )", open_date: "2026-09-17" }, survivors)).toBe("nse");
+  });
+
+  it("does not treat a descriptive bracket as an abbreviation", () => {
+    const merged = reconcileIpos({
+      ipowatch: [{ slug: "india", name: "India", board: "mainboard", status: "upcoming", price_band_min: null, price_band_max: null, open_date: null, close_date: null, gmp: null, est_listing_price: null }],
+      investorgain: [],
+      chittorgarh: [{ slug: "glass-wall-systems-india", name: "Glass Wall Systems (India)", board: "sme", price_band_min: null, price_band_max: null, open_date: null, close_date: null, listing_date: null, issue_size_crore: null, detail_url: null }],
+    });
+    expect(merged).toHaveLength(2);
+  });
+});
+
+describe("cleanIpoName", () => {
+  it("tidies the stray space inside a bracket", () => {
+    expect(cleanIpoName("National Stock Exchange of India (NSE )")).toBe("National Stock Exchange of India (NSE)");
+  });
+});
+
+/*
+ * IPO Watch's GMP table truncates long names: "Manipal Payment" for Manipal
+ * Payment and Identity Solutions (2026-09-11). A prefix is only an identity
+ * when the price band agrees and the dates do not disagree - "Tata Capital"
+ * and "Tata Capital Housing Finance" are different issuers.
+ */
+describe("truncated names", () => {
+  it("folds a truncated name into the one full name it starts, at the same price band", () => {
+    const plan = planIpoMerges([
+      stored({ id: "1", slug: "manipal-payment-identity-solutions", name: "Manipal Payment and Identity Solutions", open_date: "2026-09-09", price_band_max: 339, created_at: "2026-09-01T00:00:00Z" }),
+      stored({ id: "2", slug: "manipal-payment", name: "Manipal Payment", open_date: null, price_band_max: 339, created_at: "2026-09-05T00:00:00Z" }),
+      stored({ id: "3", slug: "manipal-health-enterprises", name: "Manipal Health Enterprises", open_date: "2026-07-29", price_band_max: 590, created_at: "2026-07-01T00:00:00Z" }),
+    ]);
+    expect(plan.merges.map((m) => `${m.fromSlug}->${m.intoSlug}`)).toEqual(["manipal-payment->manipal-payment-identity-solutions"]);
+  });
+
+  it("keeps a shorter name apart when the price band differs or is unknown", () => {
+    expect(planIpoMerges([
+      stored({ id: "1", slug: "tata-capital", name: "Tata Capital", price_band_max: 326 }),
+      stored({ id: "2", slug: "tata-capital-housing-finance", name: "Tata Capital Housing Finance", price_band_max: 210 }),
+    ]).merges).toEqual([]);
+    expect(planIpoMerges([
+      stored({ id: "1", slug: "tata-capital", name: "Tata Capital", price_band_max: null }),
+      stored({ id: "2", slug: "tata-capital-housing-finance", name: "Tata Capital Housing Finance", price_band_max: 210 }),
+    ]).merges).toEqual([]);
+  });
+
+  it("keeps a one-word name apart from every longer name", () => {
+    expect(planIpoMerges([
+      stored({ id: "1", slug: "manipal", name: "Manipal", price_band_max: 339 }),
+      stored({ id: "2", slug: "manipal-payment", name: "Manipal Payment", price_band_max: 339 }),
+    ]).merges).toEqual([]);
+  });
+
+  it("resolves an incoming truncated name to the stored full-name row", () => {
+    const survivors = [stored({ id: "1", slug: "manipal-payment-identity-solutions", name: "Manipal Payment and Identity Solutions", open_date: "2026-09-09", price_band_max: 339 })];
+    expect(resolveSlug({ slug: "manipal-payment", name: "Manipal Payment", open_date: null, price_band_max: 339 }, survivors)).toBe("manipal-payment-identity-solutions");
+  });
+});
+
+describe("preferFullName", () => {
+  it("keeps a stored full name over a truncated incoming one", () => {
+    expect(preferFullName("Manipal Payment", "Manipal Payment and Identity Solutions")).toBe("Manipal Payment and Identity Solutions");
+  });
+
+  it("takes the incoming name otherwise", () => {
+    expect(preferFullName("Manipal Payment and Identity Solutions", "Manipal Payment")).toBe("Manipal Payment and Identity Solutions");
+    expect(preferFullName("Rentomojo", null)).toBe("Rentomojo");
+    expect(preferFullName("Hero Motors", "Hero MotoCorp")).toBe("Hero Motors");
   });
 });
