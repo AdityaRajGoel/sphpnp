@@ -1,6 +1,6 @@
 import { ExternalLink, FileText, Landmark } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
-import { formatDate, formatListingGain, formatLotSize, formatMinInvestment, formatRegistrar, formatRupees, type Ipo } from "@/lib/ipo";
+import { formatDate, formatListingGain, formatLotSize, formatMinInvestment, formatRegistrar, formatRupees, isWebUrl, type Ipo } from "@/lib/ipo";
 import IPOFieldSource from "@/components/ipo/IPOFieldSource";
 
 const Detail = ({ label, value, field, ipo }: { label: string; value: string; field?: string; ipo?: Ipo }) => (
@@ -23,7 +23,14 @@ const percent = (value: number | null) => (value === null ? null : `${value}%`);
  * absence renders as an explicit word rather than a blank or a zero.
  */
 export default function IPOIssueDetailsCard({ ipo }: { ipo: Ipo }) {
-  const hasDocuments = Boolean(ipo.rhp_url || ipo.drhp_url);
+  // The issue page's documents; the two URL columns stand in for rows read
+  // before documents were collected.
+  const documents = (ipo.documents && ipo.documents.length > 0
+    ? ipo.documents
+    : [
+      ...(ipo.rhp_url ? [{ kind: "rhp" as const, label: "Red Herring Prospectus (RHP)", url: ipo.rhp_url }] : []),
+      ...(ipo.drhp_url ? [{ kind: "drhp" as const, label: "Draft Red Herring Prospectus (DRHP)", url: ipo.drhp_url }] : []),
+    ]).filter((doc) => isWebUrl(doc.url));
   const min = formatMinInvestment(ipo);
   // Facts from the issue's own page. Each renders only when the page gave it,
   // so a row appears the moment sync-ipo-details has read the page.
@@ -70,11 +77,10 @@ export default function IPOIssueDetailsCard({ ipo }: { ipo: Ipo }) {
         </dl>
 
         <div className="mt-5 pt-4 border-t border-border">
-          <p className="text-xs font-semibold text-muted-foreground mb-2.5">Offer documents</p>
-          {hasDocuments ? (
-            <div className="flex flex-wrap gap-3">
-              {ipo.rhp_url && <DocumentLink href={ipo.rhp_url} label="RHP" />}
-              {ipo.drhp_url && <DocumentLink href={ipo.drhp_url} label="DRHP" />}
+          <p className="text-xs font-semibold text-muted-foreground mb-2.5">Offer documents &amp; links</p>
+          {documents.length > 0 ? (
+            <div className="flex flex-col gap-2.5">
+              {documents.map((doc) => <DocumentLink key={doc.kind} href={doc.url} label={doc.label} />)}
             </div>
           ) : (
             <p className="text-sm text-muted-foreground">Not disclosed by our sources yet.</p>

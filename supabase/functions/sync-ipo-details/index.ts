@@ -55,6 +55,7 @@ type Row = {
   lot_size: number | null; price_band_max: number | null;
   details_fetched_at: string | null; details_attempted_at: string | null;
   subscription_as_of: string | null;
+  news_fetched_at: string | null;
 };
 
 /** A parse that found the issue's own sections, or a reason it did not. */
@@ -192,7 +193,7 @@ Deno.serve(async (req) => {
   const apifyToken = Deno.env.get("APIFY_API_KEY") ?? null;
 
   const { data, error } = await supabase.from("ipos").select(
-    "id,slug,name,status,detail_url,open_date,close_date,listing_date,registrar,allotment_date,lot_size,price_band_max,details_fetched_at,details_attempted_at,subscription_as_of",
+    "id,slug,name,status,detail_url,open_date,close_date,listing_date,registrar,allotment_date,lot_size,price_band_max,details_fetched_at,details_attempted_at,subscription_as_of,news_fetched_at",
   ).not("detail_url", "is", null);
   if (error) return json({ error: error.message }, 500);
 
@@ -210,8 +211,8 @@ Deno.serve(async (req) => {
       const attempted = row.details_attempted_at ? Date.parse(row.details_attempted_at) : 0;
       if (status === "listed") {
         const listedOn = row.listing_date ?? row.close_date;
-        // Read until both the page and its final subscription are stored.
-        const incomplete = !row.details_fetched_at || !row.subscription_as_of;
+        // Read until the page, its final subscription and its news are stored.
+        const incomplete = !row.details_fetched_at || !row.subscription_as_of || !row.news_fetched_at;
         return incomplete && attempted < liveCutoff && (!listedOn || listedOn >= listedCutoff);
       }
       return attempted < (status === "open" ? openCutoff : liveCutoff);

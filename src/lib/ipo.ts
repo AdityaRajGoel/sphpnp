@@ -77,7 +77,18 @@ export type Ipo = {
   subscription_employee: number | null;
   subscription_categories: { category: string; times: number }[] | null;
   subscription_as_of: string | null;
+  /** RHP/DRHP, anchor letter, allotment status and company site, from the issue page. */
+  documents: IpoDocumentLink[] | null;
+  /** Recent coverage from Google News, gathered by the sync. */
+  news: IpoNewsItem[] | null;
+  news_fetched_at: string | null;
 };
+
+export type IpoDocumentLink = { kind: "rhp" | "drhp" | "anchor" | "allotment" | "company"; label: string; url: string };
+export type IpoNewsItem = { title: string; source: string; url: string; published_at: string };
+
+/** Only web links are rendered as hrefs - these URLs come from third-party pages. */
+export const isWebUrl = (url: string): boolean => /^https?:\/\//i.test(url);
 
 /** One section of the issue page as it was published: tables as rows of cells, text as lines. */
 export type IpoPageSection = { title: string; tables: string[][][]; lines: string[] };

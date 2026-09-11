@@ -15,29 +15,21 @@ import IPOFieldSource from "@/components/ipo/IPOFieldSource";
 import IPOPageSections from "@/components/ipo/IPOPageSections";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { formatGmp, formatGmpPercent, formatMinInvestment, formatRupees, formatSourceList, formatSubscription, getIpos, gmpPercent, type Ipo } from "@/lib/ipo";
+import { formatGmp, formatGmpPercent, formatMinInvestment, formatRupees, formatSourceList, formatSubscription, getIpos, gmpPercent, isWebUrl, type Ipo } from "@/lib/ipo";
 import { supabase } from "@/integrations/supabase/client";
 
-type NewsItem = { title: string; summary: string; source: string; url?: string };
-const safeUrl = (url?: string) => url && /^https?:\/\//i.test(url) ? url : undefined;
 
 export default function IpoDetailPage() {
   const { slug } = useParams<{ slug: string }>();
   const [ipo, setIpo] = useState<Ipo | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [news, setNews] = useState<NewsItem[]>([]);
 
   useEffect(() => { if (slug) getIpos(slug).then((rows) => setIpo(rows[0] ?? null)).catch((e: Error) => setError(e.message)).finally(() => setLoading(false)); }, [slug]);
-  useEffect(() => {
-    if (!ipo) return;
-    const terms = ipo.name.toLowerCase().split(/\s+/).filter((term) => term.length > 3).slice(0, 3);
-    supabase.functions.invoke("fetch-news").then(({ data, error: newsError }) => {
-      if (newsError || !data?.success) return;
-      const all = [...(data.indian ?? []), ...(data.world ?? [])] as NewsItem[];
-      setNews(all.filter((item) => terms.some((term) => `${item.title} ${item.summary}`.toLowerCase().includes(term))).slice(0, 4));
-    }).catch(() => undefined);
-  }, [ipo]);
+  // Stored by sync-ipo-details from Google News. It replaced filtering the
+  // general market feed for words of the company's name, which found nothing
+  // for most issues.
+  const news = (ipo?.news ?? []).filter((item) => isWebUrl(item.url));
 
   // Every category the subscription page lists, in its order; the three stored
   // columns stand in when the full list is absent.
@@ -79,7 +71,7 @@ export default function IpoDetailPage() {
         </section>
         {subscriptions.length > 0 && <section className="mt-8"><Card><CardContent className="p-5 md:p-6"><div className="flex flex-wrap items-end justify-between gap-3"><SectionTitle icon={Users} title="Subscription by category" subtitle={ipo.subscription_as_of ? `As of ${new Intl.DateTimeFormat("en-IN", { dateStyle: "medium", timeStyle: "short" }).format(new Date(ipo.subscription_as_of))}, from Chittorgarh.` : undefined} />{ipo.subscription_total !== null && <div className="text-right"><p className="text-xs text-muted-foreground">Total subscription</p><p className="font-heading text-2xl font-bold">{formatSubscription(ipo.subscription_total)}</p></div>}</div><div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5 mt-6">{subscriptions.map(([label, value]) => <div key={label}><div className="flex justify-between text-sm"><span>{label}</span><strong>{value.toFixed(2)}×</strong></div><div className="h-2 rounded-full bg-muted mt-2 overflow-hidden"><div className="h-full rounded-full bg-secondary" style={{ width: `${value / subscriptionMax * 100}%` }} /></div></div>)}</div></CardContent></Card></section>}
         <IPOPageSections sections={ipo.details?.sections ?? []} fetchedAt={ipo.details_fetched_at} />
-        <section className="mt-8"><Card><CardContent className="p-5 md:p-6"><SectionTitle icon={Newspaper} title="Related market news" subtitle="Matches from the current market-news feed; verify details with primary sources." />{news.length === 0 ? <p className="mt-5 text-sm text-muted-foreground">No matching stories are available right now.</p> : <div className="grid md:grid-cols-2 gap-3 mt-5">{news.map((item) => <a key={item.title} href={safeUrl(item.url) ?? undefined} target="_blank" rel="noopener noreferrer" className="rounded-lg border border-border p-4 hover:border-secondary/50 transition-colors"><p className="font-semibold text-sm">{item.title}</p><p className="text-xs text-muted-foreground mt-2">{item.source}</p></a>)}</div>}</CardContent></Card></section>
+        <section className="mt-8"><Card><CardContent className="p-5 md:p-6"><SectionTitle icon={Newspaper} title={`${ipo.name} IPO in the news`} subtitle="Recent coverage from Google News. Headlines are the publishers' own; verify details with the RHP." />{news.length === 0 ? <p className="mt-5 text-sm text-muted-foreground">No coverage found yet.</p> : <div className="grid md:grid-cols-2 gap-3 mt-5">{news.map((item) => <a key={item.url} href={item.url} target="_blank" rel="noopener noreferrer" className="rounded-lg border border-border p-4 hover:border-secondary/50 transition-colors"><p className="font-semibold text-sm">{item.title}</p><p className="text-xs text-muted-foreground mt-2">{item.source} · {new Intl.DateTimeFormat("en-IN", { dateStyle: "medium" }).format(new Date(item.published_at))}</p></a>)}</div>}</CardContent></Card></section>
       </>}
     </main><WhatsAppButton /><Footer /></PageTransition>;
 }
