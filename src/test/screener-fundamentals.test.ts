@@ -98,3 +98,26 @@ describe("summariseFundamentals - nothing to go on", () => {
     expect(Object.entries(summary).filter(([k]) => k !== "source").every(([, v]) => v === null)).toBe(true);
   });
 });
+
+describe("summariseFundamentals - a bank", () => {
+  it("leaves OPM out: a bank's financing margin is not an operating margin", () => {
+    const summary = summariseFundamentals({ source: "indianapi", quarters: parseStatement(indian("hdfcbank-quarter_results"))! });
+    expect(summary.opm).toBeNull();
+    expect(summary.sales_growth_yoy).not.toBeNull();
+  });
+});
+
+describe("summariseFundamentals - screener.in", () => {
+  it("reads the same grids as IndianAPI and takes valuation from screener.in's headline ratios", () => {
+    const summary = summariseFundamentals({
+      source: "screener_in",
+      quarters: parseStatement(indian("reliance-quarter_results"))!,
+      screenerRatios: { price: 1258, book_value: 668, dividend_yield: 0.47, pe: 22.8, roe: 8.91, roce: 10.3 },
+    });
+    expect(summary.source).toBe("screener_in");
+    expect(summary.opm).toBe(15);
+    expect(summary.pb).toBeCloseTo(1258 / 668, 5);
+    expect(summary.eps_ttm).toBeCloseTo(1258 / 22.8, 5);
+    expect(summary).toMatchObject({ dividend_yield: 0.47, roe: 8.91, roce: 10.3 });
+  });
+});

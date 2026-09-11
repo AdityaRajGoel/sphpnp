@@ -9,7 +9,7 @@
 type Grid = { periods: string[]; period_ends: (string | null)[]; rows: { label: string; values: (number | null)[] }[] };
 type KeyMetrics = Record<string, Record<string, number | null>>;
 
-export type FundamentalsSource = "indianapi" | "google_finance";
+export type FundamentalsSource = "indianapi" | "screener_in" | "google_finance";
 
 export type FundamentalsSummary = {
   source: FundamentalsSource;
@@ -33,6 +33,8 @@ export type SummaryInput = {
   keyMetrics?: KeyMetrics;
   roeHistory?: { period_end: string; roe: number }[];
   googleStats?: { pe: number | null; eps: number | null; dividend_yield_pct: number | null };
+  /** screener.in's headline ratios - valuation and returns where IndianAPI's key metrics are absent. */
+  screenerRatios?: { price: number | null; book_value: number | null; dividend_yield: number | null; pe: number | null; roe: number | null; roce: number | null };
 };
 
 const row = (grid: Grid | undefined, pattern: RegExp) => grid?.rows.find((r) => pattern.test(r.label));
@@ -62,6 +64,9 @@ export function yoyGrowth(grid: Grid, label: string | RegExp): number | null {
 }
 
 const metric = (km: KeyMetrics | undefined, group: string, key: string) => km?.[group]?.[key] ?? null;
+/** a / b when both are known and b is a real divisor. */
+const ratio = (a: number | null | undefined, b: number | null | undefined) =>
+  a === null || a === undefined || b === null || b === undefined || b <= 0 ? null : a / b;
 
 function valueAtLatest(grid: Grid | undefined, pattern: RegExp): number | null {
   const r = row(grid, pattern);
@@ -70,11 +75,12 @@ function valueAtLatest(grid: Grid | undefined, pattern: RegExp): number | null {
 }
 
 export function summariseFundamentals(input: SummaryInput): FundamentalsSummary {
-  const { source, quarters, balance, ratios, keyMetrics, roeHistory, googleStats } = input;
+  const { source, quarters, balance, ratios, keyMetrics, roeHistory, googleStats, screenerRatios: sr } = input;
   const qEnd = quarters ? quarters.period_ends[latestIndex(quarters)] ?? null : null;
 
-  if (source === "indianapi") {
-    // A bank's statement has Revenue / Financing Margin % where others have Sales / OPM %.
+  // IndianAPI serves screener.in's statements, so both read the same grids.
+  if (source === "indianapi" || source === "screener_in") {
+    // A bank's statement has Revenue where others have Sales.
     const equity = (() => {
       const capital = valueAtLatest(balance, /^Equity Capital$/);
       const reserves = valueAtLatest(balance, /^Reserves$/);
@@ -83,15 +89,17 @@ export function summariseFundamentals(input: SummaryInput): FundamentalsSummary 
     const borrowings = valueAtLatest(balance, /^Borrowings?$/);
     return {
       source,
-      roe: roeHistory && roeHistory.length > 0 ? roeHistory[roeHistory.length - 1].roe : null,
-      roce: lastValue(row(ratios, /^ROCE %$/)?.values),
-      opm: quarters ? valueAtLatest(quarters, /^(OPM %|Financing Margin %)$/) : null,
+      roe: roeHistory && roeHistory.length > 0 ? roeHistory[roeHistory.length - 1].roe : sr?.roe ?? null,
+      roce: lastValue(row(ratios, /^ROCE %$/)?.values) ?? sr?.roce ?? null,
+      // A bank's "Financing Margin %" is not an operating margin (HDFC Bank's
+      // reads -17%) and would mislead in an OPM column, so banks have none.
+      opm: quarters ? valueAtLatest(quarters, /^OPM %$/) : null,
       sales_growth_yoy: quarters ? yoyGrowth(quarters, /^(Sales|Revenue)$/) : null,
       profit_growth_yoy: quarters ? yoyGrowth(quarters, "Net Profit") : null,
       debt_to_equity: equity !== null && equity > 0 && borrowings !== null ? borrowings / equity : null,
-      pb: metric(keyMetrics, "valuation", "priceToBookMostRecentFiscalYear"),
-      dividend_yield: metric(keyMetrics, "valuation", "currentDividendYieldCommonStockPrimaryIssueLTM"),
-      eps_ttm: metric(keyMetrics, "persharedata", "eEPSExcludingExtraordinaryIitemsTrailing12onth"),
+      pb: metric(keyMetrics, "valuation", "priceToBookMostRecentFiscalYear") ?? ratio(sr?.price, sr?.book_value),
+      dividend_yield: metric(keyMetrics, "valuation", "currentDividendYieldCommonStockPrimaryIssueLTM") ?? sr?.dividend_yield ?? null,
+      eps_ttm: metric(keyMetrics, "persharedata", "eEPSExcludingExtraordinaryIitemsTrailing12onth") ?? ratio(sr?.price, sr?.pe),
       latest_quarter: qEnd,
     };
   }

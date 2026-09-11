@@ -25,6 +25,7 @@ permissions: {}
 jobs:
   sync:
     runs-on: ubuntu-latest
+    timeout-minutes: 50
     steps:
       - name: Trigger sync-fundamentals
         run: |
@@ -39,41 +40,47 @@ jobs:
           # that actually reached NSE died with WORKER_RESOURCE_LIMIT after
           # ~2.5 minutes, having written 176 rows. If that code reappears in
           # this log, lower BATCH_SIZE rather than raising max-time.
-          resp=$(curl -sS -w "\n%{http_code}" --max-time 300 \
-            -X POST "https://zbkjbbujsdlpujotgltm.supabase.co/functions/v1/sync-fundamentals" \
-            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
-            -H "x-sync-secret: ${{ secrets.MARKET_SYNC_SECRET }}")
-          body=$(echo "$resp" | sed '$d'); code=$(echo "$resp" | tail -1)
-          echo "$body"
+          # GitHub runs this "hourly" schedule only every two to five hours, so one
+          # call per run (two symbols) left 75 of 246 stocks unreached for weeks.
+          # Eight calls per run keeps each call inside the worker ceiling above
+          # while covering sixteen symbols a run.
+          for i in $(seq 1 8); do
+            resp=$(curl -sS -w "\n%{http_code}" --max-time 300 \
+              -X POST "https://zbkjbbujsdlpujotgltm.supabase.co/functions/v1/sync-fundamentals" \
+              -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
+              -H "x-sync-secret: ${{ secrets.MARKET_SYNC_SECRET }}")
+            body=$(echo "$resp" | sed '$d'); code=$(echo "$resp" | tail -1)
+            echo "$body"
 
-          # Two outcomes, because a filing parked at its retry cap and a filing
-          # that just failed to parse are not the same event:
-          #
-          #   200            every filing this batch touched either parsed or was
-          #                  deliberately skipped. Green.
-          #   500 + failed   at least one filing failed to parse or its income row
-          #                  could not be written. Red - the fundamentals tables
-          #                  feed a stock page, so a silent partial is the thing
-          #                  worth catching.
-          #
-          # `skipped` is annotated rather than failed on: a filing at
-          # MAX_PARSE_ATTEMPTS is a known state that needs a person to look at
-          # parse_error, not a fresh fault to redden every hour until they do.
-          # jq -e is avoided - an absent/zero key is the normal case, not an error
-          # - and a non-JSON body (a gateway HTML page) yields an empty string
-          # rather than failing the step here, leaving the exit code below as the
-          # only thing that decides the build.
-          # A partial NSE blockage is worth surfacing without reddening the
-          # build. Total blockage does not appear here at all - the function
-          # returns 500 for it, so the exit check below catches it.
-          regfail=$(echo "$body" | jq -r '.registryFailed // 0' 2>/dev/null || echo 0)
-          if [ -n "$regfail" ] && [ "$regfail" != "0" ] && [ "$regfail" != "null" ]; then
-            echo "::warning title=NSE registry calls failed::$regfail of $(echo "$body" | jq -r '.symbols // "?"' 2>/dev/null || echo '?') symbol(s) could not be fetched from NSE"
-          fi
+            # Two outcomes, because a filing parked at its retry cap and a filing
+            # that just failed to parse are not the same event:
+            #
+            #   200            every filing this batch touched either parsed or was
+            #                  deliberately skipped. Green.
+            #   500 + failed   at least one filing failed to parse or its income row
+            #                  could not be written. Red - the fundamentals tables
+            #                  feed a stock page, so a silent partial is the thing
+            #                  worth catching.
+            #
+            # `skipped` is annotated rather than failed on: a filing at
+            # MAX_PARSE_ATTEMPTS is a known state that needs a person to look at
+            # parse_error, not a fresh fault to redden every hour until they do.
+            # jq -e is avoided - an absent/zero key is the normal case, not an error
+            # - and a non-JSON body (a gateway HTML page) yields an empty string
+            # rather than failing the step here, leaving the exit code below as the
+            # only thing that decides the build.
+            # A partial NSE blockage is worth surfacing without reddening the
+            # build. Total blockage does not appear here at all - the function
+            # returns 500 for it, so the exit check below catches it.
+            regfail=$(echo "$body" | jq -r '.registryFailed // 0' 2>/dev/null || echo 0)
+            if [ -n "$regfail" ] && [ "$regfail" != "0" ] && [ "$regfail" != "null" ]; then
+              echo "::warning title=NSE registry calls failed::$regfail of $(echo "$body" | jq -r '.symbols // "?"' 2>/dev/null || echo '?') symbol(s) could not be fetched from NSE"
+            fi
 
-          skipped=$(echo "$body" | jq -r '.skipped // 0' 2>/dev/null || echo 0)
-          if [ -n "$skipped" ] && [ "$skipped" != "0" ] && [ "$skipped" != "null" ]; then
-            echo "::warning title=Fundamentals filings at retry cap::$skipped filing(s) skipped; check fundamentals_filings.parse_error"
-          fi
+            skipped=$(echo "$body" | jq -r '.skipped // 0' 2>/dev/null || echo 0)
+            if [ -n "$skipped" ] && [ "$skipped" != "0" ] && [ "$skipped" != "null" ]; then
+              echo "::warning title=Fundamentals filings at retry cap::$skipped filing(s) skipped; check fundamentals_filings.parse_error"
+            fi
 
-          [ "$code" = "200" ] || exit 1
+            [ "$code" = "200" ] || exit 1
+          done

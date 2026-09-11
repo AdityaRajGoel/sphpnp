@@ -67,3 +67,15 @@ verify_jwt = false
 
 [functions.sync-announcements]
 verify_jwt = false
+
+[functions.sync-nse-disclosures]
+verify_jwt = false
+
+[functions.sync-screener-in]
+verify_jwt = false
+
+[functions.sync-bse-announcements]
+verify_jwt = false
+
+[functions.sync-tickertape]
+verify_jwt = false

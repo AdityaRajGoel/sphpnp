@@ -1,0 +1,90 @@
+# Daily pass over the tracked universe for the free per-stock sources:
+#   sync-nse-disclosures   NSE corporate actions, shareholding filings, insider trades
+#   sync-screener-in       screener.in statements, shareholding, ratios, documents, BSE codes
+#   sync-tickertape        Tickertape analyst coverage, fund holdings, scorecard
+#   sync-bse-announcements BSE announcements (needs the BSE codes screener-in stores)
+# Each function does one batch per call and says `wrapped` when the pass is
+# complete; a job calls until then, or until the source rate-limits (429),
+# which ends the job quietly - the cursor resumes there tomorrow.
+#
+# Same two secrets as every other sync-*.yml:
+#   SUPABASE_ANON_KEY   - the project's anon/publishable key (passes the gateway)
+#   MARKET_SYNC_SECRET  - must match SYNC_SECRET on the edge function
+name: Free sources sync
+
+on:
+  schedule:
+    - cron: "30 20 * * *" # 02:00 IST daily
+  workflow_dispatch: {}
+
+permissions: {}
+
+jobs:
+  sources:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        fn: [sync-nse-disclosures, sync-screener-in, sync-tickertape]
+    steps:
+      - name: Run ${{ matrix.fn }} until the pass completes
+        env:
+          FN: ${{ matrix.fn }}
+        run: |
+          for i in $(seq 1 30); do
+            resp=$(curl -sS -w "\n%{http_code}" --max-time 170 \
+              -X POST "https://zbkjbbujsdlpujotgltm.supabase.co/functions/v1/$FN" \
+              -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
+              -H "x-sync-secret: ${{ secrets.MARKET_SYNC_SECRET }}")
+            body=$(echo "$resp" | sed '$d'); code=$(echo "$resp" | tail -1)
+            echo "call $i ($code): $body"
+            if [ "$code" = "429" ]; then
+              echo "::warning title=$FN rate-limited::stopped at call $i; the cursor resumes on the next run"
+              exit 0
+            fi
+            [ "$code" = "200" ] || exit 1
+            [ "$(echo "$body" | jq -r '.wrapped // false')" = "true" ] && exit 0
+          done
+          echo "::warning title=$FN pass incomplete::30 calls without completing a pass"
+
+  bse:
+    needs: sources
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Run sync-bse-announcements until the pass completes
+        env:
+          FN: sync-bse-announcements
+        run: |
+          for i in $(seq 1 30); do
+            resp=$(curl -sS -w "\n%{http_code}" --max-time 170 \
+              -X POST "https://zbkjbbujsdlpujotgltm.supabase.co/functions/v1/$FN" \
+              -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
+              -H "x-sync-secret: ${{ secrets.MARKET_SYNC_SECRET }}")
+            body=$(echo "$resp" | sed '$d'); code=$(echo "$resp" | tail -1)
+            echo "call $i ($code): $body"
+            if [ "$code" = "429" ]; then
+              echo "::warning title=$FN rate-limited::stopped at call $i; the cursor resumes on the next run"
+              exit 0
+            fi
+            [ "$code" = "200" ] || exit 1
+            [ "$(echo "$body" | jq -r '.wrapped // false')" = "true" ] && exit 0
+          done
+          echo "::warning title=$FN pass incomplete::30 calls without completing a pass"
+
+  fundamentals:
+    needs: sources
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Rebuild the screener's fundamentals from the fresh statements
+        run: |
+          resp=$(curl -sS -w "\n%{http_code}" --max-time 150 \
+            -X POST "https://zbkjbbujsdlpujotgltm.supabase.co/functions/v1/build-screener-fundamentals" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "x-sync-secret: ${{ secrets.MARKET_SYNC_SECRET }}")
+          body=$(echo "$resp" | sed '$d'); code=$(echo "$resp" | tail -1)
+          echo "$body"
+          [ "$code" = "200" ] || exit 1

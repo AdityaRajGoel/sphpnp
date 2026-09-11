@@ -16,7 +16,7 @@ const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...cors, "Content-Type": "application/json" } });
 
 type Grid = NonNullable<SummaryInput["quarters"]>;
-type StatementRow = { symbol: string; statement: string; periods: string[]; period_ends: (string | null)[]; rows: Grid["rows"] };
+type StatementRow = { symbol: string; statement: string; source: string; periods: string[]; period_ends: (string | null)[]; rows: Grid["rows"] };
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
@@ -28,18 +28,20 @@ Deno.serve(async (req) => {
   const statements: StatementRow[] = [];
   for (let from = 0; ; from += 1000) {
     const { data, error } = await supabase.from("stock_statements")
-      .select("symbol,statement,periods,period_ends,rows")
+      .select("symbol,statement,source,periods,period_ends,rows")
       .in("statement", ["quarter_results", "balancesheet", "ratios", "gf_income_quarterly", "gf_balance_annual"])
       .order("symbol").range(from, from + 999);
     if (error) return json({ error: `statements read: ${error.message}` }, 500);
     statements.push(...(data ?? []) as StatementRow[]);
     if (!data || data.length < 1000) break;
   }
-  const { data: profiles, error: pErr } = await supabase.from("stock_profiles").select("symbol,key_metrics,roe_history,google_finance");
+  const { data: profiles, error: pErr } = await supabase.from("stock_profiles").select("symbol,key_metrics,roe_history,google_finance,screener");
   if (pErr) return json({ error: `profiles read: ${pErr.message}` }, 500);
 
   const bySymbol = new Map<string, Map<string, Grid>>();
+  const quarterSource = new Map<string, string>();
   for (const s of statements) {
+    if (s.statement === "quarter_results") quarterSource.set(s.symbol, s.source);
     const grids = bySymbol.get(s.symbol) ?? new Map<string, Grid>();
     grids.set(s.statement, { periods: s.periods, period_ends: s.period_ends, rows: s.rows });
     bySymbol.set(s.symbol, grids);
@@ -51,12 +53,13 @@ Deno.serve(async (req) => {
     const profile = profileOf.get(symbol);
     const input: SummaryInput = grids.has("quarter_results")
       ? {
-        source: "indianapi",
+        source: quarterSource.get(symbol) === "screener_in" ? "screener_in" : "indianapi",
         quarters: grids.get("quarter_results"),
         balance: grids.get("balancesheet"),
         ratios: grids.get("ratios"),
         keyMetrics: profile?.key_metrics ?? {},
         roeHistory: profile?.roe_history ?? [],
+        screenerRatios: profile?.screener?.top_ratios ?? undefined,
       }
       : {
         source: "google_finance",

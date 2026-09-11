@@ -22,8 +22,14 @@ Written 2026-09-11. "Free" means no paid plan; a key may still be needed.
 | Market news page | Publisher RSS feeds | Free | `fetch-news` |
 | Mutual fund NAVs | AMFI NAVAll.txt | Free | `sync-market-feed` |
 | Macro indicators, INR exchange rates | World Bank Open Data; Frankfurter (ECB rates) | Free, keyless | `sync-macro` |
+| Statements, 12-quarter shareholding, ratios, growth, pros/cons, documents, BSE codes (every stock) | screener.in company pages | Free (scraped, ~3 s apart) | `sync-screener-in` |
+| Corporate actions, shareholding-pattern filings, insider trades (every stock) | NSE JSON API (browser User-Agent) | Free | `sync-nse-disclosures` |
+| Company announcements | BSE announcements API (by scrip code) | Free | `sync-bse-announcements` |
+| Analyst coverage, MF/insurance holding split, top fund holders, scorecard | Tickertape stock pages | Free (scraped) | `sync-tickertape` |
 
 ## Worth adding (free)
+
+Items 1-6 below were added on 2026-09-11 (see the table above; the NSE results sync now makes eight calls a run). Kept for the record.
 
 1. **NSE financial results XBRL, all companies.** The result-filing RSS already
    gives an XBRL link per filing; parsing it for every tracked stock (not only
@@ -46,5 +52,10 @@ Written 2026-09-11. "Free" means no paid plan; a key may still be needed.
    holdings moved - "mutual fund interest" on the stock page.
 8. **RBI DBIE** for bank-specific ratios (GNPA, CASA) not in any statement feed.
 
-Not recommended: screener.in and Tickertape pages - their terms forbid
-scraping, and IndianAPI already provides screener.in-style statements.
+screener.in and Tickertape are scraped at the owner's instruction (2026-09-11),
+politely paced; both sites' terms restrict automated access, so if either
+objects or blocks us, their syncs should be switched off. Tickertape's search
+API answers 403 to Supabase's servers, so stock pages are found through a
+resolved list (`_shared/tickertape-slugs.ts`) and the stocks sitemap. AMFI has
+no per-stock holdings feed (only per-AMC monthly spreadsheets); fund holdings
+come from Tickertape instead.
