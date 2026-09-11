@@ -1,0 +1,42 @@
+# The IPO pipeline: companies that have filed offer documents with SEBI.
+#
+# Reads the newest pages of SEBI's draft offer document and red herring
+# document lists and rebuilds each company's stage. The "backfill" input walks
+# back through the full pipeline window (18 months) - for the first run, or
+# after an outage.
+#
+# Same two secrets as every other sync-*.yml:
+#   SUPABASE_ANON_KEY   - the project's anon/publishable key (passes the gateway)
+#   MARKET_SYNC_SECRET  - must match SYNC_SECRET on the edge function
+name: IPO pipeline sync
+
+on:
+  schedule:
+    - cron: "15 14 * * *" # 19:45 IST daily, after SEBI's day's postings
+  workflow_dispatch:
+    inputs:
+      backfill:
+        description: "Walk back through the whole pipeline window"
+        type: boolean
+        default: false
+
+permissions: {}
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger sync-ipo-pipeline
+        env:
+          BACKFILL: ${{ inputs.backfill || false }}
+        run: |
+          body=$(jq -cn --argjson b "$BACKFILL" '{backfill: $b}')
+          resp=$(curl -sS -w "\n%{http_code}" --max-time 150 \
+            -X POST "https://zbkjbbujsdlpujotgltm.supabase.co/functions/v1/sync-ipo-pipeline" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "x-sync-secret: ${{ secrets.MARKET_SYNC_SECRET }}" \
+            -H "Content-Type: application/json" \
+            -d "$body")
+          body=$(echo "$resp" | sed '$d'); code=$(echo "$resp" | tail -1)
+          echo "$body"
+          [ "$code" = "200" ] || exit 1
