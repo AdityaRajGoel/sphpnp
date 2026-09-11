@@ -79,3 +79,6 @@ verify_jwt = false
 
 [functions.sync-tickertape]
 verify_jwt = false
+
+[functions.sync-market-data]
+verify_jwt = false

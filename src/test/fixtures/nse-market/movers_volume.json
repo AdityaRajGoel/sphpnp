@@ -1,0 +1,65 @@
+{
+"data": [
+{
+"symbol": "KIRLOSIND",
+"companyName": "Kirloskar Industries Limited",
+"volume": 639315,
+"week1AvgVolume": 3567,
+"week1volChange": 179.2304457527334,
+"week2AvgVolume": 3803,
+"week2volChange": 168.09199990439086,
+"ltp": 3835,
+"pChange": 7.22,
+"turnover": 25023.49234
+},
+{
+"symbol": "AWFIS",
+"companyName": "Awfis Space Solutions Limited",
+"volume": 23945553,
+"week1AvgVolume": 199036,
+"week1volChange": 120.30734563760919,
+"week2AvgVolume": 259517,
+"week2volChange": 92.26936624097058,
+"ltp": 293.7,
+"pChange": 17.67,
+"turnover": 67868.88086
+},
+{
+"symbol": "BANKBETF",
+"companyName": "Bajaj Finserv Mutual Fund - Bajaj Finserv Nifty Bank ETF",
+"volume": 1195831,
+"week1AvgVolume": 13451,
+"week1volChange": 88.90055508747584,
+"week2AvgVolume": 34385,
+"week2volChange": 34.77705014250136,
+"ltp": 57.45,
+"pChange": 0.24,
+"turnover": 689.03782
+},
+{
+"symbol": "ORIENTTECH",
+"companyName": "Orient Technologies Limited",
+"volume": 8430139,
+"week1AvgVolume": 113166,
+"week1volChange": 74.49301841970778,
+"week2AvgVolume": 122110,
+"week2volChange": 69.03679072437183,
+"ltp": 247.47,
+"pChange": 5.15,
+"turnover": 22149.3472
+},
+{
+"symbol": "WESTLIFE",
+"companyName": "WESTLIFE FOODWORLD LIMITED",
+"volume": 7221944,
+"week1AvgVolume": 118696,
+"week1volChange": 60.84395311839613,
+"week2AvgVolume": 93666,
+"week2volChange": 77.10277959218931,
+"ltp": 569.3,
+"pChange": 1.31,
+"turnover": 41130.41546
+}
+],
+"timestamp": "11-Sep-2026 16:00:00"
+}

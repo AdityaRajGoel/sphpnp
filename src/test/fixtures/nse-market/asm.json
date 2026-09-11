@@ -1,0 +1,120 @@
+{
+"longterm": {
+"data": [
+{
+"asmSurvIndicator": "Stage I",
+"asmTime": "11-Sep-2026",
+"companyName": "A2Z Infra Engineering Limited",
+"isin": "INE619I01012",
+"series": null,
+"survCode": "LTASM - I (13)",
+"survDesc": "Long Term Additional Surveillance Measure (LTASM) - Stage I",
+"symbol": "A2ZINFRA",
+"srno": 1
+},
+{
+"asmSurvIndicator": "Stage I",
+"asmTime": "11-Sep-2026",
+"companyName": "Acutaas Chemicals Limited",
+"isin": "INE00FF01025",
+"series": null,
+"survCode": "LTASM - I (13)",
+"survDesc": "Long Term Additional Surveillance Measure (LTASM) - Stage I",
+"symbol": "ACUTAAS",
+"srno": 2
+},
+{
+"asmSurvIndicator": "Stage I",
+"asmTime": "11-Sep-2026",
+"companyName": "Addictive Learning Technology Limited",
+"isin": "INE0RDH01021",
+"series": null,
+"survCode": "LTASM - I (13)",
+"survDesc": "Long Term Additional Surveillance Measure (LTASM) - Stage I",
+"symbol": "ADDICTIVE",
+"srno": 3
+},
+{
+"asmSurvIndicator": "Stage I",
+"asmTime": "11-Sep-2026",
+"companyName": "Aegis Logistics Limited",
+"isin": "INE208C01025",
+"series": null,
+"survCode": "LTASM - I (13)",
+"survDesc": "Long Term Additional Surveillance Measure (LTASM) - Stage I",
+"symbol": "AEGISLOG",
+"srno": 4
+},
+{
+"asmSurvIndicator": "Stage I",
+"asmTime": "11-Sep-2026",
+"companyName": "Artemis Electricals and Projects Limited",
+"isin": "INE757T01025",
+"series": null,
+"survCode": "LTASM - I (13)",
+"survDesc": "Long Term Additional Surveillance Measure (LTASM) - Stage I",
+"symbol": "AEPL",
+"srno": 5
+}
+]
+},
+"shortterm": {
+"data": [
+{
+"asmSurvIndicator": "Stage I",
+"asmTime": "11-Sep-2026",
+"companyName": "ABS Marine Services Limited",
+"isin": "INE0QRV01016",
+"series": null,
+"survCode": "STASM - I (11)",
+"survDesc": "Short Term Additional Surveillance Measure (STASM) - Stage I",
+"symbol": "ABSMARINE",
+"srno": 1
+},
+{
+"asmSurvIndicator": "Stage I",
+"asmTime": "11-Sep-2026",
+"companyName": "Anmol India Limited",
+"isin": "INE02AR01019",
+"series": null,
+"survCode": "STASM - I (11)",
+"survDesc": "Short Term Additional Surveillance Measure (STASM) - Stage I",
+"symbol": "ANMOL",
+"srno": 2
+},
+{
+"asmSurvIndicator": "Stage I",
+"asmTime": "11-Sep-2026",
+"companyName": "Archidply Industries Limited",
+"isin": "INE877I01016",
+"series": null,
+"survCode": "STASM - I (11)",
+"survDesc": "Short Term Additional Surveillance Measure (STASM) - Stage I",
+"symbol": "ARCHIDPLY",
+"srno": 3
+},
+{
+"asmSurvIndicator": "Stage I",
+"asmTime": "11-Sep-2026",
+"companyName": "Astec LifeSciences Limited",
+"isin": "INE563J01010",
+"series": null,
+"survCode": "STASM - I (11)",
+"survDesc": "Short Term Additional Surveillance Measure (STASM) - Stage I",
+"symbol": "ASTEC",
+"srno": 4
+},
+{
+"asmSurvIndicator": "Stage I",
+"asmTime": "11-Sep-2026",
+"companyName": "Atal Realtech Limited",
+"isin": "INE0ALR01029",
+"series": null,
+"survCode": "STASM - I (11)",
+"survDesc": "Short Term Additional Surveillance Measure (STASM) - Stage I",
+"symbol": "ATALREAL",
+"srno": 5
+}
+]
+}
+}

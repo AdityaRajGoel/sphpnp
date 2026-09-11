@@ -1,0 +1,93 @@
+# Market data from NSE, BSE, niftyindices, NSDL and MoSPI (sync-market-data).
+# Each dataset is one call; the backfills walk back through dates from a
+# cursor until the function answers `wrapped` (then return at once), so the
+# history fills over the first few runs and costs nothing after.
+#
+# Three runs each weekday: 09:30 IST (surveillance lists, IPOs, calendar),
+# 19:00 IST (bhavcopy, participant OI, deals, option chain close) and 00:15 IST
+# (NSE posts the index valuation file around 23:30). Every call is an upsert,
+# so a dataset fetched twice is harmless.
+#
+#   SUPABASE_ANON_KEY   - the project's anon/publishable key (passes the gateway)
+#   MARKET_SYNC_SECRET  - must match SYNC_SECRET on the edge function
+name: Market data sync
+
+on:
+  schedule:
+    - cron: "0 4 * * 1-5"
+    - cron: "30 13 * * 1-5"
+    - cron: "45 18 * * 1-5"
+  workflow_dispatch: {}
+
+permissions: {}
+
+jobs:
+  daily:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Fetch each dataset
+        run: |
+          failed=0
+          for ds in index_valuation participant_oi option_chain eq_eod pledges deals nse_ipos fpi week52 movers constituents surveillance lot_sizes calendar; do
+            resp=$(curl -sS -w "\n%{http_code}" --max-time 170 \
+              -X POST "https://zbkjbbujsdlpujotgltm.supabase.co/functions/v1/sync-market-data" \
+              -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
+              -H "x-sync-secret: ${{ secrets.MARKET_SYNC_SECRET }}" \
+              -H "Content-Type: application/json" \
+              -d "{\"dataset\":\"$ds\"}" || true)
+            body=$(echo "$resp" | sed '$d'); code=$(echo "$resp" | tail -1)
+            echo "$ds ($code): $body" | cut -c1-600
+            if [ "$code" != "200" ]; then
+              echo "::warning title=$ds failed::$(echo "$body" | cut -c1-200)"
+              failed=$((failed + 1))
+            fi
+            sleep 3
+          done
+          # One source down is a warning; most of them down is an outage.
+          [ "$failed" -le 4 ] || exit 1
+
+  backfill:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Walk back through history
+        run: |
+          for ds in index_valuation participant_oi eq_eod; do
+            fails=0
+            for i in $(seq 1 25); do
+              resp=$(curl -sS -w "\n%{http_code}" --max-time 170 \
+                -X POST "https://zbkjbbujsdlpujotgltm.supabase.co/functions/v1/sync-market-data" \
+                -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
+                -H "x-sync-secret: ${{ secrets.MARKET_SYNC_SECRET }}" \
+                -H "Content-Type: application/json" \
+                -d "{\"dataset\":\"$ds\",\"backfill\":true}" || true)
+              body=$(echo "$resp" | sed '$d'); code=$(echo "$resp" | tail -1)
+              echo "$ds backfill $i ($code): $body" | cut -c1-400
+              if [ "$code" != "200" ]; then
+                fails=$((fails + 1)); [ "$fails" -ge 3 ] && break; sleep 20; continue
+              fi
+              fails=0
+              [ "$(echo "$body" | jq -r '.wrapped // false')" = "true" ] && break
+            done
+          done
+      - name: Deal history (one year, one call per kind)
+        run: |
+          curl -sS --max-time 170 -X POST "https://zbkjbbujsdlpujotgltm.supabase.co/functions/v1/sync-market-data" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "x-sync-secret: ${{ secrets.MARKET_SYNC_SECRET }}" \
+            -H "Content-Type: application/json" -d '{"dataset":"deals","backfill":true}' || true
+
+  macro:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Collect MoSPI CPI, IIP and WPI
+        env:
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          SYNC_SECRET: ${{ secrets.MARKET_SYNC_SECRET }}
+        run: node --experimental-strip-types scripts/mospi-collect.mts
