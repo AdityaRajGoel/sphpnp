@@ -12,6 +12,7 @@ import IPOGmpChart from "@/components/ipo/IPOGmpChart";
 import IPOGmpHistoryTable from "@/components/ipo/IPOGmpHistoryTable";
 import IPOIssueDetailsCard from "@/components/ipo/IPOIssueDetailsCard";
 import IPOFieldSource from "@/components/ipo/IPOFieldSource";
+import NseExchangeCard from "@/components/ipo/NseExchangeCard";
 import IPOPageSections from "@/components/ipo/IPOPageSections";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -57,6 +58,7 @@ export default function IpoDetailPage() {
           <SummaryCard label="Est. listing price" value={formatRupees(ipo.est_listing_price)} field="est_listing_price" ipo={ipo} />
           <SummaryCard label="Issue size" value={ipo.size} field="issue_size_crore" ipo={ipo} />
         </section>
+        <div className="mt-6"><NseExchangeCard ipo={ipo} /></div>
         <section className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-8">
           <Card className="min-w-0 lg:col-span-2"><CardContent className="p-4 md:p-6">
             <SectionTitle icon={BarChart3} title="GMP history" subtitle="Each point is a recorded observation from the scheduled data sync." />

@@ -27,6 +27,8 @@ import RatiosPanel from "@/components/stock/RatiosPanel";
 import CorporateActionsList from "@/components/stock/CorporateActionsList";
 import SebiActionsList from "@/components/stock/SebiActionsList";
 import StockNews from "@/components/stock/StockNews";
+import StockSignals from "@/components/stock/StockSignals";
+import StockDeals from "@/components/stock/StockDeals";
 import CompanyInsights from "@/components/stock/CompanyInsights";
 import CompanyDocuments from "@/components/stock/CompanyDocuments";
 import InsiderTrades from "@/components/stock/InsiderTrades";
@@ -44,6 +46,7 @@ import ShareholdingTable from "@/components/stock/ShareholdingTable";
 const AIAnalysisModal = lazy(() => import("@/components/AIAnalysisModal"));
 // recharts is heavy; only a stock with stored statements downloads it.
 const StockCharts = lazy(() => import("@/components/stock/StockCharts"));
+const ExchangeHistory = lazy(() => import("@/components/stock/ExchangeHistory"));
 
 export default function StockPage() {
   const { symbol } = useParams<{ symbol: string }>();
@@ -216,6 +219,7 @@ export default function StockPage() {
                 </p>
               ) : null}
               {s.header && <QuoteMetrics header={s.header} />}
+              {s.header && <div className="mt-4"><StockSignals symbol={s.header.symbol} price={s.header.price} /></div>}
             </motion.header>
 
             {/* The chart is deliberately OUTSIDE the financials gate below: it
@@ -225,6 +229,12 @@ export default function StockPage() {
                 stocks whose page is otherwise emptiest. */}
             {s.header && (
               <StockPriceChart symbol={s.header.symbol} name={s.header.name} />
+            )}
+
+            {s.header && (
+              <Suspense fallback={null}>
+                <ExchangeHistory symbol={s.header.symbol} />
+              </Suspense>
             )}
 
             {s.header && <StockNews symbol={s.header.symbol} name={s.header.name} />}
@@ -289,6 +299,7 @@ export default function StockPage() {
 
             <CorporateActionsList actions={s.actions} />
             {disclosures && <InsiderTrades trades={disclosures.trades} />}
+            {s.header && <StockDeals symbol={s.header.symbol} />}
             {disclosures && <BseAnnouncements items={disclosures.announcements} bseCode={st.profile?.bse_code ?? null} />}
             {s.header && <SebiActionsList symbol={s.header.symbol} />}
             {st.profile?.screener && <CompanyDocuments documents={st.profile.screener.documents} />}
