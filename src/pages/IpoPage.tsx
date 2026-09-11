@@ -120,7 +120,7 @@ export default function IpoPage() {
           ) : view === "table" ? (
             <IPOTable ipos={sorted} sortKey={sortKey} sortDir={sortDir} onSort={handleSort} compareSlugs={compareSlugs} onToggleCompare={toggleCompare} />
           ) : (
-            <div className="grid md:grid-cols-2 gap-4">{sorted.map((ipo) => (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">{sorted.map((ipo) => (
               <IpoCard key={ipo.id} ipo={ipo} selected={compareSlugs.includes(ipo.slug)} compareDisabled={!compareSlugs.includes(ipo.slug) && compareSlugs.length >= MAX_COMPARE} onToggleCompare={() => toggleCompare(ipo.slug)} />
             ))}</div>
           )}
@@ -136,17 +136,33 @@ export default function IpoPage() {
 type IpoCardProps = { ipo: Ipo; selected: boolean; compareDisabled: boolean; onToggleCompare: () => void };
 
 function IpoCard({ ipo, selected, compareDisabled, onToggleCompare }: IpoCardProps) {
+  const gmpPct = gmpPercent(ipo);
+  const min = formatMinInvestment(ipo)?.amount;
+  const subscribed = formatSubscription(ipo.subscription_total);
   return <Card className="h-full border-border/70 transition-[border-color,box-shadow] hover:border-secondary/50 hover:shadow-lg relative">
+    {/* Absolutely placed so the checkbox is not inside the card's link; lined up with the badge row. */}
     <label
-      className={`absolute top-4 right-4 z-10 flex items-center gap-1.5 text-[10px] font-semibold text-muted-foreground ${compareDisabled ? "cursor-not-allowed opacity-50" : "cursor-pointer"}`}
+      className={`absolute top-4 right-4 md:top-5 md:right-5 z-10 flex h-6 items-center gap-1.5 text-[11px] font-semibold text-muted-foreground ${compareDisabled ? "cursor-not-allowed opacity-50" : "cursor-pointer"}`}
       onClick={(e) => { e.preventDefault(); if (!compareDisabled) onToggleCompare(); }}
     >
       <Checkbox checked={selected} disabled={compareDisabled} aria-label={`Add ${ipo.name} to comparison`} tabIndex={-1} />
       Compare
     </label>
-    <Link to={`/ipo/${ipo.slug}`} className="group block"><CardContent className="p-5">
-      <div className="flex items-start justify-between gap-3 pr-16"><div><div className="flex gap-2 items-center"><Badge variant="outline">{ipo.type}</Badge><span className="text-xs font-semibold text-muted-foreground">{statusLabel[ipo.status]}</span></div><h3 className="mt-3 font-heading text-xl font-bold group-hover:text-secondary transition-colors">{ipo.name}</h3></div><ArrowRight className="w-5 h-5 mt-1 text-muted-foreground group-hover:text-secondary group-hover:translate-x-1 transition-[color,transform] shrink-0" /></div>
-      <div className="grid grid-cols-2 gap-4 mt-6 text-sm"><div><span className="text-muted-foreground">Price band</span><p className="font-semibold mt-1">{ipo.price}</p></div><div><span className="text-muted-foreground">Latest GMP</span><p className={`font-semibold mt-1 ${ipo.gmp === null ? "text-muted-foreground" : ipo.gmp >= 0 ? "text-secondary" : "text-destructive"}`}>{formatGmp(ipo.gmp)}{gmpPercent(ipo) !== null && <span className="ml-1 text-xs font-medium">({formatGmpPercent(gmpPercent(ipo))})</span>}</p></div><div><span className="text-muted-foreground">Min. investment</span><p className="font-semibold mt-1">{formatMinInvestment(ipo)?.amount ?? <span className="text-muted-foreground font-normal">Not yet published</span>}</p></div><div><span className="text-muted-foreground">Subscribed</span><p className="font-semibold mt-1">{formatSubscription(ipo.subscription_total) ?? <span className="text-muted-foreground font-normal">{ipo.status === "upcoming" ? "Opens soon" : "Not yet reported"}</span>}</p></div><div><span className="text-muted-foreground">Lot size</span><p className="font-semibold mt-1">{ipo.lot_size === null ? <span className="text-muted-foreground font-normal">Not disclosed</span> : `${ipo.lot_size.toLocaleString("en-IN")} shares`}</p></div><div className="col-span-2 flex items-center gap-2 text-muted-foreground"><CalendarDays className="w-4 h-4" />{ipo.date}</div></div>
+    <Link to={`/ipo/${ipo.slug}`} className="group block"><CardContent className="p-4 md:p-5">
+      <div className="flex h-6 items-center gap-2 pr-24"><Badge variant="outline">{ipo.type}</Badge><span className="text-xs font-semibold text-muted-foreground truncate">{statusLabel[ipo.status]}</span></div>
+      <div className="mt-3 flex items-start justify-between gap-3">
+        <h3 className="font-heading text-lg md:text-xl font-bold leading-snug group-hover:text-secondary transition-colors break-words min-w-0">{ipo.name}</h3>
+        <ArrowRight className="w-5 h-5 mt-1 text-muted-foreground group-hover:text-secondary group-hover:translate-x-1 transition-[color,transform] shrink-0" aria-hidden="true" />
+      </div>
+      <dl className="grid grid-cols-3 gap-x-3 gap-y-4 mt-5 text-sm">
+        <div className="min-w-0"><dt className="text-xs text-muted-foreground">Price band</dt><dd className="font-semibold mt-1 break-words">{ipo.price}</dd></div>
+        <div className="min-w-0"><dt className="text-xs text-muted-foreground">Latest GMP</dt><dd className={`font-semibold mt-1 ${ipo.gmp === null ? "text-muted-foreground" : ipo.gmp >= 0 ? "text-secondary" : "text-destructive"}`}>{formatGmp(ipo.gmp)}{gmpPct !== null && <span className="block sm:inline sm:ml-1 text-xs font-medium">({formatGmpPercent(gmpPct)})</span>}</dd></div>
+        <div className="min-w-0"><dt className="text-xs text-muted-foreground">Subscribed</dt><dd className="font-semibold mt-1">{subscribed ?? <span className="text-muted-foreground font-normal text-xs">{ipo.status === "upcoming" ? "Opens soon" : "Not yet reported"}</span>}</dd></div>
+        <div className="min-w-0"><dt className="text-xs text-muted-foreground">Min. investment</dt><dd className="font-semibold mt-1">{min ?? <span className="text-muted-foreground font-normal text-xs">Not yet published</span>}</dd></div>
+        <div className="min-w-0"><dt className="text-xs text-muted-foreground">Lot size</dt><dd className="font-semibold mt-1">{ipo.lot_size === null ? <span className="text-muted-foreground font-normal text-xs">Not disclosed</span> : `${ipo.lot_size.toLocaleString("en-IN")} shares`}</dd></div>
+        <div className="col-span-3 flex items-center gap-2 text-muted-foreground text-xs sm:text-sm"><CalendarDays className="w-4 h-4 shrink-0" aria-hidden="true" />{ipo.date}</div>
+      </dl>
     </CardContent></Link>
   </Card>;
 }
+

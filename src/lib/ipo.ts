@@ -1,5 +1,8 @@
 import { supabase } from "@/integrations/supabase/client";
 
+/** A character from an entity's code point; nothing for a code point no character has (String.fromCodePoint would throw). */
+const codePoint = (n: number): string => (Number.isInteger(n) && n >= 0 && n <= 0x10ffff ? String.fromCodePoint(n) : "");
+
 export type GmpSnapshot = {
   captured_at: string;
   gmp: number;
@@ -189,3 +192,21 @@ export const formatGmpPercent = (pct: number | null): string | null =>
 /** A subscription multiple as the market quotes it: "4.71x". */
 export const formatSubscription = (times: number | null): string | null =>
   times === null ? null : `${times.toFixed(2)}x`;
+
+const NAMED_ENTITIES: Record<string, string> = {
+  amp: "&", nbsp: " ", quot: '"', apos: "'", lt: "<", gt: ">", minus: "−", ndash: "–", mdash: "—",
+  rsquo: "’", lsquo: "‘", ldquo: "“", rdquo: "”", hellip: "…", times: "×", bull: "•", middot: "·", rupee: "₹",
+};
+
+/**
+ * Entities a source left encoded in stored text ("&minus; Anchor Investor").
+ * Output is rendered as React text, never HTML, so decoding cannot inject markup.
+ */
+export function decodeEntities(value: string): string {
+  if (!value.includes("&")) return value;
+  return value.replace(/&(#x[0-9a-f]+|#\d+|[a-z]+);/gi, (whole, name: string) => {
+    if (/^#x/i.test(name)) return codePoint(parseInt(name.slice(2), 16));
+    if (name.startsWith("#")) return codePoint(Number(name.slice(1)));
+    return NAMED_ENTITIES[name.toLowerCase()] ?? whole;
+  });
+}

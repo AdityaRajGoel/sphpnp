@@ -16,6 +16,9 @@
 //
 // Pure: no fetch, no Deno APIs. The sync fetches; vitest runs these directly.
 
+/** A character from an entity's code point; nothing for a code point no character has (String.fromCodePoint would throw). */
+const codePoint = (n: number): string => (Number.isInteger(n) && n >= 0 && n <= 0x10ffff ? String.fromCodePoint(n) : "");
+
 export type DetailSection = { title: string; tables: string[][][]; lines: string[] };
 
 export type MinInvestment = { category: string; lots: number; shares: number; amount: number };
@@ -51,14 +54,17 @@ const MONTHS: Record<string, string> = {
   jul: "07", aug: "08", sep: "09", oct: "10", nov: "11", dec: "12",
 };
 
-const ENTITIES: Record<string, string> = { amp: "&", nbsp: " ", quot: '"', "#39": "'", apos: "'", lt: "<", gt: ">", rsquo: "'", lsquo: "'", ldquo: '"', rdquo: '"', ndash: "-", mdash: "-" };
+const ENTITIES: Record<string, string> = { amp: "&", nbsp: " ", quot: '"', "#39": "'", apos: "'", lt: "<", gt: ">", rsquo: "'", lsquo: "'", ldquo: '"', rdquo: '"', ndash: "-", mdash: "-", minus: "-", times: "x", hellip: "...", bull: "-", middot: "-" };
 
-const decode = (text: string): string =>
+const decodeOnce = (text: string): string =>
   text.replace(/&(#x?[0-9a-f]+|[a-z]+\d*);/gi, (whole, name: string) => {
-    if (name.startsWith("#x") || name.startsWith("#X")) return String.fromCodePoint(parseInt(name.slice(2), 16));
-    if (name.startsWith("#") && /^#\d+$/.test(name) && !ENTITIES[name]) return String.fromCodePoint(Number(name.slice(1)));
+    if (name.startsWith("#x") || name.startsWith("#X")) return codePoint(parseInt(name.slice(2), 16));
+    if (name.startsWith("#") && /^#\d+$/.test(name) && !ENTITIES[name]) return codePoint(Number(name.slice(1)));
     return ENTITIES[name.toLowerCase()] ?? whole;
   });
+
+/** Entities decoded, twice over: Chittorgarh encodes some twice ("&amp;minus;"). */
+const decode = (text: string): string => decodeOnce(decodeOnce(text));
 
 /** Visible text of an HTML fragment, whitespace collapsed. */
 const text = (html: string): string => decode(html.replace(/<[^>]+>/g, " ")).replace(/\s+/g, " ").trim();

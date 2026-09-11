@@ -5,10 +5,10 @@ import IPOFieldSource from "@/components/ipo/IPOFieldSource";
 
 const Detail = ({ label, value, field, ipo }: { label: string; value: string; field?: string; ipo?: Ipo }) => (
   <div className="flex items-start justify-between gap-4">
-    <dt className="text-muted-foreground">{label}</dt>
-    <dd className="font-medium text-right">
+    <dt className="text-muted-foreground shrink-0">{label}</dt>
+    <dd className="font-medium text-right min-w-0 break-words">
       {value}
-      {field && ipo && <IPOFieldSource ipo={ipo} field={field} />}
+      {field && ipo && <span className="block leading-tight"><IPOFieldSource ipo={ipo} field={field} /></span>}
     </dd>
   </div>
 );
@@ -51,8 +51,8 @@ export default function IPOIssueDetailsCard({ ipo }: { ipo: Ipo }) {
   ];
 
   return (
-    <Card>
-      <CardContent className="p-5">
+    <Card className="min-w-0">
+      <CardContent className="p-4 md:p-5">
         <div className="flex items-center gap-2">
           <Landmark className="w-5 h-5 text-secondary" />
           <h2 className="font-heading text-xl font-bold">Issue details</h2>

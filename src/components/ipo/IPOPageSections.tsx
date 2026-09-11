@@ -1,6 +1,6 @@
 import { FileText } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
-import { sectionTableHasHeader, type IpoPageSection } from "@/lib/ipo";
+import { decodeEntities, sectionTableHasHeader, type IpoPageSection } from "@/lib/ipo";
 
 /** "IPO Open Fri, Sep 18, 2026" -> ["IPO Open", "Fri, Sep 18, 2026"]: the timetable's one-line steps. */
 const DATED_STEP = /^(.+?)\s+((?:Mon|Tue|Wed|Thu|Fri|Sat|Sun),\s+[A-Z][a-z]{2}\s+\d{1,2},\s+\d{4})$/;
@@ -20,7 +20,7 @@ function SectionTable({ rows }: { rows: string[][] }) {
           <thead className="bg-muted/40">
             <tr>
               {header.map((cell, i) => (
-                <th key={i} scope="col" className={`p-2.5 font-semibold whitespace-nowrap ${i === 0 ? "text-left" : "text-right"}`}>{cell}</th>
+                <th key={i} scope="col" className={`p-2.5 font-semibold whitespace-nowrap ${i === 0 ? "text-left" : "text-right"}`}>{decodeEntities(cell)}</th>
               ))}
             </tr>
           </thead>
@@ -30,9 +30,9 @@ function SectionTable({ rows }: { rows: string[][] }) {
             <tr key={r} className="border-t border-border first:border-t-0">
               {row.map((cell, i) =>
                 i === 0 ? (
-                  <th key={i} scope="row" className="p-2.5 text-left font-normal text-muted-foreground align-top">{cell}</th>
+                  <th key={i} scope="row" className={`p-2.5 text-left font-normal text-muted-foreground align-top ${header ? "min-w-[9rem]" : ""}`}>{decodeEntities(cell)}</th>
                 ) : (
-                  <td key={i} className={`p-2.5 align-top tabular-nums ${header ? "text-right whitespace-nowrap" : "text-right"}`}>{cell || "—"}</td>
+                  <td key={i} className={`p-2.5 align-top tabular-nums break-words ${header ? "text-right whitespace-nowrap" : "text-right"}`}>{decodeEntities(cell) || "—"}</td>
                 ),
               )}
             </tr>
@@ -64,18 +64,18 @@ export default function IPOPageSections({ sections, fetchedAt }: { sections: Ipo
           </p>
         </div>
       </div>
-      <div className="grid lg:grid-cols-2 gap-4 mt-5">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-5">
         {sections.map((section) => (
-          <Card key={section.title} className={isWide(section) ? "lg:col-span-2" : ""}>
-            <CardContent className="p-5 space-y-3">
-              <h3 className="font-heading text-base font-bold">{section.title}</h3>
+          <Card key={section.title} className={`min-w-0 ${isWide(section) ? "lg:col-span-2" : ""}`}>
+            <CardContent className="p-4 md:p-5 space-y-3">
+              <h3 className="font-heading text-base font-bold">{decodeEntities(section.title)}</h3>
               {section.tables.map((rows, i) => <SectionTable key={i} rows={rows} />)}
               {section.lines.length > 0 && section.lines.every((line) => DATED_STEP.test(line)) ? (
                 <dl className="text-sm divide-y divide-border rounded-lg border border-border">
                   {section.lines.map((line) => {
                     const [, label, date] = DATED_STEP.exec(line)!;
                     return (
-                      <div key={line} className="flex justify-between gap-4 p-2.5">
+                      <div key={line} className="flex flex-wrap justify-between gap-x-4 gap-y-0.5 p-2.5">
                         <dt className="text-muted-foreground">{label}</dt>
                         <dd className="font-medium tabular-nums text-right">{date}</dd>
                       </div>
@@ -84,7 +84,7 @@ export default function IPOPageSections({ sections, fetchedAt }: { sections: Ipo
                 </dl>
               ) : section.lines.length > 0 && (
                 <div className="space-y-2 text-sm text-muted-foreground leading-relaxed">
-                  {section.lines.map((line, i) => <p key={i} className="break-words">{line}</p>)}
+                  {section.lines.map((line, i) => <p key={i} className="break-words">{decodeEntities(line)}</p>)}
                 </div>
               )}
             </CardContent>
