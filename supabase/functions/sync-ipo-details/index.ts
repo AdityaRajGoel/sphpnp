@@ -13,7 +13,8 @@
 // fallback and is capped per run.
 
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { parseChittorgarhDetail, parseChittorgarhSubscription, subscriptionUrl, type IpoDetail, type IpoSubscription } from "../_shared/ipo-detail.ts";
+import { detailDocuments, parseChittorgarhDetail, parseChittorgarhSubscription, subscriptionUrl, type IpoDetail, type IpoDocument, type IpoSubscription } from "../_shared/ipo-detail.ts";
+import { ipoNewsQuery, parseGoogleNewsRss, type NewsItem } from "../_shared/google-news.ts";
 import { CHITTORGARH_ISSUE_URL } from "../_shared/ipo-parse.ts";
 import { deriveIpoStatus, istDate } from "../_shared/ipo-status.ts";
 
@@ -48,7 +49,7 @@ const json = (body: unknown, status = 200) =>
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 type Row = {
-  id: string; slug: string; status: "upcoming" | "open" | "closed" | "listed";
+  id: string; slug: string; name: string; status: "upcoming" | "open" | "closed" | "listed";
   detail_url: string | null; open_date: string | null; close_date: string | null; listing_date: string | null;
   registrar: string | null; allotment_date: string | null;
   lot_size: number | null; price_band_max: number | null;
@@ -92,12 +93,29 @@ async function fetchViaApify(url: string, token: string): Promise<{ html: string
   }
 }
 
-/** The issue page parsed, or why it could not be. */
-function parseDetail(result: { html: string } | { reason: string }, via = ""): { detail: IpoDetail } | { reason: string } {
+type ParsedPage = { detail: IpoDetail; documents: IpoDocument[] };
+
+/** The issue page parsed, with its offer documents, or why it could not be. */
+function parseDetail(result: { html: string } | { reason: string }, via = ""): ParsedPage | { reason: string } {
   if ("reason" in result) return result;
   const detail = parseChittorgarhDetail(result.html);
   const problem = usable(detail);
-  return problem ? { reason: `${via}${problem}` } : { detail };
+  return problem ? { reason: `${via}${problem}` } : { detail, documents: detailDocuments(result.html) };
+}
+
+/**
+ * The company's recent coverage from Google News' RSS search. A failure costs
+ * only the news - never the issue page it rides along with.
+ */
+async function fetchNews(name: string): Promise<NewsItem[] | null> {
+  try {
+    const url = `https://news.google.com/rss/search?q=${encodeURIComponent(ipoNewsQuery(name))}&hl=en-IN&gl=IN&ceid=IN:en`;
+    const response = await fetch(url, { headers: BROWSER_HEADERS, signal: AbortSignal.timeout(15_000) });
+    if (!response.ok) return null;
+    return parseGoogleNewsRss(await response.text(), name);
+  } catch {
+    return null;
+  }
 }
 
 /** Subscription columns; empty until bidding opens, and never written as zeros. */
@@ -174,7 +192,7 @@ Deno.serve(async (req) => {
   const apifyToken = Deno.env.get("APIFY_API_KEY") ?? null;
 
   const { data, error } = await supabase.from("ipos").select(
-    "id,slug,status,detail_url,open_date,close_date,listing_date,registrar,allotment_date,lot_size,price_band_max,details_fetched_at,details_attempted_at,subscription_as_of",
+    "id,slug,name,status,detail_url,open_date,close_date,listing_date,registrar,allotment_date,lot_size,price_band_max,details_fetched_at,details_attempted_at,subscription_as_of",
   ).not("detail_url", "is", null);
   if (error) return json({ error: error.message }, 500);
 
@@ -216,7 +234,9 @@ Deno.serve(async (req) => {
   let writeErrors = 0;
 
   let subscriptions = 0;
-  const store = async (row: Row, detail: IpoDetail, source: string) => {
+  let newsStored = 0;
+  const store = async (row: Row, page: ParsedPage, source: string) => {
+    const { detail, documents } = page;
     // Subscription exists once bidding opens. Read directly only: it is one
     // extra page per issue, and a miss is retried on the next run anyway.
     let subscription: IpoSubscription | null = null;
@@ -227,7 +247,23 @@ Deno.serve(async (req) => {
       if (subscription) subscriptions++;
       await sleep(PACING_MS);
     }
-    const update = { ...updateFor(row, detail, source, new Date().toISOString()), ...subscriptionUpdate(subscription) };
+    const news = await fetchNews(row.name);
+    if (news) newsStored++;
+    const docUpdate: Record<string, unknown> = {};
+    if (documents.length > 0) {
+      docUpdate.documents = documents;
+      const rhp = documents.find((d) => d.kind === "rhp");
+      const drhp = documents.find((d) => d.kind === "drhp");
+      if (rhp) docUpdate.rhp_url = rhp.url;
+      if (drhp) docUpdate.drhp_url = drhp.url;
+    }
+    const update = {
+      ...updateFor(row, detail, source, new Date().toISOString()),
+      ...subscriptionUpdate(subscription),
+      ...docUpdate,
+      // Kept as the last good list when a fetch fails, rather than emptied.
+      ...(news ? { news, news_fetched_at: new Date().toISOString() } : {}),
+    };
     const { error: upErr } = await supabase.from("ipos").update(update).eq("id", row.id);
     if (upErr) {
       writeErrors++;
@@ -244,7 +280,7 @@ Deno.serve(async (req) => {
   for (const row of due) {
     if (Date.now() - started > RUN_BUDGET_MS) break;
     const result = parseDetail(await fetchDirect(row.detail_url!));
-    if ("detail" in result) await store(row, result.detail, "chittorgarh");
+    if ("detail" in result) await store(row, result, "chittorgarh");
     else failedDirect.push(Object.assign({}, row, { details_error: result.reason }) as Row);
     await sleep(PACING_MS);
   }
@@ -259,7 +295,7 @@ Deno.serve(async (req) => {
     const result = parseDetail(await fetchViaApify(row.detail_url!, apifyToken), "via Apify: ");
     if ("detail" in result) {
       viaApify++;
-      await store(row, result.detail, "chittorgarh via apify");
+      await store(row, result, "chittorgarh via apify");
     } else {
       await recordFailure(row, `${directReason}; ${result.reason}`);
     }
@@ -268,5 +304,5 @@ Deno.serve(async (req) => {
   // Nothing readable at all from a non-empty batch is an outage; a few pages
   // failing is not, and is reported per slug.
   const status = (due.length > 0 && fetched === 0) || writeErrors > 0 ? 500 : 200;
-  return json({ ok: status === 200, due: due.length, fetched, viaApify, subscriptions, failed: failures }, status);
+  return json({ ok: status === 200, due: due.length, fetched, viaApify, subscriptions, news: newsStored, failed: failures }, status);
 });

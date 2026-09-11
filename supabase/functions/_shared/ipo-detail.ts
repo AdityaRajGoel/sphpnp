@@ -109,13 +109,13 @@ function linesIn(html: string): string[] {
 }
 
 /**
- * Every <h2> section from "IPO Details" up to the site's FAQ, in page order.
- * The page's navigation menu is built from <h2>s too ("IPO Insights", "Stock
- * Broker Reviews", "About Chittorgarh City"), so nothing before the issue's
- * first section is kept.
+ * The issue's own <h2> chunks, from "IPO Details" up to the site's FAQ, as raw
+ * HTML. The page's navigation menu is built from <h2>s too ("IPO Insights",
+ * "Stock Broker Reviews", "About Chittorgarh City"), so nothing before the
+ * issue's first section is kept.
  */
-export function detailSections(html: string): DetailSection[] {
-  const sections: DetailSection[] = [];
+function sectionChunks(html: string): { title: string; body: string }[] {
+  const chunks: { title: string; body: string }[] = [];
   let started = false;
   for (const chunk of html.split(/(?=<h2[\s>])/i)) {
     const heading = /^<h2[^>]*>([\s\S]*?)<\/h2>/i.exec(chunk);
@@ -124,7 +124,15 @@ export function detailSections(html: string): DetailSection[] {
     if (!started && !/^IPO Details$/i.test(title)) continue;
     started = true;
     if (STOP_SECTION.test(title)) break;
-    const body = chunk.slice(heading[0].length);
+    chunks.push({ title, body: chunk.slice(heading[0].length) });
+  }
+  return chunks;
+}
+
+/** Every section of the issue page, in page order, as tables and lines of text. */
+export function detailSections(html: string): DetailSection[] {
+  const sections: DetailSection[] = [];
+  for (const { title, body } of sectionChunks(html)) {
     const section = { title, tables: tablesIn(body), lines: linesIn(body) };
     // The page splits "IPO Details" across two headings, the second untitled.
     const previous = sections[sections.length - 1];
@@ -136,6 +144,50 @@ export function detailSections(html: string): DetailSection[] {
     if (title) sections.push(section);
   }
   return sections;
+}
+
+export type DocumentKind = "rhp" | "drhp" | "anchor" | "allotment" | "company";
+export type IpoDocument = { kind: DocumentKind; label: string; url: string };
+
+const DOCUMENT_LABEL: Record<DocumentKind, string> = {
+  rhp: "Red Herring Prospectus (RHP)",
+  drhp: "Draft Red Herring Prospectus (DRHP)",
+  anchor: "Anchor investors letter",
+  allotment: "Check allotment status",
+  company: "Company website",
+};
+
+/** Links that are the site's own business, never a document about the issue. */
+const NOT_A_DOCUMENT = /tinyurl\.com|investorgain\.com|chittorgarh\.com\/(?!.*\.pdf)/i;
+
+/**
+ * The offer documents and useful links the issue page carries: the RHP or DRHP
+ * (hosted by SEBI, the lead manager or the company itself), the anchor
+ * investors letter, the registrar's allotment-status page and the company's
+ * website. One of each, the first the page gives.
+ */
+export function detailDocuments(html: string): IpoDocument[] {
+  const found = new Map<DocumentKind, IpoDocument>();
+  // The RHP link sits in the page's introduction, above the first section
+  // heading, so the whole page is scanned; links whose meaning depends on the
+  // section (a registrar's or a company's "Visit Website") are then read from
+  // their own sections only.
+  const scopes = [{ title: "", body: html }, ...sectionChunks(html)];
+  for (const { title, body } of scopes) {
+    for (const link of body.matchAll(/<a\b[^>]*href="(https?:\/\/[^"]+)"[^>]*>([\s\S]*?)<\/a>/gi)) {
+      const url = decode(link[1]);
+      const label = text(link[2]);
+      if (NOT_A_DOCUMENT.test(url)) continue;
+      let kind: DocumentKind | null = null;
+      if (/\bDRHP\b|Draft Red Herring/i.test(label)) kind = "drhp";
+      else if (/\bRHP\b|Red Herring/i.test(label)) kind = "rhp";
+      else if (/Anchor Investors?/i.test(label) && /\.pdf($|\?)/i.test(url)) kind = "anchor";
+      else if (/Visit Website/i.test(label) && /Registrar/i.test(title)) kind = "allotment";
+      else if (/Visit Website/i.test(label) && /Contact/i.test(title)) kind = "company";
+      if (kind && !found.has(kind)) found.set(kind, { kind, label: DOCUMENT_LABEL[kind], url });
+    }
+  }
+  return [...found.values()];
 }
 
 const findSection = (sections: DetailSection[], pattern: RegExp) => sections.find((s) => pattern.test(s.title));

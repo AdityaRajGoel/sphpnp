@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
-import { parseChittorgarhDetail, parseChittorgarhSubscription, parseIndianDate, parseCroreAmount, subscriptionUrl } from "../../supabase/functions/_shared/ipo-detail";
+import { detailDocuments, parseChittorgarhDetail, parseChittorgarhSubscription, parseIndianDate, parseCroreAmount, subscriptionUrl } from "../../supabase/functions/_shared/ipo-detail";
 import { parseChittorgarh } from "../../supabase/functions/_shared/ipo-parse";
 
 /*
@@ -176,5 +176,29 @@ describe("subscriptionUrl", () => {
 
   it("refuses anything that is not a Chittorgarh issue page", () => {
     expect(subscriptionUrl("https://evil.example/ipo/x/1/")).toBeNull();
+  });
+});
+
+describe("detailDocuments", () => {
+  it("finds the RHP wherever the issue hosts it", () => {
+    // SEBI's filing page, a lead manager's site, the company's own site.
+    expect(detailDocuments(page("rentomojo")).find((d) => d.kind === "rhp")?.url)
+      .toBe("https://www.sebi.gov.in/filings/public-issues/sep-2026/rentomojo-limited-rhp_104269.html");
+    expect(detailDocuments(page("jindal-supreme")).find((d) => d.kind === "rhp")?.url)
+      .toBe("https://www.sarthi.in/wp-content/uploads/2026/09/Jindal-Supreme_RHP.pdf");
+    expect(detailDocuments(page("axiom-sme")).find((d) => d.kind === "rhp")?.url)
+      .toBe("https://axiomgas.com/uploads/investors/Red_Herring_Prospectus_AXIOM.pdf");
+  });
+
+  it("finds the anchor investors letter, the registrar's allotment page and the company site", () => {
+    const docs = detailDocuments(page("rentomojo"));
+    expect(docs.find((d) => d.kind === "anchor")?.url).toBe("https://www.chittorgarh.net/reports/anchor-investor/rentmojo-anchor-investor.pdf");
+    expect(docs.find((d) => d.kind === "allotment")?.url).toBe("https://ipostatus.kfintech.com/");
+    expect(docs.find((d) => d.kind === "company")?.url).toBe("https://www.rentomojo.com/");
+  });
+
+  it("leaves out broker affiliate links and other sites' GMP pages", () => {
+    const urls = detailDocuments(page("jindal-supreme")).map((d) => d.url);
+    expect(urls.some((u) => /tinyurl|investorgain/.test(u))).toBe(false);
   });
 });
