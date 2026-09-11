@@ -71,11 +71,15 @@ export function toVolume(
   points: readonly ApiChartPoint[],
   colors: CandleColors,
 ): HistogramData<UTCTimestamp>[] {
-  return normalise(points).map((p) => ({
-    time: toSeconds(p.t),
-    value: p.v,
-    color: p.c >= p.o ? colors.up : colors.down,
-  }));
+  // A bar takes the day's direction: close against open where the source has
+  // an open, else against the previous close. On close-only series open equals
+  // close, so the old close-vs-open test painted every bar green.
+  const rows = normalise(points);
+  return rows.map((p, i) => {
+    const prev = i > 0 ? rows[i - 1].c : p.o;
+    const up = p.o !== p.c ? p.c >= p.o : p.c >= prev;
+    return { time: toSeconds(p.t), value: p.v, color: up ? colors.up : colors.down };
+  });
 }
 
 /** One minute, in ms. Used only to space synthesised timestamps. */

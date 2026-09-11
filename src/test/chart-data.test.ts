@@ -91,6 +91,15 @@ describe("toVolume", () => {
     expect(up.color).toBe("#0a0");
   });
 
+  it("uses the previous close when the series has no separate open", () => {
+    // Close-only data (open == close) used to paint every bar green.
+    const bars = toVolume(
+      [point(1_700_000_000_000, 10, 10, 10, 10), point(1_700_086_400_000, 9, 9, 9, 9), point(1_700_172_800_000, 11, 11, 11, 11)],
+      { up: "#0a0", down: "#a00" },
+    );
+    expect(bars.map((b) => b.color)).toEqual(["#0a0", "#a00", "#0a0"]);
+  });
+
   it("shares the candle time base so the panes stay aligned", () => {
     const [bar] = toVolume([point(1_700_000_000_000, 1, 2, 1, 2, 5000)], { up: "#0a0", down: "#a00" });
     expect(bar.time).toBe(1_700_000_000);

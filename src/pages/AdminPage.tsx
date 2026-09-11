@@ -80,7 +80,7 @@ const statusColors: Record<string, string> = {
   closed: "bg-muted text-muted-foreground",
 };
 
-const CHART_COLORS = ["hsl(var(--secondary))", "hsl(var(--primary))", "hsl(var(--brand-gold))", "hsl(var(--destructive))"];
+const CHART_COLORS = ["hsl(var(--secondary))", "hsl(217 80% 55%)", "hsl(var(--brand-gold))", "hsl(var(--destructive))"];
 
 // ---- Unlisted Shares Components ----
 const LogoUpload = memo(({ form, setForm, shareId, password }: {

@@ -85,6 +85,20 @@ function palette() {
   };
 }
 
+/** An hsl() colour at the given opacity. */
+const withAlpha = (hsl: string, alpha: number) => hsl.replace("hsl(", "hsla(").replace(/\)$/, ` / ${alpha})`);
+
+/**
+ * The area line in the direction of the period: green when the last close is
+ * at or above the first, red when below. It was always green, so a stock down
+ * 9.6% over six months was drawn in the colour of a gain.
+ */
+function colourArea(series: ISeriesApi<"Area", UTCTimestamp>, closes: number[]) {
+  const c = palette();
+  const colour = closes.length < 2 || closes[closes.length - 1] >= closes[0] ? c.up : c.down;
+  series.applyOptions({ lineColor: colour, topColor: withAlpha(colour, 0.28), bottomColor: withAlpha(colour, 0) });
+}
+
 const PriceChart = ({
   data,
   mode = "candle",
@@ -158,8 +172,8 @@ const PriceChart = ({
           })
         : chart.addSeries(AreaSeries, {
             lineColor: c.up,
-            topColor: c.up.replace("hsl(", "hsla(").replace(")", " / 0.28)"),
-            bottomColor: c.up.replace("hsl(", "hsla(").replace(")", " / 0)"),
+            topColor: withAlpha(c.up, 0.28),
+            bottomColor: withAlpha(c.up, 0),
             lineWidth: 2,
           });
 
@@ -178,7 +192,9 @@ const PriceChart = ({
       const volume = chart.addSeries(
         HistogramSeries,
         {
-          priceFormat: { type: "volume" },
+          // A custom format, because the chart-wide rupee formatter would
+          // otherwise label the volume axis "₹4,00,00,000.00".
+          priceFormat: { type: "custom", minMove: 1, formatter: (v: number) => (v >= 1e7 ? `${(v / 1e7).toFixed(1)} Cr` : v >= 1e5 ? `${(v / 1e5).toFixed(1)} L` : Math.round(v).toLocaleString("en-IN")) },
           // Without these the pane shows a last-value tag rendered through the
           // chart-wide rupee formatter, so a volume of zero reads as "₹0.00"
           // floating against the price axis.
@@ -216,10 +232,18 @@ const PriceChart = ({
         rightPriceScale: { borderColor: c.grid },
         timeScale: { borderColor: c.grid },
       });
+      // The series colours are theme tokens too: green and red differ by theme.
+      const price = priceRef.current;
+      if (price && mode === "candle") {
+        (price as ISeriesApi<"Candlestick", UTCTimestamp>).applyOptions({ upColor: c.up, downColor: c.down, borderUpColor: c.up, borderDownColor: c.down, wickUpColor: c.up, wickDownColor: c.down });
+      } else if (price) {
+        const area = price as ISeriesApi<"Area", UTCTimestamp>;
+        colourArea(area, area.data().map((d) => ("value" in d ? d.value : 0)));
+      }
     });
     observer.observe(target, { attributes: true, attributeFilter: ["class"] });
     return () => observer.disconnect();
-  }, []);
+  }, [mode]);
 
   // Data is its own effect so a prop change never rebuilds the chart.
   useEffect(() => {
@@ -238,6 +262,7 @@ const PriceChart = ({
       (price as ISeriesApi<"Area", UTCTimestamp>).setData(
         candles.map((k) => ({ time: k.time, value: k.close })),
       );
+      colourArea(price as ISeriesApi<"Area", UTCTimestamp>, candles.map((k) => k.close));
     }
     volume?.setData(toVolume(data, { up: c.up, down: c.down }));
 

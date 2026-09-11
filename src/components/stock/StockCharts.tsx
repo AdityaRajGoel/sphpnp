@@ -20,8 +20,10 @@ type Props = {
   source: string;
 };
 
+// Revenue is a fixed blue, not the theme's --primary: in dark mode --primary
+// is green and revenue bars sat beside the green profit bars indistinguishably.
 const C = {
-  revenue: "hsl(var(--primary))",
+  revenue: "hsl(217 80% 55%)",
   profit: "hsl(var(--secondary))",
   margin: "hsl(var(--brand-orange))",
   gold: "hsl(var(--brand-gold))",
@@ -29,7 +31,8 @@ const C = {
   grid: "hsl(var(--border))",
   axis: "hsl(var(--muted-foreground))",
 };
-const PIE = [C.revenue, C.profit, C.gold, C.margin, "hsl(var(--muted-foreground))", "hsl(var(--accent-foreground))"];
+/** Holder categories in distinct hues - no two greens, whichever the theme. */
+const PIE = ["hsl(217 80% 55%)", "hsl(var(--brand-gold))", "hsl(199 89% 48%)", "hsl(var(--brand-orange))", "hsl(262 70% 62%)", "hsl(var(--muted-foreground))"];
 
 const axisTick = { fill: C.axis, fontSize: 11 };
 const tooltipStyle = {

@@ -42,11 +42,15 @@ interface ComparisonChartProps {
  * Literal colours rather than `hsl(var(--brand-orange))`: these are painted
  * into a canvas, where CSS custom properties do not resolve.
  */
+/**
+ * Four hues that stay apart in both themes and carry no gain/loss meaning -
+ * the dark green that was second read as "up" and nearly vanished in dark mode.
+ */
 export const LINE_COLORS = [
   "hsl(24 95% 53%)",
-  "hsl(150 60% 32%)",
-  "#3b82f6",
-  "hsl(43 96% 56%)",
+  "hsl(217 80% 58%)",
+  "hsl(262 70% 62%)",
+  "hsl(43 96% 50%)",
 ];
 
 const IST = "Asia/Kolkata";

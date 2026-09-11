@@ -7,13 +7,13 @@ import WhatsAppButton from "@/components/WhatsAppButton";
 import ScrollProgress from "@/components/ScrollProgress";
 import { useState, useMemo, useEffect, useRef, lazy, Suspense } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Search, Filter, TrendingUp, TrendingDown, ArrowUpDown, RefreshCw, Loader2, BarChart3, Bot, LayoutGrid, List, Landmark, Cpu, Car, Building2, ShoppingCart, Activity, Zap, PiggyBank, Radar, X, Download, LineChart, Gauge, ShieldCheck, Sprout, Coins, Scale } from "lucide-react";
+import { Search, Filter, TrendingUp, TrendingDown, ArrowUpDown, RefreshCw, Loader2, BarChart3, Bot, LayoutGrid, List, Landmark, Cpu, Car, Building2, ShoppingCart, Activity, Zap, PiggyBank, Radar, X, Download, LineChart, ChevronRight, Gauge, ShieldCheck, Sprout, Coins, Scale } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { useSearchParams, Link } from "react-router-dom";
+import { useSearchParams, Link, useNavigate } from "react-router-dom";
 import { useScreenerStocks, type ScreenerStock } from "@/hooks/useScreenerStocks";
 import { useBhavcopy, buildDeliveryMap } from "@/hooks/useBhavcopy";
 import { useLiveMarket } from "@/hooks/useLiveMarket";
@@ -189,6 +189,12 @@ const StockScreenerPage = () => {
   const { t } = useT();
   const { stocks, loading, refreshing: bgRefreshing, updatedAt, error, refresh } = useScreenerStocks();
   const { summaries } = useFundamentalsSummaries();
+  const navigate = useNavigate();
+  /** A row opens its stock page wherever it is clicked, except on its own buttons and links. */
+  const openRow = (symbol: string) => (e: React.MouseEvent) => {
+    if ((e.target as HTMLElement).closest("button, a, input, [role='checkbox']")) return;
+    navigate(`/stock/${encodeURIComponent(symbol)}`);
+  };
   // Delivery % per symbol from the daily EOD bhavcopy (empty until the pipeline is deployed).
   const { rows: bhavRows, asOf: bhavAsOf, loading: bhavLoading } = useBhavcopy();
   const deliveryMap = useMemo(() => buildDeliveryMap(bhavRows), [bhavRows]);
@@ -586,7 +592,7 @@ const StockScreenerPage = () => {
                   </Suspense>
                 </motion.div>
               ) : viewMode === "fundamentals" ? (
-                <FundamentalsTable rows={filtered} summaries={summaries} />
+                <FundamentalsTable rows={filtered} summaries={summaries} onOpen={(symbol) => navigate(`/stock/${encodeURIComponent(symbol)}`)} />
               ) : viewMode === "heatmap" ? (
                 <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} className="min-h-[50vh]">
                   <StockHeatmap stocks={filtered} maxItems={150} />
@@ -612,7 +618,7 @@ const StockScreenerPage = () => {
                       const range = s.high_52 - s.low_52;
                       const pct52 = range > 0 ? ((s.price - s.low_52) / range) * 100 : 50;
                       return (
-                        <motion.tr key={s.symbol} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.01 }} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
+                        <motion.tr key={s.symbol} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.01 }} onClick={openRow(s.symbol)} title={`Open ${s.name}`} className="border-b border-border/50 hover:bg-muted/40 transition-colors cursor-pointer group/row">
                           <td className="px-4 py-3">
                             {/* The 159 prerendered /stock/:symbol pages had no inbound
                                 link from anywhere in the app - reachable only by typing
@@ -685,6 +691,13 @@ const StockScreenerPage = () => {
                               >
                                 <Bot className="w-3.5 h-3.5 mr-1" /> AI Edit
                               </Button>
+                              <Link
+                                to={`/stock/${encodeURIComponent(s.symbol)}`}
+                                aria-label={`Open ${s.name} stock page`}
+                                className="inline-flex items-center gap-0.5 rounded-md border border-border px-2.5 min-h-[44px] md:min-h-0 md:h-8 text-xs font-semibold text-muted-foreground hover:text-primary hover:border-primary/50 transition-colors"
+                              >
+                                Open <ChevronRight className="w-3.5 h-3.5 transition-transform group-hover/row:translate-x-0.5" />
+                              </Link>
                             </div>
                           </td>
                         </motion.tr>
