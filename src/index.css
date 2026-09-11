@@ -360,6 +360,13 @@
     animation-play-state: paused;
   }
 
+  /* The live-updates ticker stops while it is read, focused or paused. */
+  .ticker-viewport:hover .ticker-track,
+  .ticker-viewport:focus-within .ticker-track,
+  .ticker-track.is-stopped {
+    animation-play-state: paused;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .btn-shine::after,
     .nav-underline::after {

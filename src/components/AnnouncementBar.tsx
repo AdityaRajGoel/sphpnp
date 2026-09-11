@@ -1,64 +1,117 @@
-import { Flame, TrendingUp, TrendingDown, Shield, Zap, ArrowRight, X, IndianRupee, PhoneCall } from "lucide-react";
+import { ArrowUpRight, Pause, Play, X } from "lucide-react";
 import { Link } from "react-router-dom";
-import { useState, useEffect, useMemo } from "react";
-import { motion, AnimatePresence } from "motion/react";
-import { useLiveMarket } from "@/hooks/useLiveMarket";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { usePrefersReducedMotion } from "@/contexts/MotionPreferenceContext";
-
-type Announcement = {
-  icon: typeof Flame;
-  text: string;
-  cta: string | null;
-  href: string | null;
-  color: string;
-  /** Rendered as the live NIFTY/SENSEX line instead of plain text. */
-  live?: boolean;
-};
-
-const announcements: Announcement[] = [
-  { icon: Flame, text: "Open a FREE Demat Account", cta: "Start", href: "/open-account", color: "text-brand-gold" },
-  { icon: IndianRupee, text: "Transparent Pricing - every charge published", cta: "See Charges", href: "/pricing", color: "text-secondary" },
-  { icon: TrendingUp, text: "IPOs Open - Apply Online", cta: "Apply", href: "/services", color: "text-secondary" },
-  { icon: PhoneCall, text: "Free ₹0 Call-to-Trade Desk", cta: "Know More", href: "/pricing", color: "text-amber-400" },
-  { icon: Shield, text: "SEBI Registered · NSE · BSE · MCX", cta: null, href: null, color: "text-sky-400" },
-  { icon: Zap, text: "Pre-IPO & Unlisted Shares", cta: "Explore", href: "/unlisted-space", color: "text-purple-400" },
-];
+import { loadTicker, tickerHref, withPromos, TICKER_FRESH_MS, type TickerItem } from "@/lib/ticker-feed";
 
 const DISMISS_KEY = "pnp_announcement_dismissed";
+/** Scroll speed in px per second - slow enough to read a headline in one pass. */
+const SPEED = 55;
 
+/** Chip colour per kind of line: the ticker reads at a glance before a word of it does. */
+const CHIP: Record<TickerItem["kind"], string> = {
+  ipo: "bg-brand-gold/20 text-brand-gold",
+  gainer: "bg-emerald-400/15 text-emerald-300",
+  loser: "bg-red-400/15 text-red-300",
+  news: "bg-sky-400/15 text-sky-300",
+  ex_date: "bg-violet-400/15 text-violet-300",
+  announcement: "bg-white/10 text-white/70",
+  promo: "bg-brand-orange/20 text-orange-300",
+};
+const TONE: Record<TickerItem["tone"], string> = {
+  up: "text-emerald-300",
+  down: "text-red-300",
+  neutral: "text-white/85",
+};
+
+function useTickerItems() {
+  const [items, setItems] = useState<TickerItem[]>([]);
+  useEffect(() => {
+    let cancelled = false;
+    const headless = typeof navigator !== "undefined" && navigator.webdriver === true;
+    const load = () => {
+      if (typeof document !== "undefined" && document.hidden) return;
+      loadTicker(!headless)
+        .then((next) => { if (!cancelled && next.length > 0) setItems(next); })
+        .catch(() => { /* the promos keep the bar useful; the next poll retries */ });
+    };
+    load();
+    const timer = setInterval(load, TICKER_FRESH_MS);
+    document.addEventListener("visibilitychange", load);
+    return () => { cancelled = true; clearInterval(timer); document.removeEventListener("visibilitychange", load); };
+  }, []);
+  return items;
+}
+
+function TickerLine({ item, hidden }: { item: TickerItem; hidden: boolean }) {
+  const href = tickerHref(item.href);
+  const body = (
+    <>
+      <span className={`shrink-0 rounded-full px-1.5 py-px text-[9px] md:text-[10px] font-bold uppercase tracking-wider ${CHIP[item.kind]}`}>
+        {item.tag}
+      </span>
+      <span className={`text-[11px] md:text-xs font-medium whitespace-nowrap ${TONE[item.tone]} group-hover:text-white transition-colors`}>
+        {item.text}
+      </span>
+      {item.external && href && <ArrowUpRight className="w-3 h-3 shrink-0 text-white/40 group-hover:text-white/80" aria-hidden="true" />}
+    </>
+  );
+  const cls = "group inline-flex items-center gap-1.5 md:gap-2 px-3 md:px-4 h-full rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-gold/70";
+  // The duplicate copy that makes the loop seamless is invisible to assistive
+  // tech and out of the tab order, so each line is announced and reached once.
+  const a11y = hidden ? { tabIndex: -1, "aria-hidden": true as const } : {};
+  const content = !href ? (
+    <span className={cls} {...(hidden ? { "aria-hidden": true as const } : {})}>{body}</span>
+  ) : item.external ? (
+    <a href={href} target="_blank" rel="noopener noreferrer nofollow" className={cls} {...a11y}>{body}</a>
+  ) : (
+    <Link to={href} className={cls} {...a11y}>{body}</Link>
+  );
+  return (
+    <li className="flex items-center h-full shrink-0">
+      {content}
+      <span className="text-white/15 select-none" aria-hidden="true">|</span>
+    </li>
+  );
+}
+
+/**
+ * The site-wide live-updates bar: IPOs in play, the day's movers, market
+ * headlines, ex-dates and NSE filings scrolling past like an exchange ticker,
+ * with the house announcements woven between them.
+ *
+ * Moving content needs a way to stop it (WCAG 2.2.2): hover or focus pauses the
+ * scroll, the button stops it outright, and with reduced motion it never moves
+ * - the lines sit in a row the reader can scroll sideways.
+ */
 const AnnouncementBar = () => {
-  const [hidden, setHidden] = useState(false);      // mobile scroll-hide
+  const [hidden, setHidden] = useState(false); // mobile scroll-hide
   const [dismissed, setDismissed] = useState(false);
-  const [index, setIndex] = useState(0);
-  const [paused, setPaused] = useState(false);
+  const [stopped, setStopped] = useState(false);
   const prefersReducedMotion = usePrefersReducedMotion();
-  const { indices } = useLiveMarket();
+  const live = useTickerItems();
+  const items = withPromos(live);
 
-  // Lead slide: live NIFTY/SENSEX from the same feed as the rest of the site,
-  // so the "Live Updates" badge is literally true.
-  const nifty = indices.find((i) => i.key === "NIFTY");
-  const sensex = indices.find((i) => i.key === "SENSEX");
-  const items = useMemo<Announcement[]>(() => {
-    if (!nifty) return announcements;
-    return [
-      { icon: nifty.up ? TrendingUp : TrendingDown, text: "Live market snapshot", cta: "Markets", href: "/screener", color: nifty.up ? "text-emerald-400" : "text-red-400", live: true },
-      ...announcements,
-    ];
-  }, [nifty]);
+  const trackRef = useRef<HTMLUListElement>(null);
+  const [duration, setDuration] = useState(60);
 
-  // Restore dismissal for this browsing session
+  // Duration from the measured width, so every line moves at the same speed
+  // however many there are.
+  useLayoutEffect(() => {
+    const el = trackRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const measure = () => setDuration(Math.max(20, el.scrollWidth / 2 / SPEED));
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [items.length]);
+
   useEffect(() => {
     try {
       if (sessionStorage.getItem(DISMISS_KEY) === "1") setDismissed(true);
-    } catch { /* ignore */ }
+    } catch { /* storage blocked: the bar simply shows */ }
   }, []);
-
-  // Auto-rotate announcements (pauses on hover); static links, not a moving target
-  useEffect(() => {
-    if (paused) return;
-    const t = setInterval(() => setIndex((i) => (i + 1) % items.length), 5000);
-    return () => clearInterval(t);
-  }, [paused, items.length]);
 
   // Auto-hide on mobile when scrolling down past 50px
   useEffect(() => {
@@ -81,115 +134,73 @@ const AnnouncementBar = () => {
 
   if (dismissed) return null;
 
-  const item = items[index % items.length];
-  const Icon = item.icon;
-
-  // Live NIFTY/SENSEX line for the lead slide.
-  const liveLine = item.live && nifty && (
-    <>
-      <span className="text-white/90 text-[11px] md:text-xs font-semibold whitespace-nowrap">NIFTY {nifty.price}</span>
-      <span className={`text-[10px] md:text-[11px] font-bold whitespace-nowrap ${nifty.up ? "text-emerald-400" : "text-red-400"}`}>{nifty.change}</span>
-      {sensex && (
-        <span className="hidden sm:inline-flex items-center gap-1.5">
-          <span className="text-white/30">·</span>
-          <span className="text-white/90 text-[11px] md:text-xs font-semibold whitespace-nowrap">SENSEX {sensex.price}</span>
-          <span className={`text-[10px] md:text-[11px] font-bold whitespace-nowrap ${sensex.up ? "text-emerald-400" : "text-red-400"}`}>{sensex.change}</span>
-        </span>
-      )}
-    </>
-  );
+  const moving = !prefersReducedMotion;
+  const copies = moving ? [false, true] : [false];
 
   return (
     <div
       role="region"
-      aria-label="Site announcements"
+      aria-label="Live market updates"
       className={`relative overflow-hidden border-b border-white/5 transition-[height,opacity] duration-base ${
         hidden ? "h-0 border-transparent opacity-0" : "h-8 md:h-10 opacity-100"
       }`}
       style={{ background: "linear-gradient(90deg, hsl(213 80% 10%) 0%, hsl(213 80% 15%) 50%, hsl(145 70% 12%) 100%)" }}
     >
-      {/* Shimmer line (top) */}
-      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-brand-gold/60 to-transparent animate-[ticker-right_4s_linear_infinite]" />
-
       <div className="flex items-center h-8 md:h-10">
-        {/* Left badge */}
-        <div className="hidden md:flex items-center gap-2 px-4 h-full shrink-0 bg-brand-gold/15 border-r border-brand-gold/20">
-          <span className="w-1.5 h-1.5 rounded-full bg-brand-gold animate-pulse" />
-          <span className="text-brand-gold text-[11px] font-bold uppercase tracking-widest whitespace-nowrap">Live Updates</span>
+        <div className="flex items-center gap-1.5 md:gap-2 px-2.5 md:px-4 h-full shrink-0 bg-brand-gold/15 border-r border-brand-gold/20">
+          <span className="relative flex w-1.5 h-1.5" aria-hidden="true">
+            <span className="absolute inline-flex h-full w-full rounded-full bg-brand-gold opacity-75 motion-safe:animate-ping" />
+            <span className="relative inline-flex w-1.5 h-1.5 rounded-full bg-brand-gold" />
+          </span>
+          <span className="text-brand-gold text-[10px] md:text-[11px] font-bold uppercase tracking-widest whitespace-nowrap">
+            <span className="md:hidden">Live</span>
+            <span className="hidden md:inline">Live Updates</span>
+          </span>
         </div>
 
-        {/* Rotating announcement (static, clickable CTA) */}
         <div
-          className="flex-1 relative h-full flex items-center justify-center overflow-hidden px-2"
-          onMouseEnter={() => setPaused(true)}
-          onMouseLeave={() => setPaused(false)}
+          className={`ticker-viewport relative flex-1 h-full ${moving ? "overflow-hidden" : "overflow-x-auto scrollbar-hide"}`}
+          style={{
+            maskImage: "linear-gradient(90deg, transparent, #000 24px, #000 calc(100% - 24px), transparent)",
+            WebkitMaskImage: "linear-gradient(90deg, transparent, #000 24px, #000 calc(100% - 24px), transparent)",
+          }}
         >
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={index}
-              initial={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, y: -8 }}
-              transition={{ duration: 0.35 }}
-              className="absolute"
-            >
-              {item.href ? (
-                <Link to={item.href} className="group inline-flex items-center gap-2 md:gap-3">
-                  <Icon className={`w-3.5 h-3.5 shrink-0 ${item.color}`} />
-                  {liveLine || (
-                    <span className="text-white/80 group-hover:text-white text-[11px] md:text-xs font-medium whitespace-nowrap transition-colors">{item.text}</span>
-                  )}
-                  {item.cta && (
-                    <span className={`inline-flex items-center gap-1 text-[10px] md:text-[11px] font-bold ${item.color} bg-white/10 group-hover:bg-white/15 rounded-full px-2 py-0.5 transition-colors`}>
-                      {item.cta} <ArrowRight className="w-2.5 h-2.5 group-hover:translate-x-0.5 transition-transform" />
-                    </span>
-                  )}
-                </Link>
-              ) : (
-                <span className="inline-flex items-center gap-2 md:gap-3">
-                  <Icon className={`w-3.5 h-3.5 shrink-0 ${item.color}`} />
-                  <span className="text-white/80 text-[11px] md:text-xs font-medium whitespace-nowrap">{item.text}</span>
-                </span>
-              )}
-            </motion.div>
-          </AnimatePresence>
+          <ul
+            ref={trackRef}
+            className={`ticker-track flex items-center h-full w-max ${stopped ? "is-stopped" : ""}`}
+            style={moving ? { animationName: "ticker-left", animationDuration: `${duration}s`, animationTimingFunction: "linear", animationIterationCount: "infinite" } : undefined}
+            aria-live="off"
+          >
+            {copies.map((isCopy) =>
+              items.map((item, i) => <TickerLine key={`${isCopy ? "b" : "a"}-${i}-${item.text}`} item={item} hidden={isCopy} />),
+            )}
+          </ul>
         </div>
 
-        {/* Progress dots + dismiss */}
-        <div className="flex items-center gap-2 shrink-0 pr-2 md:pr-3">
-          <div className="hidden sm:flex items-center gap-1">
-            {items.map((a, i) => (
-              <button
-                key={i}
-                onClick={() => setIndex(i)}
-                aria-label={`Show announcement: ${a.text}`}
-                className={`relative h-1.5 rounded-full overflow-hidden transition-colors duration-base ${i === index ? "w-5 bg-white/20" : "w-1.5 bg-white/25 hover:bg-white/40"}`}
-              >
-                {i === index && !paused && (
-                  <motion.span
-                    key={`fill-${index}`}
-                    className="absolute inset-y-0 left-0 bg-brand-gold/90 rounded-full"
-                    initial={{ width: "0%" }}
-                    animate={{ width: "100%" }}
-                    transition={{ duration: 5, ease: "linear" }}
-                  />
-                )}
-                {i === index && paused && <span className="absolute inset-0 bg-brand-gold/70 rounded-full" />}
-              </button>
-            ))}
-          </div>
+        <div className="flex items-center gap-0.5 shrink-0 pr-1 md:pr-2 pl-1">
+          {moving && (
+            <button
+              type="button"
+              onClick={() => setStopped((s) => !s)}
+              aria-label={stopped ? "Resume live updates" : "Pause live updates"}
+              aria-pressed={stopped}
+              className="min-h-[32px] min-w-[32px] flex items-center justify-center rounded-full text-white/50 hover:text-white/90 hover:bg-white/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-gold/70"
+            >
+              {stopped ? <Play className="w-3.5 h-3.5" /> : <Pause className="w-3.5 h-3.5" />}
+            </button>
+          )}
           <button
+            type="button"
             onClick={dismiss}
-            aria-label="Dismiss announcements"
-            className="min-h-[32px] min-w-[32px] flex items-center justify-center rounded-full text-white/50 hover:text-white/90 hover:bg-white/10 transition-colors"
+            aria-label="Dismiss live updates"
+            className="min-h-[32px] min-w-[32px] flex items-center justify-center rounded-full text-white/50 hover:text-white/90 hover:bg-white/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-gold/70"
           >
             <X className="w-3.5 h-3.5" />
           </button>
         </div>
       </div>
 
-      {/* Shimmer line (bottom) */}
-      <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-secondary/40 to-transparent animate-[ticker-left_5s_linear_infinite]" />
+      <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-brand-gold/40 to-transparent" aria-hidden="true" />
     </div>
   );
 };
