@@ -1,0 +1,29 @@
+# Rebuilds the screener's fundamentals columns (stock_fundamentals_summary)
+# from the statements the stock syncs already store. No provider request, so
+# it simply runs after the daily Google Finance sync.
+#
+# Same two secrets as every other sync-*.yml:
+#   SUPABASE_ANON_KEY   - the project's anon/publishable key (passes the gateway)
+#   MARKET_SYNC_SECRET  - must match SYNC_SECRET on the edge function
+name: Screener fundamentals
+
+on:
+  schedule:
+    - cron: "40 2 * * *" # 08:10 IST daily, after google-finance-sync
+  workflow_dispatch: {}
+
+permissions: {}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger build-screener-fundamentals
+        run: |
+          resp=$(curl -sS -w "\n%{http_code}" --max-time 150 \
+            -X POST "https://zbkjbbujsdlpujotgltm.supabase.co/functions/v1/build-screener-fundamentals" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "x-sync-secret: ${{ secrets.MARKET_SYNC_SECRET }}")
+          body=$(echo "$resp" | sed '$d'); code=$(echo "$resp" | tail -1)
+          echo "$body"
+          [ "$code" = "200" ] || exit 1

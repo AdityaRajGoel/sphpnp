@@ -7,7 +7,7 @@ import WhatsAppButton from "@/components/WhatsAppButton";
 import ScrollProgress from "@/components/ScrollProgress";
 import { useState, useMemo, useEffect, useRef, lazy, Suspense } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Search, Filter, TrendingUp, TrendingDown, ArrowUpDown, RefreshCw, Loader2, BarChart3, Bot, LayoutGrid, List, Landmark, Cpu, Car, Building2, ShoppingCart, Activity, Zap, PiggyBank, Radar, X, Download, LineChart } from "lucide-react";
+import { Search, Filter, TrendingUp, TrendingDown, ArrowUpDown, RefreshCw, Loader2, BarChart3, Bot, LayoutGrid, List, Landmark, Cpu, Car, Building2, ShoppingCart, Activity, Zap, PiggyBank, Radar, X, Download, LineChart, Gauge, ShieldCheck, Sprout, Coins, Scale } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
@@ -17,6 +17,9 @@ import { useSearchParams, Link } from "react-router-dom";
 import { useScreenerStocks, type ScreenerStock } from "@/hooks/useScreenerStocks";
 import { useBhavcopy, buildDeliveryMap } from "@/hooks/useBhavcopy";
 import { useLiveMarket } from "@/hooks/useLiveMarket";
+import { useFundamentalsSummaries } from "@/hooks/useFundamentalsSummaries";
+import { FUNDAMENTAL_SCREENS, FUNDAMENTAL_COLUMNS, type FundamentalsSummary } from "@/lib/screener-fundamentals";
+import FundamentalsTable from "@/components/screener/FundamentalsTable";
 import StockHeatmap from "@/components/StockHeatmap";
 import GlobalStockSearch from "@/components/GlobalStockSearch";
 import MarketMovers from "@/components/MarketMovers";
@@ -54,12 +57,19 @@ const formatMarketCap = (cr: number) => {
 
 type SortKey = "symbol" | "price" | "change_pct" | "market_cap" | "pe";
 
-// Download the current filtered view as CSV
-const exportCsv = (rows: ScreenerStock[]) => {
-  const header = "Symbol,Name,Sector,Price,Change %,Market Cap (Cr),P/E,52W High,52W Low,Volume";
-  const body = rows.map(s =>
-    [s.symbol, `"${s.name.replace(/"/g, '""')}"`, s.sector, s.price, s.change_pct, s.market_cap, s.pe, s.high_52, s.low_52, s.volume].join(",")
-  );
+const SCREEN_ICONS: Record<string, typeof Gauge> = { quality: ShieldCheck, growth: Sprout, dividend: Coins, debt_free: Scale };
+
+const csvNumber = (value: number | null) => (value === null ? "" : Number(value.toFixed(2)));
+
+// Download the current filtered view as CSV, fundamentals included where known
+const exportCsv = (rows: ScreenerStock[], summaries: Map<string, FundamentalsSummary>) => {
+  const header = ["Symbol", "Name", "Sector", "Price", "Change %", "Market Cap (Cr)", "P/E", "52W High", "52W Low", "Volume",
+    ...FUNDAMENTAL_COLUMNS.map(c => c.kind === "pct" ? `${c.label} %` : c.label), "Latest Quarter", "Fundamentals Source"].join(",");
+  const body = rows.map(s => {
+    const f = summaries.get(s.symbol);
+    return [s.symbol, `"${s.name.replace(/"/g, '""')}"`, s.sector, s.price, s.change_pct, s.market_cap, s.pe, s.high_52, s.low_52, s.volume,
+      ...FUNDAMENTAL_COLUMNS.map(c => csvNumber(f ? f[c.key] : null)), f?.latest_quarter ?? "", f?.source ?? ""].join(",");
+  });
   const blob = new Blob([[header, ...body].join("\n")], { type: "text/csv;charset=utf-8" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
@@ -178,6 +188,7 @@ const MarketSnapshot = () => {
 const StockScreenerPage = () => {
   const { t } = useT();
   const { stocks, loading, refreshing: bgRefreshing, updatedAt, error, refresh } = useScreenerStocks();
+  const { summaries } = useFundamentalsSummaries();
   // Delivery % per symbol from the daily EOD bhavcopy (empty until the pipeline is deployed).
   const { rows: bhavRows, asOf: bhavAsOf, loading: bhavLoading } = useBhavcopy();
   const deliveryMap = useMemo(() => buildDeliveryMap(bhavRows), [bhavRows]);
@@ -193,7 +204,8 @@ const StockScreenerPage = () => {
   const [analyzingStock, setAnalyzingStock] = useState<ScreenerStock | null>(null);
   const [activeBasket, setActiveBasket] = useState<string | null>(searchParams.get("basket"));
   const [activeScanner, setActiveScanner] = useState<string | null>(searchParams.get("scan"));
-  const [viewMode, setViewMode] = useState<"list" | "heatmap" | "chart">("list");
+  const [activeScreen, setActiveScreen] = useState<string | null>(searchParams.get("screen"));
+  const [viewMode, setViewMode] = useState<"list" | "fundamentals" | "heatmap" | "chart">(searchParams.get("screen") ? "fundamentals" : "list");
   const [compareSymbols, setCompareSymbols] = useState<string[]>([]);
 
   // Seed the chart comparison with the two largest-cap stocks the first time
@@ -228,16 +240,17 @@ const StockScreenerPage = () => {
     if (sortDir !== "desc") p.set("dir", sortDir);
     if (activeBasket) p.set("basket", activeBasket);
     if (activeScanner) p.set("scan", activeScanner);
+    if (activeScreen) p.set("screen", activeScreen);
     setSearchParams(p, { replace: true });
-  }, [search, sector, peRange, capRange, sortKey, sortDir, activeBasket, activeScanner, setSearchParams]);
+  }, [search, sector, peRange, capRange, sortKey, sortDir, activeBasket, activeScanner, activeScreen, setSearchParams]);
 
   const activeFilterCount =
     (search ? 1 : 0) + (sector !== "all" ? 1 : 0) + (peRange !== "all" ? 1 : 0) +
-    (capRange !== "all" ? 1 : 0) + (activeBasket ? 1 : 0) + (activeScanner ? 1 : 0);
+    (capRange !== "all" ? 1 : 0) + (activeBasket ? 1 : 0) + (activeScanner ? 1 : 0) + (activeScreen ? 1 : 0);
 
   const clearAllFilters = () => {
     setSearch(""); setSector("all"); setPeRange("all"); setCapRange("all");
-    setActiveBasket(null); setActiveScanner(null);
+    setActiveBasket(null); setActiveScanner(null); setActiveScreen(null);
   };
 
   const sectors = useMemo(() => [...new Set(stocks.map(s => s.sector))].sort(), [stocks]);
@@ -261,13 +274,17 @@ const StockScreenerPage = () => {
       const scanner = TECHNICAL_SCANNERS.find(s => s.id === activeScanner);
       if (scanner) list = list.filter(scanner.filter);
     }
+    if (activeScreen) {
+      const screen = FUNDAMENTAL_SCREENS.find(s => s.id === activeScreen);
+      if (screen) list = list.filter(s => { const f = summaries.get(s.symbol); return f ? screen.test(f) : false; });
+    }
 
     list.sort((a, b) => {
       const av = a[sortKey], bv = b[sortKey];
       return sortDir === "asc" ? (av > bv ? 1 : -1) : (av < bv ? 1 : -1);
     });
     return list;
-  }, [stocks, search, sector, peRange, capRange, sortKey, sortDir, activeBasket, activeScanner]);
+  }, [stocks, search, sector, peRange, capRange, sortKey, sortDir, activeBasket, activeScanner, activeScreen, summaries]);
 
   const toggleSort = (key: SortKey) => {
     if (sortKey === key) setSortDir(d => d === "asc" ? "desc" : "asc");
@@ -309,6 +326,7 @@ const StockScreenerPage = () => {
             "52-week high/low range display",
             "Thematic baskets - Banking, IT, Auto, PSU, FMCG",
             "Technical scanners - Volume Shockers, Momentum, Value Buys",
+            "Fundamental screens - ROE, ROCE, margins, growth, debt and dividend yield",
             "Stock heatmap view",
             "Multi-stock chart comparison with SMA & RSI indicators",
             "AI-powered stock analysis"
@@ -335,7 +353,7 @@ const StockScreenerPage = () => {
                 <X className="w-3.5 h-3.5 mr-1" /> Clear filters ({activeFilterCount})
               </Button>
             )}
-            <Button variant="outline" size="sm" onClick={() => exportCsv(filtered)} disabled={filtered.length === 0}>
+            <Button variant="outline" size="sm" onClick={() => exportCsv(filtered, summaries)} disabled={filtered.length === 0}>
               <Download className="w-4 h-4" />
               <span className="ml-1.5">CSV</span>
             </Button>
@@ -427,6 +445,46 @@ const StockScreenerPage = () => {
           </div>
         </div>
 
+        {/* Fundamental Screens */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-heading font-bold flex items-center gap-2">
+              <Gauge className="w-5 h-5 text-primary" />
+              Fundamental Screens
+            </h2>
+            {activeScreen && (
+              <Button variant="ghost" size="sm" onClick={() => setActiveScreen(null)} className="h-8 text-muted-foreground hover:text-foreground">
+                Clear Selection
+              </Button>
+            )}
+          </div>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            {FUNDAMENTAL_SCREENS.map(fs => {
+              const Icon = SCREEN_ICONS[fs.id] ?? Gauge;
+              const isActive = activeScreen === fs.id;
+              const matches = stocks.filter(s => { const f = summaries.get(s.symbol); return f ? fs.test(f) : false; }).length;
+              return (
+                <Card
+                  key={fs.id}
+                  role="button"
+                  tabIndex={0}
+                  aria-pressed={isActive}
+                  className={`p-4 flex flex-col cursor-pointer transition-transform ease-out hover:scale-[1.02] active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${isActive ? "ring-2 ring-primary bg-primary/5 border-primary/50" : "hover:border-primary/50"}`}
+                  onClick={() => { setActiveScreen(isActive ? null : fs.id); if (!isActive) setViewMode("fundamentals"); }}
+                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setActiveScreen(isActive ? null : fs.id); if (!isActive) setViewMode("fundamentals"); } }}
+                >
+                  <div className="flex items-start justify-between mb-3">
+                    <Icon className={`w-6 h-6 ${isActive ? "text-primary" : "text-muted-foreground"}`} />
+                    {summaries.size > 0 && <span className="text-xs font-mono text-muted-foreground">{matches}</span>}
+                  </div>
+                  <h3 className="font-semibold text-sm mb-1 text-foreground">{fs.name}</h3>
+                  <p className="text-xs text-muted-foreground line-clamp-2">{fs.desc}</p>
+                </Card>
+              );
+            })}
+          </div>
+        </div>
+
         {/* Filters */}
         <Card className="p-4 mb-6">
           <div className="flex items-center gap-2 mb-3 text-sm font-medium text-muted-foreground">
@@ -493,12 +551,18 @@ const StockScreenerPage = () => {
                 </p>
                 
                 {/* View Toggles */}
-                <div className="flex bg-muted rounded-lg p-1 self-start sm:self-auto">
+                <div className="flex bg-muted rounded-lg p-1 self-start sm:self-auto max-w-full overflow-x-auto">
                   <button 
                     onClick={() => setViewMode("list")} 
                     className={`px-4 py-1.5 rounded-md text-xs font-semibold transition-colors flex items-center gap-2 ${viewMode === "list" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
                   >
                     <List className="w-4 h-4" /> List
+                  </button>
+                  <button
+                    onClick={() => setViewMode("fundamentals")}
+                    className={`px-4 py-1.5 rounded-md text-xs font-semibold transition-colors flex items-center gap-2 ${viewMode === "fundamentals" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+                  >
+                    <Gauge className="w-4 h-4" /> Fundamentals
                   </button>
                   <button
                     onClick={() => setViewMode("heatmap")}
@@ -521,6 +585,8 @@ const StockScreenerPage = () => {
                     <ChartCompare stocks={compareUniverse} selected={compareSymbols} onChange={setCompareSymbols} />
                   </Suspense>
                 </motion.div>
+              ) : viewMode === "fundamentals" ? (
+                <FundamentalsTable rows={filtered} summaries={summaries} />
               ) : viewMode === "heatmap" ? (
                 <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} className="min-h-[50vh]">
                   <StockHeatmap stocks={filtered} maxItems={150} />
@@ -630,7 +696,8 @@ const StockScreenerPage = () => {
               )}
 
               <p className="text-xs text-muted-foreground mt-4 text-center">
-                Live data from Yahoo Finance. Prices may be delayed by up to 15 minutes. Auto-refreshes every 5 minutes.
+                Prices from Yahoo Finance and NSE (may be delayed up to 15 minutes, auto-refresh every 5). Fundamentals from company
+                filings via IndianAPI and Google Finance, rebuilt daily. Delivery % from NSE's end-of-day bhavcopy.
               </p>
             </motion.div>
           )}
