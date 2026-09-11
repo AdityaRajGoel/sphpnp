@@ -58,7 +58,7 @@ export function parseSebiRows(html: string): SebiRow[] {
 /** A PAN - five letters, four digits, a letter - with any "PAN:" label and brackets around it. */
 export function redactPan(text: string): string {
   return text
-    .replace(/\s*[([]?\s*(?:PAN\s*(?:No\.?)?\s*[:\-]?\s*)?[A-Z]{5}\d{4}[A-Z]\s*[)\]]?/g, "")
+    .replace(/\s*[([]?\s*(?:PAN\s*(?:No\.?)?\s*[:-]?\s*)?[A-Z]{5}\d{4}[A-Z]\s*[)\]]?/g, "")
     .replace(/\s+/g, " ")
     .replace(/\s+([,.;])/g, "$1")
     .trim();

@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
-import { parseGoogleNewsRss, ipoNewsQuery } from "../../supabase/functions/_shared/google-news";
+import { parseGoogleNewsRss, ipoNewsQuery, parseStockNewsRss, stockNewsQuery } from "../../supabase/functions/_shared/google-news";
 
 /*
  * Per-IPO news from Google News' RSS search, captured 2026-09-11 for
@@ -46,5 +46,46 @@ describe("ipoNewsQuery", () => {
 
   it("drops the parenthetical a catalogue name carries", () => {
     expect(ipoNewsQuery("National Stock Exchange of India (NSE )")).toBe('"National Stock Exchange of India" IPO when:60d');
+  });
+});
+
+/*
+ * The same feed per listed stock, captured 2026-09-11 for "Tata Motors".
+ * A stock's news must name the company in full or by ticker: the first word
+ * alone ("Tata") heads a dozen listed companies.
+ */
+describe("parseStockNewsRss", () => {
+  const stockXml = readFileSync("src/test/fixtures/news/google-news-tata-motors.xml", "utf-8");
+  const items = parseStockNewsRss(stockXml, "Tata Motors Limited", "TATAMOTORS");
+
+  it("keeps stories naming the company, newest first, up to the limit", () => {
+    expect(items.length).toBeGreaterThan(3);
+    expect(items.length).toBeLessThanOrEqual(10);
+    expect(items.every((i) => /tata motors|tatamotors/i.test(i.title))).toBe(true);
+    const times = items.map((i) => i.published_at);
+    expect([...times].sort().reverse()).toEqual(times);
+  });
+
+  it("refuses a headline that only shares the group name", () => {
+    const xml = `<rss><channel>
+      <item><title>Tata Steel shares rally - Mint</title><link>https://news.google.com/a</link><pubDate>Thu, 10 Sep 2026 10:00:00 GMT</pubDate><source url="x">Mint</source></item>
+      <item><title>Tata Motors shares rally - Mint</title><link>https://news.google.com/b</link><pubDate>Thu, 10 Sep 2026 11:00:00 GMT</pubDate><source url="x">Mint</source></item>
+      <item><title>Tata Motors shares rally - Mint</title><link>https://news.google.com/c</link><pubDate>Thu, 10 Sep 2026 09:00:00 GMT</pubDate><source url="x">Mint</source></item>
+    </channel></rss>`;
+    expect(parseStockNewsRss(xml, "Tata Motors", "TATAMOTORS").map((i) => i.url)).toEqual(["https://news.google.com/b"]);
+  });
+
+  it("matches a short ticker only as a whole word", () => {
+    const xml = `<rss><channel>
+      <item><title>ITC shares hit record - ET</title><link>https://news.google.com/a</link><pubDate>Thu, 10 Sep 2026 10:00:00 GMT</pubDate><source url="x">ET</source></item>
+      <item><title>Switch to EV accelerates - ET</title><link>https://news.google.com/b</link><pubDate>Thu, 10 Sep 2026 10:00:00 GMT</pubDate><source url="x">ET</source></item>
+    </channel></rss>`;
+    expect(parseStockNewsRss(xml, "ITC Ltd", "ITC").map((i) => i.url)).toEqual(["https://news.google.com/a"]);
+  });
+});
+
+describe("stockNewsQuery", () => {
+  it("searches the name without its legal suffix, about its shares, in the last fortnight", () => {
+    expect(stockNewsQuery("Tata Motors Limited")).toBe('"Tata Motors" (share OR shares OR stock OR results) when:14d');
   });
 });

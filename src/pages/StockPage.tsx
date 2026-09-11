@@ -25,6 +25,8 @@ import StockPriceChart from "@/components/stock/StockPriceChart";
 import IncomeStatementTable from "@/components/stock/IncomeStatementTable";
 import RatiosPanel from "@/components/stock/RatiosPanel";
 import CorporateActionsList from "@/components/stock/CorporateActionsList";
+import SebiActionsList from "@/components/stock/SebiActionsList";
+import StockNews from "@/components/stock/StockNews";
 import StockProvenance from "@/components/stock/StockProvenance";
 import SymbolSwitcher from "@/components/stock/SymbolSwitcher";
 import StatementsSection from "@/components/stock/StatementsSection";
@@ -34,6 +36,8 @@ import ShareholdingTable from "@/components/stock/ShareholdingTable";
 // Same split the screener, comparison and search surfaces make: the modal drags
 // in recharts and react-markdown, which is more JS than this whole page ships.
 const AIAnalysisModal = lazy(() => import("@/components/AIAnalysisModal"));
+// recharts is heavy; only a stock with stored statements downloads it.
+const StockCharts = lazy(() => import("@/components/stock/StockCharts"));
 
 export default function StockPage() {
   const { symbol } = useParams<{ symbol: string }>();
@@ -216,6 +220,8 @@ export default function StockPage() {
               <StockPriceChart symbol={s.header.symbol} name={s.header.name} />
             )}
 
+            {s.header && <StockNews symbol={s.header.symbol} name={s.header.name} />}
+
             {/* Tracked but unreached by the sync cursor. Ordinary, not broken -
                 the backfill covers ~2 symbols an hour. */}
             {hasStatements ? (
@@ -235,6 +241,14 @@ export default function StockPage() {
                     }}
                   />
                 )}
+                <Suspense fallback={<Skeleton className="h-[420px] w-full" />}>
+                  <StockCharts
+                    statements={st.statements}
+                    shareholding={st.profile?.shareholding ?? []}
+                    roeHistory={st.profile?.roe_history}
+                    source={st.statements.quarter_results ? "IndianAPI" : "Google Finance"}
+                  />
+                </Suspense>
                 <StatementsSection statements={st.statements} />
                 {st.profile && <ShareholdingTable shareholding={st.profile.shareholding} />}
               </>
@@ -263,6 +277,7 @@ export default function StockPage() {
             )}
 
             <CorporateActionsList actions={s.actions} />
+            {s.header && <SebiActionsList symbol={s.header.symbol} />}
             <StockProvenance filing={s.filing} />
           </div>
         )}

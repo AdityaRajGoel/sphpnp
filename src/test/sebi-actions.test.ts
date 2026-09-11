@@ -28,7 +28,8 @@ describe("parseSebiRows", () => {
   });
 
   it("drops the invisible characters SEBI leaves in some titles", () => {
-    // "Infosys Limited​" - a zero-width space would defeat any exact match.
+    // SEBI's title is "Infosys Limited" followed by a zero-width space (U+200B),
+    // which would defeat any exact match.
     expect(parseSebiRows(page("buybacks-infosys"))[0].title).toBe("Infosys Limited");
   });
 });
