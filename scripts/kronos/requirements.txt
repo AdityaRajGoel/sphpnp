@@ -1,0 +1,11 @@
+# Pinned so a forecast written today can be reproduced. torch is the CPU wheel -
+# the workflow installs it from PyTorch's CPU index, which is ~200MB rather than
+# the ~2.5GB CUDA build.
+torch==2.5.1
+numpy==1.26.4
+pandas==2.2.2
+einops==0.8.1
+huggingface_hub==0.33.1
+safetensors==0.6.2
+requests==2.32.3
+tqdm==4.67.1

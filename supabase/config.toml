@@ -85,3 +85,21 @@ verify_jwt = false
 
 [functions.sync-global-markets]
 verify_jwt = false
+
+# Same self-guard as every other sync-* function above: SYNC_SECRET protects the
+# service-role writes, so verify_jwt must be declared off here from the FIRST
+# deploy. Left undeclared it defaults to true and the gateway rejects the
+# workflow's call before the function runs, which replaces the summary JSON the
+# workflow parses with a gateway 401 - the harder-to-diagnose failure this file's
+# earlier comments were written about.
+[functions.sync-price-analytics]
+verify_jwt = false
+
+[functions.sync-fundamental-scores]
+verify_jwt = false
+
+# Receives Kronos forecast rows from the GitHub Actions job, which carries only
+# the anon key and the shared secret - the service-role key stays here, in the
+# function. Same guard, same reason.
+[functions.ingest-forecasts]
+verify_jwt = false
