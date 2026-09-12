@@ -1,0 +1,73 @@
+# Recomputes the risk, trend and participation measures for the tracked
+# universe from the daily bars already in eq_eod.
+#
+# Runs AFTER bhavcopy-sync (14:00 and 16:00 UTC on weekdays) rather than on its
+# own independent schedule: every input comes from this database, so a run
+# before the day's bars land just recomputes yesterday's answer and burns a
+# pass over the universe. 17:20 UTC leaves the later bhavcopy run over an hour
+# to finish and land.
+#
+# The universe is ~250 symbols and the function takes 60 a call, so a full pass
+# is 4-5 calls. The loop below keeps calling until the function reports it has
+# wrapped, exactly like free-sources-sync does.
+#
+# Reuses the same repo secrets as every other sync-* workflow:
+#   SUPABASE_ANON_KEY   - the project's anon/publishable key (passes the edge gateway)
+#   MARKET_SYNC_SECRET  - must match the SYNC_SECRET set on the edge function
+name: Price analytics sync
+
+on:
+  schedule:
+    - cron: "20 17 * * 1-5"
+  workflow_dispatch: {}
+
+permissions: {}
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Recompute price analytics until the pass wraps
+        run: |
+          # A dropped connection is retried: the function stores its cursor, so
+          # the next call resumes. Three failures in a row end the job red.
+          fails=0
+          refused_total=0
+          for i in $(seq 1 12); do
+            resp=$(curl -sS -w "\n%{http_code}" --max-time 170 \
+              -X POST "https://zbkjbbujsdlpujotgltm.supabase.co/functions/v1/sync-price-analytics" \
+              -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
+              -H "x-sync-secret: ${{ secrets.MARKET_SYNC_SECRET }}" || true)
+            body=$(echo "$resp" | sed '$d'); code=$(echo "$resp" | tail -1)
+            echo "call $i ($code): $body"
+
+            if [ "$code" != "200" ]; then
+              fails=$((fails + 1))
+              [ "$fails" -ge 3 ] && { echo "::error title=Price analytics failed::three calls in a row failed"; exit 1; }
+              sleep 20
+              continue
+            fi
+            fails=0
+
+            refused=$(echo "$body" | jq -r '.refused // 0' 2>/dev/null || echo 0)
+            refused_total=$((refused_total + refused))
+
+            [ "$(echo "$body" | jq -r '.wrapped // false')" = "true" ] && break
+          done
+
+          # The guard firing is not a failure - a refused symbol is one whose
+          # series still had a >35% session after corporate-action adjustment,
+          # and refusing to publish that is the whole point. A handful is
+          # normal. A large number in one pass is the signature of the NSE
+          # corporate-action description format changing under
+          # parseAdjustmentRatio, which would silently stop adjusting for every
+          # split from that day on, so it is surfaced rather than buried in the
+          # per-call output above.
+          echo "refused across the pass: $refused_total"
+          if [ "$refused_total" -ge 15 ]; then
+            echo "::error title=Too many symbols refused::$refused_total symbols could not be published this pass. Check parseAdjustmentRatio in supabase/functions/_shared/price-analytics.ts against the descriptions now in fundamentals_corporate_actions."
+            exit 1
+          elif [ "$refused_total" -gt 0 ]; then
+            echo "::warning title=Symbols refused::$refused_total symbol(s) had an unadjustable price jump and were not published; see the per-call output above for which"
+          fi

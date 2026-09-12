@@ -1,0 +1,66 @@
+# Rescores the tracked universe on the fundamentals already collected -
+# Piotroski plus the balance-sheet quality ratios.
+#
+# Daily rather than hourly: the inputs are quarterly filings, so a score can
+# only change when fundamentals-sync or fundamentals-yahoo-sync lands a new
+# period. 18:10 UTC sits after both of those hourly jobs' :17 and :37 minutes
+# and after price-analytics-sync at 17:20, so the three do not contend.
+#
+# Reuses the same repo secrets as every other sync-* workflow:
+#   SUPABASE_ANON_KEY   - the project's anon/publishable key (passes the edge gateway)
+#   MARKET_SYNC_SECRET  - must match the SYNC_SECRET set on the edge function
+name: Fundamental scores sync
+
+on:
+  schedule:
+    - cron: "10 18 * * *"
+  workflow_dispatch: {}
+
+permissions: {}
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Rescore the universe until the pass wraps
+        run: |
+          fails=0
+          scored_total=0
+          thin_total=0
+          for i in $(seq 1 12); do
+            resp=$(curl -sS -w "\n%{http_code}" --max-time 170 \
+              -X POST "https://zbkjbbujsdlpujotgltm.supabase.co/functions/v1/sync-fundamental-scores" \
+              -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
+              -H "x-sync-secret: ${{ secrets.MARKET_SYNC_SECRET }}" || true)
+            body=$(echo "$resp" | sed '$d'); code=$(echo "$resp" | tail -1)
+            echo "call $i ($code): $body"
+
+            if [ "$code" != "200" ]; then
+              fails=$((fails + 1))
+              [ "$fails" -ge 3 ] && { echo "::error title=Fundamental scores failed::three calls in a row failed"; exit 1; }
+              sleep 20
+              continue
+            fi
+            fails=0
+
+            scored_total=$((scored_total + $(echo "$body" | jq -r '.scored // 0' 2>/dev/null || echo 0)))
+            thin_total=$((thin_total + $(echo "$body" | jq -r '.tooThin // 0' 2>/dev/null || echo 0)))
+
+            [ "$(echo "$body" | jq -r '.wrapped // false')" = "true" ] && break
+          done
+
+          echo "scored: $scored_total, too thin to score: $thin_total"
+
+          # The drift trap. A symbol with one annual filing genuinely cannot be
+          # scored, and a chunk of the universe sits in that state permanently -
+          # so a non-zero "too thin" count is normal and must not fail the build.
+          # A pass that scored NOTHING while the fundamentals tables are full is
+          # a different thing entirely: it is what a renamed column or a
+          # reporting-basis change looks like, and it would otherwise close as a
+          # green run with zero rows written - the exact {"ok":true,rows:0} shape
+          # this repo has shipped as a real incident more than once.
+          if [ "$scored_total" = "0" ]; then
+            echo "::error title=Nothing scored::a full pass produced no scores at all. Check that fundamentals_income still exposes is_consolidated, revenue, total_income, total_expenses and profit_after_tax, and see oneReportingBasis in supabase/functions/_shared/fundamental-scores.ts."
+            exit 1
+          fi

@@ -39,6 +39,10 @@ import StockProvenance from "@/components/stock/StockProvenance";
 import SymbolSwitcher from "@/components/stock/SymbolSwitcher";
 import StatementsSection from "@/components/stock/StatementsSection";
 import KeyMetricsGrid from "@/components/stock/KeyMetricsGrid";
+import RiskPanel from "@/components/stock/RiskPanel";
+import ForecastPanel from "@/components/stock/ForecastPanel";
+import FundamentalScorePanel from "@/components/stock/FundamentalScorePanel";
+import { useStockAnalytics } from "@/hooks/useStockAnalytics";
 import ShareholdingTable from "@/components/stock/ShareholdingTable";
 
 // Same split the screener, comparison and search surfaces make: the modal drags
@@ -54,6 +58,7 @@ export default function StockPage() {
   const s = useStockFundamentals(symbol);
   const st = useStockStatements(symbol);
   const disclosures = useStockDisclosures(symbol);
+  const analytics = useStockAnalytics(symbol);
   const [askingAI, setAskingAI] = useState(false);
 
   // `synced` and `basis` are set together by selectBasis() inside the hook
@@ -296,6 +301,9 @@ export default function StockPage() {
                     row, so it stays inside the existing `ready` state rather
                     than earning a data-stock-state value of its own. */}
                 <RatiosPanel derived={s.derived} />
+                <RiskPanel analytics={analytics?.price ?? null} />
+                <FundamentalScorePanel scores={analytics?.fundamentals ?? null} />
+                <ForecastPanel forecast={analytics?.forecast ?? null} />
               </>
             )}
 

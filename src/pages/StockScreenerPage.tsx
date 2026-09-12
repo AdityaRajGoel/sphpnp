@@ -20,6 +20,8 @@ import { useLiveMarket } from "@/hooks/useLiveMarket";
 import { useFundamentalsSummaries } from "@/hooks/useFundamentalsSummaries";
 import { FUNDAMENTAL_SCREENS, FUNDAMENTAL_COLUMNS, type FundamentalsSummary } from "@/lib/screener-fundamentals";
 import FundamentalsTable from "@/components/screener/FundamentalsTable";
+import RiskTable from "@/components/screener/RiskTable";
+import { useRiskSummaries } from "@/hooks/useRiskSummaries";
 import StockHeatmap from "@/components/StockHeatmap";
 import GlobalStockSearch from "@/components/GlobalStockSearch";
 import MarketMovers from "@/components/MarketMovers";
@@ -189,6 +191,7 @@ const StockScreenerPage = () => {
   const { t } = useT();
   const { stocks, loading, refreshing: bgRefreshing, updatedAt, error, refresh } = useScreenerStocks();
   const { summaries } = useFundamentalsSummaries();
+  const { summaries: riskSummaries } = useRiskSummaries();
   const navigate = useNavigate();
   /** A row opens its stock page wherever it is clicked, except on its own buttons and links. */
   const openRow = (symbol: string) => (e: React.MouseEvent) => {
@@ -211,7 +214,7 @@ const StockScreenerPage = () => {
   const [activeBasket, setActiveBasket] = useState<string | null>(searchParams.get("basket"));
   const [activeScanner, setActiveScanner] = useState<string | null>(searchParams.get("scan"));
   const [activeScreen, setActiveScreen] = useState<string | null>(searchParams.get("screen"));
-  const [viewMode, setViewMode] = useState<"list" | "fundamentals" | "heatmap" | "chart">(searchParams.get("screen") ? "fundamentals" : "list");
+  const [viewMode, setViewMode] = useState<"list" | "fundamentals" | "risk" | "heatmap" | "chart">(searchParams.get("screen") ? "fundamentals" : "list");
   const [compareSymbols, setCompareSymbols] = useState<string[]>([]);
 
   // Seed the chart comparison with the two largest-cap stocks the first time
@@ -571,6 +574,12 @@ const StockScreenerPage = () => {
                     <Gauge className="w-4 h-4" /> Fundamentals
                   </button>
                   <button
+                    onClick={() => setViewMode("risk")}
+                    className={`px-4 py-1.5 rounded-md text-xs font-semibold transition-colors flex items-center gap-2 ${viewMode === "risk" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+                  >
+                    <Activity className="w-4 h-4" /> Risk
+                  </button>
+                  <button
                     onClick={() => setViewMode("heatmap")}
                     className={`px-4 py-1.5 rounded-md text-xs font-semibold transition-colors flex items-center gap-2 ${viewMode === "heatmap" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
                   >
@@ -593,6 +602,8 @@ const StockScreenerPage = () => {
                 </motion.div>
               ) : viewMode === "fundamentals" ? (
                 <FundamentalsTable rows={filtered} summaries={summaries} onOpen={(symbol) => navigate(`/stock/${encodeURIComponent(symbol)}`)} />
+              ) : viewMode === "risk" ? (
+                <RiskTable rows={filtered} summaries={riskSummaries} onOpen={(symbol) => navigate(`/stock/${encodeURIComponent(symbol)}`)} />
               ) : viewMode === "heatmap" ? (
                 <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} className="min-h-[50vh]">
                   <StockHeatmap stocks={filtered} maxItems={150} />

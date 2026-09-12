@@ -71,7 +71,13 @@ export function uniqueKeysFromMigrations(sqlFiles: string[]): Map<string, Key[]>
   for (const raw of sqlFiles) {
     const sql = raw
       .replace(/\$\$[\s\S]*?\$\$/g, "") // function bodies
-      .replace(/--[^\n]*/g, "");
+      .replace(/--[^\n]*/g, "")
+      // String literals, emptied but kept in place. A DEFAULT can legitimately
+      // contain a semicolon or a bracket - stock_forecasts.disclaimer does -
+      // and without this the split on ";" below cuts a statement in half and
+      // the parenthesis matcher then fails on the fragment. Doubled quotes
+      // ('') are Postgres' own escape and are consumed as part of the literal.
+      .replace(/'(?:[^']|'')*'/g, "''");
 
     for (const statement of sql.split(";")) {
       const s = statement.trim();
