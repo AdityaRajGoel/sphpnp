@@ -20,6 +20,7 @@ import {
   type WorldBankObservation,
 } from "../_shared/macro.ts";
 import { SyncObservation } from "../_shared/observation.ts";
+import { upsertWithRetry } from "../_shared/db-retry.ts";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -105,6 +106,12 @@ Deno.serve(async (req) => {
   // (skip this item, keep the run going), but conflating them under one
   // counter would misdirect on-call at the wrong system.
   let writeFailed = 0;
+  // The message of every write that still failed after its retries. A bare
+  // count ("1 write(s) failed") is what made the first occurrence of this
+  // undiagnosable - the Postgres error existed only in the edge function's
+  // console, which nobody reads until long after the run is gone. Carried into
+  // the observation row so sync_observations alone answers "why".
+  const writeErrors: string[] = [];
 
   // Opened before any work, same reasoning as every other sync in this repo:
   // a run killed mid-flight still leaves a visible 'running' row rather than
@@ -161,16 +168,22 @@ Deno.serve(async (req) => {
       fetched_at: new Date().toISOString(),
     }));
 
-    const { error } = await supabase
-      .from("macro_indicators")
-      .upsert(rows, { onConflict: "country_code,indicator_code,year,source" });
-    // postgrest-js resolves with an error rather than throwing, so this is
-    // checked explicitly rather than relying on a try/catch to see it - the
+    // postgrest-js resolves with an error rather than throwing, so the result
+    // is checked explicitly rather than relying on a try/catch to see it - the
     // exact pattern that silently dropped writes elsewhere in this repo.
-    if (error) {
-      console.error(`macro_indicators upsert failed for ${indicator.code}:`, error.message);
+    // Retried because a single transient upsert failure here once reddened a
+    // build that had already written 135 of 200 rows (see _shared/db-retry.ts).
+    const failure = await upsertWithRetry(
+      () =>
+        supabase
+          .from("macro_indicators")
+          .upsert(rows, { onConflict: "country_code,indicator_code,year,source" }),
+      `macro_indicators/${indicator.code}`,
+    );
+    if (failure) {
       observation.recordFailure("macro_indicators", 1);
       writeFailed++;
+      writeErrors.push(`macro_indicators/${indicator.code}: ${failure}`);
     } else {
       summary.macroRows += rows.length;
       observation.recordWrite("macro_indicators", rows.length);
@@ -212,13 +225,14 @@ Deno.serve(async (req) => {
       fetched_at: new Date().toISOString(),
     };
 
-    const { error } = await supabase
-      .from("fx_rates")
-      .upsert([row], { onConflict: "pair,rate_date,source" });
-    if (error) {
-      console.error(`fx_rates upsert failed for ${base}/${quote}:`, error.message);
+    const failure = await upsertWithRetry(
+      () => supabase.from("fx_rates").upsert([row], { onConflict: "pair,rate_date,source" }),
+      `fx_rates/${base}/${quote}`,
+    );
+    if (failure) {
       observation.recordFailure("fx_rates", 1);
       writeFailed++;
+      writeErrors.push(`fx_rates/${base}/${quote}: ${failure}`);
     } else {
       summary.fxRows += 1;
       observation.recordWrite("fx_rates", 1);
@@ -244,12 +258,12 @@ Deno.serve(async (req) => {
 
   await observation.close({
     status: status === 200 ? "ok" : "failed",
-    detail: { ...summary, blockedOut, writeFailed, wroteNothing },
+    detail: { ...summary, blockedOut, writeFailed, wroteNothing, writeErrors },
     error: blockedOut
       ? `every upstream call failed (${summary.worldBankFailed}/${INDICATORS.length} World Bank, ` +
         `${summary.frankfurterFailed}/${FX_PAIRS.length} Frankfurter)`
       : anyWriteFailed
-        ? `${writeFailed} write(s) failed across macro_indicators/fx_rates`
+        ? `${writeFailed} write(s) failed after retries: ${writeErrors.join("; ")}`
         : wroteNothing
           ? "run completed without writing any row to macro_indicators or fx_rates"
           : undefined,

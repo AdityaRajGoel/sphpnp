@@ -20,10 +20,27 @@ jobs:
     steps:
       - name: Trigger sync-announcements
         run: |
-          resp=$(curl -sS -w "\n%{http_code}" --max-time 120 \
-            -X POST "https://zbkjbbujsdlpujotgltm.supabase.co/functions/v1/sync-announcements" \
-            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
-            -H "x-sync-secret: ${{ secrets.MARKET_SYNC_SECRET }}")
-          body=$(echo "$resp" | sed '$d'); code=$(echo "$resp" | tail -1)
-          echo "$body"
-          [ "$code" = "200" ] || exit 1
+          # Retried once before failing. NSE's archive host intermittently
+          # refuses the edge function's requests outright - all three feeds in
+          # the same run answering with "http2 error: stream error received"
+          # (see the 2026-09-10 12:09 and 16:55 UTC runs), while the very next
+          # scheduled run collected everything. That is the upstream having a
+          # moment, not a break in this repo, and one red build per occurrence
+          # trains everyone to ignore the one that will matter.
+          #
+          # Bounded at two attempts on purpose: NSE being down for a whole
+          # minute IS worth a red build, and the function is cursor-free - a
+          # second call just re-reads the same three RSS feeds, so retrying
+          # costs nothing and duplicates nothing (the upsert is keyed).
+          for attempt in 1 2; do
+            resp=$(curl -sS -w "\n%{http_code}" --max-time 120 \
+              -X POST "https://zbkjbbujsdlpujotgltm.supabase.co/functions/v1/sync-announcements" \
+              -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
+              -H "x-sync-secret: ${{ secrets.MARKET_SYNC_SECRET }}" || true)
+            body=$(echo "$resp" | sed '$d'); code=$(echo "$resp" | tail -1)
+            echo "attempt $attempt ($code): $body"
+            [ "$code" = "200" ] && exit 0
+            [ "$attempt" = "1" ] && sleep 45
+          done
+          echo "::error title=sync-announcements failed::two attempts, last status $code"
+          exit 1
