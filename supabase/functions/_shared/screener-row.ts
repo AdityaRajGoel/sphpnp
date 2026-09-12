@@ -10,6 +10,18 @@
 export type StockMeta = { symbol: string; name: string; sector: string };
 export type YahooQuoteLike = Record<string, unknown>;
 
+/**
+ * A quote whose last trade is more than `maxDays` old: a delisted or suspended
+ * stock. Yahoo keeps answering for these with the final price (Tata Metaliks,
+ * merged into Tata Steel, still quoted at its 2024 close), so writing it would
+ * stamp a dead price as current. A quote without a trade time is not judged.
+ */
+export function isStaleQuote(q: YahooQuoteLike, nowMs: number, maxDays = 7): boolean {
+  const t = q.regularMarketTime;
+  const ms = typeof t === "number" && Number.isFinite(t) ? t * 1000 : typeof t === "string" ? Date.parse(t) : NaN;
+  return Number.isFinite(ms) && nowMs - ms > maxDays * 86_400_000;
+}
+
 // Whether `q` (a Yahoo quote/chart record) carries a usable market cap.
 // A missing, zero, negative, or non-numeric value means Yahoo didn't give
 // us real data this run - that is NOT the same as the company actually

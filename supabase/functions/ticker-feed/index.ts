@@ -62,7 +62,7 @@ Deno.serve(async (req) => {
       .select("id,slug,name,status,open_date,close_date,listing_date,price_band_min,price_band_max,subscription_total,listing_gain_pct")
       .or(`status.in.(upcoming,open,closed),listing_date.gte.${addDays(today, -3)}`)
       .limit(200),
-    supabase.from("screener_stocks").select("symbol,name,price,change_pct,market_cap").limit(1000),
+    supabase.from("screener_stocks").select("symbol,name,price,change_pct,market_cap,updated_at").limit(1000),
     supabase.from("nse_corporate_actions").select("company,purpose,ex_date").gte("ex_date", today).lte("ex_date", addDays(today, 10)).order("ex_date").limit(200),
     supabase.from("nse_announcements").select("company,subject,attachment_url,published_at").not("published_at", "is", null).order("published_at", { ascending: false }).limit(150),
     marketNews().catch((e: Error) => { console.error("ticker news", e.message); return [] as TickerItem[]; }),

@@ -3,6 +3,7 @@ import {
   buildStockRow,
   groupRowsByShape,
   hasUsableMarketCap,
+  isStaleQuote,
   type YahooQuoteLike,
 } from "../../supabase/functions/_shared/screener-row";
 
@@ -149,5 +150,24 @@ describe("groupRowsByShape", () => {
     expect(groups).toHaveLength(2);
     const sizes = groups.map((g) => g.length).sort();
     expect(sizes).toEqual([1, 1]);
+  });
+});
+
+describe("isStaleQuote", () => {
+  const now = Date.parse("2026-09-11T12:00:00Z");
+
+  it("flags a quote whose last trade is over a week old, as a delisted stock's is", () => {
+    // Tata Metaliks' final trade, early 2024.
+    expect(isStaleQuote({ regularMarketTime: Date.parse("2024-01-25T10:00:00Z") / 1000 }, now)).toBe(true);
+  });
+
+  it("passes a quote from the last session, and over a long weekend", () => {
+    expect(isStaleQuote({ regularMarketTime: Date.parse("2026-09-11T10:00:00Z") / 1000 }, now)).toBe(false);
+    expect(isStaleQuote({ regularMarketTime: Date.parse("2026-09-07T10:00:00Z") / 1000 }, now)).toBe(false);
+  });
+
+  it("does not judge a quote without a trade time", () => {
+    expect(isStaleQuote({}, now)).toBe(false);
+    expect(isStaleQuote({ regularMarketTime: "not a time" }, now)).toBe(false);
   });
 });

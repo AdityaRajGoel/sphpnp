@@ -1,5 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { buildStockRow, groupRowsByShape } from "../_shared/screener-row.ts";
+import { buildStockRow, groupRowsByShape, isStaleQuote } from "../_shared/screener-row.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -196,6 +196,8 @@ const NSE_SYMBOLS: { symbol: string; yahoo: string; name: string; sector: string
   { symbol: "JSWENERGY", yahoo: "JSWENERGY.NS", name: "JSW Energy", sector: "Energy" },
   { symbol: "CAMS", yahoo: "CAMS.NS", name: "Computer Age Mgmt", sector: "Diversified" },
   { symbol: "CDSL", yahoo: "CDSL.NS", name: "Central Depository Services", sector: "Diversified" },
+  // Listed on BSE only (a depository cannot list on the exchange it serves), so Yahoo quotes its BSE line.
+  { symbol: "NSDL", yahoo: "NSDL.BO", name: "National Securities Depository", sector: "Diversified" },
   { symbol: "BSE", yahoo: "BSE.NS", name: "BSE Ltd", sector: "Diversified" },
   { symbol: "SONACOMS", yahoo: "SONACOMS.NS", name: "Sona BLW Precision", sector: "Auto" },
   { symbol: "APLAPOLLO", yahoo: "APLAPOLLO.NS", name: "APL Apollo Tubes", sector: "Metals" },
@@ -218,7 +220,6 @@ const NSE_SYMBOLS: { symbol: string; yahoo: string; name: string; sector: string
   { symbol: "BANKINDIA", yahoo: "BANKINDIA.NS", name: "Bank of India", sector: "Banking" },
   { symbol: "MAHABANK", yahoo: "MAHABANK.NS", name: "Bank of Maharashtra", sector: "Banking" },
   { symbol: "TATACHEM", yahoo: "TATACHEM.NS", name: "Tata Chemicals", sector: "Chemicals" },
-  { symbol: "TATAMETALI", yahoo: "TATAMETALI.NS", name: "Tata Metaliks", sector: "Metals" },
   { symbol: "TATAINVEST", yahoo: "TATAINVEST.NS", name: "Tata Investment Corp", sector: "NBFC" },
   { symbol: "PATANJALI", yahoo: "PATANJALI.NS", name: "Patanjali Foods", sector: "FMCG" },
   { symbol: "AWL", yahoo: "AWL.NS", name: "Adani Wilmar", sector: "FMCG" },
@@ -371,6 +372,7 @@ async function fetchBatchQuotes(symbols: string[], crumb: string, cookie: string
       results.set(sym, {
         symbol: sym,
         regularMarketPrice: meta.regularMarketPrice ?? 0,
+        regularMarketTime: meta.regularMarketTime,
         regularMarketChange: (meta.regularMarketPrice ?? 0) - (meta.chartPreviousClose ?? meta.previousClose ?? 0),
         regularMarketChangePercent: meta.chartPreviousClose ? ((meta.regularMarketPrice - meta.chartPreviousClose) / meta.chartPreviousClose) * 100 : 0,
         regularMarketVolume: result.indicators?.quote?.[0]?.volume?.slice(-1)?.[0] ?? 0,
@@ -408,7 +410,8 @@ async function processBatch(stocks: typeof NSE_SYMBOLS, crumb: string, cookie: s
 
     for (const stock of batch) {
       const q = quoteMap.get(stock.yahoo);
-      if (q) results.push(buildStockRow(stock, q));
+      if (q && isStaleQuote(q, Date.now())) console.warn(`[stale-quote] ${stock.symbol}: last traded over a week ago; not written`);
+      else if (q) results.push(buildStockRow(stock, q));
     }
 
     if (i + batchSize < stocks.length) {
@@ -536,7 +539,7 @@ Deno.serve(async (req) => {
         const quoteMap = await fetchBatchQuotes([yahooSym], crumb, cookie);
         const q = quoteMap.get(yahooSym);
         
-        if (q) {
+        if (q && !isStaleQuote(q, Date.now())) {
           const discoveredStock = { 
             symbol: requestedSymbol, 
             yahoo: yahooSym, 

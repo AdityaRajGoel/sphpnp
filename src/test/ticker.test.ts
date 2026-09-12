@@ -57,6 +57,14 @@ describe("moverItems", () => {
     expect(items.map((i) => `${i.tag}:${i.href}`)).toEqual(["TOP GAINER:/stock/A", "TOP GAINER:/stock/C", "TOP LOSER:/stock/D"]);
     expect(items[0].text).toBe("A ₹100 +5.0%");
   });
+
+  it("leaves out a stock whose quote stopped updating, however big its last move", () => {
+    const items = moverItems([
+      { symbol: "LIVE", price: 100, change_pct: 2, market_cap: 50000, updated_at: "2026-09-11T10:00:00Z" },
+      { symbol: "DELISTED", price: 1110, change_pct: 12, market_cap: 50000, updated_at: "2026-08-01T10:00:00Z" },
+    ]);
+    expect(items.map((i) => i.href)).toEqual(["/stock/LIVE"]);
+  });
 });
 
 describe("newsItems", () => {

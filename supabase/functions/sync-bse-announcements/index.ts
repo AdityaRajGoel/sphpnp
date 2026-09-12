@@ -47,7 +47,15 @@ Deno.serve(async (req) => {
     if (Date.now() - started > RUN_BUDGET_MS) break;
     const code = codeOf.get(symbol)!;
     try {
-      const res = await fetch(bseAnnouncementsUrl(code, from, to), { headers: BSE_HEADERS, signal: AbortSignal.timeout(20_000) });
+      // BSE's API stalls on a few stocks a pass ("Signal timed out"); one slower retry recovers most.
+      const url = bseAnnouncementsUrl(code, from, to);
+      const res = await fetch(url, { headers: BSE_HEADERS, signal: AbortSignal.timeout(20_000) })
+        .catch(async (e) => {
+          // Only with time to spare: a retry late in the run could outlast the worker.
+          if ((e as Error).name !== "TimeoutError" || Date.now() - started > RUN_BUDGET_MS - 45_000) throw e;
+          await sleep(PACE_MS);
+          return await fetch(url, { headers: BSE_HEADERS, signal: AbortSignal.timeout(25_000) });
+        });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const text = await res.text();
       // An empty window comes back as {} or a bare string, not an empty table.

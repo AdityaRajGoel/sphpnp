@@ -28,7 +28,8 @@ export function useBulkDeals() {
       try {
         const { data } = await dealsTable()
           .select("trade_date, deal_type, symbol, security_name, client_name, buy_sell, quantity, price")
-          .limit(2000);
+          .order("trade_date", { ascending: false })
+          .limit(1000);
         if (cancelled) return;
         const list = (data as BulkDealRow[] | null) ?? [];
         setDeals(list);

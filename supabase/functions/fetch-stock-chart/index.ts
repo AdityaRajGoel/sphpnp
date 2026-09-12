@@ -56,11 +56,16 @@ Deno.serve(async (req) => {
     const timeRange = (["1d", "5d", "1mo", "3mo", "6mo", "1y", "5y"].includes(range) ? range : "3mo") as TimeRange;
     const interval = INTERVAL_MAP[timeRange];
     const yahooSymbol = toYahoo(symbol);
+    const chartUrl = (sym: string) => `https://query1.finance.yahoo.com/v8/finance/chart/${sym}?range=${timeRange}&interval=${interval}&includePrePost=false`;
+    const headers = { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" };
 
-    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${yahooSymbol}?range=${timeRange}&interval=${interval}&includePrePost=false`;
-    const res = await fetch(url, {
-      headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" },
-    });
+    let res = await fetch(chartUrl(yahooSymbol), { headers });
+    // A BSE-only company (NSDL) has no NSE listing; when the symbol was
+    // given bare and NSE's is not found, its BSE listing is the chart.
+    if (res.status === 404 && yahooSymbol.endsWith(".NS") && !/\.NS$/i.test(symbol)) {
+      await res.body?.cancel();
+      res = await fetch(chartUrl(yahooSymbol.replace(/\.NS$/, ".BO")), { headers });
+    }
 
     if (!res.ok) {
       return new Response(JSON.stringify({ success: false, error: `Yahoo API returned ${res.status}` }), {

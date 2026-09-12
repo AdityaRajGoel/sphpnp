@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
-import { aroundSpot, maxPain, optionChainUrl, parseContractInfo, parseOptionChainV3, summariseChain, type OptionRow } from "../../supabase/functions/_shared/option-chain";
+import { aroundSpot, isAfterClose, maxPain, optionChainUrl, parseContractInfo, parseOptionChainV3, summariseChain, type OptionRow } from "../../supabase/functions/_shared/option-chain";
 
 /*
  * NSE's v3 option chain for NIFTY (15-Sep-2026 expiry, 30 strikes around the
@@ -55,5 +55,17 @@ describe("summariseChain", () => {
   it("keeps the strikes nearest the price", () => {
     const rows = [100, 110, 120, 130, 140].map((s) => row(s, 1, 1));
     expect(aroundSpot(rows, 121, 1).map((r) => r.strike)).toEqual([110, 120, 130]);
+  });
+});
+
+describe("isAfterClose", () => {
+  it("accepts only a chain timestamped at or after the 15:30 close", () => {
+    expect(isAfterClose("11-Sep-2026 15:40:00")).toBe(true);
+    expect(isAfterClose("11-Sep-2026 15:30:00")).toBe(true);
+    // The 09:30 IST run reads the market mid-session.
+    expect(isAfterClose("11-Sep-2026 09:31:12")).toBe(false);
+    expect(isAfterClose("11-Sep-2026 15:29:59")).toBe(false);
+    expect(isAfterClose(null)).toBe(false);
+    expect(isAfterClose("garbage")).toBe(false);
   });
 });

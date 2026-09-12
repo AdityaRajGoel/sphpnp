@@ -32,9 +32,13 @@ Deno.serve(async (req) => {
   let calls = usage?.calls ?? 0;
 
   // A year of history for a ticker with little stored, the last fortnight otherwise - one call either way.
-  const { data: counts } = await sb.from("global_markets_daily").select("ticker").gte("trade_date", new Date(Date.now() - 400 * 86_400_000).toISOString().slice(0, 10)).limit(10_000);
-  const stored = new Map<string, number>();
-  for (const r of counts ?? []) stored.set(r.ticker as string, (stored.get(r.ticker as string) ?? 0) + 1);
+  // Counted per ticker by the database: a year of 15 tickers is ~3,900 rows, past
+  // the API's 1,000-row cap, so counting fetched rows would undercount most tickers.
+  const since = new Date(Date.now() - 400 * 86_400_000).toISOString().slice(0, 10);
+  const stored = new Map(await Promise.all(GLOBAL_TICKERS.map(async (t) => {
+    const { count } = await sb.from("global_markets_daily").select("trade_date", { count: "exact", head: true }).eq("ticker", t.ticker).gte("trade_date", since);
+    return [t.ticker, count ?? 0] as const;
+  })));
   const yearAgo = new Date(Date.now() - 370 * 86_400_000).toISOString().slice(0, 10);
   const fortnight = new Date(Date.now() - 14 * 86_400_000).toISOString().slice(0, 10);
 

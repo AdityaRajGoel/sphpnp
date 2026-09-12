@@ -26,7 +26,7 @@ import {
 } from "../_shared/market-files.ts";
 import { fortnightlyReportLinks, parseBseResultsCalendar, parseFpiDaily, parseFpiSectorFortnightly, parseNseEventCalendar, type MacroMonthly } from "../_shared/market-extra.ts";
 import { parseFoBhavcopy, summariseUnderlyings, unzipFirstFile } from "../_shared/fo-bhavcopy.ts";
-import { aroundSpot, contractInfoUrl, INDEX_UNDERLYINGS, optionChainUrl, parseContractInfo, parseOptionChainV3, summariseChain } from "../_shared/option-chain.ts";
+import { aroundSpot, contractInfoUrl, INDEX_UNDERLYINGS, isAfterClose, optionChainUrl, parseContractInfo, parseOptionChainV3, summariseChain } from "../_shared/option-chain.ts";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -177,12 +177,15 @@ async function run(ctx: Ctx, dataset: string, body: Record<string, unknown>): Pr
     }
     case "option_chain": {
       const out: Record<string, unknown>[] = [];
+      const skipped: string[] = [];
       for (const symbol of INDEX_UNDERLYINGS) {
         const expiries = parseContractInfo(await fetchJson(contractInfoUrl(symbol), { ...NSE_HEADERS, Referer: "https://www.nseindia.com/option-chain" }));
         for (const expiry of expiries.slice(0, 2)) {
           await sleep(1200);
           const chain = parseOptionChainV3(await fetchJson(optionChainUrl(symbol, expiry), { ...NSE_HEADERS, Referer: "https://www.nseindia.com/option-chain" }), expiry);
           if (chain.rows.length === 0) continue;
+          // The 09:30 run reads a live chain; only a post-close chain is the day's close.
+          if (!isAfterClose(chain.timestamp)) { skipped.push(`${symbol} ${expiry}`); continue; }
           const s = summariseChain(chain.rows);
           // NSE's own timestamp dates the snapshot, so a weekend run files it under Friday.
           const tradeDate = (chain.timestamp ? isoDate(chain.timestamp) : null) ?? today;
@@ -195,7 +198,7 @@ async function run(ctx: Ctx, dataset: string, body: Record<string, unknown>): Pr
         }
         await sleep(1200);
       }
-      return { rows: await upsert(sb, "option_chain_eod", out, "trade_date,symbol,expiry") };
+      return { rows: await upsert(sb, "option_chain_eod", out, "trade_date,symbol,expiry"), ...(skipped.length ? { skipped: `${skipped.length} live (market open), kept the last close` } : {}) };
     }
     case "fo_bhavcopy": {
       // Every F&O underlying: option OI by strike for the nearest expiry, and the

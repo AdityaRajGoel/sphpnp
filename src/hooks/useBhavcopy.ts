@@ -28,12 +28,24 @@ export function useBhavcopy() {
     let cancelled = false;
     (async () => {
       try {
-        const { data } = await bhavcopyTable()
-          .select("symbol, series, trade_date, close, prev_close, high, low, ttl_trd_qty, deliv_qty, deliv_per")
-          .order("deliv_per", { ascending: false })
-          .limit(5000);
+        // The table holds one day for every security (~3,400 rows) and the API
+        // returns at most 1,000 a request, so it is read in pages. A single
+        // request kept only the 1,000 highest-delivery rows - mostly ETFs and
+        // debt at 100% - and left almost every tracked stock without a figure.
+        const list: BhavcopyRow[] = [];
+        for (let from = 0; from < 20_000; from += 1000) {
+          const { data, error } = await bhavcopyTable()
+            .select("symbol, series, trade_date, close, prev_close, high, low, ttl_trd_qty, deliv_qty, deliv_per")
+            .order("deliv_per", { ascending: false, nullsFirst: false })
+            .order("symbol")
+            .order("series")
+            .range(from, from + 999);
+          if (error) throw error;
+          const page = (data as BhavcopyRow[] | null) ?? [];
+          list.push(...page);
+          if (page.length < 1000) break;
+        }
         if (cancelled) return;
-        const list = (data as BhavcopyRow[] | null) ?? [];
         setRows(list);
         setAsOf(list[0]?.trade_date ?? null);
       } catch {

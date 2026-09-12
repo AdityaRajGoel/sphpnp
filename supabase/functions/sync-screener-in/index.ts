@@ -11,7 +11,7 @@
 // Trigger: GitHub Actions (.github/workflows/free-sources-sync.yml). Protected by SYNC_SECRET.
 
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { parseScreenerPage, type ScreenerPage } from "../_shared/screener-in.ts";
+import { parseScreenerPage, searchResultPath, type ScreenerPage } from "../_shared/screener-in.ts";
 import { deriveRoe } from "../_shared/indianapi.ts";
 import { cursorAfter, nextBatch } from "../_shared/batch-cursor.ts";
 
@@ -51,7 +51,20 @@ async function companyPage(symbol: string): Promise<ScreenerPage | null> {
   if (page?.statements.quarter_results) return page;
   await sleep(PACE_MS);
   const standalone = await fetchPage(`/company/${slug}/`);
-  return standalone ? parseScreenerPage(standalone) : page;
+  if (consolidated || standalone) return standalone ? parseScreenerPage(standalone) : page;
+  // Neither page exists under the symbol: a BSE-only company is filed under its
+  // scrip code, which screener.in's own search resolves.
+  await sleep(PACE_MS);
+  const search = await fetchPage(`/api/company/search/?q=${slug}&v=3`);
+  const path = search ? searchResultPath(JSON.parse(search)) : null;
+  if (!path) return null;
+  await sleep(PACE_MS);
+  const found = await fetchPage(path);
+  const foundPage = found ? parseScreenerPage(found) : null;
+  if (foundPage?.statements.quarter_results || !path.endsWith("/consolidated/")) return foundPage;
+  await sleep(PACE_MS);
+  const foundStandalone = await fetchPage(path.replace(/consolidated\/$/, ""));
+  return foundStandalone ? parseScreenerPage(foundStandalone) : foundPage;
 }
 
 Deno.serve(async (req) => {

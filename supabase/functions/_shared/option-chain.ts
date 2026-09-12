@@ -29,6 +29,17 @@ export function optionChainUrl(symbol: string, expiry: string): string {
   return `https://www.nseindia.com/api/option-chain-v3?type=${type}&symbol=${encodeURIComponent(symbol)}&expiry=${encodeURIComponent(expiry)}`;
 }
 
+/**
+ * Whether NSE's chain timestamp ("11-Sep-2026 15:40:00", Indian time) is from
+ * after the 15:30 close. A chain read during the session is a live snapshot,
+ * not the day's close, and must not be stored as one. No timestamp, no proof.
+ */
+export function isAfterClose(timestamp: string | null): boolean {
+  const m = timestamp ? /\b(\d{1,2}):(\d{2})(?::\d{2})?\s*$/.exec(timestamp.trim()) : null;
+  if (!m) return false;
+  return Number(m[1]) * 60 + Number(m[2]) >= 15 * 60 + 30;
+}
+
 /** Expiry dates as NSE writes them ("15-Sep-2026"), nearest first. */
 export function parseContractInfo(raw: unknown): string[] {
   const dates = isRecord(raw) && Array.isArray(raw.expiryDates) ? raw.expiryDates : [];

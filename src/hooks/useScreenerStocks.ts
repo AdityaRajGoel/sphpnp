@@ -20,6 +20,21 @@ export type ScreenerStock = {
   updated_at: string;
 };
 
+const WEEK_MS = 7 * 86_400_000;
+
+/**
+ * The rows worth listing: priced, and quoted within a week of the freshest
+ * quote. A stock that has stopped trading (delisted, suspended, or listed
+ * where the quote source cannot price it) keeps its row for the per-stock
+ * syncs but drops out of the tables instead of showing a dead or zero price.
+ * Measured against the freshest row, not the clock, so a stalled refresh
+ * cannot empty the screener.
+ */
+export function currentStocks(stocks: ScreenerStock[]): ScreenerStock[] {
+  const freshest = Math.max(0, ...stocks.map((s) => Date.parse(s.updated_at) || 0));
+  return stocks.filter((s) => s.price > 0 && freshest - (Date.parse(s.updated_at) || 0) <= WEEK_MS);
+}
+
 export function useScreenerStocks() {
   const [stocks, setStocks] = useState<ScreenerStock[]>([]);
   const [loading, setLoading] = useState(true);
@@ -60,7 +75,7 @@ export function useScreenerStocks() {
           .order("market_cap", { ascending: false });
 
         if (cached && cached.length > 0) {
-          setStocks(cached.map(mapStock));
+          setStocks(currentStocks(cached.map(mapStock)));
           setUpdatedAt(cached[0]?.updated_at || null);
           setLoading(false); // ← Show table NOW, before Yahoo refresh
         }
@@ -77,7 +92,7 @@ export function useScreenerStocks() {
       if (fnError) throw fnError;
 
       if (data?.success && data.stocks?.length > 0) {
-        setStocks(data.stocks.map(mapStock));
+        setStocks(currentStocks(data.stocks.map(mapStock)));
         setUpdatedAt(data.updated_at);
       }
     } catch (e) {

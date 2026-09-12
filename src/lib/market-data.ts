@@ -116,8 +116,17 @@ export async function fpiSectors(): Promise<FpiSector[]> {
   return rows<FpiSector>(table("fpi_sector_fortnightly").select("fortnight_end,sector,equity_net_cr,debt_net_cr,other_net_cr,total_net_cr,equity_net_usd_mn,total_net_usd_mn,equity_auc_cr,total_auc_cr,total_auc_usd_mn").gte("fortnight_end", since).order("fortnight_end").order("sector").limit(1000));
 }
 
-export async function fpiDaily(days = 60): Promise<FpiRow[]> {
-  return rows<FpiRow>(table("fpi_daily").select("*").order("report_date", { ascending: false }).limit(days * 30));
+/** NSDL's daily FPI rows for the last `days` calendar days, newest first (~34 rows a day, so read in pages). */
+export async function fpiDaily(days = 90): Promise<FpiRow[]> {
+  const since = new Date(Date.now() - days * 86_400_000).toISOString().slice(0, 10);
+  const out: FpiRow[] = [];
+  for (let from = 0; from < 20_000; from += 1000) {
+    const page = await rows<FpiRow>(table("fpi_daily").select("*").gte("report_date", since)
+      .order("report_date", { ascending: false }).order("section").order("category").order("route").range(from, from + 999));
+    out.push(...page);
+    if (page.length < 1000) break;
+  }
+  return out;
 }
 
 export async function macroSeries(): Promise<MacroPoint[]> {

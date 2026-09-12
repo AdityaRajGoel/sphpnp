@@ -33,7 +33,7 @@ export type TickerIpo = {
   subscription_total: number | null;
   listing_gain_pct: number | null;
 };
-export type TickerStock = { symbol: string; price: number; change_pct: number; market_cap: number };
+export type TickerStock = { symbol: string; price: number; change_pct: number; market_cap: number; updated_at?: string };
 export type TickerAnnouncement = { company: string; subject: string | null; attachment_url: string; published_at: string | null };
 export type TickerExDate = { company: string; purpose: string | null; ex_date: string };
 
@@ -103,7 +103,10 @@ export function ipoItems(ipos: TickerIpo[], gmpByIpo: Map<string, number>, today
 
 /** The three biggest gainers and losers among large companies. */
 export function moverItems(stocks: TickerStock[]): TickerItem[] {
-  const big = stocks.filter((s) => s.market_cap >= MOVER_MIN_CAP && s.price > 0 && Number.isFinite(s.change_pct) && s.change_pct !== 0);
+  // A quote more than a week behind the freshest is a stock that stopped trading; its last move is not today's.
+  const freshest = Math.max(0, ...stocks.map((s) => (s.updated_at ? Date.parse(s.updated_at) || 0 : 0)));
+  const current = (s: TickerStock) => !s.updated_at || freshest - (Date.parse(s.updated_at) || 0) <= 7 * 86_400_000;
+  const big = stocks.filter((s) => s.market_cap >= MOVER_MIN_CAP && s.price > 0 && Number.isFinite(s.change_pct) && s.change_pct !== 0 && current(s));
   const line = (s: TickerStock, kind: "gainer" | "loser"): TickerItem => ({
     kind, tag: kind === "gainer" ? "TOP GAINER" : "TOP LOSER",
     text: `${s.symbol} ${rupees(s.price)} ${signedPct(s.change_pct)}`,

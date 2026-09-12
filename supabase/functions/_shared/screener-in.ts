@@ -68,6 +68,18 @@ const decode = (value: string) =>
 const text = (html: string) => decode(html.replace(/<[^>]+>/g, " ")).replace(/\s+/g, " ").trim();
 
 /** "2,07,559", "-1,234", "18%", "0.47 %" -> a number; anything else -> null. */
+/**
+ * The company page screener.in's search offers for a symbol - the fallback
+ * for a company not filed under its NSE symbol, like a BSE-only listing (NSDL
+ * is /company/544467/). Only a company-page path is taken, never an off-site
+ * or other link.
+ */
+export function searchResultPath(raw: unknown): string | null {
+  const first = Array.isArray(raw) ? raw[0] : null;
+  const url = first && typeof first === "object" ? (first as Record<string, unknown>).url : null;
+  return typeof url === "string" && /^\/company\/[A-Za-z0-9&%._-]+\/(consolidated\/)?$/.test(url) ? url : null;
+}
+
 export function screenerNumber(value: string): number | null {
   const cleaned = text(value).replace(/[,%₹\s]/g, "").replace(/Cr\.?$/i, "");
   if (!/^-?\d+(\.\d+)?$/.test(cleaned)) return null;

@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
-import { parseScreenerPage, screenerNumber, monthEnd } from "../../supabase/functions/_shared/screener-in";
+import { parseScreenerPage, screenerNumber, monthEnd, searchResultPath } from "../../supabase/functions/_shared/screener-in";
 import { parseStatement } from "../../supabase/functions/_shared/indianapi";
 
 /*
@@ -109,5 +109,19 @@ describe("parseScreenerPage - company facts", () => {
 describe("parseScreenerPage - malformed entities", () => {
   it("does not throw on a code point no character has", () => {
     expect(() => parseScreenerPage('<h1>Bad &#99999999; name</h1>')).not.toThrow();
+  });
+});
+
+describe("searchResultPath", () => {
+  it("takes the first company page the search offers, as screener.in answered for NSDL", () => {
+    expect(searchResultPath([{ id: 1285576, name: "National Securities Depository Ltd", url: "/company/544467/consolidated/" }])).toBe("/company/544467/consolidated/");
+    expect(searchResultPath([{ url: "/company/RELIANCE/" }])).toBe("/company/RELIANCE/");
+  });
+
+  it("takes nothing that is not a company page", () => {
+    expect(searchResultPath([])).toBeNull();
+    expect(searchResultPath([{ url: "https://evil.example/company/X/" }])).toBeNull();
+    expect(searchResultPath([{ url: "/screens/123/" }])).toBeNull();
+    expect(searchResultPath({ url: "/company/X/" })).toBeNull();
   });
 });
