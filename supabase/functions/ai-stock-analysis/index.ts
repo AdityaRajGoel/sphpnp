@@ -1,6 +1,7 @@
 /// <reference lib="deno.ns" />
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { ROLES, buildRolePrompt, buildSynthesisPrompt, hasQuorum, type RoleOutput } from "../_shared/analysis-roles.ts";
 import { shouldServeCachedReport } from "../_shared/report-cache.ts";
 
 // Cached AI reports: one report per symbol per Indian (Asia/Kolkata) trading
@@ -1505,8 +1506,9 @@ serve(async (req) => {
 
   try {
     const payload = await req.json();
-    const { is_chat, chat_message, chat_history, context, use_web_search, committee, ...stockData } = payload;
+    const { is_chat, chat_message, chat_history, context, use_web_search, committee, debate, ...stockData } = payload;
     const committeeMode = !!committee && !is_chat;
+    const debateMode = !!debate && !is_chat;
 
     // Supabase client (service role) for the report cache
     const sb = createClient(
@@ -1575,6 +1577,60 @@ serve(async (req) => {
     } else {
       console.log(`[AI Report] ${stockData.symbol} @ ₹${enriched.price} (${enriched.changePct}%) | Data: ${enriched.dataSource} | RSI: ${enriched.rsiVal} | MACD: ${enriched.macd.trend}`);
       finalPrompt = buildAnalysisPrompt(enriched);
+    }
+
+    // ── Debate mode (opt-in): three role-specialised passes in PARALLEL - a
+    //    bull case, a bear case and a risk review - whose arguments are then
+    //    folded into the prompt the ordinary cascade answers. The structure is
+    //    TradingAgents'; see _shared/analysis-roles.ts for why the roles are
+    //    adversarial and the synthesis is not.
+    //
+    //    Parallel, not sequential, and that is the whole reason this fits: four
+    //    chained model calls would blow the edge function's wall clock, while
+    //    three concurrent ones cost one round trip. The synthesis is not an
+    //    extra call either - it replaces the prompt the cascade was going to
+    //    send anyway, so the report still comes back in the usual JSON shape
+    //    and every downstream consumer is untouched.
+    //
+    //    Degrades quietly: if fewer than two roles answer, finalPrompt is left
+    //    exactly as it was and the ordinary single-pass report runs. A
+    //    synthesis of one surviving argument would read as a balanced review
+    //    while being one side of the argument.
+    const debateRoles: RoleOutput[] = [];
+    if (debateMode) {
+      const debateStart = Date.now();
+      const ask = GROQ_API_KEY
+        ? (prompt: string) => askGroq(prompt, true, GROQ_MODELS[0])
+        : CEREBRAS_API_KEY
+          ? (prompt: string) => askCerebras(prompt, true)
+          : OPENROUTER_API_KEY && FREE_CHAT_MODEL
+            ? (prompt: string) => askOpenRouter(prompt, true, FREE_CHAT_MODEL)
+            : null;
+
+      if (!ask) {
+        console.warn("Debate requested but no free provider is configured; falling back to a single pass");
+      } else {
+        const factsBlock = finalPrompt;
+        const settled = await Promise.allSettled(
+          ROLES.map((role) => withTimeout(ask(buildRolePrompt(role, factsBlock)), FREE_MODEL_TIMEOUT_MS, `debate:${role}`)),
+        );
+        settled.forEach((outcome, index) => {
+          if (outcome.status !== "fulfilled") {
+            const msg = outcome.reason instanceof Error ? outcome.reason.message : String(outcome.reason);
+            console.warn(`debate:${ROLES[index]} failed: ${msg.slice(0, 120)}`);
+            return;
+          }
+          const text = typeof outcome.value.result === "string" ? outcome.value.result : "";
+          if (text.trim()) debateRoles.push({ role: ROLES[index], text });
+        });
+
+        if (hasQuorum(debateRoles)) {
+          finalPrompt = buildSynthesisPrompt(factsBlock, debateRoles);
+          console.log(`→ Debate: ${debateRoles.map((r) => r.role).join(" + ")} in ${Date.now() - debateStart}ms; synthesising`);
+        } else {
+          console.warn(`→ Debate: only ${debateRoles.length} role(s) answered; falling back to a single pass`);
+        }
+      }
     }
 
     let result;

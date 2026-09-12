@@ -300,6 +300,11 @@ export const AIAnalysisModal = ({ isOpen, onClose, stock }: AIAnalysisModalProps
   // Opt-in "Deep" mode: two open models answer in parallel and their
   // independent verdicts are compared against the quant engine.
   const [useCommittee, setUseCommittee] = useState(false);
+  // Debate mode: a bull, a bear and a risk pass argue the same data in
+  // parallel, and the report is the synthesis of the three. Independent of
+  // committee mode, which asks several MODELS the same question rather than
+  // asking one model several different questions.
+  const [useDebate, setUseDebate] = useState(false);
   const analysisSteps = useCommittee ? COMMITTEE_STEPS : REPORT_STEPS;
   const [copied, setCopied] = useState(false);
   
@@ -409,7 +414,8 @@ export const AIAnalysisModal = ({ isOpen, onClose, stock }: AIAnalysisModalProps
           score: analysis.score,
           isBullish: analysis.isBullish,
           deep_report: true,
-          committee: useCommittee
+          committee: useCommittee,
+          debate: useDebate
         }
       })
         .then(({ data, error }) => {
@@ -760,6 +766,24 @@ export const AIAnalysisModal = ({ isOpen, onClose, stock }: AIAnalysisModalProps
                     className={`ml-auto my-2 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold border transition-colors ${useCommittee ? "bg-brand-orange text-white border-brand-orange" : "bg-card border-border text-muted-foreground hover:text-foreground hover:border-brand-orange/40"}`}
                   >
                     <Cpu className="w-3 h-3" /> Committee
+                  </button>
+                  <button
+                    onClick={() => {
+                      setUseDebate(!useDebate);
+                      // Re-run the analysis in the requested mode
+                      requestIdRef.current++;
+                      setGeminiVerdict(null);
+                      setIsAnalyzing(true);
+                      setLoadingStep(0);
+                      setMinTimeElapsed(false);
+                      setAiResponseReady(false);
+                      setRetryNonce(n => n + 1);
+                    }}
+                    title="Debate mode: a bull case, a bear case and a risk review are argued separately, then weighed against each other in the report"
+                    aria-pressed={useDebate}
+                    className={`my-2 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold border transition-colors ${useDebate ? "bg-brand-orange text-white border-brand-orange" : "bg-card border-border text-muted-foreground hover:text-foreground hover:border-brand-orange/40"}`}
+                  >
+                    <Scale className="w-3 h-3" /> Debate
                   </button>
                 </div>
 
