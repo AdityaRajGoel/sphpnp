@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useId, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Link } from "react-router-dom";
 import { Cookie } from "lucide-react";
@@ -25,8 +25,23 @@ import { usePrefersReducedMotion } from "@/contexts/MotionPreferenceContext";
  * refusal, so it is spelled with the word rather than an ambiguous glyph -
  * and Escape does the same thing for the keyboard.
  */
+/**
+ * Published on <html> while the prompt is up, so the other bottom-docked UI can
+ * sit above it instead of underneath.
+ *
+ * This banner is the topmost bottom-fixed element on the page (z-50) and it
+ * spans the full width on a phone, so on a first visit it completely covered
+ * the IPO compare bar and the mobile "Open Free Demat Account" CTA - both
+ * z-40, both bottom-docked, both invisible and unclickable until the visitor
+ * dealt with cookies. Measured rather than hardcoded: the card is three lines
+ * on a phone and one row on a desktop, and a fixed guess would be wrong on one
+ * of them.
+ */
+const DOCK_HEIGHT_VAR = "--consent-dock-height";
+
 const CookieConsent = () => {
   const [isVisible, setIsVisible] = useState(false);
+  const card = useRef<HTMLDivElement>(null);
   const prefersReducedMotion = usePrefersReducedMotion();
   const titleId = useId();
   const descriptionId = useId();
@@ -41,6 +56,31 @@ const CookieConsent = () => {
     writeConsent(choice);
     setIsVisible(false);
   }, []);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    const clear = () => root.style.removeProperty(DOCK_HEIGHT_VAR);
+    if (!isVisible || !card.current) {
+      clear();
+      return;
+    }
+    const element = card.current;
+    const publish = () => root.style.setProperty(DOCK_HEIGHT_VAR, `${Math.ceil(element.getBoundingClientRect().height)}px`);
+    publish();
+    // The card reflows on rotation and on a font-size change, and the offset
+    // it feeds has to follow it rather than be measured once at mount.
+    // Guarded the same way readConsent guards localStorage: an environment
+    // without ResizeObserver (jsdom, a very old browser) gets the one-time
+    // measurement above and keeps its banner, rather than throwing inside an
+    // effect and taking the whole consent prompt down.
+    if (typeof ResizeObserver === "undefined") return clear;
+    const observer = new ResizeObserver(publish);
+    observer.observe(element);
+    return () => {
+      observer.disconnect();
+      clear();
+    };
+  }, [isVisible]);
 
   // Escape resolves to the refusal, never to acceptance: dismissing a consent
   // prompt is legally not agreement, so the quiet exit must be the safe one.
@@ -81,6 +121,7 @@ const CookieConsent = () => {
           className="fixed inset-x-0 bottom-0 z-50 flex justify-center px-4 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] pointer-events-none"
         >
           <div
+            ref={card}
             className="
               pointer-events-auto w-full max-w-3xl
               rounded-2xl border border-border/80 bg-card

@@ -22,7 +22,10 @@ export default function IPOCompareBar({ count, onCompare, onClear }: Props) {
           animate={{ opacity: 1, y: 0 }}
           exit={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, y: 24 }}
           transition={{ duration: 0.2 }}
-          className="fixed inset-x-0 bottom-4 z-40 flex justify-center px-4"
+          // Lifted clear of the cookie-consent prompt while it is up (it is
+          // bottom-docked too, and taller); --consent-dock-height is 0 once the
+          // visitor has answered it. See CookieConsent.
+          className="fixed inset-x-0 z-40 flex justify-center px-4 bottom-[calc(1rem+var(--consent-dock-height,0px))] transition-[bottom] duration-base"
         >
           <div className="flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3 shadow-xl">
             <Scale className="w-4 h-4 text-secondary shrink-0" />

@@ -156,3 +156,32 @@ describe("CookieConsent", () => {
     );
   });
 });
+
+/**
+ * The banner is the topmost bottom-fixed element on the page and spans the
+ * full width on a phone, so while it is up it sat directly on top of the IPO
+ * compare bar and the mobile "Open Free Demat Account" CTA - both of them
+ * bottom-docked, both unreachable until cookies were dealt with. It publishes
+ * its own height so those can lift clear, and stops publishing the moment it
+ * is answered.
+ */
+describe("bottom-dock offset", () => {
+  const dockHeight = () => document.documentElement.style.getPropertyValue("--consent-dock-height");
+
+  it("publishes its height while asking, and withdraws it once answered", () => {
+    renderBanner();
+    expect(dockHeight()).not.toBe("");
+
+    fireEvent.click(screen.getByRole("button", { name: /essential only/i }));
+
+    expect(dockHeight()).toBe("");
+  });
+
+  it("publishes nothing when the visitor has already decided", () => {
+    writeConsent("all");
+
+    renderBanner();
+
+    expect(dockHeight()).toBe("");
+  });
+});

@@ -28,7 +28,9 @@ const StickyMobileCTA = () => {
           animate={{ y: 0 }}
           exit={{ y: 90 }}
           transition={{ type: "spring", stiffness: 300, damping: 30 }}
-          className="fixed bottom-0 inset-x-0 z-40 md:hidden px-3 pt-3 pb-[calc(env(safe-area-inset-bottom)+0.5rem)] bg-gradient-to-t from-background via-background to-transparent"
+          // Same lift as the IPO compare bar: on a phone the consent prompt is
+          // full-width and covers this CTA completely until it is answered.
+          className="fixed inset-x-0 z-40 md:hidden px-3 pt-3 pb-[calc(env(safe-area-inset-bottom)+0.5rem)] bg-gradient-to-t from-background via-background to-transparent bottom-[var(--consent-dock-height,0px)] transition-[bottom] duration-base"
         >
           <div className="flex items-center gap-2">
             <a
