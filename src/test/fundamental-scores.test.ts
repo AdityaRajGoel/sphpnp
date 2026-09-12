@@ -1,6 +1,8 @@
 import { describe, it, expect } from "vitest";
 import {
+  alignPeriods,
   cagr,
+  cagrOverPeriods,
   oneReportingBasis,
   piotroskiScore,
   qualityMetrics,
@@ -59,16 +61,18 @@ describe("piotroskiScore", () => {
   });
 
   it("scores a deteriorating company low on the same tests", () => {
-    const result = piotroskiScore(
-      [improvingIncome[1], improvingIncome[0]],
-      [improvingBalance[1], improvingBalance[0]],
-      [improvingCashflow[1], improvingCashflow[0]],
-    )!;
+    // The figures are swapped between the two dates rather than the arrays
+    // being reversed: alignment sorts by period_end, so input order no longer
+    // changes which period is "latest" - which is the point of it.
+    const swap = <T extends { period_end: string }>(rows: T[]): T[] => [
+      { ...rows[1], period_end: rows[0].period_end },
+      { ...rows[0], period_end: rows[1].period_end },
+    ];
 
-    // Same company, periods reversed: all five TREND tests flip to failing.
-    // Exactly three survive, and which three is the point - they are the tests
-    // of level rather than of direction (profit positive, cash flow positive,
-    // cash flow ahead of profit), and those do not care which period is newer.
+    const result = piotroskiScore(swap(improvingIncome), swap(improvingBalance), swap(improvingCashflow))!;
+
+    // Only the tests of LEVEL survive - profit positive, cash flow positive,
+    // cash flow ahead of profit. Every test of direction now fails.
     expect(result.score).toBe(3);
     expect(result.testable).toBe(8);
     expect(result.criteria.filter((c) => c.passed === true).map((c) => c.name)).toEqual([
@@ -222,5 +226,91 @@ describe("oneReportingBasis", () => {
 
     expect(scored.testable).toBe(8);
     expect(scored.score).toBe(8);
+  });
+});
+
+/*
+ * Period alignment. Found on the first live run: fundamentals_income comes
+ * from NSE's XBRL filings and fundamentals_balance from Yahoo, both quarterly,
+ * and they do not always hold the same quarters for a symbol. Pairing
+ * income[0] with balance[0] positionally divided June's profit by March's
+ * assets and called it a return on assets.
+ */
+describe("period alignment", () => {
+  it("pairs statements by date, not by position", () => {
+    // The balance sheet is missing the newest quarter. Positionally, June's
+    // profit would meet March's assets; by date, June is simply skipped.
+    const income = [
+      { period_end: "2026-06-30", revenue: 300, total_income: 310, total_expenses: 250, profit_after_tax: 45 },
+      { period_end: "2026-03-31", revenue: 1200, total_income: 1250, total_expenses: 1000, profit_after_tax: 180 },
+      { period_end: "2025-03-31", revenue: 1000, total_income: 1040, total_expenses: 900, profit_after_tax: 100 },
+    ];
+
+    const aligned = alignPeriods(income, improvingBalance, improvingCashflow);
+
+    expect(aligned.map((p) => p.period_end)).toEqual(["2026-03-31", "2025-03-31"]);
+    expect(aligned[0].income.profit_after_tax).toBe(180);
+    expect(aligned[0].balance.total_assets).toBe(2000);
+  });
+
+  it("scores the aligned pair and reports both dates", () => {
+    const result = piotroskiScore(improvingIncome, improvingBalance, improvingCashflow)!;
+
+    expect(result.period_end).toBe("2026-03-31");
+    expect(result.compared_with).toBe("2025-03-31");
+  });
+
+  it("compares year-on-year, never quarter-on-quarter", () => {
+    // A seasonal business beats its own previous quarter most years regardless
+    // of how it is doing, so consecutive quarters must not be compared.
+    const quarters = ["2026-06-30", "2026-03-31", "2025-12-31"];
+    const income = quarters.map((period_end, i) => ({ period_end, revenue: 300 - i * 10, total_income: 310, total_expenses: 250, profit_after_tax: 45 }));
+    const balance = quarters.map((period_end) => ({ period_end, total_assets: 2000, total_debt: 300, total_equity: 1200, cash_and_equivalents: 250, current_assets: 800, current_liabilities: 400 }));
+    const cashflow = quarters.map((period_end) => ({ period_end, operating_cf: 60, capex: -10 }));
+
+    // Three consecutive quarters, none twelve months apart: nothing to compare.
+    expect(piotroskiScore(income, balance, cashflow)).toBeNull();
+  });
+
+  it("accepts an anniversary that landed a few weeks early or late", () => {
+    const income = [
+      { period_end: "2026-06-30", revenue: 320, total_income: 330, total_expenses: 260, profit_after_tax: 50 },
+      { period_end: "2025-06-15", revenue: 300, total_income: 310, total_expenses: 255, profit_after_tax: 40 },
+    ];
+    const balance = income.map((r) => ({ period_end: r.period_end, total_assets: 2000, total_debt: 300, total_equity: 1200, cash_and_equivalents: 250, current_assets: 800, current_liabilities: 400 }));
+    const cashflow = income.map((r) => ({ period_end: r.period_end, operating_cf: 90, capex: -10 }));
+
+    const result = piotroskiScore(income, balance, cashflow)!;
+
+    expect(result.compared_with).toBe("2025-06-15");
+  });
+});
+
+describe("cagrOverPeriods", () => {
+  it("compounds over elapsed time, not over the number of periods", () => {
+    // Eight quarterly periods span two years, not seven. Counting periods as
+    // years divided the real growth rate by nearly four.
+    const periods = alignPeriods(
+      [
+        { period_end: "2026-03-31", revenue: 1210 },
+        { period_end: "2025-03-31", revenue: 1100 },
+        { period_end: "2024-03-31", revenue: 1000 },
+      ],
+      ["2026-03-31", "2025-03-31", "2024-03-31"].map((period_end) => ({ period_end, total_assets: 1 })),
+      [],
+    );
+
+    // 1000 -> 1210 over exactly two years is 10% a year.
+    expect(cagrOverPeriods(periods, (i) => i.revenue)!).toBeCloseTo(10, 1);
+  });
+
+  it("refuses a span shorter than a year", () => {
+    const periods = alignPeriods(
+      [{ period_end: "2026-06-30", revenue: 320 }, { period_end: "2026-03-31", revenue: 300 }],
+      ["2026-06-30", "2026-03-31"].map((period_end) => ({ period_end, total_assets: 1 })),
+      [],
+    );
+
+    expect(cagrOverPeriods(periods, (i) => i.revenue)).toBeNull();
   });
 });

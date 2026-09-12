@@ -79,6 +79,81 @@ export function oneReportingBasis<T extends { period_end: string; is_consolidate
   });
 }
 
+/**
+ * Periods where the income statement and balance sheet describe THE SAME date,
+ * paired with that date's cash flow, newest first.
+ *
+ * This alignment is not tidying - without it the score is arithmetic on
+ * unrelated periods. fundamentals_income comes from NSE's XBRL filings and
+ * fundamentals_balance from Yahoo, both quarterly, and they do not always hold
+ * the same quarters for a symbol. Taking income[0] and balance[0] positionally
+ * pairs June's profit with March's assets and calls the quotient a return on
+ * assets. Measured on the first live run: symbols were scoring on period_end
+ * dates two years apart from their own balance sheets.
+ *
+ * Cash flow is optional and attached where present - two criteria need it and
+ * report themselves untestable without it, which is the honest outcome for a
+ * symbol whose cash flow was never collected.
+ */
+export type AlignedPeriod = {
+  period_end: string;
+  income: IncomePeriod;
+  balance: BalancePeriod;
+  cashflow: CashflowPeriod | null;
+};
+
+export function alignPeriods(
+  income: IncomePeriod[],
+  balance: BalancePeriod[],
+  cashflow: CashflowPeriod[],
+): AlignedPeriod[] {
+  const balanceByDate = new Map(balance.map((row) => [row.period_end, row]));
+  const cashflowByDate = new Map(cashflow.map((row) => [row.period_end, row]));
+
+  return income
+    .filter((row) => balanceByDate.has(row.period_end))
+    .map((row) => ({
+      period_end: row.period_end,
+      income: row,
+      balance: balanceByDate.get(row.period_end)!,
+      cashflow: cashflowByDate.get(row.period_end) ?? null,
+    }))
+    .sort((a, b) => (a.period_end < b.period_end ? 1 : -1));
+}
+
+/** Days between two ISO dates. */
+const daysBetween = (later: string, earlier: string) =>
+  (Date.parse(`${later}T00:00:00Z`) - Date.parse(`${earlier}T00:00:00Z`)) / 86_400_000;
+
+/**
+ * The comparison period for a year-on-year test: the aligned period closest to
+ * twelve months before `latest`, within a tolerance that absorbs a filing
+ * landing a few weeks either side of its anniversary.
+ *
+ * Year-on-year, NOT the previous quarter. Piotroski is defined on annual
+ * figures, and quarter-on-quarter would read every seasonal business as
+ * improving or deteriorating on schedule - an Indian consumer name's December
+ * quarter beats its September quarter most years regardless of how the
+ * business is doing.
+ */
+const YEAR_MIN_DAYS = 300;
+const YEAR_MAX_DAYS = 430;
+
+export function yearEarlier(periods: AlignedPeriod[], latest: AlignedPeriod): AlignedPeriod | null {
+  let best: AlignedPeriod | null = null;
+  let bestGap = Infinity;
+  for (const period of periods) {
+    const gap = daysBetween(latest.period_end, period.period_end);
+    if (gap < YEAR_MIN_DAYS || gap > YEAR_MAX_DAYS) continue;
+    const distance = Math.abs(gap - 365);
+    if (distance < bestGap) {
+      best = period;
+      bestGap = distance;
+    }
+  }
+  return best;
+}
+
 export type Criterion = {
   name: string;
   /** null means the input for this test was absent - not a fail. */
@@ -97,6 +172,10 @@ export type PiotroskiResult = {
    */
   testable: number;
   criteria: Criterion[];
+  /** The period scored. */
+  period_end: string;
+  /** The period it was compared against - roughly twelve months earlier. */
+  compared_with: string;
 };
 
 /**
@@ -122,11 +201,19 @@ export function piotroskiScore(
   balance: BalancePeriod[],
   cashflow: CashflowPeriod[],
 ): PiotroskiResult | null {
-  if (income.length < 2 || balance.length < 2) return null;
-  const [income0, income1] = income;
-  const [balance0, balance1] = balance;
-  const cash0 = cashflow[0];
-  const cash1 = cashflow[1];
+  const periods = alignPeriods(income, balance, cashflow);
+  if (periods.length < 2) return null;
+
+  const latest = periods[0];
+  // Year-on-year, never the previous quarter - see yearEarlier.
+  const prior = yearEarlier(periods, latest);
+  if (!prior) return null;
+
+  const income0 = latest.income;
+  const income1 = prior.income;
+  const balance0 = latest.balance;
+  const balance1 = prior.balance;
+  const cash0 = latest.cashflow;
 
   const roa0 = ratio(income0.profit_after_tax, balance0.total_assets);
   const roa1 = ratio(income1.profit_after_tax, balance1.total_assets);
@@ -145,8 +232,6 @@ export function piotroskiScore(
   const margin0 = operatingMargin(income0);
   const margin1 = operatingMargin(income1);
 
-  // Accrual test: cash flow from operations should exceed reported profit.
-  // Scaled by assets on both sides, as the original does.
   const cfoOverAssets = ratio(cfo0, balance0.total_assets);
 
   const test = (name: string, value: boolean | null, unavailable: string): Criterion =>
@@ -154,11 +239,11 @@ export function piotroskiScore(
 
   const criteria: Criterion[] = [
     test("Return on assets positive", roa0 === null ? null : roa0 > 0, "no profit or total assets figure"),
-    test("Operating cash flow positive", finite(cfo0) ? cfo0 > 0 : null, "no cash flow statement"),
+    test("Operating cash flow positive", finite(cfo0) ? cfo0 > 0 : null, "no cash flow statement for this period"),
     test(
       "Return on assets improving",
       roa0 === null || roa1 === null ? null : roa0 > roa1,
-      "needs two periods of profit and assets",
+      "needs profit and assets a year apart",
     ),
     test(
       "Cash flow exceeds profit",
@@ -183,12 +268,12 @@ export function piotroskiScore(
     test(
       "Operating margin improving",
       margin0 === null || margin1 === null ? null : margin0 > margin1,
-      "needs total income and expenses for two periods",
+      "needs total income and expenses a year apart",
     ),
     test(
       "Asset turnover improving",
       turnover0 === null || turnover1 === null ? null : turnover0 > turnover1,
-      "needs revenue and assets for two periods",
+      "needs revenue and assets a year apart",
     ),
   ];
 
@@ -200,6 +285,8 @@ export function piotroskiScore(
     score: tested.filter((criterion) => criterion.passed).length,
     testable: tested.length,
     criteria,
+    period_end: latest.period_end,
+    compared_with: prior.period_end,
   };
 }
 
@@ -305,4 +392,30 @@ export function cagr(values: number[], years: number): number | null {
   const last = values[values.length - 1];
   if (!finite(first) || !finite(last) || first <= 0 || last <= 0) return null;
   return ((last / first) ** (1 / years) - 1) * 100;
+}
+
+/**
+ * Compound growth of one line item across aligned periods, using the ACTUAL
+ * elapsed time rather than the number of periods.
+ *
+ * The distinction is not pedantic: these periods are quarterly, so counting
+ * them as years turned eight quarters into a "seven-year" CAGR and divided the
+ * growth rate by nearly four. Returns null for a span under a year, where a
+ * compound ANNUAL rate is an extrapolation rather than a measurement.
+ */
+export function cagrOverPeriods(
+  periods: AlignedPeriod[],
+  pick: (period: IncomePeriod) => number | null | undefined,
+): number | null {
+  const usable = periods
+    .map((period) => ({ period_end: period.period_end, value: pick(period.income) }))
+    .filter((entry): entry is { period_end: string; value: number } => finite(entry.value));
+  if (usable.length < 2) return null;
+
+  // periods arrive newest-first.
+  const newest = usable[0];
+  const oldest = usable[usable.length - 1];
+  const years = daysBetween(newest.period_end, oldest.period_end) / 365;
+  if (years < 1) return null;
+  return cagr([oldest.value, newest.value], years);
 }

@@ -332,6 +332,13 @@ export function deliveryTrend(bars: Bar[], recent = 20, baseline = 60): { recent
 export type CorporateAction = { ex_date: string; action_type?: string | null; description?: string | null };
 
 /**
+ * Actions that do not move the quoted price, so the series needs no adjustment
+ * for them. Everything else that cannot be parsed into a ratio is treated as a
+ * gap in what we can correct for, and refuses the symbol.
+ */
+const NO_PRICE_EFFECT = /dividend|meeting|agm|buy\s*-?\s*back/i;
+
+/**
  * Post-action shares per pre-action share, or null when the description is not
  * one this understands.
  *
@@ -393,9 +400,21 @@ export function adjustForCorporateActions(
   for (const action of inWindow) {
     const ratio = parseAdjustmentRatio(action);
     if (ratio === null || !Number.isFinite(ratio) || ratio <= 0) {
-      // A dividend or an AGM needs no price adjustment and is not a failure;
-      // anything else unparsed is.
-      if (!/dividend|meeting|agm/i.test(`${action.action_type ?? ""} ${action.description ?? ""}`)) unparsed++;
+      // Actions that move no price need no adjustment, and counting them as
+      // unreadable would refuse a symbol that is perfectly fine. A BUYBACK is
+      // the one worth naming: shares are tendered rather than subdivided, the
+      // exchange applies no ex-price adjustment, and treating it as
+      // unadjustable refused INFY, WIPRO, ZYDUSLIFE, AUROPHARMA and BAJAJ-AUTO
+      // on the first live run - INFY's largest session all year is 7.3%, so
+      // there was nothing to adjust for at all.
+      //
+      // What is NOT on this list, deliberately: a demerger and a rights issue
+      // both DO gap the price on the ex-date, and neither ratio can be derived
+      // from what is stored - a rights line reads "Rights 3:25 @ Premium Rs
+      // 1799/-", where "premium" may be over face value rather than the issue
+      // price, and guessing wrong shifts a whole year of returns. Those stay
+      // unparsed, and the symbol is refused rather than published wrong.
+      if (!NO_PRICE_EFFECT.test(`${action.action_type ?? ""} ${action.description ?? ""}`)) unparsed++;
       continue;
     }
     applied++;

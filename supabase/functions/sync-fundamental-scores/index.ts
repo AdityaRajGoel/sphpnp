@@ -13,7 +13,8 @@
 
 import { createClient } from "npm:@supabase/supabase-js@2";
 import {
-  cagr,
+  alignPeriods,
+  cagrOverPeriods,
   oneReportingBasis,
   piotroskiScore,
   qualityMetrics,
@@ -87,22 +88,17 @@ async function readSymbol(supabase: SupabaseClient, symbol: string): Promise<Sym
 }
 
 /**
- * Year-on-year profit growth for the PEG denominator, from the same two
+ * Year-on-year profit growth for the PEG denominator, from the same two aligned
  * periods Piotroski compares. Null on a non-positive base: a company moving out
  * of a loss has no growth rate, and the division would produce a confident
  * number from a negative denominator.
  */
-function profitGrowth(income: IncomePeriod[]): number | null {
-  if (income.length < 2) return null;
-  const now = income[0].profit_after_tax;
-  const then = income[1].profit_after_tax;
+function profitGrowth(latest: IncomePeriod, prior: IncomePeriod): number | null {
+  const now = latest.profit_after_tax;
+  const then = prior.profit_after_tax;
   if (typeof now !== "number" || typeof then !== "number" || !(then > 0)) return null;
   return ((now - then) / then) * 100;
 }
-
-/** Oldest-first values of one line item, for CAGR. */
-const chronological = (income: IncomePeriod[], pick: (period: IncomePeriod) => number | null | undefined) =>
-  [...income].reverse().map(pick).filter((value): value is number => typeof value === "number" && Number.isFinite(value));
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
@@ -179,34 +175,44 @@ Deno.serve(async (req) => {
 
     for (const { symbol, data } of results) {
       const piotroski = piotroskiScore(data.income, data.balance, data.cashflow);
-      if (piotroski === null || data.income.length === 0) {
+      if (piotroski === null) {
         summary.tooThin++;
         continue;
       }
 
-      const market = marketBySymbol.get(symbol);
-      const metrics = qualityMetrics(data.income, data.balance, data.cashflow, {
-        market_cap: market?.market_cap ?? null,
-        pe: market?.pe ?? null,
-        profit_growth_yoy_pct: profitGrowth(data.income),
-      });
+      // The SAME aligned periods the score used. Reading data.income[0]
+      // directly here would reintroduce the mismatch alignPeriods exists to
+      // prevent - the newest income row is routinely a quarter the balance
+      // sheet does not carry.
+      const periods = alignPeriods(data.income, data.balance, data.cashflow);
+      const latest = periods.find((period) => period.period_end === piotroski.period_end)!;
+      const prior = periods.find((period) => period.period_end === piotroski.compared_with)!;
 
-      // CAGR over however many periods are actually present, not an assumed
-      // four: a symbol with three filings has a two-year CAGR, and calling it
-      // three-year would overstate the base.
-      const revenues = chronological(data.income, (period) => period.revenue);
-      const profits = chronological(data.income, (period) => period.profit_after_tax);
+      const market = marketBySymbol.get(symbol);
+      const metrics = qualityMetrics(
+        [latest.income],
+        [latest.balance],
+        latest.cashflow ? [latest.cashflow] : [],
+        {
+          market_cap: market?.market_cap ?? null,
+          pe: market?.pe ?? null,
+          profit_growth_yoy_pct: profitGrowth(latest.income, prior.income),
+        },
+      );
 
       rows.push({
         symbol,
-        period_end: data.income[0].period_end,
+        period_end: piotroski.period_end,
         basis: data.basis,
         piotroski_score: piotroski.score,
         piotroski_testable: piotroski.testable,
         piotroski_criteria: piotroski.criteria,
         ...metrics,
-        revenue_cagr_3y: cagr(revenues, Math.max(1, revenues.length - 1)),
-        profit_cagr_3y: cagr(profits, Math.max(1, profits.length - 1)),
+        // Compounded over the ACTUAL span between the oldest and newest aligned
+        // period. These periods are quarterly, so counting them as years turned
+        // eight quarters into a "seven-year" CAGR.
+        revenue_cagr_3y: cagrOverPeriods(periods, (income) => income.revenue),
+        profit_cagr_3y: cagrOverPeriods(periods, (income) => income.profit_after_tax),
       });
     }
   }

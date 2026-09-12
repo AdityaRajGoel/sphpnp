@@ -445,3 +445,40 @@ describe("computePriceAnalytics with corporate actions", () => {
     expect(computePriceAnalytics(bars, [], [vague])).toBeNull();
   });
 });
+
+describe("actions that move no price", () => {
+  const bars = Array.from({ length: 80 }, (_, i) => ({ trade_date: day(i), close: 100 + i * 0.3 }));
+
+  it("does not refuse a symbol for a buyback", () => {
+    // The first live run refused INFY, WIPRO, ZYDUSLIFE, AUROPHARMA and
+    // BAJAJ-AUTO for this. Shares are tendered rather than subdivided, the
+    // exchange applies no ex-price adjustment, and INFY's largest session in
+    // the whole window was 7.3% - there was nothing to correct for.
+    const buyback = { ex_date: day(40), action_type: "buyback", description: "Buy Back" };
+
+    const { applied, unparsed } = adjustForCorporateActions(bars, [buyback]);
+
+    expect(applied).toBe(0);
+    expect(unparsed).toBe(0);
+    expect(computePriceAnalytics(bars, [], [buyback])).not.toBeNull();
+  });
+
+  it("still refuses a demerger or a rights issue", () => {
+    // Both DO gap the price on the ex-date and neither ratio is derivable from
+    // what is stored - a rights line reads "Rights 3:25 @ Premium Rs 1799/-",
+    // where "premium" may be over face value rather than the issue price.
+    for (const action of [
+      { ex_date: day(40), action_type: "other", description: "Demerger" },
+      { ex_date: day(40), action_type: "rights", description: "Rights 3:25 @ Premium Rs 1799/-" },
+    ]) {
+      expect(adjustForCorporateActions(bars, [action]).unparsed).toBe(1);
+      expect(computePriceAnalytics(bars, [], [action])).toBeNull();
+    }
+  });
+
+  it("still refuses a bonus whose ratio could not be read", () => {
+    const vague = { ex_date: day(40), action_type: "bonus", description: "Bonus issue" };
+
+    expect(adjustForCorporateActions(bars, [vague]).unparsed).toBe(1);
+  });
+});
