@@ -37,6 +37,25 @@
 
     --radius: 0.5rem;
 
+    /* ---- Chart palette -------------------------------------------------
+       Four hues, in this order, for segments of a whole (issue reservation,
+       shareholding). Single-series bars use --chart-1 alone and need no
+       second hue.
+
+       Not eyeballed: both the light steps here and the dark ones below were
+       run through a colour-vision check (lightness band, chroma floor,
+       adjacent-pair separation under protanopia/deuteranopia/tritanopia, and
+       contrast against the card surface). The green/orange pair sits in the
+       band that is legal ONLY with a second encoding, which is why every
+       segment is directly labelled and separated by a 2px gap rather than
+       identified by colour alone. Re-check with the same tool before changing
+       any of these eight values - the dark steps are their own choices, not a
+       lightened flip of the light ones. */
+    --chart-1: 151 66% 30%;
+    --chart-2: 21 76% 43%;
+    --chart-3: 212 64% 40%;
+    --chart-4: 330 50% 46%;
+
     /* ---- Shape scale -------------------------------------------------
        One system, three roles. Controls (buttons, inputs, badges) use
        --radius. Surfaces (cards, panels, media) use --radius-surface.
@@ -136,6 +155,13 @@
     --border: 220 50% 16%;
     --input: 220 50% 16%;
     --ring: 150 50% 40%;
+
+    /* Chart palette, dark. Chosen against the dark card surface, not derived
+       from the light steps - see the note above. */
+    --chart-1: 151 51% 43%;
+    --chart-2: 25 64% 48%;
+    --chart-3: 210 58% 56%;
+    --chart-4: 329 49% 58%;
 
     /* Brand overrides for dark */
     --brand-navy: 210 60% 12%;

@@ -1,6 +1,8 @@
 import { FileText } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { decodeEntities, sectionTableHasHeader, type IpoPageSection } from "@/lib/ipo";
+import { deriveSectionInfographic } from "@/lib/ipo-infographics";
+import IPOSectionInfographic from "@/components/ipo/IPOSectionInfographic";
 
 /** "IPO Open Fri, Sep 18, 2026" -> ["IPO Open", "Fri, Sep 18, 2026"]: the timetable's one-line steps. */
 const DATED_STEP = /^(.+?)\s+((?:Mon|Tue|Wed|Thu|Fri|Sat|Sun),\s+[A-Z][a-z]{2}\s+\d{1,2},\s+\d{4})$/;
@@ -65,10 +67,17 @@ export default function IPOPageSections({ sections, fetchedAt }: { sections: Ipo
         </div>
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-5">
-        {sections.map((section) => (
+        {sections.map((section) => {
+          // A chart for the handful of sections that have an honest one; the
+          // rest (registrar, lead managers, contact details) are unchanged.
+          // It sits ABOVE the table rather than replacing any of it - the
+          // table is still the record, and the figures being drawn are its own.
+          const chart = deriveSectionInfographic(section);
+          return (
           <Card key={section.title} className={`min-w-0 ${isWide(section) ? "lg:col-span-2" : ""}`}>
             <CardContent className="p-4 md:p-5 space-y-3">
               <h3 className="font-heading text-base font-bold">{decodeEntities(section.title)}</h3>
+              {chart && <IPOSectionInfographic chart={chart} title={decodeEntities(section.title)} />}
               {section.tables.map((rows, i) => <SectionTable key={i} rows={rows} />)}
               {section.lines.length > 0 && section.lines.every((line) => DATED_STEP.test(line)) ? (
                 <dl className="text-sm divide-y divide-border rounded-lg border border-border">
@@ -89,7 +98,8 @@ export default function IPOPageSections({ sections, fetchedAt }: { sections: Ipo
               )}
             </CardContent>
           </Card>
-        ))}
+          );
+        })}
       </div>
     </section>
   );

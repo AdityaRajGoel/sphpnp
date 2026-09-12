@@ -4,6 +4,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatDate, formatGmp, formatGmpPercent, formatLotSize, formatMinInvestment, formatSubscription, gmpPercent, type Ipo } from "@/lib/ipo";
+import { compareInfographic } from "@/lib/ipo-infographics";
+import IPOSectionInfographic from "@/components/ipo/IPOSectionInfographic";
 
 type Row = { label: string; render: (ipo: Ipo) => React.ReactNode };
 
@@ -33,6 +35,9 @@ type Props = {
 };
 
 export default function IPOCompareDialog({ open, onOpenChange, ipos, onRemove }: Props) {
+  // Bars for the three measures where one issue really is more than another;
+  // the table below still carries every field, these included.
+  const chart = compareInfographic(ipos);
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl">
@@ -42,6 +47,7 @@ export default function IPOCompareDialog({ open, onOpenChange, ipos, onRemove }:
         <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-foreground">
           GMP is unofficial and unregulated. It is shown for information only and is not a prediction of listing performance.
         </div>
+        {chart && <IPOSectionInfographic chart={chart} title={`Comparing ${ipos.length} IPOs`} />}
         <div className="overflow-x-auto -mx-6 px-6">
           <table className="w-full text-sm min-w-[520px]">
             <thead>
