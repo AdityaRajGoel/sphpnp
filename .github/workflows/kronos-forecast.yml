@@ -57,8 +57,12 @@ jobs:
       - name: Install dependencies
         run: |
           # CPU wheel only - the CUDA build is ~2.5GB and there is no GPU here.
-          pip install --index-url https://download.pytorch.org/whl/cpu torch==2.5.1
-          pip install -r scripts/kronos/requirements.txt
+          # The version floor lives in requirements.txt with the advisories that
+          # set it; pinning a second, older number here would silently win.
+          pip install \
+            --index-url https://download.pytorch.org/whl/cpu \
+            --extra-index-url https://pypi.org/simple \
+            -r scripts/kronos/requirements.txt
 
       - name: Cache model weights
         uses: actions/cache@v4

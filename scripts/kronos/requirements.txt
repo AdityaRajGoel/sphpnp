@@ -1,11 +1,18 @@
 # Pinned so a forecast written today can be reproduced. torch is the CPU wheel -
 # the workflow installs it from PyTorch's CPU index, which is ~200MB rather than
 # the ~2.5GB CUDA build.
-torch==2.5.1
+#
+# torch is held at 2.14 or newer, not at Kronos' own floor of 2.0. The job loads
+# model weights from a third-party Hugging Face repo, and every torch below
+# 2.6 carries a CRITICAL remote-code-execution issue in torch.load - the exact
+# call `from_pretrained` makes. Later ranges up to 2.12.1 add memory-corruption
+# advisories. Anything older than this line reintroduces them.
+torch>=2.14.0
 numpy==1.26.4
 pandas==2.2.2
 einops==0.8.1
 huggingface_hub==0.33.1
 safetensors==0.6.2
-requests==2.32.3
+# < 2.33 leaks .netrc credentials via a malicious URL and reuses temp files.
+requests>=2.34.2
 tqdm==4.67.1
