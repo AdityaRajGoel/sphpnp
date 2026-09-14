@@ -43,8 +43,10 @@ export default function CompanyDocuments({ documents }: { documents: ScreenerPro
           <Card className="p-4">
             <h3 className="font-semibold text-sm mb-3 flex items-center gap-2"><Mic className="w-4 h-4 text-brand-orange" aria-hidden="true" />Earnings calls</h3>
             <ul className="space-y-1.5">
-              {concalls.slice(0, LIMIT).map((c) => (
-                <li key={c.period} className="text-sm flex flex-wrap items-center gap-x-3">
+              {concalls.slice(0, LIMIT).map((c, i) => (
+                // A quarter can carry two calls (results plus an investor day),
+                // so the period alone is not unique.
+                <li key={`${c.period}-${i}`} className="text-sm flex flex-wrap items-center gap-x-3">
                   <span className="font-medium w-20">{c.period}</span>
                   {[["Transcript", c.transcript], ["Slides", c.ppt], ["Recording", c.recording]].map(([label, url]) =>
                     webHref(url) ? (

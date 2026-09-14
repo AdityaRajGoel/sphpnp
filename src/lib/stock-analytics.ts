@@ -123,16 +123,19 @@ const EMPTY: StockAnalytics = { price: null, fundamentals: null, forecast: null 
  * render at all.
  */
 export async function loadStockAnalytics(symbol: string): Promise<StockAnalytics> {
+  // The generated database types predate these views, so the view names are
+  // cast the same way the screener loaders cast theirs.
+  const view = (name: string) => supabase.from(name as never) as unknown as ReturnType<typeof supabase.from>;
   const [price, fundamentals, forecast] = await Promise.all([
-    supabase.from("stock_price_analytics_latest").select("*").eq("symbol", symbol).maybeSingle(),
-    supabase.from("stock_fundamental_scores_latest").select("*").eq("symbol", symbol).maybeSingle(),
-    supabase.from("stock_forecasts_latest").select("*").eq("symbol", symbol).maybeSingle(),
+    view("stock_price_analytics_latest").select("*").eq("symbol", symbol).maybeSingle(),
+    view("stock_fundamental_scores_latest").select("*").eq("symbol", symbol).maybeSingle(),
+    view("stock_forecasts_latest").select("*").eq("symbol", symbol).maybeSingle(),
   ]);
 
   return {
-    price: (price.data as PriceAnalytics | null) ?? null,
-    fundamentals: (fundamentals.data as FundamentalScores | null) ?? null,
-    forecast: (forecast.data as Forecast | null) ?? null,
+    price: (price.data as unknown as PriceAnalytics | null) ?? null,
+    fundamentals: (fundamentals.data as unknown as FundamentalScores | null) ?? null,
+    forecast: (forecast.data as unknown as Forecast | null) ?? null,
   };
 }
 
