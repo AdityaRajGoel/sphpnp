@@ -26,7 +26,8 @@ export type SortKey =
   | "listing_date"
   | "gmp"
   | "gmp_pct"
-  | "subscription_total";
+  | "subscription_total"
+  | "listing_gain_pct";
 export type SortDir = "asc" | "desc";
 
 export type IpoFilters = {
@@ -176,6 +177,8 @@ export function sortIpos(ipos: Ipo[], key: SortKey, dir: SortDir): Ipo[] {
         return gmpPercent(ipo);
       case "subscription_total":
         return ipo.subscription_total;
+      case "listing_gain_pct":
+        return ipo.listing_gain_pct;
       default:
         return null;
     }

@@ -42,6 +42,12 @@ export type Ipo = {
   subscription_retail: number | null;
   listing_price: number | null;
   listing_gain_pct: number | null;
+  /** Derived by fetch-ipos from NSE bars when the catalogue has no listing price; null otherwise. */
+  listing_day_close?: number | null;
+  latest_close?: number | null;
+  latest_close_date?: string | null;
+  gain_since_issue_pct?: number | null;
+  nse_symbol?: string | null;
   source: string;
   source_url: string | null;
   data_as_of: string;

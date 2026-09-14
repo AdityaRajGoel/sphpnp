@@ -3,6 +3,7 @@
 
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { deriveIpoStatus, istDate } from "../_shared/ipo-status.ts";
+import { performanceBySlug, type EodBar, type ListingPerformance, type NseIpoLink } from "../_shared/ipo-listing.ts";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -72,6 +73,25 @@ Deno.serve(async (req) => {
       : { data: [], error: null };
     if (snapshotError) throw snapshotError;
 
+    // Listing performance from exchange bars, for listed issues the catalogue
+    // has no listing price for (which, as of Sept 2026, is all of them). A
+    // failure here leaves those fields null rather than failing the catalogue.
+    const needsListing = ipos.filter((ipo) => ipo.listing_date && ipo.listing_price === null).map((ipo) => ipo.slug);
+    let performance = new Map<string, ListingPerformance>();
+    if (needsListing.length > 0) {
+      try {
+        const { data: links } = await supabase.from("nse_ipos").select("symbol,ipo_slug,issue_price,listing_date").in("ipo_slug", needsListing);
+        const symbols = (links ?? []).map((l) => l.symbol);
+        const earliest = (links ?? []).map((l) => l.listing_date).filter(Boolean).sort()[0];
+        if (symbols.length > 0 && earliest) {
+          const { data: bars } = await supabase.from("eq_eod").select("symbol,trade_date,open,close").eq("exchange", "NSE").in("symbol", symbols).gte("trade_date", earliest).order("trade_date", { ascending: true }).limit(20000);
+          performance = performanceBySlug((links ?? []) as NseIpoLink[], (bars ?? []) as EodBar[]);
+        }
+      } catch (e) {
+        console.error("listing performance skipped:", e instanceof Error ? e.message : e);
+      }
+    }
+
     const snapshotMap = new Map<string, typeof snapshots>();
     for (const snapshot of snapshots ?? []) {
       const group = snapshotMap.get(snapshot.ipo_id) ?? [];
@@ -85,8 +105,16 @@ Deno.serve(async (req) => {
     const payload = ipos.map((ipo) => {
       const history = snapshotMap.get(ipo.id) ?? [];
       const latest = history.at(-1) ?? null;
+      const perf = performance.get(ipo.slug) ?? null;
       return {
         ...ipo,
+        listing_price: ipo.listing_price ?? perf?.listing_price ?? null,
+        listing_gain_pct: ipo.listing_gain_pct ?? perf?.listing_gain_pct ?? null,
+        listing_day_close: perf?.listing_day_close ?? null,
+        latest_close: perf?.latest_close ?? null,
+        latest_close_date: perf?.latest_close_date ?? null,
+        gain_since_issue_pct: perf?.gain_since_issue_pct ?? null,
+        nse_symbol: perf?.nse_symbol ?? null,
         status: deriveIpoStatus(ipo, ipo.status, today),
         type: ipo.board === "sme" ? "SME" : "Mainboard",
         price: formatPriceBand(ipo),

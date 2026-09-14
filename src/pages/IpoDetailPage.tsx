@@ -53,6 +53,19 @@ export default function IpoDetailPage() {
           <SummaryCard label="Est. listing price" value={formatRupees(ipo.est_listing_price)} />
           <SummaryCard label="Issue size" value={ipo.size} />
         </section>
+        {ipo.listing_gain_pct !== null && (
+          <section className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mt-3" aria-label="Listing performance">
+            <SummaryCard label="Listing price" value={formatRupees(ipo.listing_price, 2)} note={ipo.nse_symbol ? `NSE ${ipo.nse_symbol}, special pre-open price` : undefined} />
+            <SummaryCard label="Listing gain" value={signedPct(ipo.listing_gain_pct)} note="Listing price against the issue price" tone={ipo.listing_gain_pct >= 0 ? "up" : "down"} />
+            <SummaryCard label="First-day close" value={formatRupees(ipo.listing_day_close ?? null, 2)} />
+            <SummaryCard
+              label="Since issue"
+              value={signedPct(ipo.gain_since_issue_pct ?? null)}
+              note={ipo.latest_close ? `₹${ipo.latest_close.toLocaleString("en-IN")} close${ipo.latest_close_date ? `, ${new Intl.DateTimeFormat("en-IN", { dateStyle: "medium", timeZone: "UTC" }).format(new Date(`${ipo.latest_close_date}T00:00:00Z`))}` : ""}` : undefined}
+              tone={ipo.gain_since_issue_pct == null ? undefined : ipo.gain_since_issue_pct >= 0 ? "up" : "down"}
+            />
+          </section>
+        )}
         <div className="mt-6"><NseExchangeCard ipo={ipo} /></div>
         <section className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-8">
           <Card className="min-w-0 lg:col-span-2"><CardContent className="p-4 md:p-6">
@@ -71,6 +84,8 @@ export default function IpoDetailPage() {
       </>}
     </main><WhatsAppButton /><Footer /></PageTransition>;
 }
+
+const signedPct = (v: number | null) => (v === null ? "—" : `${v >= 0 ? "+" : ""}${v.toFixed(1)}%`);
 
 const Message = ({ text }: { text: string }) => <Card className="mt-6"><CardContent className="p-8 text-center"><h1 className="font-heading text-2xl font-bold">IPO details unavailable</h1><p className="text-muted-foreground mt-2">{text}</p><Link className="text-secondary text-sm font-semibold inline-block mt-3" to="/ipo">Browse the IPO tracker</Link></CardContent></Card>;
 const SectionTitle = ({ icon: Icon, title, subtitle }: { icon: typeof BarChart3; title: string; subtitle?: string }) => <div className="flex items-center gap-2"><Icon className="w-5 h-5 text-secondary" /><div><h2 className="font-heading text-xl font-bold">{title}</h2>{subtitle && <p className="text-xs text-muted-foreground">{subtitle}</p>}</div></div>;

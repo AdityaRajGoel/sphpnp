@@ -14,6 +14,9 @@ import IPOFilterBar from "@/components/ipo/IPOFilterBar";
 import IPOTable from "@/components/ipo/IPOTable";
 import IPOCompareBar from "@/components/ipo/IPOCompareBar";
 import IPOCompareDialog from "@/components/ipo/IPOCompareDialog";
+import IpoMarketStats from "@/components/ipo/IpoMarketStats";
+import StockTicker from "@/components/StockTicker";
+import { istToday } from "@/lib/market-data";
 import { formatGmp, formatGmpPercent, formatMinInvestment, formatSubscription, getIpos, gmpPercent, type Ipo } from "@/lib/ipo";
 import {
   compareSlugsToParam,
@@ -87,6 +90,7 @@ export default function IpoPage() {
   return <PageTransition>
     <ScrollProgress /><SEOHead title="IPO Tracker & GMP History" description="Track Indian mainboard and SME IPO dates, price bands and recorded grey market premium history. Information only; not investment advice." breadcrumbs={[{ name: "Home", url: "/" }, { name: "IPO Tracker" }]} />
     <Header />
+    <StockTicker />
     <main>
       <section className="bg-hero text-primary-foreground py-16 md:py-24"><div className="container mx-auto px-4 max-w-6xl">
         <Badge className="bg-brand-gold/20 text-brand-gold border-brand-gold/30 mb-5"><Rocket className="w-3.5 h-3.5 mr-1.5" />IPO Central</Badge>
@@ -96,6 +100,8 @@ export default function IpoPage() {
       </div></section>
       <section className="container mx-auto px-4 max-w-6xl py-10 md:py-14 pb-28">
         <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-foreground"><strong>Important:</strong> Grey market premium (GMP) is unofficial, unregulated and can change quickly. It is shown for information only and is not investment advice or a prediction of listing performance.</div>
+
+        {!loading && !error && <div className="mt-10"><IpoMarketStats ipos={ipos} today={istToday()} /></div>}
 
         <div className="flex flex-wrap items-center justify-between gap-3 mt-10 mb-4">
           <div><h2 className="font-heading text-2xl font-bold">IPO calendar</h2><p className="text-sm text-muted-foreground mt-1">Mainboard and SME issues tracked by our scheduled data service. Select up to {MAX_COMPARE} to compare side by side.</p></div>

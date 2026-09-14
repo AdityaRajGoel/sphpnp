@@ -21,6 +21,7 @@ const COLUMNS: { key: SortKey; label: string; align?: "right" }[] = [
   { key: "gmp", label: "GMP", align: "right" },
   { key: "gmp_pct", label: "GMP %", align: "right" },
   { key: "subscription_total", label: "Subscribed", align: "right" },
+  { key: "listing_gain_pct", label: "Listing gain", align: "right" },
 ];
 
 type Props = {
@@ -86,6 +87,12 @@ export default function IPOTable({ ipos, sortKey, sortDir, onSort, compareSlugs,
                 </TableCell>
                 <TableCell className="text-right tabular-nums whitespace-nowrap">
                   {formatSubscription(ipo.subscription_total) ?? <span className="text-muted-foreground">—</span>}
+                </TableCell>
+                <TableCell
+                  className={`text-right tabular-nums whitespace-nowrap font-semibold ${ipo.listing_gain_pct === null ? "text-muted-foreground" : ipo.listing_gain_pct >= 0 ? "text-secondary" : "text-destructive"}`}
+                  title={ipo.gain_since_issue_pct != null ? `${ipo.gain_since_issue_pct >= 0 ? "+" : ""}${ipo.gain_since_issue_pct.toFixed(1)}% since issue` : undefined}
+                >
+                  {ipo.listing_gain_pct === null ? "—" : `${ipo.listing_gain_pct >= 0 ? "+" : ""}${ipo.listing_gain_pct.toFixed(1)}%`}
                 </TableCell>
               </TableRow>
             );
