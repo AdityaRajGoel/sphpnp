@@ -81,3 +81,6 @@ media-src/
 
 # Local skill manifest (skills themselves are gitignored above)
 SKILLS.md
+
+# Internal research notes on data sources, kept local
+docs/data-sources.md
