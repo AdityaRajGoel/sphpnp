@@ -17,6 +17,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { downloadCsv, todayStamp } from "@/lib/exportData";
 import PageTransition from "@/components/PageTransition";
 import { EASE_IN_OUT } from "@/lib/motion";
+import DerivativesSection from "@/components/markets/DerivativesSection";
 
 /** Contracts in Indian units, one system across the page: 85,432 · 2.4 L · 1.2 Cr. */
 const fmtOI = (n: number) => (n >= 1e7 ? `${(n / 1e7).toFixed(2)} Cr` : n >= 1e5 ? `${(n / 1e5).toFixed(1)} L` : Math.round(n).toLocaleString("en-IN"));
@@ -520,6 +521,13 @@ const FnODashboardPage = () => {
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* End-of-day positioning the live chain cannot show: FII/DII/pro/client
+            open interest, PCR and max pain across expiries, and the build-up of
+            every F&O stock. Shared with Market Pulse. */}
+        <div className="mt-12">
+          <DerivativesSection />
+        </div>
 
         {/* SEBI risk transparency - serious-broker pattern (ref: SEBI study, Jan 2023) */}
         <div className="mt-8 bg-brand-orange/5 border border-brand-orange/20 rounded-xl p-4 text-center">

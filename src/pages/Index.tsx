@@ -15,6 +15,7 @@ import PageTransition from "@/components/PageTransition";
 const InvestmentProducts = lazy(() => import("@/components/InvestmentProducts"));
 const LiveChart = lazy(() => import("@/components/LiveChart"));
 const MarketDashboard = lazy(() => import("@/components/MarketDashboard"));
+const HomeMarketGlance = lazy(() => import("@/components/markets/HomeMarketGlance"));
 const TrustBadges = lazy(() => import("@/components/TrustBadges"));
 const AwardsSection = lazy(() => import("@/components/AwardsSection"));
 const MarketOverview = lazy(() => import("@/components/MarketOverview"));
@@ -57,6 +58,9 @@ const Index = () => {
       </Suspense>
       <Suspense fallback={<SectionSkeleton height="h-80" />}>
         <MarketDashboard />
+      </Suspense>
+      <Suspense fallback={<SectionSkeleton height="h-80" />}>
+        <HomeMarketGlance />
       </Suspense>
       {/* Desktop-only: mobile keeps the home page short and conversion-focused */}
       <div className="hidden md:block">

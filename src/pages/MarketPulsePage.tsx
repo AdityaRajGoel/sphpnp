@@ -10,9 +10,17 @@ import ValuationSection from "@/components/markets/ValuationSection";
 import DerivativesSection from "@/components/markets/DerivativesSection";
 import FlowsSection from "@/components/markets/FlowsSection";
 import ActivitySection from "@/components/markets/ActivitySection";
+import BreadthSection from "@/components/markets/BreadthSection";
+import StockTicker from "@/components/StockTicker";
+import MacroRegimeSection from "@/components/markets/MacroRegimeSection";
+import WorldMarketsSection from "@/components/markets/WorldMarketsSection";
+import FiiDiiCashCard from "@/components/markets/FiiDiiCashCard";
 
 const SECTIONS = [
+  { id: "regime", label: "Regime" },
   { id: "global", label: "Global cues" },
+  { id: "world", label: "World board" },
+  { id: "breadth", label: "Breadth & scans" },
   { id: "valuation", label: "Valuation" },
   { id: "derivatives", label: "F&O positioning" },
   { id: "flows", label: "Flows & economy" },
@@ -35,6 +43,7 @@ export default function MarketPulsePage() {
       />
       <ScrollProgress />
       <Header />
+      <StockTicker />
       <main className="container mx-auto max-w-7xl px-4 py-8 md:py-10">
         <VisibleBreadcrumbs items={breadcrumbs} />
         <header className="mt-4 mb-6">
@@ -54,10 +63,16 @@ export default function MarketPulsePage() {
           </ul>
         </nav>
         <div className="space-y-14">
+          <MacroRegimeSection />
           <GlobalCuesSection />
+          <WorldMarketsSection />
+          <BreadthSection />
           <ValuationSection />
           <DerivativesSection />
-          <FlowsSection />
+          <div className="space-y-4">
+            <FiiDiiCashCard />
+            <FlowsSection />
+          </div>
           <ActivitySection />
         </div>
         <p className="mt-12 text-xs text-muted-foreground">

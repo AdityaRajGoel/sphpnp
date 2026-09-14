@@ -147,6 +147,23 @@ async function fetchRss(url: string, sourceName: string, defaultCategory: string
   }
 }
 
+/** Per-instance memory of each theme's last good stories; see the theme loop in getLiveNews. */
+const lastThemeItems = new Map<string, RssFetchResult["items"]>();
+
+const googleNews = (query: string) =>
+  `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=en-IN&gl=IN&ceid=IN:en`;
+
+/** Desk-by-desk India coverage. Names double as the lookup key, so keep them unique. */
+const INDIA_THEMES = [
+  { id: "rbi", name: "RBI & policy", category: "Policy", query: '("Reserve Bank of India" OR RBI OR "repo rate" OR "monetary policy") when:3d' },
+  { id: "sebi", name: "SEBI & regulation", category: "Regulation", query: '(SEBI circular OR "SEBI order" OR "SEBI board" OR "market regulator") India when:3d' },
+  { id: "bonds", name: "Bonds & rupee", category: "Rates", query: '("bond yield" OR "10-year yield" OR "government securities" OR rupee OR forex reserves) India when:2d' },
+  { id: "commodities", name: "Commodities", category: "Commodities", query: '(MCX OR "gold price" OR "silver price" OR "crude oil" OR "natural gas") India when:2d' },
+  { id: "ipo", name: "IPOs & listings", category: "IPO", query: '(IPO subscription OR "IPO listing" OR "grey market premium" OR "SME IPO") India when:3d' },
+  { id: "results", name: "Results", category: "Earnings", query: '("quarterly results" OR "net profit" OR "Q2 results" OR "Q3 results" OR earnings) NSE when:2d' },
+  { id: "flows", name: "FII & DII flows", category: "Flows", query: '(FII OR FPI OR DII OR "foreign investors") "Indian equities" when:3d' },
+];
+
 // Round-robin interleave so no single source dominates the feed, then dedupe by title.
 function interleave<T extends { title: string }>(groups: T[][], limit: number): T[] {
   const out: T[] = [];
@@ -172,7 +189,7 @@ async function getLiveNews() {
   // still track ok/failed counts below so a total outage across every source
   // is visible in the response instead of quietly presenting empty arrays as
   // a successful fetch.
-  const results = await Promise.all([
+  const publisherResults = await Promise.all([
     fetchRss("https://economictimes.indiatimes.com/markets/rssfeeds/1977021501.cms", "Economic Times", "Markets"),
     // Moneycontrol's MCtopnews.xml is DELIBERATELY not here. It still returns
     // HTTP 200 and well-formed RSS with real <item> tags, so every health check
@@ -198,6 +215,21 @@ async function getLiveNews() {
     // Yahoo's own front-end RSS index, which isn't gated the same way.
     fetchRss("https://finance.yahoo.com/news/rssindex", "Yahoo Finance", "Markets"),
   ]);
+  // India themes: Google News searches, keyless, one per desk a terminal user
+  // watches. Fetched ONE AT A TIME after the publishers: fired in the same
+  // burst, Google answered all seven with HTTP 503 from Supabase's egress,
+  // while stock-news' single request per call goes through.
+  // Google still throttles some calls outright; a theme that fails reuses the
+  // last stories this instance fetched for it rather than going blank.
+  const themeResults: RssFetchResult[] = [];
+  for (const t of INDIA_THEMES) {
+    const fresh = await fetchRss(googleNews(t.query), t.name, t.category);
+    if (fresh.ok && fresh.items.length > 0) lastThemeItems.set(t.name, fresh.items);
+    const cached = lastThemeItems.get(t.name);
+    themeResults.push(!fresh.ok && cached ? { ok: true, items: cached, name: t.name, reason: `served cached after ${fresh.reason}` } : fresh);
+    await new Promise((resolve) => setTimeout(resolve, 350));
+  }
+  const results = [...publisherResults, ...themeResults];
   /*
    * Looked up BY NAME, not by position.
    *
@@ -220,6 +252,8 @@ async function getLiveNews() {
   // stories behind the "Show more" button.
   const indian = interleave(INDIAN_SOURCES.map(by), 24);
   const world = interleave(WORLD_SOURCES.map(by), 14);
+  // Additive field: older clients ignore it.
+  const themes = INDIA_THEMES.map((t) => ({ id: t.id, name: t.name, items: interleave([by(t.name)], 8) }));
 
   const sourcesTotal = results.length;
   const sourcesOk = results.filter(r => r.ok).length;
@@ -230,7 +264,7 @@ async function getLiveNews() {
     .filter(r => !r.ok)
     .map(r => ({ name: r.name, reason: r.reason ?? "unknown" }));
 
-  return { indian, world, sourcesTotal, sourcesOk, failedSources };
+  return { indian, world, themes, sourcesTotal, sourcesOk, failedSources };
 }
 
 Deno.serve(async (req) => {
@@ -280,6 +314,9 @@ Deno.serve(async (req) => {
         degraded,
         indian: news.indian,
         world: news.world,
+        // Built in getLiveNews but never passed through, so the theme tabs
+        // stayed empty even while every theme feed answered.
+        themes: news.themes,
         sourcesOk: news.sourcesOk,
         sourcesTotal: news.sourcesTotal,
         failedSources: news.failedSources,

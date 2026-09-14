@@ -140,7 +140,9 @@ const NewsCard = ({ item, index }: { item: NewsItem; index: number }) => {
 };
 
 const MarketNews = () => {
-  const [activeTab, setActiveTab] = useState<"indian" | "world">("indian");
+  // "indian", "world", or a theme id from fetch-news (rbi, sebi, bonds, ...).
+  const [activeTab, setActiveTab] = useState<string>("indian");
+  const [themes, setThemes] = useState<{ id: string; name: string; items: NewsItem[] }[]>([]);
   /*
    * Empty until the feed answers - never seeded with sample content.
    *
@@ -174,6 +176,8 @@ const MarketNews = () => {
       if (!error && data?.success) {
         setIndianNews(data.indian ?? []);
         setWorldNews(data.world ?? []);
+        // Absent until the function carrying themes is deployed; the tabs simply do not appear.
+        setThemes(Array.isArray(data.themes) ? data.themes.filter((t: { items?: unknown[] }) => (t.items?.length ?? 0) > 0) : []);
         setFailed(false);
       } else {
         setFailed(true);
@@ -200,7 +204,10 @@ const MarketNews = () => {
     };
   }, []);
 
-  const news = activeTab === "indian" ? indianNews : worldNews;
+  const news = useMemo(
+    () => (activeTab === "indian" ? indianNews : activeTab === "world" ? worldNews : themes.find((t) => t.id === activeTab)?.items ?? []),
+    [activeTab, indianNews, worldNews, themes],
+  );
 
   // Category chips from whatever the feed actually returned for this tab.
   const categories = useMemo(() => {
@@ -259,13 +266,18 @@ const MarketNews = () => {
 
         {/* Tab switcher + refresh */}
         <div className="flex items-center justify-center gap-2 mb-5">
-          <div className="inline-flex bg-muted rounded-xl p-1 border border-border/50">
+          <div className="inline-flex max-w-full overflow-x-auto bg-muted rounded-xl p-1 border border-border/50">
             <button onClick={() => setActiveTab("indian")} className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold transition-colors duration-base ${activeTab === "indian" ? "bg-primary text-primary-foreground shadow-lg" : "text-muted-foreground hover:text-foreground"}`}>
               <TrendingUp className="w-4 h-4" />India
             </button>
             <button onClick={() => setActiveTab("world")} className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold transition-colors duration-base ${activeTab === "world" ? "bg-primary text-primary-foreground shadow-lg" : "text-muted-foreground hover:text-foreground"}`}>
               <Globe className="w-4 h-4" />World
             </button>
+            {themes.map((t) => (
+              <button key={t.id} onClick={() => setActiveTab(t.id)} className={`shrink-0 px-4 py-2.5 rounded-lg text-sm font-semibold whitespace-nowrap transition-colors duration-base ${activeTab === t.id ? "bg-primary text-primary-foreground shadow-lg" : "text-muted-foreground hover:text-foreground"}`}>
+                {t.name}
+              </button>
+            ))}
           </div>
           <Button variant="ghost" size="icon" onClick={fetchNews} disabled={loading} className="ml-1" aria-label="Refresh news">
             <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />

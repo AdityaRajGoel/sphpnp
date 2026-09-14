@@ -17,6 +17,8 @@ import PageTransition from "@/components/PageTransition";
 import { EASE_OUT } from "@/lib/motion";
 import AdvancedChartDialog from "@/components/charts/AdvancedChartDialog";
 import type { ApiChartPoint } from "@/lib/chart-data";
+import CompareResearchTable from "@/components/compare/CompareResearchTable";
+import StockTicker from "@/components/StockTicker";
 
 /** Ranges offered in the advanced window, and what fetch-stock-chart expects. */
 const CHART_RANGES = [
@@ -265,6 +267,7 @@ const StockComparisonPage = () => {
       />
       <ScrollProgress />
       <Header />
+      <StockTicker />
       <VisibleBreadcrumbs items={[{ name: "Home", url: "/" }, { name: "Compare Stocks" }]} />
       <main className="container mx-auto px-4 py-8">
         <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
@@ -464,6 +467,8 @@ const StockComparisonPage = () => {
             </motion.div>
           )}
         </AnimatePresence>
+
+        <CompareResearchTable symbols={selected.map((s) => s.symbol)} />
       </main>
       <Footer />
       <AdvancedChartDialog

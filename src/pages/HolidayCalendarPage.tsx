@@ -1,247 +1,219 @@
+import { useMemo } from "react";
+import { Link } from "react-router-dom";
+import { motion } from "motion/react";
+import { useQuery } from "@tanstack/react-query";
+import { CalendarDays, Clock, AlertCircle, PartyPopper, Timer, Landmark, CalendarClock } from "lucide-react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import SEOHead from "@/components/SEOHead";
 import VisibleBreadcrumbs from "@/components/VisibleBreadcrumbs";
 import WhatsAppButton from "@/components/WhatsAppButton";
 import ScrollProgress from "@/components/ScrollProgress";
-import { motion } from "motion/react";
+import PageTransition from "@/components/PageTransition";
+import StockTicker from "@/components/StockTicker";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { CalendarDays, Building2, Clock, AlertCircle, PartyPopper } from "lucide-react";
-import { useMemo } from "react";
-import PageTransition from "@/components/PageTransition";
+import { Skeleton } from "@/components/ui/skeleton";
+import { revealItem } from "@/lib/motion";
+import { HOLIDAYS, HOLIDAY_YEAR, SESSIONS, expiryCalendar, tradingDaysBetween, type Exchange } from "@/lib/market-holidays";
+import { istToday, trackedSymbols, upcomingEvents } from "@/lib/market-data";
 
-import { revealItem, revealItemX } from "@/lib/motion";
-type Holiday = {
-  date: string;
-  day: string;
-  name: string;
-  exchanges: ("NSE" | "BSE" | "MCX")[];
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const dayName = (iso: string) => new Date(`${iso}T00:00:00Z`).toLocaleDateString("en-IN", { weekday: "long", timeZone: "UTC" });
+const dayMonth = (iso: string) => new Date(`${iso}T00:00:00Z`).toLocaleDateString("en-IN", { day: "numeric", month: "short", timeZone: "UTC" });
+const daysFrom = (from: string, to: string) => Math.round((Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / 86_400_000);
+
+const EXCHANGE_BADGE: Record<Exchange, string> = {
+  NSE: "bg-primary text-primary-foreground",
+  BSE: "bg-secondary text-secondary-foreground",
+  MCX: "border border-brand-gold text-brand-gold bg-transparent",
 };
 
-const HOLIDAYS_2026: Holiday[] = [
-  { date: "Jan 26", day: "Monday", name: "Republic Day", exchanges: ["NSE", "BSE", "MCX"] },
-  { date: "Mar 3", day: "Tuesday", name: "Holi", exchanges: ["NSE", "BSE", "MCX"] },
-  { date: "Mar 26", day: "Thursday", name: "Shri Ram Navami", exchanges: ["NSE", "BSE"] },
-  { date: "Mar 31", day: "Tuesday", name: "Shri Mahavir Jayanti", exchanges: ["NSE", "BSE"] },
-  { date: "Apr 3", day: "Friday", name: "Good Friday", exchanges: ["NSE", "BSE", "MCX"] },
-  { date: "Apr 14", day: "Tuesday", name: "Dr. Ambedkar Jayanti", exchanges: ["NSE", "BSE"] },
-  { date: "May 1", day: "Friday", name: "Maharashtra Day", exchanges: ["NSE", "BSE"] },
-  { date: "May 28", day: "Thursday", name: "Bakri Id", exchanges: ["NSE", "BSE"] },
-  { date: "Jun 26", day: "Friday", name: "Muharram", exchanges: ["NSE", "BSE"] },
-  { date: "Sep 14", day: "Monday", name: "Ganesh Chaturthi", exchanges: ["NSE", "BSE"] },
-  { date: "Oct 2", day: "Friday", name: "Mahatma Gandhi Jayanti", exchanges: ["NSE", "BSE", "MCX"] },
-  { date: "Oct 20", day: "Tuesday", name: "Dussehra", exchanges: ["NSE", "BSE", "MCX"] },
-  { date: "Nov 10", day: "Tuesday", name: "Diwali Balipratipada", exchanges: ["NSE", "BSE"] },
-  { date: "Nov 24", day: "Tuesday", name: "Guru Nanak Jayanti", exchanges: ["NSE", "BSE"] },
-  { date: "Dec 25", day: "Friday", name: "Christmas", exchanges: ["NSE", "BSE", "MCX"] },
-];
+/** Result and board-meeting purposes carry the most weight; the rest read as corporate actions. */
+const eventTone = (purpose: string) =>
+  /result|financial/i.test(purpose) ? "text-secondary" : /dividend|bonus|split|buyback|rights/i.test(purpose) ? "text-brand-orange" : "text-muted-foreground";
 
-const getMonth = (dateStr: string) => dateStr.split(" ")[0];
-
-const parseHolidayDate = (dateStr: string): Date => {
-  const [mon, day] = dateStr.split(" ");
-  const monthMap: Record<string, number> = { Jan: 0, Feb: 1, Mar: 2, Apr: 3, May: 4, Jun: 5, Jul: 6, Aug: 7, Sep: 8, Oct: 9, Nov: 10, Dec: 11 };
-  return new Date(CALENDAR_YEAR, monthMap[mon] ?? 0, parseInt(day));
-};
-
-const CALENDAR_YEAR = 2026;
+function StatCard({ icon: Icon, label, value, note }: { icon: typeof Clock; label: string; value: string; note: string }) {
+  return (
+    <Card className="p-4">
+      <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground"><Icon className="h-4 w-4 text-secondary" aria-hidden="true" />{label}</div>
+      <div className="mt-1 text-2xl font-bold tabular-nums">{value}</div>
+      <div className="mt-0.5 text-xs text-muted-foreground">{note}</div>
+    </Card>
+  );
+}
 
 const HolidayCalendarPage = () => {
-  const months = [...new Set(HOLIDAYS_2026.map(h => getMonth(h.date)))];
-  const now = new Date();
-  const currentMonthAbbr = now.toLocaleString("en", { month: "short" });
+  const today = istToday();
+  const nextHoliday = HOLIDAYS.find((h) => h.date >= today);
+  const daysUntilNext = nextHoliday ? daysFrom(today, nextHoliday.date) : null;
+  const pastCount = HOLIDAYS.filter((h) => h.date < today).length;
+  const expiries = useMemo(() => expiryCalendar(today, 45), [today]);
+  const nextMonthly = expiries.find((e) => e.exchange === "NSE" && e.kind === "monthly");
+  const sessionsLeftInYear = tradingDaysBetween(today, `${HOLIDAY_YEAR}-12-31`);
 
-  const nextHoliday = useMemo(() => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    return HOLIDAYS_2026.find(h => parseHolidayDate(h.date) >= today);
-  }, []);
-
-  const daysUntilNext = useMemo(() => {
-    if (!nextHoliday) return null;
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const target = parseHolidayDate(nextHoliday.date);
-    return Math.ceil((target.getTime() - today.getTime()) / 86400000);
-  }, [nextHoliday]);
-
-  const pastCount = HOLIDAYS_2026.filter(h => parseHolidayDate(h.date) < new Date()).length;
-  const upcomingCount = HOLIDAYS_2026.length - pastCount;
+  const events = useQuery({ queryKey: ["corporate-calendar", today], queryFn: () => upcomingEvents(today, 21), staleTime: 60 * 60_000 });
+  const tracked = useQuery({ queryKey: ["tracked-symbols"], queryFn: trackedSymbols, staleTime: 60 * 60_000 });
+  const eventList = events.data;
+  const eventsByDate = useMemo(() => {
+    const map = new Map<string, NonNullable<typeof eventList>>();
+    for (const e of eventList ?? []) map.set(e.event_date, [...(map.get(e.event_date) ?? []), e]);
+    return [...map.entries()].slice(0, 10);
+  }, [eventList]);
 
   return (
     <PageTransition>
     <div className="min-h-screen bg-background">
       <SEOHead
-        title={`NSE BSE Market Holiday Calendar ${CALENDAR_YEAR} | Parasram India`}
-        description={`Complete list of NSE, BSE and MCX stock market trading holidays for ${CALENDAR_YEAR}. Plan your trades around market closures and avoid missed opportunities.`}
-        breadcrumbs={[
-          { name: "Home", url: "/" },
-          { name: "Holiday Calendar" },
-        ]}
+        title={`NSE BSE Holiday Calendar ${HOLIDAY_YEAR}, F&O Expiry Dates & Results Calendar | Parasram India`}
+        description={`NSE, BSE and MCX trading holidays for ${HOLIDAY_YEAR}, every Nifty and Sensex weekly and monthly F&O expiry with holiday shifts, market timings and upcoming company results and board meetings.`}
+        breadcrumbs={[{ name: "Home", url: "/" }, { name: "Market Calendar" }]}
         jsonLd={{
           "@type": "ItemList",
-          "name": `NSE BSE MCX Trading Holidays ${CALENDAR_YEAR}`,
-          "description": `Complete list of stock market trading holidays for NSE, BSE, and MCX exchanges in ${CALENDAR_YEAR}.`,
-          "numberOfItems": HOLIDAYS_2026.length,
-          "itemListElement": HOLIDAYS_2026.map((h, idx) => {
-            const formattedDate = `${CALENDAR_YEAR}-${String(["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"].indexOf(h.date.split(" ")[0]) + 1).padStart(2, "0")}-${h.date.split(" ")[1].padStart(2,"0")}`;
-            return {
-              "@type": "ListItem",
-              "position": idx + 1,
-              "item": {
-                "@type": "Event",
-                "name": h.name,
-                "startDate": formattedDate,
-                "endDate": formattedDate,
-                "image": "https://www.sphpnp.com/logo.png",
-                "description": `${h.name} - Market holiday for ${h.exchanges.join(", ")}`,
-                "eventStatus": "https://schema.org/EventScheduled",
-                "location": {
-                  "@type": "Place",
-                  "name": "India",
-                  "address": {
-                    "@type": "PostalAddress",
-                    "addressCountry": "IN"
-                  }
-                },
-                "offers": {
-                  "@type": "Offer",
-                  "price": "0",
-                  "priceCurrency": "INR",
-                  "url": "https://www.sphpnp.com/holidays",
-                  "availability": "https://schema.org/InStock",
-                  "validFrom": `${CALENDAR_YEAR}-01-01`
-                },
-                "performer": {
-                  "@type": "Organization",
-                  "name": "Market Participants"
-                },
-                "organizer": { 
-                  "@type": "Organization", 
-                  "name": "NSE/BSE",
-                  "url": "https://www.nseindia.com/"
-                }
-              }
-            };
-          })
+          name: `NSE BSE MCX Trading Holidays ${HOLIDAY_YEAR}`,
+          numberOfItems: HOLIDAYS.length,
+          itemListElement: HOLIDAYS.map((h, idx) => ({
+            "@type": "ListItem",
+            position: idx + 1,
+            item: {
+              "@type": "Event",
+              name: h.name,
+              startDate: h.date,
+              endDate: h.date,
+              description: `${h.name} - market holiday for ${h.exchanges.join(", ")}`,
+              eventStatus: "https://schema.org/EventScheduled",
+              location: { "@type": "Place", name: "India", address: { "@type": "PostalAddress", addressCountry: "IN" } },
+              organizer: { "@type": "Organization", name: "NSE/BSE", url: "https://www.nseindia.com/" },
+            },
+          })),
         }}
       />
       <ScrollProgress />
       <Header />
-      <VisibleBreadcrumbs items={[{ name: "Home", url: "/" }, { name: "Holiday Calendar" }]} />
+      <StockTicker />
+      <VisibleBreadcrumbs items={[{ name: "Home", url: "/" }, { name: "Market Calendar" }]} />
       <main className="container mx-auto px-4 py-8">
-        <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
+        <motion.header initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
           <div className="flex items-center gap-3 mb-2">
-            <CalendarDays className="w-8 h-8 text-secondary" />
-            <h1 className="text-3xl md:text-4xl font-heading font-bold text-foreground">Market Holiday Calendar {CALENDAR_YEAR}</h1>
+            <CalendarDays className="w-8 h-8 text-secondary" aria-hidden="true" />
+            <h1 className="text-3xl md:text-4xl font-heading font-bold text-foreground">Market Calendar {HOLIDAY_YEAR}</h1>
           </div>
-          <p className="text-muted-foreground">NSE, BSE & MCX trading holidays - plan your trades in advance</p>
-        </motion.div>
+          <p className="text-muted-foreground max-w-3xl">Trading holidays, every F&amp;O expiry with its holiday shift, session timings and the next three weeks of company results and board meetings, in one place.</p>
+        </motion.header>
 
-        {/* Next holiday banner */}
-        {nextHoliday && daysUntilNext !== null && (
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-          >
-            <Card className="mb-6 p-4 border-secondary/30 bg-secondary/5">
-              <div className="flex items-center gap-3 flex-wrap">
-                <div className="w-10 h-10 rounded-full bg-secondary/10 flex items-center justify-center shrink-0">
-                  {daysUntilNext === 0 ? <PartyPopper className="w-5 h-5 text-secondary" /> : <Clock className="w-5 h-5 text-secondary" />}
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-foreground">
-                    {daysUntilNext === 0 ? "Today is a market holiday!" : `Next holiday in ${daysUntilNext} day${daysUntilNext > 1 ? "s" : ""}`}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {nextHoliday.name} - {nextHoliday.date}, {nextHoliday.day}
-                  </p>
-                </div>
-              </div>
-            </Card>
-          </motion.div>
-        )}
-
-        {/* Stats bar */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.15 }}
-          className="flex items-center gap-3 mb-6 text-sm flex-wrap"
-        >
-          <Badge className="bg-primary text-primary-foreground">NSE</Badge>
-          <Badge className="bg-secondary text-secondary-foreground">BSE</Badge>
-          <Badge variant="outline" className="border-brand-gold text-brand-gold">MCX</Badge>
-          <span className="text-muted-foreground">Total: {HOLIDAYS_2026.length}</span>
-          <span className="text-muted-foreground">•</span>
-          <span className="text-muted-foreground">{pastCount} past</span>
-          <span className="text-secondary font-semibold">{upcomingCount} upcoming</span>
-        </motion.div>
-
-        <div className="space-y-8">
-          {months.map((month, mIdx) => {
-            const holidays = HOLIDAYS_2026.filter(h => getMonth(h.date) === month);
-            const isCurrent = month === currentMonthAbbr;
-            return (
-              <motion.div
-                key={month}
-                {...revealItem()}
-                transition={{ delay: mIdx * 0.03 }}
-              >
-                <div className="flex items-center gap-2 mb-3">
-                  <h2 className="text-lg font-heading font-semibold text-foreground">{month} {CALENDAR_YEAR}</h2>
-                  {isCurrent && <Badge className="bg-secondary/20 text-secondary text-xs">Current Month</Badge>}
-                  <span className="text-xs text-muted-foreground ml-auto">{holidays.length} holiday{holidays.length > 1 ? "s" : ""}</span>
-                </div>
-                <div className="grid gap-2">
-                  {holidays.map((h, i) => {
-                    const holidayDate = parseHolidayDate(h.date);
-                    const isPast = holidayDate < new Date();
-                    const isToday = daysUntilNext === 0 && nextHoliday?.name === h.name;
-                    return (
-                      <motion.div
-                        key={i}
-                        {...revealItemX("left")}
-                      >
-                        <Card className={`flex items-center justify-between px-4 py-3 transition-[color,background-color,border-color,box-shadow] hover:bg-muted/50 hover:shadow-sm ${isPast ? "opacity-40" : ""} ${isToday ? "ring-1 ring-secondary bg-secondary/5" : ""}`}>
-                          <div className="flex items-center gap-4">
-                            <div className="text-center min-w-[50px]">
-                              <div className={`text-lg font-bold ${isToday ? "text-secondary" : "text-foreground"}`}>{h.date.split(" ")[1]}</div>
-                              <div className="text-xs text-muted-foreground">{h.day}</div>
-                            </div>
-                            <div>
-                              <div className="font-medium text-foreground flex items-center gap-2">
-                                {h.name}
-                                {isToday && <span className="text-[10px] bg-secondary text-secondary-foreground px-1.5 py-0.5 rounded-full font-bold">TODAY</span>}
-                                {isPast && <span className="text-[10px] text-muted-foreground">(Past)</span>}
-                              </div>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-1.5">
-                            {h.exchanges.map(ex => (
-                              <Badge key={ex} variant={ex === "MCX" ? "outline" : "default"} className={`text-[10px] px-1.5 ${ex === "NSE" ? "bg-primary text-primary-foreground" : ex === "BSE" ? "bg-secondary text-secondary-foreground" : "border-brand-gold text-brand-gold"}`}>
-                                {ex}
-                              </Badge>
-                            ))}
-                          </div>
-                        </Card>
-                      </motion.div>
-                    );
-                  })}
-                </div>
-              </motion.div>
-            );
-          })}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-8">
+          <StatCard icon={daysUntilNext === 0 ? PartyPopper : Clock} label="Next holiday" value={daysUntilNext === null ? "—" : daysUntilNext === 0 ? "Today" : `${daysUntilNext} days`} note={nextHoliday ? `${nextHoliday.name}, ${dayMonth(nextHoliday.date)}` : "None left this year"} />
+          <StatCard icon={Timer} label="Next NSE monthly expiry" value={nextMonthly ? dayMonth(nextMonthly.date) : "—"} note={nextMonthly ? `${tradingDaysBetween(today, nextMonthly.date)} sessions away${nextMonthly.shifted ? " · moved for a holiday" : ""}` : ""} />
+          <StatCard icon={CalendarClock} label="Sessions left in the year" value={String(sessionsLeftInYear)} note="NSE trading days after today" />
+          <StatCard icon={Landmark} label="Holidays" value={`${HOLIDAYS.length - pastCount} of ${HOLIDAYS.length}`} note={`still to come · ${pastCount} past`} />
         </div>
 
-        <Card className="mt-8 p-4 bg-muted/50 flex items-start gap-3">
-          <AlertCircle className="w-5 h-5 text-muted-foreground mt-0.5 shrink-0" />
-          <div>
-            <p className="text-sm font-medium text-foreground mb-1">Disclaimer</p>
-            <p className="text-sm text-muted-foreground">Holiday dates are subject to change by exchange authorities. Special trading sessions (e.g., Muhurat Trading on Diwali) are not listed. Weekends (Saturday & Sunday) are regular non-trading days and are not included. Always verify with official NSE/BSE circulars before planning trades.</p>
+        <div className="grid gap-6 lg:grid-cols-[1.2fr_1fr] mb-10">
+          <section aria-labelledby="expiry-heading" className="min-w-0">
+            <h2 id="expiry-heading" className="text-xl font-heading font-bold mb-1">F&amp;O expiry calendar</h2>
+            <p className="text-xs text-muted-foreground mb-3">NSE contracts expire on Tuesday, BSE's on Thursday (SEBI, from September 2025). An expiry on a holiday moves to the previous trading day.</p>
+            <Card className="overflow-x-auto p-0">
+              <table className="w-full text-sm">
+                <thead className="bg-muted/40 text-muted-foreground">
+                  <tr>
+                    <th scope="col" className="px-4 py-2 text-left font-medium">Date</th>
+                    <th scope="col" className="px-3 py-2 text-left font-medium">Exchange</th>
+                    <th scope="col" className="px-3 py-2 text-left font-medium">Type</th>
+                    <th scope="col" className="px-4 py-2 text-left font-medium">Contracts</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {expiries.map((e) => (
+                    <tr key={`${e.exchange}-${e.date}`} className={`border-t ${e.kind === "monthly" ? "bg-secondary/5" : ""}`}>
+                      <td className="px-4 py-2 whitespace-nowrap">
+                        <span className="font-semibold tabular-nums">{dayMonth(e.date)}</span>
+                        <span className="ml-2 text-xs text-muted-foreground">{dayName(e.date).slice(0, 3)}</span>
+                        {e.shifted && <span className="ml-2 rounded bg-brand-orange/15 px-1.5 py-0.5 text-[10px] font-semibold text-brand-orange" title={`Scheduled ${dayMonth(e.scheduled)}, a holiday`}>shifted</span>}
+                      </td>
+                      <td className="px-3 py-2"><Badge className={`text-[10px] ${EXCHANGE_BADGE[e.exchange]}`}>{e.exchange}</Badge></td>
+                      <td className={`px-3 py-2 text-xs font-semibold ${e.kind === "monthly" ? "text-secondary" : "text-muted-foreground"}`}>{e.kind === "monthly" ? "Monthly" : "Weekly"}</td>
+                      <td className="px-4 py-2 text-xs text-muted-foreground">{e.contracts}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </Card>
+          </section>
+
+          <div className="min-w-0 space-y-6">
+            <section aria-labelledby="sessions-heading">
+              <h2 id="sessions-heading" className="text-xl font-heading font-bold mb-3">Market timings (IST)</h2>
+              <Card className="divide-y p-0">
+                {SESSIONS.map((s) => (
+                  <div key={s.name} className="flex items-baseline justify-between gap-3 px-4 py-2.5">
+                    <div><div className="text-sm font-semibold">{s.name}</div><div className="text-xs text-muted-foreground">{s.note}</div></div>
+                    <div className="font-mono text-sm tabular-nums whitespace-nowrap">{s.start}–{s.end}</div>
+                  </div>
+                ))}
+              </Card>
+            </section>
+
+            <section aria-labelledby="events-heading">
+              <h2 id="events-heading" className="text-xl font-heading font-bold mb-1">Results &amp; board meetings</h2>
+              <p className="text-xs text-muted-foreground mb-3">Next three weeks, from the NSE and BSE event calendars.</p>
+              {events.isLoading ? <Skeleton className="h-64 w-full" /> : eventsByDate.length === 0 ? (
+                <Card className="p-4 text-sm text-muted-foreground">No company events announced for the next three weeks yet.</Card>
+              ) : (
+                <Card className="max-h-[28rem] overflow-y-auto p-0">
+                  {eventsByDate.map(([date, list]) => (
+                    <div key={date} className="border-b last:border-b-0">
+                      <div className="sticky top-0 bg-card/95 px-4 py-1.5 text-xs font-semibold text-muted-foreground backdrop-blur">{dayMonth(date)} · {dayName(date)} · {list.length}</div>
+                      <ul>
+                        {list.slice(0, 12).map((e) => (
+                          <li key={e.event_key} className="flex items-baseline justify-between gap-3 px-4 py-1.5 text-sm">
+                            {e.symbol && tracked.data?.has(e.symbol)
+                              ? <Link to={`/stock/${encodeURIComponent(e.symbol)}`} className="truncate font-semibold hover:text-primary">{e.symbol}</Link>
+                              : <span className="truncate font-semibold">{e.symbol ?? e.company}</span>}
+                            <span className={`shrink-0 text-xs ${eventTone(e.purpose)}`}>{e.purpose}</span>
+                          </li>
+                        ))}
+                        {list.length > 12 && <li className="px-4 pb-2 text-xs text-muted-foreground">+{list.length - 12} more</li>}
+                      </ul>
+                    </div>
+                  ))}
+                </Card>
+              )}
+            </section>
           </div>
+        </div>
+
+        <section aria-labelledby="holidays-heading">
+          <div className="flex flex-wrap items-center gap-3 mb-4">
+            <h2 id="holidays-heading" className="text-xl font-heading font-bold">Trading holidays</h2>
+            {(["NSE", "BSE", "MCX"] as Exchange[]).map((ex) => <Badge key={ex} className={EXCHANGE_BADGE[ex]}>{ex}</Badge>)}
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {HOLIDAYS.map((h) => {
+              const isPast = h.date < today;
+              const isToday = h.date === today;
+              const d = new Date(`${h.date}T00:00:00Z`);
+              return (
+                <motion.div key={h.date} {...revealItem()} className="min-w-0">
+                  <Card className={`flex items-center gap-4 px-4 py-3 transition-colors hover:bg-muted/40 ${isPast ? "opacity-45" : ""} ${isToday ? "ring-1 ring-secondary bg-secondary/5" : ""}`}>
+                    <div className="w-12 shrink-0 rounded-lg bg-muted/60 py-1 text-center">
+                      <div className="text-[10px] font-semibold uppercase text-muted-foreground">{MONTHS[d.getUTCMonth()]}</div>
+                      <div className="text-lg font-bold leading-none tabular-nums">{d.getUTCDate()}</div>
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="font-medium truncate">{h.name}{isToday && <span className="ml-2 rounded-full bg-secondary px-1.5 py-0.5 text-[10px] font-bold text-secondary-foreground">TODAY</span>}</div>
+                      <div className="text-xs text-muted-foreground">{dayName(h.date)}{!isPast && !isToday && ` · in ${daysFrom(today, h.date)} days`}</div>
+                    </div>
+                    <div className="flex shrink-0 flex-wrap justify-end gap-1">{h.exchanges.map((ex) => <Badge key={ex} className={`px-1.5 text-[10px] ${EXCHANGE_BADGE[ex]}`}>{ex}</Badge>)}</div>
+                  </Card>
+                </motion.div>
+              );
+            })}
+          </div>
+        </section>
+
+        <Card className="mt-8 p-4 bg-muted/50 flex items-start gap-3">
+          <AlertCircle className="w-5 h-5 text-muted-foreground mt-0.5 shrink-0" aria-hidden="true" />
+          <p className="text-sm text-muted-foreground">Exchanges can change holidays, expiry days and timings by circular; Muhurat trading on Diwali is announced separately. Weekends are not listed. Verify with the official NSE/BSE circulars before planning trades.</p>
         </Card>
       </main>
       <Footer />
