@@ -246,3 +246,43 @@ describe("compareInfographic", () => {
     expect(compareInfographic([makeIpo({ slug: "a" })])).toBeNull();
   });
 });
+
+describe("section view preference", () => {
+  /*
+   * The chart is a second reading of the table, not a replacement, so "both"
+   * is the default - but the preference is real, and a reader comparing three
+   * years of revenue wants the figures rather than the bars.
+   *
+   * The rule that matters: only about six of an issue page's seventeen
+   * sections have a chart at all. "Charts" must not blank out the timetable,
+   * the registrar or the contact details, so a section with no chart keeps its
+   * table in every mode.
+   */
+  const visibility = (hasChart: boolean, view: "both" | "chart" | "table") => ({
+    showChart: hasChart && view !== "table",
+    showTable: !hasChart || view !== "chart",
+  });
+
+  it("shows both by default", () => {
+    expect(visibility(true, "both")).toEqual({ showChart: true, showTable: true });
+  });
+
+  it("drops the table only where a chart can replace it", () => {
+    expect(visibility(true, "chart")).toEqual({ showChart: true, showTable: false });
+    // No chart to stand in for it, so the table stays.
+    expect(visibility(false, "chart")).toEqual({ showChart: false, showTable: true });
+  });
+
+  it("never renders a section as empty in any mode", () => {
+    for (const view of ["both", "chart", "table"] as const) {
+      for (const hasChart of [true, false]) {
+        const { showChart, showTable } = visibility(hasChart, view);
+        expect(showChart || showTable).toBe(true);
+      }
+    }
+  });
+
+  it("hides every chart in table mode", () => {
+    expect(visibility(true, "table")).toEqual({ showChart: false, showTable: true });
+  });
+});

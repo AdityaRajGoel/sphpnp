@@ -1,8 +1,10 @@
+import { useEffect, useState } from "react";
 import { FileText } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { decodeEntities, sectionTableHasHeader, type IpoPageSection } from "@/lib/ipo";
 import { deriveSectionInfographic } from "@/lib/ipo-infographics";
 import IPOSectionInfographic from "@/components/ipo/IPOSectionInfographic";
+import IPOSectionViewToggle, { SECTION_VIEW_KEY, type SectionView } from "@/components/ipo/IPOSectionViewToggle";
 
 /** "IPO Open Fri, Sep 18, 2026" -> ["IPO Open", "Fri, Sep 18, 2026"]: the timetable's one-line steps. */
 const DATED_STEP = /^(.+?)\s+((?:Mon|Tue|Wed|Thu|Fri|Sat|Sun),\s+[A-Z][a-z]{2}\s+\d{1,2},\s+\d{4})$/;
@@ -52,19 +54,56 @@ function SectionTable({ rows }: { rows: string[][] }) {
  * shareholders, registrar, lead managers and contact details. Rendered from
  * what was stored, not re-interpreted - the figures are the page's own.
  */
+/**
+ * The reader's chart/table preference, remembered across issues.
+ *
+ * Read in an effect rather than in the initial state so the value is identical
+ * on the prerendered HTML and the first client render - reading localStorage
+ * during render makes them disagree and React discards the server markup.
+ * Every access is wrapped: localStorage throws outright in Safari's private
+ * mode, and a preference is never worth taking the page down for.
+ */
+function useSectionView(): [SectionView, (next: SectionView) => void] {
+  const [view, setView] = useState<SectionView>("both");
+
+  useEffect(() => {
+    try {
+      const stored = window.localStorage.getItem(SECTION_VIEW_KEY);
+      if (stored === "both" || stored === "chart" || stored === "table") setView(stored);
+    } catch {
+      // No stored preference available; the default stands.
+    }
+  }, []);
+
+  const choose = (next: SectionView) => {
+    setView(next);
+    try {
+      window.localStorage.setItem(SECTION_VIEW_KEY, next);
+    } catch {
+      // The choice still applies to this visit.
+    }
+  };
+
+  return [view, choose];
+}
+
 export default function IPOPageSections({ sections, fetchedAt }: { sections: IpoPageSection[]; fetchedAt: string | null }) {
+  const [view, setView] = useSectionView();
   if (sections.length === 0) return null;
   return (
     <section className="mt-8" aria-labelledby="issue-page-heading">
-      <div className="flex items-center gap-2">
-        <FileText className="w-5 h-5 text-secondary" />
-        <div>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+      <div className="flex items-center gap-2 min-w-0">
+        <FileText className="w-5 h-5 text-secondary shrink-0" />
+        <div className="min-w-0">
           <h2 id="issue-page-heading" className="font-heading text-xl font-bold">Full issue details</h2>
           <p className="text-xs text-muted-foreground">
             Details as published for this issue{fetchedAt ? `, read ${new Intl.DateTimeFormat("en-IN", { dateStyle: "medium", timeStyle: "short" }).format(new Date(fetchedAt))}` : ""}.
             Verify against the RHP before applying.
           </p>
         </div>
+      </div>
+        <IPOSectionViewToggle value={view} onChange={setView} />
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-5">
         {sections.map((section) => {
@@ -73,12 +112,17 @@ export default function IPOPageSections({ sections, fetchedAt }: { sections: Ipo
           // It sits ABOVE the table rather than replacing any of it - the
           // table is still the record, and the figures being drawn are its own.
           const chart = deriveSectionInfographic(section);
+          // A section with no chart always shows its table, whatever the
+          // preference - "Charts" must not blank out the timetable, the
+          // registrar and the contact details, which have no chart to show.
+          const showChart = chart !== null && view !== "table";
+          const showTable = chart === null || view !== "chart";
           return (
           <Card key={section.title} className={`min-w-0 ${isWide(section) ? "lg:col-span-2" : ""}`}>
             <CardContent className="p-4 md:p-5 space-y-3">
               <h3 className="font-heading text-base font-bold">{decodeEntities(section.title)}</h3>
-              {chart && <IPOSectionInfographic chart={chart} title={decodeEntities(section.title)} />}
-              {section.tables.map((rows, i) => <SectionTable key={i} rows={rows} />)}
+              {showChart && chart && <IPOSectionInfographic chart={chart} title={decodeEntities(section.title)} />}
+              {showTable && section.tables.map((rows, i) => <SectionTable key={i} rows={rows} />)}
               {section.lines.length > 0 && section.lines.every((line) => DATED_STEP.test(line)) ? (
                 <dl className="text-sm divide-y divide-border rounded-lg border border-border">
                   {section.lines.map((line) => {
