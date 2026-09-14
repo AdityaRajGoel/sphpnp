@@ -7,7 +7,7 @@ import WhatsAppButton from "@/components/WhatsAppButton";
 import ScrollProgress from "@/components/ScrollProgress";
 import { useState, useMemo, useEffect, useRef, lazy, Suspense } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Search, Filter, TrendingUp, TrendingDown, ArrowUpDown, RefreshCw, Loader2, BarChart3, Bot, LayoutGrid, List, Landmark, Cpu, Car, Building2, ShoppingCart, Activity, Zap, PiggyBank, Radar, X, Download, LineChart, ChevronRight, Gauge, ShieldCheck, Sprout, Coins, Scale } from "lucide-react";
+import { Search, Filter, TrendingUp, TrendingDown, ArrowUpDown, RefreshCw, Loader2, BarChart3, Bot, LayoutGrid, List, Landmark, Cpu, Car, Building2, ShoppingCart, Activity, Radar, X, Download, LineChart, ChevronRight, Gauge, Sigma, SlidersHorizontal } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
@@ -18,16 +18,23 @@ import { useScreenerStocks, type ScreenerStock } from "@/hooks/useScreenerStocks
 import { useBhavcopy, buildDeliveryMap } from "@/hooks/useBhavcopy";
 import { useLiveMarket } from "@/hooks/useLiveMarket";
 import { useFundamentalsSummaries } from "@/hooks/useFundamentalsSummaries";
-import { FUNDAMENTAL_SCREENS, FUNDAMENTAL_COLUMNS, type FundamentalsSummary } from "@/lib/screener-fundamentals";
+import { FUNDAMENTAL_COLUMNS, type FundamentalsSummary } from "@/lib/screener-fundamentals";
 import FundamentalsTable from "@/components/screener/FundamentalsTable";
 import RiskTable from "@/components/screener/RiskTable";
+import MetricTable from "@/components/screener/MetricTable";
+import ScannerLibrary from "@/components/screener/ScannerLibrary";
+import CustomFilterBuilder from "@/components/screener/CustomFilterBuilder";
 import { useRiskSummaries } from "@/hooks/useRiskSummaries";
+import { useScoreSummaries } from "@/hooks/useScoreSummaries";
+import { buildMetricRows, parseRules, passesRules, serializeRules, METRIC_BY_ID, type Metric, type Rule } from "@/lib/screener-metrics";
+import { parseScanIds, passesScans, scanCounts, SCAN_GROUPS, type ScanGroup } from "@/lib/screener-scans";
 import StockHeatmap from "@/components/StockHeatmap";
 import GlobalStockSearch from "@/components/GlobalStockSearch";
 import MarketMovers from "@/components/MarketMovers";
 import BulkBlockDeals from "@/components/BulkBlockDeals";
 import CircuitWatch from "@/components/CircuitWatch";
 import PageTransition from "@/components/PageTransition";
+import StockTicker from "@/components/StockTicker";
 import { EASE_IN_OUT, EASE_OUT } from "@/lib/motion";
 const AIAnalysisModal = lazy(() => import("@/components/AIAnalysisModal"));
 const ChartCompare = lazy(() => import("@/components/ChartCompare"));
@@ -42,13 +49,32 @@ const THEMATIC_BASKETS = [
   { id: "fmcg", name: "FMCG Staples", desc: "Everyday consumer goods", icon: ShoppingCart, filter: (s: ScreenerStock) => s.sector === "FMCG" },
 ];
 
-const TECHNICAL_SCANNERS = [
-  { id: "vol_shocker", name: "Volume Shockers", desc: "Unusual high volume today", icon: Activity, filter: (s: ScreenerStock) => s.volume > 5000000 && Math.abs(s.change_pct) > 2 },
-  { id: "52w_high", name: "52W High Breakout", desc: "Trading near 52-week high", icon: TrendingUp, filter: (s: ScreenerStock) => s.price >= s.high_52 * 0.95 && s.high_52 > 0 },
-  { id: "52w_low", name: "52W Low Breakdown", desc: "Trading near 52-week low", icon: TrendingDown, filter: (s: ScreenerStock) => s.price <= s.low_52 * 1.05 && s.low_52 > 0 },
-  { id: "momentum", name: "High Momentum", desc: "Strong intraday trend", icon: Zap, filter: (s: ScreenerStock) => s.change_pct > 4 },
-  { id: "value_buy", name: "Value Buys", desc: "Low P/E & profitable", icon: PiggyBank, filter: (s: ScreenerStock) => s.pe > 0 && s.pe < 15 && s.market_cap > 5000 },
+type ViewMode = "list" | "fundamentals" | "technicals" | "risk" | "scores" | "custom" | "heatmap" | "chart";
+
+const VIEW_TABS: { id: ViewMode; label: string; icon: typeof List }[] = [
+  { id: "list", label: "List", icon: List },
+  { id: "fundamentals", label: "Fundamentals", icon: Gauge },
+  { id: "technicals", label: "Technicals", icon: Radar },
+  { id: "risk", label: "Risk", icon: Activity },
+  { id: "scores", label: "Scores", icon: Sigma },
+  { id: "custom", label: "Custom", icon: SlidersHorizontal },
+  { id: "heatmap", label: "Heatmap", icon: LayoutGrid },
+  { id: "chart", label: "Chart", icon: LineChart },
 ];
+
+const metricsById = (ids: string[]): Metric[] => ids.map((id) => METRIC_BY_ID.get(id)).filter((m): m is Metric => !!m);
+
+const TECHNICAL_COLUMNS = metricsById([
+  "rsi_14", "macd_histogram", "adx", "di_spread", "stochastic_k", "money_flow_index", "bollinger_percent_b", "bollinger_bandwidth",
+  "price_vs_sma50", "distance_from_200", "return_1m", "return_6m", "return_1y", "momentum_12_1", "atr_pct_14", "obv_trend_20",
+]);
+
+const SCORE_COLUMNS = metricsById([
+  "composite_score", "value_score", "quality_score", "momentum_score", "low_vol_score", "magic_formula_rank", "piotroski_score",
+  "earnings_yield", "graham_upside", "fcf_yield", "peg", "ev_to_sales", "net_debt_to_equity", "cash_conversion", "revenue_cagr_3y", "profit_cagr_3y",
+]);
+
+const DEFAULT_CUSTOM_COLUMNS = ["composite_score", "earnings_yield", "roce", "revenue_cagr_3y", "return_6m", "rsi_14", "volatility_1y"];
 
 const formatMarketCap = (cr: number) => {
   if (cr >= 100000) return `₹${(cr / 100000).toFixed(1)}L Cr`;
@@ -58,8 +84,6 @@ const formatMarketCap = (cr: number) => {
 };
 
 type SortKey = "symbol" | "price" | "change_pct" | "market_cap" | "pe";
-
-const SCREEN_ICONS: Record<string, typeof Gauge> = { quality: ShieldCheck, growth: Sprout, dividend: Coins, debt_free: Scale };
 
 const csvNumber = (value: number | null) => (value === null ? "" : Number(value.toFixed(2)));
 
@@ -192,6 +216,14 @@ const StockScreenerPage = () => {
   const { stocks, loading, refreshing: bgRefreshing, updatedAt, error, refresh } = useScreenerStocks();
   const { summaries } = useFundamentalsSummaries();
   const { summaries: riskSummaries } = useRiskSummaries();
+  const { summaries: scoreSummaries } = useScoreSummaries();
+  // Every source joined per stock, plus the cross-sectional factors - what the
+  // scanners, custom rules and the technicals/scores/custom views all read.
+  const metricRows = useMemo(
+    () => buildMetricRows(stocks, summaries, riskSummaries, scoreSummaries),
+    [stocks, summaries, riskSummaries, scoreSummaries],
+  );
+  const counts = useMemo(() => scanCounts(metricRows.values()), [metricRows]);
   const navigate = useNavigate();
   /** A row opens its stock page wherever it is clicked, except on its own buttons and links. */
   const openRow = (symbol: string) => (e: React.MouseEvent) => {
@@ -212,9 +244,12 @@ const StockScreenerPage = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [analyzingStock, setAnalyzingStock] = useState<ScreenerStock | null>(null);
   const [activeBasket, setActiveBasket] = useState<string | null>(searchParams.get("basket"));
-  const [activeScanner, setActiveScanner] = useState<string | null>(searchParams.get("scan"));
-  const [activeScreen, setActiveScreen] = useState<string | null>(searchParams.get("screen"));
-  const [viewMode, setViewMode] = useState<"list" | "fundamentals" | "risk" | "heatmap" | "chart">(searchParams.get("screen") ? "fundamentals" : "list");
+  // `screen` is the fundamental-screen param from before scans were unified; old links still land.
+  const [activeScans, setActiveScans] = useState<string[]>(() => parseScanIds(searchParams.get("scan"), searchParams.get("screen")));
+  const [rules, setRules] = useState<Rule[]>(() => parseRules(searchParams.get("f")));
+  const [viewMode, setViewMode] = useState<ViewMode>(() =>
+    searchParams.get("f") ? "custom" : searchParams.get("screen") ? "fundamentals" : "list",
+  );
   const [compareSymbols, setCompareSymbols] = useState<string[]>([]);
 
   // Seed the chart comparison with the two largest-cap stocks the first time
@@ -248,19 +283,38 @@ const StockScreenerPage = () => {
     if (sortKey !== "market_cap") p.set("sort", sortKey);
     if (sortDir !== "desc") p.set("dir", sortDir);
     if (activeBasket) p.set("basket", activeBasket);
-    if (activeScanner) p.set("scan", activeScanner);
-    if (activeScreen) p.set("screen", activeScreen);
+    if (activeScans.length > 0) p.set("scan", activeScans.join(","));
+    if (rules.length > 0) p.set("f", serializeRules(rules));
     setSearchParams(p, { replace: true });
-  }, [search, sector, peRange, capRange, sortKey, sortDir, activeBasket, activeScanner, activeScreen, setSearchParams]);
+  }, [search, sector, peRange, capRange, sortKey, sortDir, activeBasket, activeScans, rules, setSearchParams]);
 
   const activeFilterCount =
     (search ? 1 : 0) + (sector !== "all" ? 1 : 0) + (peRange !== "all" ? 1 : 0) +
-    (capRange !== "all" ? 1 : 0) + (activeBasket ? 1 : 0) + (activeScanner ? 1 : 0) + (activeScreen ? 1 : 0);
+    (capRange !== "all" ? 1 : 0) + (activeBasket ? 1 : 0) + activeScans.length + rules.length;
 
   const clearAllFilters = () => {
     setSearch(""); setSector("all"); setPeRange("all"); setCapRange("all");
-    setActiveBasket(null); setActiveScanner(null); setActiveScreen(null);
+    setActiveBasket(null); setActiveScans([]); setRules([]);
   };
+
+  /** Turning a scan on also opens the view whose columns explain it. */
+  const toggleScan = (id: string, group: ScanGroup) => {
+    const adding = !activeScans.includes(id);
+    setActiveScans((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+    if (adding && viewMode !== "custom") setViewMode(SCAN_GROUPS.find((g) => g.id === group)?.view ?? "list");
+  };
+
+  const changeRules = (next: Rule[]) => {
+    if (next.length > rules.length) setViewMode("custom");
+    setRules(next);
+  };
+
+  const ruleMatches = useMemo(() => [...metricRows.values()].filter((row) => passesRules(row, rules)).length, [metricRows, rules]);
+
+  const customColumns = useMemo(
+    () => metricsById(rules.length > 0 ? [...new Set([...rules.map((r) => r.metric), "composite_score"])] : DEFAULT_CUSTOM_COLUMNS),
+    [rules],
+  );
 
   const sectors = useMemo(() => [...new Set(stocks.map(s => s.sector))].sort(), [stocks]);
 
@@ -279,21 +333,15 @@ const StockScreenerPage = () => {
       const basket = THEMATIC_BASKETS.find(b => b.id === activeBasket);
       if (basket) list = list.filter(basket.filter);
     }
-    if (activeScanner) {
-      const scanner = TECHNICAL_SCANNERS.find(s => s.id === activeScanner);
-      if (scanner) list = list.filter(scanner.filter);
-    }
-    if (activeScreen) {
-      const screen = FUNDAMENTAL_SCREENS.find(s => s.id === activeScreen);
-      if (screen) list = list.filter(s => { const f = summaries.get(s.symbol); return f ? screen.test(f) : false; });
-    }
+    if (activeScans.length > 0) list = list.filter(s => passesScans(metricRows.get(s.symbol), activeScans));
+    if (rules.length > 0) list = list.filter(s => passesRules(metricRows.get(s.symbol), rules));
 
     list.sort((a, b) => {
       const av = a[sortKey], bv = b[sortKey];
       return sortDir === "asc" ? (av > bv ? 1 : -1) : (av < bv ? 1 : -1);
     });
     return list;
-  }, [stocks, search, sector, peRange, capRange, sortKey, sortDir, activeBasket, activeScanner, activeScreen, summaries]);
+  }, [stocks, search, sector, peRange, capRange, sortKey, sortDir, activeBasket, activeScans, rules, metricRows]);
 
   const toggleSort = (key: SortKey) => {
     if (sortKey === key) setSortDir(d => d === "asc" ? "desc" : "asc");
@@ -334,7 +382,10 @@ const StockScreenerPage = () => {
             "Filter by sector, market cap, P/E ratio",
             "52-week high/low range display",
             "Thematic baskets - Banking, IT, Auto, PSU, FMCG",
-            "Technical scanners - Volume Shockers, Momentum, Value Buys",
+            "50+ combinable scanners - trend, RSI, MACD, ADX, Bollinger, stochastic, MFI, volume, delivery, risk, fundamentals and scores",
+            "Custom screens on 60+ metrics, shareable by URL",
+            "Technical indicators view - RSI, MACD, ADX, Bollinger %B, stochastic, money flow, returns and ATR",
+            "Value, quality, momentum and low-volatility factor percentiles, Magic Formula rank, Piotroski F-Score, Graham number",
             "Fundamental screens - ROE, ROCE, margins, growth, debt and dividend yield",
             "Stock heatmap view",
             "Multi-stock chart comparison with SMA & RSI indicators",
@@ -344,6 +395,7 @@ const StockScreenerPage = () => {
       />
       <ScrollProgress />
       <Header />
+      <StockTicker />
       <VisibleBreadcrumbs items={[{ name: "Home", url: "/" }, { name: "Stock Screener" }]} />
       <main className="container mx-auto px-4 py-8">
         <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} className="mb-8 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
@@ -422,77 +474,9 @@ const StockScreenerPage = () => {
           </div>
         </div>
 
-        {/* Technical Scanners */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-heading font-bold flex items-center gap-2">
-              <Radar className="w-5 h-5 text-secondary" />
-              Technical Scanners
-            </h2>
-            {activeScanner && (
-              <Button variant="ghost" size="sm" onClick={() => setActiveScanner(null)} className="h-8 text-muted-foreground hover:text-foreground">
-                Clear Selection
-              </Button>
-            )}
-          </div>
-          <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
-            {TECHNICAL_SCANNERS.map(s => {
-              const Icon = s.icon;
-              const isActive = activeScanner === s.id;
-              return (
-                <Card 
-                  key={s.id} 
-                  className={`p-4 flex flex-col cursor-pointer transition-transform ease-out hover:scale-[1.02] active:scale-[0.97] ${isActive ? "ring-2 ring-secondary bg-secondary/5 border-secondary/50" : "hover:border-primary/50"}`}
-                  onClick={() => setActiveScanner(isActive ? null : s.id)}
-                >
-                  <Icon className={`w-6 h-6 mb-3 ${isActive ? "text-secondary" : "text-muted-foreground"}`} />
-                  <h3 className="font-semibold text-sm mb-1 text-foreground">{s.name}</h3>
-                  <p className="text-xs text-muted-foreground line-clamp-2">{s.desc}</p>
-                </Card>
-              );
-            })}
-          </div>
-        </div>
+        <ScannerLibrary active={activeScans} counts={counts} onToggle={toggleScan} onClear={() => setActiveScans([])} />
 
-        {/* Fundamental Screens */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-heading font-bold flex items-center gap-2">
-              <Gauge className="w-5 h-5 text-primary" />
-              Fundamental Screens
-            </h2>
-            {activeScreen && (
-              <Button variant="ghost" size="sm" onClick={() => setActiveScreen(null)} className="h-8 text-muted-foreground hover:text-foreground">
-                Clear Selection
-              </Button>
-            )}
-          </div>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-            {FUNDAMENTAL_SCREENS.map(fs => {
-              const Icon = SCREEN_ICONS[fs.id] ?? Gauge;
-              const isActive = activeScreen === fs.id;
-              const matches = stocks.filter(s => { const f = summaries.get(s.symbol); return f ? fs.test(f) : false; }).length;
-              return (
-                <Card
-                  key={fs.id}
-                  role="button"
-                  tabIndex={0}
-                  aria-pressed={isActive}
-                  className={`p-4 flex flex-col cursor-pointer transition-transform ease-out hover:scale-[1.02] active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${isActive ? "ring-2 ring-primary bg-primary/5 border-primary/50" : "hover:border-primary/50"}`}
-                  onClick={() => { setActiveScreen(isActive ? null : fs.id); if (!isActive) setViewMode("fundamentals"); }}
-                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setActiveScreen(isActive ? null : fs.id); if (!isActive) setViewMode("fundamentals"); } }}
-                >
-                  <div className="flex items-start justify-between mb-3">
-                    <Icon className={`w-6 h-6 ${isActive ? "text-primary" : "text-muted-foreground"}`} />
-                    {summaries.size > 0 && <span className="text-xs font-mono text-muted-foreground">{matches}</span>}
-                  </div>
-                  <h3 className="font-semibold text-sm mb-1 text-foreground">{fs.name}</h3>
-                  <p className="text-xs text-muted-foreground line-clamp-2">{fs.desc}</p>
-                </Card>
-              );
-            })}
-          </div>
-        </div>
+        <CustomFilterBuilder rules={rules} onChange={changeRules} matches={ruleMatches} />
 
         {/* Filters */}
         <Card className="p-4 mb-6">
@@ -560,37 +544,19 @@ const StockScreenerPage = () => {
                 </p>
                 
                 {/* View Toggles */}
-                <div className="flex bg-muted rounded-lg p-1 self-start sm:self-auto max-w-full overflow-x-auto">
-                  <button 
-                    onClick={() => setViewMode("list")} 
-                    className={`px-4 py-1.5 rounded-md text-xs font-semibold transition-colors flex items-center gap-2 ${viewMode === "list" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
-                  >
-                    <List className="w-4 h-4" /> List
-                  </button>
-                  <button
-                    onClick={() => setViewMode("fundamentals")}
-                    className={`px-4 py-1.5 rounded-md text-xs font-semibold transition-colors flex items-center gap-2 ${viewMode === "fundamentals" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
-                  >
-                    <Gauge className="w-4 h-4" /> Fundamentals
-                  </button>
-                  <button
-                    onClick={() => setViewMode("risk")}
-                    className={`px-4 py-1.5 rounded-md text-xs font-semibold transition-colors flex items-center gap-2 ${viewMode === "risk" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
-                  >
-                    <Activity className="w-4 h-4" /> Risk
-                  </button>
-                  <button
-                    onClick={() => setViewMode("heatmap")}
-                    className={`px-4 py-1.5 rounded-md text-xs font-semibold transition-colors flex items-center gap-2 ${viewMode === "heatmap" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
-                  >
-                    <LayoutGrid className="w-4 h-4" /> Heatmap
-                  </button>
-                  <button
-                    onClick={() => setViewMode("chart")}
-                    className={`px-4 py-1.5 rounded-md text-xs font-semibold transition-colors flex items-center gap-2 ${viewMode === "chart" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
-                  >
-                    <LineChart className="w-4 h-4" /> Chart
-                  </button>
+                <div role="tablist" aria-label="Screener view" className="flex bg-muted rounded-lg p-1 self-start sm:self-auto max-w-full overflow-x-auto">
+                  {VIEW_TABS.map(({ id, label, icon: Icon }) => (
+                    <button
+                      key={id}
+                      type="button"
+                      role="tab"
+                      aria-selected={viewMode === id}
+                      onClick={() => setViewMode(id)}
+                      className={`shrink-0 px-3 py-1.5 rounded-md text-xs font-semibold transition-colors flex items-center gap-1.5 ${viewMode === id ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+                    >
+                      <Icon className="w-4 h-4" aria-hidden="true" /> {label}
+                    </button>
+                  ))}
                 </div>
               </div>
 
@@ -602,6 +568,30 @@ const StockScreenerPage = () => {
                 </motion.div>
               ) : viewMode === "fundamentals" ? (
                 <FundamentalsTable rows={filtered} summaries={summaries} onOpen={(symbol) => navigate(`/stock/${encodeURIComponent(symbol)}`)} />
+              ) : viewMode === "technicals" ? (
+                <MetricTable
+                  rows={filtered}
+                  metricRows={metricRows}
+                  columns={TECHNICAL_COLUMNS}
+                  note="Indicators computed daily from each stock's own split-adjusted bars. Readings describe where an indicator sits, not what to do."
+                  onOpen={(symbol) => navigate(`/stock/${encodeURIComponent(symbol)}`)}
+                />
+              ) : viewMode === "scores" ? (
+                <MetricTable
+                  rows={filtered}
+                  metricRows={metricRows}
+                  columns={SCORE_COLUMNS}
+                  note="Factor scores are percentiles (0-100) among the tracked stocks and move as the others do. Magic Formula excludes financials. Piotroski shows passed/testable."
+                  onOpen={(symbol) => navigate(`/stock/${encodeURIComponent(symbol)}`)}
+                />
+              ) : viewMode === "custom" ? (
+                <MetricTable
+                  rows={filtered}
+                  metricRows={metricRows}
+                  columns={customColumns}
+                  note={rules.length > 0 ? "Columns follow the metrics in your custom screen." : "Add a rule above to screen on any metric; its column appears here."}
+                  onOpen={(symbol) => navigate(`/stock/${encodeURIComponent(symbol)}`)}
+                />
               ) : viewMode === "risk" ? (
                 <RiskTable rows={filtered} summaries={riskSummaries} onOpen={(symbol) => navigate(`/stock/${encodeURIComponent(symbol)}`)} />
               ) : viewMode === "heatmap" ? (

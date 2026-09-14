@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Chart, PeriodType } from "klinecharts";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toKLineData, type ApiChartPoint, type KLineBar } from "@/lib/chart-data";
+import { registerCustomIndicators } from "@/lib/chart-indicators";
 
 /**
  * Advanced price chart, backed by KLineChart (Apache-2.0).
@@ -21,14 +22,47 @@ import { toKLineData, type ApiChartPoint, type KLineBar } from "@/lib/chart-data
  * that does not show a chart.
  */
 
-/** Indicators drawn over the candles rather than in their own pane. */
-const OVERLAY_INDICATORS = ["MA", "EMA", "BOLL", "SAR"] as const;
+/**
+ * Indicators drawn over the candles rather than in their own pane. The
+ * upper-case ones after BBI are ours (lib/chart-indicators.ts), registered on
+ * first load; the rest are KLineChart built-ins.
+ */
+const OVERLAY_INDICATORS = ["MA", "EMA", "BOLL", "SAR", "BBI", "SUPERTREND", "DONCHIAN", "KELTNER", "ICHIMOKU", "RVWAP"] as const;
 /** Indicators that need their own pane stacked beneath the candles. */
-const PANE_INDICATORS = ["VOL", "MACD", "RSI", "KDJ"] as const;
+const PANE_INDICATORS = ["VOL", "MACD", "RSI", "KDJ", "DMI", "ATR", "CCI", "OBV", "WR", "ROC", "MTM", "TRIX", "BIAS", "PSY", "AO", "VR", "CR", "PVT"] as const;
 
 type OverlayIndicator = (typeof OVERLAY_INDICATORS)[number];
 type PaneIndicator = (typeof PANE_INDICATORS)[number];
 type IndicatorName = OverlayIndicator | PaneIndicator;
+
+/** Chip text where the library's code name is not what a trader calls it; the title carries the full name. */
+const INDICATOR_LABEL: Partial<Record<IndicatorName, { label: string; title: string }>> = {
+  MA: { label: "MA", title: "Simple moving averages" },
+  EMA: { label: "EMA", title: "Exponential moving averages" },
+  BOLL: { label: "Bollinger", title: "Bollinger bands (20, 2)" },
+  SAR: { label: "SAR", title: "Parabolic stop and reverse" },
+  BBI: { label: "BBI", title: "Bull and bear index: mean of four moving averages" },
+  SUPERTREND: { label: "Supertrend", title: "Supertrend (10, 3)" },
+  DONCHIAN: { label: "Donchian", title: "Donchian channel (20)" },
+  KELTNER: { label: "Keltner", title: "Keltner channel (EMA 20 ± 2 ATR)" },
+  ICHIMOKU: { label: "Ichimoku", title: "Ichimoku (9, 26, 52), spans unshifted" },
+  RVWAP: { label: "VWAP", title: "Rolling 20-bar volume-weighted average price" },
+  VOL: { label: "Volume", title: "Volume" },
+  DMI: { label: "ADX/DMI", title: "Directional movement index with ADX" },
+  ATR: { label: "ATR", title: "Average true range (14)" },
+  CCI: { label: "CCI", title: "Commodity channel index" },
+  OBV: { label: "OBV", title: "On-balance volume" },
+  WR: { label: "%R", title: "Williams %R" },
+  ROC: { label: "ROC", title: "Rate of change" },
+  MTM: { label: "Momentum", title: "Momentum" },
+  TRIX: { label: "TRIX", title: "Triple-smoothed EMA rate of change" },
+  BIAS: { label: "Bias", title: "Distance from moving averages" },
+  PSY: { label: "PSY", title: "Psychological line: share of up days" },
+  AO: { label: "AO", title: "Awesome oscillator" },
+  VR: { label: "VR", title: "Volume ratio" },
+  CR: { label: "CR", title: "Energy (CR) indicator" },
+  PVT: { label: "PVT", title: "Price-volume trend" },
+};
 
 const DRAWING_TOOLS = [
   { name: "horizontalStraightLine", label: "H-line" },
@@ -208,6 +242,7 @@ const AdvancedChart = ({
     void (async () => {
       const kline = await import("klinecharts");
       if (disposed || !containerRef.current) return;
+      registerCustomIndicators(kline);
 
       chart = kline.init(containerRef.current, {
         // The reason this chart can be correct about Indian sessions where
@@ -350,25 +385,29 @@ const AdvancedChart = ({
           itself was pushed off screen. Below sm each group is a single
           swipeable row instead; from sm up they wrap as before. */}
       <div className="space-y-2 mb-3 sm:flex sm:flex-wrap sm:items-center sm:gap-x-4 sm:gap-y-2 sm:space-y-0">
-        <div className="flex items-center gap-1.5 overflow-x-auto -mx-1 px-1 pb-1 sm:mx-0 sm:px-0 sm:pb-0 sm:flex-wrap sm:overflow-visible [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          <span className="shrink-0 text-[10px] font-bold uppercase tracking-wider text-muted-foreground mr-1">
-            Indicators
-          </span>
-          {[...OVERLAY_INDICATORS, ...PANE_INDICATORS]
-            .filter((name) => name !== "VOL" || hasVolume)
-            .map((name) => (
-            <button
-              key={name}
-              type="button"
-              onClick={() => toggleIndicator(name)}
-              disabled={!ready}
-              aria-pressed={active.has(name)}
-              className={`${chipBase} ${active.has(name) ? chipOn : chipOff} disabled:opacity-50`}
-            >
-              {name}
-            </button>
-          ))}
-        </div>
+        {([["Overlays", OVERLAY_INDICATORS], ["Oscillators", PANE_INDICATORS]] as const).map(([heading, names]) => (
+          <div key={heading} className="flex items-center gap-1.5 overflow-x-auto -mx-1 px-1 pb-1 sm:mx-0 sm:px-0 sm:pb-0 sm:flex-wrap sm:overflow-visible sm:basis-full [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <span className="shrink-0 text-[10px] font-bold uppercase tracking-wider text-muted-foreground mr-1">
+              {heading}
+            </span>
+            {(names as readonly IndicatorName[])
+              // Volume-weighted indicators are meaningless on a series with no volume (indices).
+              .filter((name) => hasVolume || !["VOL", "OBV", "VR", "PVT", "RVWAP"].includes(name))
+              .map((name) => (
+              <button
+                key={name}
+                type="button"
+                title={INDICATOR_LABEL[name]?.title}
+                onClick={() => toggleIndicator(name)}
+                disabled={!ready}
+                aria-pressed={active.has(name)}
+                className={`${chipBase} ${active.has(name) ? chipOn : chipOff} disabled:opacity-50`}
+              >
+                {INDICATOR_LABEL[name]?.label ?? name}
+              </button>
+            ))}
+          </div>
+        ))}
 
         <div className="flex items-center gap-1.5 overflow-x-auto -mx-1 px-1 pb-1 sm:mx-0 sm:px-0 sm:pb-0 sm:flex-wrap sm:overflow-visible [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <span className="shrink-0 text-[10px] font-bold uppercase tracking-wider text-muted-foreground mr-1">

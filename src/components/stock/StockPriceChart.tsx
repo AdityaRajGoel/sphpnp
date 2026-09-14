@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { motion } from "motion/react";
-import { LineChart as LineChartIcon, AlertCircle } from "lucide-react";
+import { LineChart as LineChartIcon, AlertCircle, CandlestickChart } from "lucide-react";
 import PriceChart from "@/components/charts/PriceChart";
-import { zipSeries } from "@/lib/chart-data";
+import { Skeleton } from "@/components/ui/skeleton";
+import { zipSeries, type ApiChartPoint } from "@/lib/chart-data";
 import { periodReturnPct, rsi, rsiZone } from "@/lib/technicals";
 import { supabase } from "@/integrations/supabase/client";
 import { revealItem } from "@/lib/motion";
@@ -32,10 +33,15 @@ const RANGES: readonly Range[] = [
   { label: "5Y", api: "5y" },
 ];
 
-type Point = { t: number; c: number; v: number };
+type Point = ApiChartPoint;
+
+// KLineChart is browser-only and ~59kB gzipped; only a reader who asks for the
+// advanced view downloads it.
+const AdvancedChart = lazy(() => import("@/components/charts/AdvancedChart"));
 
 const StockPriceChart = ({ symbol, name }: { symbol: string; name: string }) => {
   const [range, setRange] = useState<Range>(RANGES[1]);
+  const [advanced, setAdvanced] = useState(false);
   const [points, setPoints] = useState<Point[] | null>(null);
   const [state, setState] = useState<"loading" | "ready" | "empty" | "error">("loading");
 
@@ -87,6 +93,18 @@ const StockPriceChart = ({ symbol, name }: { symbol: string; name: string }) => 
             </h2>
           </div>
 
+          <div className="flex items-center gap-2 min-w-0">
+          <button
+            type="button"
+            aria-pressed={advanced}
+            onClick={() => setAdvanced((a) => !a)}
+            title="Candles with 28 indicators and drawing tools"
+            className={`shrink-0 inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors duration-fast ${
+              advanced ? "border-secondary/50 bg-secondary/10 text-secondary" : "border-border text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <CandlestickChart className="h-3.5 w-3.5" aria-hidden="true" /> Advanced
+          </button>
           {/* Scrolls rather than wraps: four labels fit at 375px today, but a
               fifth range must push sideways, not reflow the header. */}
           <div
@@ -110,6 +128,7 @@ const StockPriceChart = ({ symbol, name }: { symbol: string; name: string }) => 
                 {r.label}
               </button>
             ))}
+          </div>
           </div>
         </div>
 
@@ -154,6 +173,13 @@ const StockPriceChart = ({ symbol, name }: { symbol: string; name: string }) => 
               <span className="text-muted-foreground">SMA 20 · 50 overlaid</span>
             </div>
 
+            {advanced ? (
+              <div className="mt-3">
+                <Suspense fallback={<Skeleton className="h-[460px] w-full" />}>
+                  <AdvancedChart data={points} ticker={symbol} defaultIndicators={["VOL", "MA", "SUPERTREND", "RSI"]} />
+                </Suspense>
+              </div>
+            ) : (
             <div className="mt-2">
               <PriceChart
                 data={zipSeries(
@@ -168,6 +194,7 @@ const StockPriceChart = ({ symbol, name }: { symbol: string; name: string }) => 
                 showVolume={points.some((p) => p.v > 0)}
               />
             </div>
+            )}
           </>
         ) : (
           <div className="flex min-h-[220px] flex-col items-center justify-center gap-2 text-center text-muted-foreground">

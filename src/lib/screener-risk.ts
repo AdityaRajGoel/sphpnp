@@ -26,9 +26,31 @@ export type RiskSummary = {
   volume_zscore: number | null;
   distance_from_200: number | null;
   ma_trend: "golden" | "death" | null;
+  // Read by the technicals view, the scanners and the metric registry rather
+  // than the risk table's own columns.
+  drawdown_from_peak: number | null;
+  atr_pct_14: number | null;
+  return_1m: number | null;
+  return_6m: number | null;
+  return_1y: number | null;
+  sma_50: number | null;
+  sma_200: number | null;
+  macd_histogram: number | null;
+  bollinger_percent_b: number | null;
+  bollinger_bandwidth: number | null;
+  stochastic_k: number | null;
+  stochastic_d: number | null;
+  plus_di: number | null;
+  minus_di: number | null;
+  obv_trend_20: number | null;
+  money_flow_index: number | null;
+  close_vs_vwap: number | null;
 };
 
-export type RiskKey = Exclude<keyof RiskSummary, "symbol" | "as_of" | "ma_trend">;
+export type RiskKey = Extract<
+  Exclude<keyof RiskSummary, "symbol" | "as_of" | "ma_trend">,
+  "volatility_1y" | "max_drawdown_1y" | "beta_1y" | "rsi_14" | "adx" | "return_3m" | "relative_strength_3m" | "week52_position" | "delivery_recent" | "delivery_change" | "volume_zscore" | "distance_from_200"
+>;
 
 export const RISK_COLUMNS: { key: RiskKey; label: string; title: string; kind: "pct" | "ratio" | "sigma" | "points" }[] = [
   { key: "volatility_1y", label: "Volatility", title: "Annualised volatility of daily returns over the past year", kind: "pct" },
@@ -99,7 +121,10 @@ export const RISK_SCREENS: RiskScreen[] = [
 
 export async function getRiskSummaries(): Promise<Map<string, RiskSummary>> {
   const { data, error } = await (supabase.from("stock_price_analytics_latest" as never) as ReturnType<typeof supabase.from>)
-    .select("symbol,as_of,volatility_1y,max_drawdown_1y,beta_1y,rsi_14,adx,return_3m,relative_strength_3m,week52_position,delivery_recent,delivery_change,volume_zscore,distance_from_200,ma_trend")
+    .select(
+      "symbol,as_of,volatility_1y,max_drawdown_1y,beta_1y,rsi_14,adx,return_3m,relative_strength_3m,week52_position,delivery_recent,delivery_change,volume_zscore,distance_from_200,ma_trend," +
+        "drawdown_from_peak,atr_pct_14,return_1m,return_6m,return_1y,sma_50,sma_200,macd_histogram,bollinger_percent_b,bollinger_bandwidth,stochastic_k,stochastic_d,plus_di,minus_di,obv_trend_20,money_flow_index,close_vs_vwap",
+    )
     .limit(1000);
   if (error) throw new Error(error.message);
   return new Map(((data ?? []) as unknown as RiskSummary[]).map((row) => [row.symbol, row]));

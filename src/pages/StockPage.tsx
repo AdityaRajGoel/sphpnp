@@ -44,6 +44,7 @@ import ForecastPanel from "@/components/stock/ForecastPanel";
 import FundamentalScorePanel from "@/components/stock/FundamentalScorePanel";
 import { useStockAnalytics } from "@/hooks/useStockAnalytics";
 import ShareholdingTable from "@/components/stock/ShareholdingTable";
+import StockResearchProfile from "@/components/stock/StockResearchProfile";
 
 // Same split the screener, comparison and search surfaces make: the modal drags
 // in recharts and react-markdown, which is more JS than this whole page ships.
@@ -237,6 +238,8 @@ export default function StockPage() {
               <StockPriceChart symbol={s.header.symbol} name={s.header.name} />
             )}
 
+            {s.header && <StockResearchProfile symbol={s.header.symbol} />}
+
             {s.header && (
               <Suspense fallback={null}>
                 <ExchangeHistory symbol={s.header.symbol} />
@@ -301,11 +304,17 @@ export default function StockPage() {
                     row, so it stays inside the existing `ready` state rather
                     than earning a data-stock-state value of its own. */}
                 <RatiosPanel derived={s.derived} />
-                <RiskPanel analytics={analytics?.price ?? null} />
-                <FundamentalScorePanel scores={analytics?.fundamentals ?? null} />
-                <ForecastPanel forecast={analytics?.forecast ?? null} />
               </>
             )}
+
+            {/* Computed from bars and stored statements, not from which
+                statement source reached this symbol - so they sit outside that
+                branch. Inside it they only ever showed on the NSE-filing
+                fallback, i.e. on almost no stock. Each renders nothing when
+                its row is absent. */}
+            <RiskPanel analytics={analytics?.price ?? null} />
+            <FundamentalScorePanel scores={analytics?.fundamentals ?? null} />
+            <ForecastPanel forecast={analytics?.forecast ?? null} />
 
             <CorporateActionsList actions={s.actions} />
             {disclosures && <InsiderTrades trades={disclosures.trades} />}
