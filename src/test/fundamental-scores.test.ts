@@ -97,7 +97,9 @@ describe("piotroskiScore", () => {
 });
 
 describe("qualityMetrics", () => {
-  const market = { market_cap: 4000, pe: 22, dividend_yield_pct: 1.5, profit_growth_yoy_pct: 80 };
+  // Crore, as screener_stocks quotes it. The fixtures' statements are in the
+  // same made-up unit, so the conversion is asserted explicitly below instead.
+  const market = { market_cap_crore: 4000, pe: 22, dividend_yield_pct: 1.5, profit_growth_yoy_pct: 80 };
 
   it("nets debt against cash and scales it by equity", () => {
     const metrics = qualityMetrics(improvingIncome, improvingBalance, improvingCashflow, market);
@@ -125,7 +127,7 @@ describe("qualityMetrics", () => {
   it("builds enterprise value from market cap plus net debt", () => {
     const metrics = qualityMetrics(improvingIncome, improvingBalance, improvingCashflow, market);
 
-    expect(metrics.ev_to_sales).toBeCloseTo((4000 + 50) / 1200, 10);
+    expect(metrics.ev_to_sales).toBeCloseTo((4000 * 1e7 + 50) / 1200, 10);
   });
 
   it("refuses a PEG on flat or falling profit", () => {
@@ -364,7 +366,7 @@ describe("a market capitalisation of zero", () => {
    * first live run that made enterprise value collapse to net debt alone, and
    * BDL - a net-cash company - printed an EV/sales of -1.8.
    */
-  const noCap = { market_cap: 0, pe: 0, dividend_yield_pct: 0, profit_growth_yoy_pct: 40 };
+  const noCap = { market_cap_crore: 0, pe: 0, dividend_yield_pct: 0, profit_growth_yoy_pct: 40 };
   const netCash: BalancePeriod[] = [
     { period_end: "2026-03-31", total_assets: 2000, total_debt: 100, total_equity: 1200, cash_and_equivalents: 900, current_assets: 800, current_liabilities: 400 },
   ];
@@ -380,8 +382,40 @@ describe("a market capitalisation of zero", () => {
   });
 
   it("computes enterprise value normally once a cap is present", () => {
-    const metrics = qualityMetrics(improvingIncome, netCash, improvingCashflow, { ...noCap, market_cap: 4000 });
+    const metrics = qualityMetrics(improvingIncome, netCash, improvingCashflow, { ...noCap, market_cap_crore: 4000 });
 
-    expect(metrics.ev_to_sales).toBeCloseTo((4000 - 800) / 1200, 10);
+    expect(metrics.ev_to_sales).toBeCloseTo((4000 * 1e7 - 800) / 1200, 10);
+  });
+});
+
+describe("the crore / rupee boundary", () => {
+  /*
+   * screener_stocks quotes market_cap in CRORE (Infosys: 420300) while every
+   * fundamentals_* figure is in absolute RUPEES (Infosys total debt:
+   * 923000000). Added directly, enterprise value became the net debt with a
+   * rounding error attached - negative for thirteen symbols including Infosys -
+   * and FCF yield was inflated by ten million.
+   */
+  const infosys = {
+    income: [{ period_end: "2026-03-31", revenue: 482_110_000_000, total_income: 490_000_000_000, total_expenses: 390_000_000_000, profit_after_tax: 77_690_000_000 }],
+    balance: [{ period_end: "2026-03-31", total_assets: 1_500_000_000_000, total_debt: 923_000_000, total_equity: 900_000_000_000, cash_and_equivalents: 2_287_000_000, current_assets: 10_000_000_000, current_liabilities: 5_000_000_000 }],
+    cashflow: [{ period_end: "2026-03-31", operating_cf: 90_000_000_000, capex: -10_000_000_000 }],
+  };
+
+  it("puts a large-cap's enterprise value above its net cash, not below zero", () => {
+    const metrics = qualityMetrics(infosys.income, infosys.balance, infosys.cashflow, { market_cap_crore: 420_300 });
+
+    // ₹4.2 lakh crore of market cap against ₹136 crore of net cash.
+    expect(metrics.net_debt).toBe(923_000_000 - 2_287_000_000);
+    expect(metrics.ev_to_sales!).toBeGreaterThan(0);
+    // Roughly 8.7x sales, which is the order of magnitude for a large IT name.
+    expect(metrics.ev_to_sales!).toBeCloseTo((420_300 * 1e7 - 1_364_000_000) / 482_110_000_000, 6);
+  });
+
+  it("keeps FCF yield in a believable range instead of ten million times it", () => {
+    const metrics = qualityMetrics(infosys.income, infosys.balance, infosys.cashflow, { market_cap_crore: 420_300 });
+
+    expect(metrics.fcf_yield!).toBeGreaterThan(0);
+    expect(metrics.fcf_yield!).toBeLessThan(0.2);
   });
 });

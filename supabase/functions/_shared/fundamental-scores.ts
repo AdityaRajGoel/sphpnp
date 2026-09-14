@@ -328,12 +328,24 @@ export type QualityMetrics = {
   payout_ratio: number | null;
 };
 
+/**
+ * THE UNIT IS IN THE FIELD NAME ON PURPOSE. screener_stocks.market_cap is
+ * quoted in CRORE (Infosys: 420300) while every fundamentals_* figure is in
+ * absolute RUPEES (Infosys total debt: 923000000) - a factor of ten million
+ * apart. Adding them directly made enterprise value the net debt with a
+ * rounding error attached, which came out NEGATIVE for thirteen symbols
+ * including Infosys, and inflated every FCF yield by 10^7. Naming the field
+ * for its unit is what stops the next caller repeating it.
+ */
 export type MarketInputs = {
-  market_cap?: number | null;
+  market_cap_crore?: number | null;
   pe?: number | null;
   dividend_yield_pct?: number | null;
   profit_growth_yoy_pct?: number | null;
 };
+
+/** Rupees in one crore. */
+const CRORE = 10_000_000;
 
 export function qualityMetrics(
   income: IncomePeriod[],
@@ -365,12 +377,15 @@ export function qualityMetrics(
       ? ratio(income0.profit_after_tax - cash0.operating_cf, balance0?.total_assets)
       : null;
 
-  // market_cap must be POSITIVE, not merely present. screener_stocks defaults
-  // the column to 0, and a zero passed the finite() check - so enterprise value
-  // collapsed to net debt alone and a net-cash company printed a NEGATIVE
-  // EV/sales (BDL came out at -1.8 on the first live run). A missing market
-  // capitalisation makes enterprise value unknowable, not zero.
-  const marketCap = finite(market.market_cap) && market.market_cap > 0 ? market.market_cap : null;
+  // Converted to rupees so it can meet the balance sheet, and required to be
+  // POSITIVE rather than merely present: screener_stocks defaults the column to
+  // 0, which passed the finite() check and made enterprise value collapse to
+  // net debt alone. A missing capitalisation makes enterprise value
+  // unknowable, not zero.
+  const marketCap =
+    finite(market.market_cap_crore) && market.market_cap_crore > 0
+      ? market.market_cap_crore * CRORE
+      : null;
   const enterpriseValue = marketCap !== null && netDebt !== null ? marketCap + netDebt : null;
 
   // A PEG on a shrinking or flat profit is not a cheap stock, it is a

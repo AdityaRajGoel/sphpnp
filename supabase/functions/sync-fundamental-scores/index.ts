@@ -208,7 +208,8 @@ Deno.serve(async (req) => {
         [latest.balance],
         latest.cashflow ? [latest.cashflow] : [],
         {
-          market_cap: market?.market_cap ?? null,
+          // screener_stocks quotes this in crore; qualityMetrics converts.
+          market_cap_crore: market?.market_cap ?? null,
           pe: market?.pe ?? null,
           profit_growth_yoy_pct: priorForGrowth ? profitGrowth(latest.income, priorForGrowth.income) : null,
         },
