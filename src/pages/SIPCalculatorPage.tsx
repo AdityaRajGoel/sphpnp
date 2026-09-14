@@ -6,6 +6,7 @@ import WhatsAppButton from "@/components/WhatsAppButton";
 import VisibleBreadcrumbs from "@/components/VisibleBreadcrumbs";
 import PageTransition from "@/components/PageTransition";
 import SIPCalculator from "@/components/SIPCalculator";
+import SipBacktest from "@/components/SipBacktest";
 
 const SIPCalculatorPage = () => (
   <PageTransition>
@@ -40,6 +41,7 @@ const SIPCalculatorPage = () => (
       />
       <main className="flex-1">
         <SIPCalculator headingLevel={1} />
+        <SipBacktest />
       </main>
       <Footer />
       <WhatsAppButton />
