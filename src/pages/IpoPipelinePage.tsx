@@ -11,6 +11,8 @@ import VisibleBreadcrumbs from "@/components/VisibleBreadcrumbs";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import PipelineOverview from "@/components/ipo/PipelineOverview";
+import { istToday } from "@/lib/market-data";
 import {
   FILING_LABEL,
   STAGE_LABEL,
@@ -147,6 +149,8 @@ export default function IpoPipelinePage() {
           <strong>Note:</strong> Filing a draft does not mean an IPO will happen - SEBI may return it, and companies
           withdraw or let drafts lapse. Dates and prices are set only in the RHP. Information only; not investment advice.
         </div>
+
+        {!loading && !error && <PipelineOverview companies={companies} today={istToday()} />}
 
         <div className="mt-8 flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap gap-2" role="group" aria-label="Filter the pipeline">
