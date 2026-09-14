@@ -68,6 +68,13 @@ export type FundamentalScores = {
   piotroski_score: number | null;
   piotroski_testable: number | null;
   piotroski_criteria: PiotroskiCriterion[] | null;
+  /**
+   * The score's own periods, which are usually NOT `period_end` above: the
+   * ratios need one period, the score needs two a year apart, and the two
+   * sources rarely carry the same quarters.
+   */
+  piotroski_period_end: string | null;
+  piotroski_compared_with: string | null;
   net_debt: number | null;
   net_debt_to_equity: number | null;
   accruals_ratio: number | null;

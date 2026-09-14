@@ -18,6 +18,7 @@ import {
   oneReportingBasis,
   piotroskiScore,
   qualityMetrics,
+  yearEarlier,
   type BalancePeriod,
   type CashflowPeriod,
   type IncomePeriod,
@@ -146,11 +147,16 @@ Deno.serve(async (req) => {
 
   const summary = {
     symbols: batch.length,
+    /** Rows written, whether or not a Piotroski score was among them. */
+    written: 0,
+    /** Rows carrying a Piotroski score - needs two aligned periods a year apart. */
     scored: 0,
+    /** Rows carrying only the quality ratios, which need a single period. */
+    metricsOnly: 0,
     /**
-     * Symbols with fewer than two comparable periods, or too few criteria to
-     * test. Thin fundamentals coverage, not a fault - most of the universe's
-     * smaller names sit here until a second annual filing lands.
+     * Symbols with no period where the income statement and balance sheet
+     * describe the same date. Thin coverage, not a fault - the two sources
+     * carry different quarters and many symbols simply do not overlap yet.
      */
     tooThin: 0,
     wrapped,
@@ -174,19 +180,27 @@ Deno.serve(async (req) => {
     );
 
     for (const { symbol, data } of results) {
-      const piotroski = piotroskiScore(data.income, data.balance, data.cashflow);
-      if (piotroski === null) {
+      // Statements joined on date. Reading data.income[0] directly would
+      // reintroduce the mismatch alignPeriods exists to prevent - the newest
+      // income row is routinely a quarter the balance sheet does not carry.
+      const periods = alignPeriods(data.income, data.balance, data.cashflow);
+      if (periods.length === 0) {
         summary.tooThin++;
         continue;
       }
 
-      // The SAME aligned periods the score used. Reading data.income[0]
-      // directly here would reintroduce the mismatch alignPeriods exists to
-      // prevent - the newest income row is routinely a quarter the balance
-      // sheet does not carry.
-      const periods = alignPeriods(data.income, data.balance, data.cashflow);
-      const latest = periods.find((period) => period.period_end === piotroski.period_end)!;
-      const prior = periods.find((period) => period.period_end === piotroski.compared_with)!;
+      // The ratios need ONE period; the score needs two a year apart. Gating
+      // the ratios behind the score threw away everything computable for the
+      // 76 symbols that have an aligned period but no year-apart pair - on the
+      // first corrected run that was 245 of 246 symbols written off over a
+      // score most of them can never have.
+      const latest = periods[0];
+      const piotroski = piotroskiScore(data.income, data.balance, data.cashflow);
+
+      // Growth for the PEG denominator comes from the RATIOS' period and its
+      // own anniversary, not from whichever pair the score happened to use -
+      // each number stays internally consistent with the period beside it.
+      const priorForGrowth = yearEarlier(periods, latest);
 
       const market = marketBySymbol.get(symbol);
       const metrics = qualityMetrics(
@@ -196,17 +210,23 @@ Deno.serve(async (req) => {
         {
           market_cap: market?.market_cap ?? null,
           pe: market?.pe ?? null,
-          profit_growth_yoy_pct: profitGrowth(latest.income, prior.income),
+          profit_growth_yoy_pct: priorForGrowth ? profitGrowth(latest.income, priorForGrowth.income) : null,
         },
       );
 
+      if (piotroski) summary.scored++;
+      else summary.metricsOnly++;
+
       rows.push({
         symbol,
-        period_end: piotroski.period_end,
+        period_end: latest.period_end,
         basis: data.basis,
-        piotroski_score: piotroski.score,
-        piotroski_testable: piotroski.testable,
-        piotroski_criteria: piotroski.criteria,
+        piotroski_score: piotroski?.score ?? null,
+        piotroski_testable: piotroski?.testable ?? null,
+        piotroski_criteria: piotroski?.criteria ?? null,
+        // The score's own periods, which are usually NOT period_end above.
+        piotroski_period_end: piotroski?.period_end ?? null,
+        piotroski_compared_with: piotroski?.compared_with ?? null,
         ...metrics,
         // Compounded over the ACTUAL span between the oldest and newest aligned
         // period. These periods are quarterly, so counting them as years turned
@@ -227,12 +247,12 @@ Deno.serve(async (req) => {
       writeErrors.push(failure);
       observation.recordFailure("stock_fundamental_scores", 1);
     } else {
-      summary.scored = rows.length;
+      summary.written = rows.length;
       observation.recordWrite("stock_fundamental_scores", rows.length);
     }
   }
 
-  const attempted = summary.scored + summary.tooThin;
+  const attempted = summary.scored + summary.metricsOnly + summary.tooThin;
   if (attempted > 0 && writeFailed === 0) {
     await supabase.from("sync_cursors").upsert(
       {
@@ -244,20 +264,20 @@ Deno.serve(async (req) => {
     );
   }
 
-  // A batch where EVERY symbol was too thin is the drift signature here: the
-  // fundamentals tables filling up but the score reading none of them, which
-  // is what a renamed column or a basis change would look like. Thin coverage
-  // on a few symbols is normal and is not this.
-  const scoredNothing = summary.scored === 0 && summary.tooThin === batch.length && batch.length > 0;
+  // A batch where EVERY symbol failed to align is the drift signature here:
+  // the fundamentals tables filling up but nothing joining, which is what a
+  // renamed column or a changed period convention would look like. Thin
+  // coverage on some symbols is normal and is not this.
+  const wroteNothing = rows.length === 0 && summary.tooThin === batch.length && batch.length > 0;
   const status = writeFailed > 0 ? 500 : 200;
 
   await observation.close({
     status: status === 200 ? "ok" : "failed",
-    detail: { ...summary, writeFailed, writeErrors, scoredNothing },
+    detail: { ...summary, writeFailed, writeErrors, wroteNothing },
     error: writeFailed > 0 ? `write failed after retries: ${writeErrors.join("; ")}` : undefined,
   });
 
-  return new Response(JSON.stringify({ ok: status === 200, ...summary, scoredNothing }), {
+  return new Response(JSON.stringify({ ok: status === 200, ...summary, wroteNothing }), {
     status,
     headers: { ...cors, "Content-Type": "application/json" },
   });

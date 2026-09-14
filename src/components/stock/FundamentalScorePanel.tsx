@@ -23,6 +23,9 @@ import { formatNumber, formatPct, type FundamentalScores } from "@/lib/stock-ana
 
 const SOURCE_LABEL = "Computed";
 
+const fmtDate = (iso: string) =>
+  new Intl.DateTimeFormat("en-IN", { dateStyle: "medium" }).format(new Date(`${iso}T00:00:00Z`));
+
 const outcome = (passed: boolean | null) =>
   passed === null
     ? { icon: Minus, className: "text-muted-foreground", label: "not testable" }
@@ -72,7 +75,17 @@ export default function FundamentalScorePanel({ scores }: { scores: FundamentalS
         {hasScore && (
           <div className="mt-5 rounded-lg border border-border p-4">
             <div className="flex flex-wrap items-baseline justify-between gap-2">
-              <h3 className="text-sm font-semibold">Piotroski F-Score</h3>
+              <div>
+                <h3 className="text-sm font-semibold">Piotroski F-Score</h3>
+                {/* The score's periods are usually NOT the ratios' period above,
+                    so they are stated rather than left to be assumed. */}
+                {scores.piotroski_period_end && (
+                  <p className="text-xs text-muted-foreground">
+                    {fmtDate(scores.piotroski_period_end)}
+                    {scores.piotroski_compared_with && ` against ${fmtDate(scores.piotroski_compared_with)}`}
+                  </p>
+                )}
+              </div>
               <p className="font-heading text-2xl font-bold tabular-nums">
                 {scores.piotroski_score}
                 <span className="text-base font-normal text-muted-foreground"> of {scores.piotroski_testable} tested</span>
@@ -98,6 +111,14 @@ export default function FundamentalScorePanel({ scores }: { scores: FundamentalS
               </ul>
             )}
           </div>
+        )}
+
+        {!hasScore && shown.length > 0 && (
+          <p className="mt-5 text-xs text-muted-foreground">
+            No F-Score: it needs two reporting periods a year apart that carry both an income statement and a
+            balance sheet, and this company's filings do not yet line up that way. The ratios below need only
+            the one period and are unaffected.
+          </p>
         )}
 
         {shown.length > 0 && (

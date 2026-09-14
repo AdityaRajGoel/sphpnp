@@ -314,3 +314,74 @@ describe("cagrOverPeriods", () => {
     expect(cagrOverPeriods(periods, (i) => i.revenue)).toBeNull();
   });
 });
+
+describe("choosing which period to score", () => {
+  /*
+   * The two sources carry different quarters. ABB's newest aligned period is
+   * 2026-06-30, whose 2025-06-30 anniversary the income table does not hold,
+   * while 2025-12-31 and 2024-12-31 are both present and a year apart. Scoring
+   * only the newest period refused every such symbol - nothing at all scored
+   * across the universe on the first corrected run.
+   */
+  const period = (period_end: string, profit: number) => ({
+    income: { period_end, revenue: 1000 + profit, total_income: 1040, total_expenses: 900, profit_after_tax: profit },
+    balance: { period_end, total_assets: 2000, total_debt: 300, total_equity: 1200, cash_and_equivalents: 250, current_assets: 800, current_liabilities: 400 },
+    cashflow: { period_end, operating_cf: 260, capex: -60 },
+  });
+
+  const dates = ["2026-06-30", "2026-03-31", "2025-12-31", "2025-09-30", "2024-12-31"];
+  const built = dates.map((d, i) => period(d, 180 - i * 10));
+
+  it("walks back to the newest period that has a year-ago counterpart", () => {
+    const result = piotroskiScore(
+      built.map((p) => p.income),
+      built.map((p) => p.balance),
+      built.map((p) => p.cashflow),
+    )!;
+
+    // 2026-06-30 has no 2025-06-30; 2025-12-31 has 2024-12-31.
+    expect(result.period_end).toBe("2025-12-31");
+    expect(result.compared_with).toBe("2024-12-31");
+  });
+
+  it("still refuses when no period has a counterpart a year back", () => {
+    const consecutive = ["2026-06-30", "2026-03-31", "2025-12-31"].map((d, i) => period(d, 180 - i * 10));
+
+    expect(
+      piotroskiScore(
+        consecutive.map((p) => p.income),
+        consecutive.map((p) => p.balance),
+        consecutive.map((p) => p.cashflow),
+      ),
+    ).toBeNull();
+  });
+});
+
+describe("a market capitalisation of zero", () => {
+  /*
+   * screener_stocks defaults market_cap to 0 rather than leaving it null, so a
+   * symbol whose cap was never fetched arrives as a real-looking zero. On the
+   * first live run that made enterprise value collapse to net debt alone, and
+   * BDL - a net-cash company - printed an EV/sales of -1.8.
+   */
+  const noCap = { market_cap: 0, pe: 0, dividend_yield_pct: 0, profit_growth_yoy_pct: 40 };
+  const netCash: BalancePeriod[] = [
+    { period_end: "2026-03-31", total_assets: 2000, total_debt: 100, total_equity: 1200, cash_and_equivalents: 900, current_assets: 800, current_liabilities: 400 },
+  ];
+
+  it("withholds enterprise value rather than reporting a negative one", () => {
+    const metrics = qualityMetrics(improvingIncome, netCash, improvingCashflow, noCap);
+
+    // Net debt is genuinely negative here - that is a real fact and is kept.
+    expect(metrics.net_debt).toBe(-800);
+    // But enterprise value without a market cap is unknowable, not negative.
+    expect(metrics.ev_to_sales).toBeNull();
+    expect(metrics.fcf_yield).toBeNull();
+  });
+
+  it("computes enterprise value normally once a cap is present", () => {
+    const metrics = qualityMetrics(improvingIncome, netCash, improvingCashflow, { ...noCap, market_cap: 4000 });
+
+    expect(metrics.ev_to_sales).toBeCloseTo((4000 - 800) / 1200, 10);
+  });
+});

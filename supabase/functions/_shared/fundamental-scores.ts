@@ -204,10 +204,23 @@ export function piotroskiScore(
   const periods = alignPeriods(income, balance, cashflow);
   if (periods.length < 2) return null;
 
-  const latest = periods[0];
-  // Year-on-year, never the previous quarter - see yearEarlier.
-  const prior = yearEarlier(periods, latest);
-  if (!prior) return null;
+  // The NEWEST period that actually has a counterpart twelve months back -
+  // not simply the newest period. The two sources carry different quarters:
+  // ABB's newest aligned period is 2026-06-30, whose 2025-06-30 anniversary
+  // the income table does not hold, while 2025-12-31 and 2024-12-31 are both
+  // present and a year apart. Taking only periods[0] refused every such symbol
+  // and scored nothing across the whole universe on the first corrected run.
+  let latest: AlignedPeriod | null = null;
+  let prior: AlignedPeriod | null = null;
+  for (const candidate of periods) {
+    const match = yearEarlier(periods, candidate);
+    if (match) {
+      latest = candidate;
+      prior = match;
+      break;
+    }
+  }
+  if (!latest || !prior) return null;
 
   const income0 = latest.income;
   const income1 = prior.income;
@@ -352,8 +365,13 @@ export function qualityMetrics(
       ? ratio(income0.profit_after_tax - cash0.operating_cf, balance0?.total_assets)
       : null;
 
-  const enterpriseValue =
-    finite(market.market_cap) && netDebt !== null ? market.market_cap + netDebt : null;
+  // market_cap must be POSITIVE, not merely present. screener_stocks defaults
+  // the column to 0, and a zero passed the finite() check - so enterprise value
+  // collapsed to net debt alone and a net-cash company printed a NEGATIVE
+  // EV/sales (BDL came out at -1.8 on the first live run). A missing market
+  // capitalisation makes enterprise value unknowable, not zero.
+  const marketCap = finite(market.market_cap) && market.market_cap > 0 ? market.market_cap : null;
+  const enterpriseValue = marketCap !== null && netDebt !== null ? marketCap + netDebt : null;
 
   // A PEG on a shrinking or flat profit is not a cheap stock, it is a
   // meaningless ratio - a negative denominator would print an attractive-looking
@@ -368,7 +386,7 @@ export function qualityMetrics(
     cash_conversion: ratio(cash0?.operating_cf, income0?.profit_after_tax),
     capex_intensity: finite(cash0?.capex) ? ratio(Math.abs(cash0.capex), income0?.revenue) : null,
     free_cash_flow: freeCashFlow,
-    fcf_yield: freeCashFlow === null ? null : ratio(freeCashFlow, market.market_cap),
+    fcf_yield: freeCashFlow === null ? null : ratio(freeCashFlow, marketCap),
     ev_to_sales: enterpriseValue === null ? null : ratio(enterpriseValue, income0?.revenue),
     peg,
     payout_ratio:
