@@ -24,8 +24,8 @@ jobs:
       - name: Website, API and certificates
         run: |
           fail=0
-          expect() { # name url expected-status
-            code=$(curl -s -o /dev/null -m 30 -w '%{http_code}' "$2" || echo 000)
+          expect() { # name url expected-status [method]
+            code=$(curl -s -o /dev/null -m 30 -X "${4:-GET}" -w '%{http_code}' "$2" || echo 000)
             if [ "$code" = "$3" ]; then echo "ok   $1 ($code)"; else echo "::error title=$1::$2 returned $code, expected $3"; fail=1; fi
           }
           expect "Home page"            https://www.sphpnp.com/                 200
@@ -36,7 +36,9 @@ jobs:
           expect "Real 404s"            https://www.sphpnp.com/health-check-missing-page 404
           expect "Bare domain redirect" https://sphpnp.com/                     301
           expect "API gateway"          https://api.sphpnp.com/rest/v1/         401
-          expect "Edge functions"       https://api.sphpnp.com/functions/v1/fetch-ipos 401
+          # Functions only accept POST. fetch-ipos is a public, cached read, so a 200 proves the
+          # edge runtime is up and reaching the database.
+          expect "Edge functions"       https://api.sphpnp.com/functions/v1/fetch-ipos 200 POST
 
           location=$(curl -s -o /dev/null -m 30 -w '%{redirect_url}' https://sphpnp.com/stocks)
           [ "$location" = "https://www.sphpnp.com/stocks" ] && echo "ok   bare domain keeps the path" || { echo "::error title=Redirect::sphpnp.com/stocks redirected to '$location'"; fail=1; }

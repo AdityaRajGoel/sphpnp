@@ -41,12 +41,25 @@ Visitors ──► nginx + Let's Encrypt (ufw: 22, 80, 443; certbot.timer renews
 rsync -az --delete --exclude node_modules --exclude dist --exclude .git --exclude '.env*' ./ sphpnp-vps:/opt/sphpnp/app/
 ssh sphpnp-vps 'cd /opt/sphpnp/app && npm ci && ANON=$(grep ^ANON_KEY= /opt/supabase/.env | cut -d= -f2-) \
   && VITE_SUPABASE_URL=https://api.sphpnp.com VITE_SUPABASE_PUBLISHABLE_KEY="$ANON" npm run build'
-# then copy dist/ to /var/www/sphpnp/releases/<stamp> and repoint /var/www/sphpnp/current
+ssh sphpnp-vps /opt/sphpnp/jobs/deploy-site.sh   # validates dist/, publishes it, keeps 5 releases
 ```
+
+`jobs/deploy-site.sh` refuses a build missing `index.html`, `404.html`, the IPO shell, the
+sitemap or robots.txt, or with fewer than 300 prerendered pages. Roll back by pointing
+`/var/www/sphpnp/current` at an older folder in `/var/www/sphpnp/releases`.
 
 `npm run build` also writes the sitemap and prerenders every page (no build time limit on
 the VPS). `nginx/sphpnp-com.conf` and `nginx/sphpnp-headers.conf` carry the redirects, clean
 URLs and security headers that used to live in `vercel.json`.
+
+## Edge function auth
+
+Self-hosted Supabase applies one `FUNCTIONS_VERIFY_JWT` setting to every function (hosted
+Supabase reads `verify_jwt` per function from `supabase/config.toml`). It stays `false`:
+`telegram-webhook` receives Telegram's calls without a JWT, and the anon key a JWT check
+would demand is public anyway. Functions that matter guard themselves: `sync-*` and
+`ingest-forecasts` with `SYNC_SECRET`, admin functions with `ADMIN_PASSWORD` and a lockout,
+`telegram-webhook` with its secret token, and `ai-stock-analysis` with its rate limiter.
 
 ## Backups
 
