@@ -17,6 +17,22 @@ services:
     # Provider API keys and SYNC_SECRET for the edge functions (chmod 600, never in git).
     env_file:
       - ./functions.env
+    # Many upstreams (Yahoo Finance, Economic Times, Livemint, CNBC, BSE) resolve to
+    # IPv6 first, and the Supabase network has no IPv6 route: Deno failed with
+    # "Network is unreachable (os error 101)" and commodity prices went missing.
+    # A second, IPv6-enabled network gives the functions an IPv6 path out (NAT),
+    # while IPv4 and every internal hostname stay on the default network.
+    networks:
+      default:
+        gw_priority: 1
+      egress6: {}
     # Do not set net.ipv6.conf.*.disable_ipv6 here: Deno resolves AAAA records itself,
     # so with IPv6 off every dual-stack host fails with "os error 99" instead of
     # falling back to IPv4.
+networks:
+  egress6:
+    enable_ipv6: true
+    ipam:
+      config:
+        - subnet: 172.31.250.0/24
+        - subnet: fd00:5e:20::/64
