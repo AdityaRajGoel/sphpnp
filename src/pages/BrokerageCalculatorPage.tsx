@@ -1,4 +1,5 @@
 import Header from "@/components/Header";
+import ImageBanner from "@/components/ImageBanner";
 import Footer from "@/components/Footer";
 import VisibleBreadcrumbs from "@/components/VisibleBreadcrumbs";
 import SEOHead from "@/components/SEOHead";
@@ -257,26 +258,14 @@ const BrokerageCalculatorPage = () => {
 
       <main className="container mx-auto px-4 py-8 md:py-12 max-w-5xl">
         {/* ─── Hero ─── */}
-        <motion.div
-          initial={{ opacity: 0, y: 24 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="mb-10 text-center"
-        >
-          <motion.div
-            className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-blue-600 shadow-lg mb-4"
-            whileHover={{ rotate: [0, -8, 8, 0], scale: 1.08 }}
-          >
-            <Calculator className="w-8 h-8 text-white" />
-          </motion.div>
-          <h1 className="text-3xl md:text-4xl font-heading font-bold text-foreground mb-2">
-            Brokerage Calculator
-          </h1>
-          <p className="text-muted-foreground max-w-xl mx-auto">
-            Estimate total trading charges including Parasram's brokerage, STT, GST & more - updated with{" "}
-            <span className="text-secondary font-semibold">April 2026 STT rates</span>.
-          </p>
-        </motion.div>
+        <ImageBanner
+          slug="steps-stack"
+          className="mb-10"
+          focus={{ mobile: "50% 55%", desktop: "50% 55%" }}
+          eyebrow={<><Calculator className="h-3.5 w-3.5" aria-hidden="true" /> Calculator</>}
+          title="Brokerage Calculator"
+          description={<>Estimate total trading charges including Parasram's brokerage, STT, GST &amp; more - updated with <span className="font-semibold text-brand-gold">April 2026 STT rates</span>.</>}
+        />
 
         {/* ─── Segment Selector (pill bar) ─── */}
         <motion.div

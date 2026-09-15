@@ -1,6 +1,7 @@
 import { Search, Phone, TrendingUp, TrendingDown, ShieldCheck, Handshake, ArrowRight, Sparkles, Star, ChevronRight, BadgeCheck, Clock, AlertTriangle, Building2, MapPin, Calendar, BarChart3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { IllustrationFrame } from "@/components/ui/illustration";
 import { motion, Variants, AnimatePresence } from "motion/react";
 import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -165,7 +166,8 @@ const UnlistedShares = () => {
           <div className="absolute inset-0 opacity-5" style={{ backgroundImage: `radial-gradient(circle at 1px 1px, rgba(255,255,255,0.3) 1px, transparent 0)`, backgroundSize: '30px 30px' }} />
           <div className="absolute top-20 right-20 w-96 h-96 bg-secondary/10 rounded-full blur-3xl" />
         </div>
-        <div className="container mx-auto px-4 relative z-10 text-center">
+        <div className="container mx-auto max-w-6xl px-4 relative z-10 grid items-center gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:gap-14">
+          <div className="text-center lg:text-left">
           <motion.div className="inline-flex items-center gap-2 bg-white/10 border border-white/20 rounded-full px-4 py-2 mb-8" initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }}>
             <Sparkles className="w-4 h-4 text-brand-gold" />
             <span className="text-primary-foreground/90 text-sm font-medium">Pre-IPO & Unlisted Shares</span>
@@ -173,15 +175,23 @@ const UnlistedShares = () => {
           <motion.h1 className="font-heading text-4xl md:text-5xl lg:text-6xl font-bold text-primary-foreground mb-6 leading-tight" initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
             Buy and Sell<br /><span className="text-brand-gold">Pre-IPO | Unlisted Shares</span>
           </motion.h1>
-          <motion.p className="text-primary-foreground/70 text-lg md:text-xl max-w-2xl mx-auto mb-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}>
+          <motion.p className="text-primary-foreground/70 text-lg md:text-xl max-w-2xl mx-auto lg:mx-0 mb-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}>
             Grab your chance to invest in India's top companies.
           </motion.p>
           <motion.p className="text-secondary font-semibold text-lg mb-10" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }}>Get started with just 1 share.</motion.p>
-          <motion.div className="flex flex-wrap justify-center gap-6 text-primary-foreground/60 text-sm" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }}>
+          <motion.div className="flex flex-wrap justify-center lg:justify-start gap-6 text-primary-foreground/60 text-sm" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }}>
             <div className="flex items-center gap-2"><BadgeCheck className="w-4 h-4 text-secondary" /> SEBI Registered</div>
             <div className="flex items-center gap-2"><Clock className="w-4 h-4 text-brand-gold" /> Instant Transfer</div>
             <div className="flex items-center gap-2"><Star className="w-4 h-4 text-brand-gold" /> 5-Star Rated</div>
           </motion.div>
+          </div>
+          <IllustrationFrame
+            slug="market-bridge"
+            priority
+            sizes="(min-width: 1280px) 560px, (min-width: 1024px) 45vw, 92vw"
+            frameClassName="mx-auto w-full max-w-xl lg:max-w-none"
+            badge={<p className="text-sm"><span className="block text-[0.6875rem] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Before the listing bell</span><span className="font-semibold">Pre-IPO &amp; unlisted shares</span></p>}
+          />
         </div>
       </section>
 

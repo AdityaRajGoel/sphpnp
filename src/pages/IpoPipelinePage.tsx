@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import PipelineOverview from "@/components/ipo/PipelineOverview";
+import ImageBanner from "@/components/ImageBanner";
 import { istToday } from "@/lib/market-data";
 import {
   FILING_LABEL,
@@ -136,15 +137,14 @@ export default function IpoPipelinePage() {
       <Header />
       <main className="container mx-auto max-w-5xl px-4 py-8 md:py-12">
         <VisibleBreadcrumbs items={breadcrumbs} />
-        <section className="mt-6">
-          <Badge variant="outline">From SEBI filings</Badge>
-          <h1 className="mt-4 font-heading text-3xl md:text-5xl font-bold">IPO pipeline</h1>
-          <p className="mt-3 max-w-3xl text-muted-foreground">
-            Companies that have filed offer documents with SEBI - usually months before an issue opens. A draft (DRHP)
-            is followed by SEBI's observations, often an updated draft, and then the red herring prospectus (RHP) days
-            before the issue opens.
-          </p>
-        </section>
+        <ImageBanner
+          slug="steps-glow"
+          className="mt-6"
+          focus={{ mobile: "50% 55%", desktop: "50% 55%" }}
+          eyebrow="From SEBI filings"
+          title="IPO pipeline"
+          description="Companies that have filed offer documents with SEBI - usually months before an issue opens. A draft (DRHP) is followed by SEBI's observations, often an updated draft, and then the red herring prospectus (RHP) days before the issue opens."
+        />
         <div className="mt-6 rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm">
           <strong>Note:</strong> Filing a draft does not mean an IPO will happen - SEBI may return it, and companies
           withdraw or let drafts lapse. Dates and prices are set only in the RHP. Information only; not investment advice.

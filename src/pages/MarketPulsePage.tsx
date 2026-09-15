@@ -12,6 +12,7 @@ import FlowsSection from "@/components/markets/FlowsSection";
 import ActivitySection from "@/components/markets/ActivitySection";
 import BreadthSection from "@/components/markets/BreadthSection";
 import StockTicker from "@/components/StockTicker";
+import ImageBanner from "@/components/ImageBanner";
 import MacroRegimeSection from "@/components/markets/MacroRegimeSection";
 import WorldMarketsSection from "@/components/markets/WorldMarketsSection";
 import FiiDiiCashCard from "@/components/markets/FiiDiiCashCard";
@@ -46,13 +47,14 @@ export default function MarketPulsePage() {
       <StockTicker />
       <main className="container mx-auto max-w-7xl px-4 py-8 md:py-10">
         <VisibleBreadcrumbs items={breadcrumbs} />
-        <header className="mt-4 mb-6">
-          <h1 className="text-3xl md:text-5xl font-heading font-bold tracking-tight">Market Pulse</h1>
-          <p className="mt-2 max-w-3xl text-muted-foreground">
-            The whole market on one page: how expensive the indices are against their own history, how institutions are positioned in
-            F&amp;O, where foreign money is flowing, and what traded today. Collected daily from NSE, BSE, NSDL and MoSPI.
-          </p>
-        </header>
+        <ImageBanner
+          slug="orbit-lines"
+          className="mt-4 mb-6"
+          focus={{ mobile: "30% 50%", desktop: "20% 50%" }}
+          eyebrow="The whole market, one page"
+          title="Market Pulse"
+          description="How expensive the indices are against their own history, how institutions are positioned in F&O, where foreign money is flowing, and what traded today. Collected daily from NSE, BSE, NSDL and MoSPI."
+        />
         <nav aria-label="Sections" className="sticky top-16 z-20 -mx-4 mb-8 overflow-x-auto border-y bg-background/90 px-4 py-2 backdrop-blur">
           <ul className="flex gap-1 whitespace-nowrap">
             {SECTIONS.map((s) => (

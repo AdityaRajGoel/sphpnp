@@ -4,6 +4,7 @@ import { motion } from "motion/react";
 import { useQuery } from "@tanstack/react-query";
 import { CalendarDays, Clock, AlertCircle, PartyPopper, Timer, Landmark, CalendarClock } from "lucide-react";
 import Header from "@/components/Header";
+import ImageBanner from "@/components/ImageBanner";
 import Footer from "@/components/Footer";
 import SEOHead from "@/components/SEOHead";
 import VisibleBreadcrumbs from "@/components/VisibleBreadcrumbs";
@@ -93,13 +94,14 @@ const HolidayCalendarPage = () => {
       <StockTicker />
       <VisibleBreadcrumbs items={[{ name: "Home", url: "/" }, { name: "Market Calendar" }]} />
       <main className="container mx-auto px-4 py-8">
-        <motion.header initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
-          <div className="flex items-center gap-3 mb-2">
-            <CalendarDays className="w-8 h-8 text-secondary" aria-hidden="true" />
-            <h1 className="text-3xl md:text-4xl font-heading font-bold text-foreground">Market Calendar {HOLIDAY_YEAR}</h1>
-          </div>
-          <p className="text-muted-foreground max-w-3xl">Trading holidays, every F&amp;O expiry with its holiday shift, session timings and the next three weeks of company results and board meetings, in one place.</p>
-        </motion.header>
+        <ImageBanner
+          slug="orbit-arc"
+          className="mb-8"
+          focus={{ mobile: "50% 40%", desktop: "50% 45%" }}
+          eyebrow={<><CalendarDays className="h-3.5 w-3.5" aria-hidden="true" /> Market calendar</>}
+          title={`Market Calendar ${HOLIDAY_YEAR}`}
+          description="Trading holidays, every F&O expiry with its holiday shift, session timings and the next three weeks of company results and board meetings, in one place."
+        />
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-8">
           <StatCard icon={daysUntilNext === 0 ? PartyPopper : Clock} label="Next holiday" value={daysUntilNext === null ? "—" : daysUntilNext === 0 ? "Today" : `${daysUntilNext} days`} note={nextHoliday ? `${nextHoliday.name}, ${dayMonth(nextHoliday.date)}` : "None left this year"} />

@@ -9,11 +9,14 @@ import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import WhatsAppButton from "@/components/WhatsAppButton";
 import ScrollProgress from "@/components/ScrollProgress";
+import SplitHero from "@/components/SplitHero";
+import { Illustration } from "@/components/ui/illustration";
 
 import { revealSection } from "@/lib/motion";
 const products = [
   {
     icon: Building2,
+    art: "art-pie" as const,
     title: "Fixed Deposits (FD)",
     desc: "Secure your capital and assure fixed returns with our high-yielding FDs distributed through top-rated NBFCs and Corporates.",
     benefits: [
@@ -25,6 +28,7 @@ const products = [
   },
   {
     icon: Briefcase,
+    art: "art-candles" as const,
     title: "Corporate Bonds",
     desc: "Enhance your portfolio yield by investing in high-grade corporate and government bonds with regular interest payouts.",
     benefits: [
@@ -36,6 +40,7 @@ const products = [
   },
   {
     icon: ShieldCheck,
+    art: "art-shield" as const,
     title: "Insurance Services",
     desc: "Life and general insurance solutions to protect your family and assets.",
     benefits: [
@@ -84,26 +89,13 @@ const ProductsPage = () => {
         <VisibleBreadcrumbs items={[{ name: "Home", url: "/" }, { name: "Products" }]} />
         
         {/* Hero Section */}
-        <section className="pt-16 pb-8 md:pt-24 md:pb-16 relative overflow-hidden bg-hero text-primary-foreground">
-          <div className="container mx-auto px-4 z-10 relative text-center">
-            <motion.h1 
-              className="text-4xl md:text-5xl lg:text-6xl font-heading font-bold mb-6"
-              initial={{ opacity: 0, y: 24 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
-            >
-              Diversified <span className="text-secondary">Wealth Products</span>
-            </motion.h1>
-            <motion.p 
-              className="text-lg md:text-xl text-primary-foreground/80 max-w-2xl mx-auto mb-8"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.2, duration: 0.6 }}
-            >
-              Beyond the stock market: fixed income and protection solutions to round out your portfolio.
-            </motion.p>
-          </div>
-        </section>
+        <SplitHero
+          eyebrow="FDs · Bonds · Insurance"
+          title={<>Diversified <span className="text-secondary">Wealth Products</span></>}
+          subtitle="Beyond the stock market: fixed income and protection solutions to round out your portfolio."
+          illustration="insurance-family"
+          badge={<p className="text-sm"><span className="block text-[0.6875rem] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Cover planned with you</span><span className="font-semibold">Health · Home · Vehicle · Life</span></p>}
+        />
 
         {/* Content Section */}
         <section className="py-10 md:py-20 relative">
@@ -117,10 +109,17 @@ const ProductsPage = () => {
                   transition={{ delay: idx * 0.1, duration: 0.5 }}
                 >
                   <div className="flex flex-col md:flex-row gap-8 items-start">
-                    <div className="flex-shrink-0">
-                      <div className="w-16 h-16 rounded-2xl bg-secondary/10 flex items-center justify-center group-hover:bg-brand-gold/20 transition-colors">
-                        <product.icon className="w-8 h-8 text-secondary group-hover:text-brand-gold transition-colors" />
-                      </div>
+                    {/* Card art: a full-width band on a phone, a square plate beside the copy on desktop. */}
+                    <div className="relative w-full flex-shrink-0 overflow-hidden rounded-2xl bg-[#f4f2ec] ring-1 ring-border md:w-56 lg:w-64">
+                      <Illustration
+                        slug={product.art}
+                        alt=""
+                        sizes="(min-width: 1024px) 256px, (min-width: 768px) 224px, 100vw"
+                        className="h-44 w-full object-contain p-4 transition-transform duration-slow ease-out group-hover:scale-105 md:aspect-square md:h-auto"
+                      />
+                      <span className="absolute left-3 top-3 grid h-9 w-9 place-items-center rounded-xl bg-white/90 shadow-sm ring-1 ring-border">
+                        <product.icon className="h-4.5 w-4.5 text-secondary" aria-hidden="true" />
+                      </span>
                     </div>
                     <div className="flex-1">
                       <h3 className="text-2xl font-bold font-heading text-foreground mb-3">{product.title}</h3>

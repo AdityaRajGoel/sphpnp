@@ -13,6 +13,7 @@ import PageTransition from "@/components/PageTransition";
 
 // Lazy load below-fold heavy components
 const InvestmentProducts = lazy(() => import("@/components/InvestmentProducts"));
+const HomeStories = lazy(() => import("@/components/HomeStories"));
 const LiveChart = lazy(() => import("@/components/LiveChart"));
 const MarketDashboard = lazy(() => import("@/components/MarketDashboard"));
 const HomeMarketGlance = lazy(() => import("@/components/markets/HomeMarketGlance"));
@@ -52,6 +53,9 @@ const Index = () => {
       <Hero />
       <Suspense fallback={<SectionSkeleton height="h-96" />}>
         <InvestmentProducts />
+      </Suspense>
+      <Suspense fallback={<SectionSkeleton height="h-96" />}>
+        <HomeStories />
       </Suspense>
       <Suspense fallback={<SectionSkeleton height="h-96" />}>
         <LiveChart />

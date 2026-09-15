@@ -34,6 +34,10 @@ export default defineConfig(({ mode }) => ({
         // live feed replaced them. Hashed JS/CSS/images stay precached (they
         // cannot go stale); pages always come from the network first.
         globPatterns: ['**/*.{js,css,ico,png,svg,jpg,jpeg,webp}'],
+        // The precache is downloaded in full on a first visit. The certificate
+        // scans (6.5 MB of PNG), the illustrations (served AVIF-first and cached
+        // by the browser anyway) and the share images are never needed offline.
+        globIgnores: ['**/cert*.png', 'illustrations/**', 'og-*.jpg'],
         maximumFileSizeToCacheInBytes: 5000000, // 5MB limit
         navigateFallback: null,
         cleanupOutdatedCaches: true,

@@ -24,6 +24,7 @@ import { RippleButton } from "@/components/ui/ripple-button";
 import { revealItem, revealItemX } from "@/lib/motion";
 import { validateAll, validateEmail, validateName, validatePhone, type FieldCheck } from "@/lib/form-validation";
 import { FieldMessage, fieldStateClass } from "@/components/ui/form-field";
+import { IllustrationFrame } from "@/components/ui/illustration";
 
 const LEAD_CHECKS: Partial<Record<"name" | "phone" | "email" | "city" | "message", FieldCheck>> = {
   name: validateName,
@@ -241,16 +242,25 @@ const OpenAccountPage = () => {
           <div className="absolute top-10 right-10 w-96 h-96 bg-secondary/20 rounded-full blur-3xl" />
           <div className="absolute bottom-10 left-10 w-80 h-80 bg-brand-gold/15 rounded-full blur-3xl" />
         </div>
-        <div className="container mx-auto px-4 relative z-10 text-center">
-          <motion.span className="inline-flex items-center gap-1.5 bg-white/10 border border-white/20 text-white text-xs font-bold uppercase tracking-wider px-3 py-1.5 rounded-full mb-4" initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }}>
-            <TrendingUp className="w-3.5 h-3.5 text-secondary" /> Free Demat Account
-          </motion.span>
-          <motion.h1 className="font-heading text-4xl md:text-5xl lg:text-6xl font-bold text-primary-foreground mb-4" initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-            {t("openAccount.title1")} <span className="text-brand-gold">{t("openAccount.title2")}</span>
-          </motion.h1>
-          <motion.p className="text-lg text-primary-foreground/80 max-w-xl mx-auto" initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-            {t("openAccount.subtitle")}
-          </motion.p>
+        <div className="container mx-auto max-w-6xl px-4 relative z-10 grid items-center gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:gap-14">
+          <div className="text-center lg:text-left">
+            <motion.span className="inline-flex items-center gap-1.5 bg-white/10 border border-white/20 text-white text-xs font-bold uppercase tracking-wider px-3 py-1.5 rounded-full mb-4" initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }}>
+              <TrendingUp className="w-3.5 h-3.5 text-secondary" /> Free Demat Account
+            </motion.span>
+            <motion.h1 className="font-heading text-4xl md:text-5xl lg:text-6xl font-bold text-primary-foreground mb-4 [text-wrap:balance]" initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+              {t("openAccount.title1")} <span className="text-brand-gold">{t("openAccount.title2")}</span>
+            </motion.h1>
+            <motion.p className="text-lg text-primary-foreground/80 max-w-xl mx-auto lg:mx-0" initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+              {t("openAccount.subtitle")}
+            </motion.p>
+          </div>
+          <IllustrationFrame
+            slug="advisor-consultation"
+            priority
+            sizes="(min-width: 1280px) 560px, (min-width: 1024px) 45vw, 92vw"
+            frameClassName="mx-auto w-full max-w-xl lg:max-w-none"
+            badge={<p className="text-sm"><span className="block text-[0.6875rem] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Guided by our Panipat team</span><span className="font-semibold">₹0 account opening</span></p>}
+          />
         </div>
       </section>
 

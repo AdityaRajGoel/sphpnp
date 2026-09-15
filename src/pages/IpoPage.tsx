@@ -16,6 +16,7 @@ import IPOCompareBar from "@/components/ipo/IPOCompareBar";
 import IPOCompareDialog from "@/components/ipo/IPOCompareDialog";
 import IpoMarketStats from "@/components/ipo/IpoMarketStats";
 import StockTicker from "@/components/StockTicker";
+import SplitHero from "@/components/SplitHero";
 import { istToday } from "@/lib/market-data";
 import { formatGmp, formatGmpPercent, formatMinInvestment, formatSubscription, getIpos, gmpPercent, type Ipo } from "@/lib/ipo";
 import {
@@ -92,12 +93,18 @@ export default function IpoPage() {
     <Header />
     <StockTicker />
     <main>
-      <section className="bg-hero text-primary-foreground py-16 md:py-24"><div className="container mx-auto px-4 max-w-6xl">
-        <Badge className="bg-brand-gold/20 text-brand-gold border-brand-gold/30 mb-5"><Rocket className="w-3.5 h-3.5 mr-1.5" />IPO Central</Badge>
-        <h1 className="font-heading text-4xl md:text-6xl font-bold max-w-3xl leading-tight">IPO decisions, grounded in the details.</h1>
-        <p className="mt-5 max-w-2xl text-primary-foreground/70 text-base md:text-lg">Issue dates, price bands and a transparent record of observed GMP—not a recommendation to apply, buy or sell.</p>
-        <Link to="/ipo-pipeline" className="mt-6 inline-flex items-center gap-2 rounded-lg border border-primary-foreground/30 px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-foreground/10 transition-colors">See the IPO pipeline: companies that have filed with SEBI <ArrowRight className="h-4 w-4" /></Link>
-      </div></section>
+      <SplitHero
+        eyebrow={<><Rocket className="h-3.5 w-3.5 text-brand-gold" aria-hidden="true" /> IPO Central</>}
+        title="IPO decisions, grounded in the details."
+        subtitle="Issue dates, price bands and a transparent record of observed GMP—not a recommendation to apply, buy or sell."
+        illustration="ipo-guidance"
+        badge={<p className="text-sm"><span className="block text-[0.6875rem] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Apply in minutes</span><span className="font-semibold">UPI mandate · ASBA</span></p>}
+      >
+        <Link to="/ipo-pipeline" className="group inline-flex items-center gap-3 rounded-full border border-primary-foreground/30 py-1.5 pl-4 pr-1.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-foreground/10 pressable">
+          See the IPO pipeline
+          <span className="grid h-8 w-8 place-items-center rounded-full bg-primary-foreground/10 transition-transform duration-base group-hover:translate-x-0.5 group-hover:-translate-y-px"><ArrowRight className="h-4 w-4" aria-hidden="true" /></span>
+        </Link>
+      </SplitHero>
       <section className="container mx-auto px-4 max-w-6xl py-10 md:py-14 pb-28">
         <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-foreground"><strong>Important:</strong> Grey market premium (GMP) is unofficial, unregulated and can change quickly. It is shown for information only and is not investment advice or a prediction of listing performance.</div>
 

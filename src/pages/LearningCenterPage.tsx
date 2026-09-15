@@ -4,6 +4,7 @@ import { useT } from "@/i18n/LanguageContext";
 import VisibleBreadcrumbs from "@/components/VisibleBreadcrumbs";
 import SEOHead from "@/components/SEOHead";
 import PageTransition from "@/components/PageTransition";
+import ImageBanner from "@/components/ImageBanner";
 import WhatsAppButton from "@/components/WhatsAppButton";
 import ScrollProgress from "@/components/ScrollProgress";
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
@@ -497,13 +498,14 @@ const LearningCenterPage = () => {
       <Header />
       <VisibleBreadcrumbs items={[{ name: "Home", url: "/" }, { name: "Learning Center" }]} />
       <main className="container mx-auto px-4 py-8">
-        <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
-          <div className="flex items-center gap-3 mb-2">
-            <BookOpen className="w-8 h-8 text-primary" />
-            <h1 className="text-3xl md:text-4xl font-heading font-bold text-foreground">{t("page.learn")}</h1>
-          </div>
-          <p className="text-muted-foreground">Educational resources, live market news & business TV</p>
-        </motion.div>
+        <ImageBanner
+          slug="lens-glow"
+          className="mb-8"
+          focus={{ mobile: "58% 55%", desktop: "55% 52%" }}
+          eyebrow={<><BookOpen className="h-3.5 w-3.5" aria-hidden="true" /> Learning Center</>}
+          title={t("page.learn")}
+          description="Guides that explain the market in plain language, live business news and market TV - in one place."
+        />
 
         {/* Section tabs */}
         <div className="flex gap-2 mb-8 overflow-x-auto scrollbar-hide pb-1">

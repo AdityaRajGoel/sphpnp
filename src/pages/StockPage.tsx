@@ -50,6 +50,7 @@ import PeerComparison from "@/components/stock/PeerComparison";
 import EfficiencyDays from "@/components/stock/EfficiencyDays";
 import LegalWatch from "@/components/stock/LegalWatch";
 import WatchlistButton from "@/components/WatchlistButton";
+import { isPrerender } from "@/lib/prerender";
 
 // Same split the screener, comparison and search surfaces make: the modal drags
 // in recharts and react-markdown, which is more JS than this whole page ships.
@@ -65,6 +66,8 @@ export default function StockPage() {
   const st = useStockStatements(symbol);
   const disclosures = useStockDisclosures(symbol);
   const analytics = useStockAnalytics(symbol);
+  // Query-heavy interactive panels render for visitors, not into static HTML (see lib/prerender).
+  const interactive = !isPrerender();
   const [askingAI, setAskingAI] = useState(false);
 
   // `synced` and `basis` are set together by selectBasis() inside the hook
@@ -232,7 +235,7 @@ export default function StockPage() {
                 </p>
               ) : null}
               {s.header && <QuoteMetrics header={s.header} />}
-              {s.header && <div className="mt-4"><StockSignals symbol={s.header.symbol} price={s.header.price} /></div>}
+              {s.header && interactive && <div className="mt-4"><StockSignals symbol={s.header.symbol} price={s.header.price} /></div>}
             </motion.header>
 
             {/* The chart is deliberately OUTSIDE the financials gate below: it
@@ -240,22 +243,22 @@ export default function StockPage() {
                 cursor has not reached yet still has a price history worth
                 showing. Gating it would have hidden the chart on exactly the
                 stocks whose page is otherwise emptiest. */}
-            {s.header && (
+            {s.header && interactive && (
               <StockPriceChart symbol={s.header.symbol} name={s.header.name} />
             )}
 
-            {s.header && <StockResearchProfile symbol={s.header.symbol} />}
-            {s.header && <StockChecklist symbol={s.header.symbol} />}
-            {s.header && <PeerComparison symbol={s.header.symbol} />}
+            {s.header && interactive && <StockResearchProfile symbol={s.header.symbol} />}
+            {s.header && interactive && <StockChecklist symbol={s.header.symbol} />}
+            {s.header && interactive && <PeerComparison symbol={s.header.symbol} />}
 
-            {s.header && (
+            {s.header && interactive && (
               <Suspense fallback={null}>
                 <ExchangeHistory symbol={s.header.symbol} />
                 <StockFnO symbol={s.header.symbol} />
               </Suspense>
             )}
 
-            {s.header && <StockNews symbol={s.header.symbol} name={s.header.name} />}
+            {s.header && interactive && <StockNews symbol={s.header.symbol} name={s.header.name} />}
 
             {/* Tracked but unreached by the sync cursor. Ordinary, not broken -
                 the backfill covers ~2 symbols an hour. */}
@@ -327,9 +330,9 @@ export default function StockPage() {
 
             <CorporateActionsList actions={s.actions} />
             {disclosures && <InsiderTrades trades={disclosures.trades} />}
-            {s.header && <StockDeals symbol={s.header.symbol} />}
+            {s.header && interactive && <StockDeals symbol={s.header.symbol} />}
             {disclosures && <BseAnnouncements items={disclosures.announcements} bseCode={st.profile?.bse_code ?? null} />}
-            {s.header && <LegalWatch symbol={s.header.symbol} />}
+            {s.header && interactive && <LegalWatch symbol={s.header.symbol} />}
             {s.header && <SebiActionsList symbol={s.header.symbol} />}
             {st.profile?.screener && <CompanyDocuments documents={st.profile.screener.documents} />}
             <StockProvenance filing={s.filing} />

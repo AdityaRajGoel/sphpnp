@@ -5,6 +5,7 @@ import { TrendingUp, Home, ArrowLeft, Search, HelpCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import SEOHead from "@/components/SEOHead";
 import PageTransition from "@/components/PageTransition";
+import { Illustration } from "@/components/ui/illustration";
 import { EASE_OUT } from "@/lib/motion";
 
 const glitchVariants = {
@@ -49,6 +50,10 @@ const NotFound = () => {
         backgroundImage: "linear-gradient(hsl(var(--foreground)) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--foreground)) 1px, transparent 1px)",
         backgroundSize: "40px 40px",
       }} />
+      {/* A lone figure at the edge of an unfinished path - the page's mood, kept to the side. */}
+      <div className="pointer-events-none absolute inset-y-0 right-0 hidden w-[42%] lg:block [mask-image:linear-gradient(to_right,transparent,black_35%)]" aria-hidden="true">
+        <Illustration slug="figure-light" alt="" sizes="42vw" className="h-full w-full object-cover opacity-90" />
+      </div>
 
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}

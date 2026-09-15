@@ -6,6 +6,8 @@ import {
   Gem, Landmark, Vault, ArrowRight, BadgeCheck,
 } from "lucide-react";
 import { EASE_IN_OUT, EASE_OUT, revealSection } from "@/lib/motion";
+import { Illustration } from "@/components/ui/illustration";
+import type { IllustrationSlug } from "@/data/illustrations.generated";
 
 // Segmented product menu - the pattern both Motilal Oswal & Angel One lead
 // with. Each card links to an existing route and maps to the parent
@@ -14,15 +16,15 @@ import { EASE_IN_OUT, EASE_OUT, revealSection } from "@/lib/motion";
 // Bento layout: "featured" spans 2x2 on desktop (full-width on mobile),
 // "wide" spans 2 columns. Order matters for grid auto-placement.
 type ProductLayout = "featured" | "wide" | undefined;
-const products: { icon: typeof LineChart; title: string; desc: string; to: string; tag: string; layout?: ProductLayout }[] = [
+const products: { icon: typeof LineChart; title: string; desc: string; to: string; tag: string; layout?: ProductLayout; art?: IllustrationSlug }[] = [
   { icon: LineChart, title: "Stocks & Equity", desc: "Invest in NSE & BSE listed companies with a free Demat account, backed by daily research from SEBI-registered analysts.", to: "/screener", tag: "Live Screener", layout: "featured" },
-  { icon: Activity, title: "Futures & Options", desc: "Trade NIFTY, BANKNIFTY & stock F&O with live option-chain tools.", to: "/fno", tag: "PCR & Max Pain" },
-  { icon: PiggyBank, title: "Mutual Funds & SIP", desc: "Start a SIP from ₹500/month across direct & regular funds.", to: "/services", tag: "From ₹500" },
-  { icon: Rocket, title: "IPO Investments", desc: "Apply for upcoming IPOs online via UPI/ASBA in a few taps.", to: "/services", tag: "UPI / ASBA" },
+  { icon: Activity, title: "Futures & Options", desc: "Trade NIFTY, BANKNIFTY & stock F&O with live option-chain tools.", to: "/fno", tag: "PCR & Max Pain", art: "art-candles" },
+  { icon: PiggyBank, title: "Mutual Funds & SIP", desc: "Start a SIP from ₹500/month across direct & regular funds.", to: "/sip-calculator", tag: "From ₹500", art: "art-pie" },
+  { icon: Rocket, title: "IPO Investments", desc: "Apply for upcoming IPOs online via UPI/ASBA in a few taps.", to: "/ipo", tag: "UPI / ASBA", art: "steps-gold" },
   { icon: Gem, title: "Commodities (MCX)", desc: "Trade gold, silver, crude oil & agri commodities on MCX & NCDEX.", to: "/services", tag: "MCX · NCDEX" },
   { icon: Sparkles, title: "Unlisted & Pre-IPO", desc: "Buy verified pre-IPO and unlisted shares before they list on the exchange.", to: "/unlisted-space", tag: "Exclusive", layout: "wide" },
-  { icon: Landmark, title: "Bonds, FD & Insurance", desc: "Diversify beyond equity with FDs, corporate bonds & insurance.", to: "/products", tag: "Safer Yields" },
-  { icon: Vault, title: "Demat & Depository", desc: "Secure CDSL/NSDL depository services, pledging & transfers.", to: "/depository-services", tag: "CDSL · NSDL" },
+  { icon: Landmark, title: "Bonds, FD & Insurance", desc: "Diversify beyond equity with FDs, corporate bonds & insurance.", to: "/products", tag: "Safer Yields", art: "art-shield" },
+  { icon: Vault, title: "Demat & Depository", desc: "Secure CDSL/NSDL depository services, pledging & transfers.", to: "/depository-services", tag: "CDSL · NSDL", art: "art-vault" },
 ];
 
 // Decorative market sparkline for the featured card - draws itself on scroll-in.
@@ -137,6 +139,16 @@ const InvestmentProducts = () => {
                   <div className="absolute inset-0 bg-gradient-to-br from-secondary/5 to-brand-gold/5 opacity-0 group-hover:opacity-100 transition-opacity duration-slow" />
 
                   <div className="relative z-10 flex flex-col h-full">
+                    {p.art && (
+                      <div className="-mx-4 -mt-4 mb-3 overflow-hidden border-b border-border/50 bg-[#f4f2ec] md:-mx-5 md:-mt-5" aria-hidden="true">
+                        <Illustration
+                          slug={p.art}
+                          alt=""
+                          sizes="(min-width: 1024px) 280px, 50vw"
+                          className="h-24 w-full object-cover transition-transform duration-slow ease-out group-hover:scale-110 sm:h-28 md:h-32"
+                        />
+                      </div>
+                    )}
                     <div className="flex items-start justify-between mb-3">
                       <div className={`bg-secondary/10 rounded-xl flex items-center justify-center group-hover:bg-secondary/20 group-hover:scale-110 transition-[color,background-color,border-color,transform] ease-out duration-base ${isFeatured ? "w-14 h-14" : "w-11 h-11"}`}>
                         <Icon className={`text-secondary ${isFeatured ? "w-7 h-7" : "w-5 h-5"}`} />
@@ -153,6 +165,13 @@ const InvestmentProducts = () => {
                       {p.desc}
                     </p>
 
+                    {isFeatured && (
+                      <Illustration
+                        slug="analyst-charts"
+                        sizes="(min-width: 1024px) 520px, 0px"
+                        className="mt-4 hidden h-44 w-full object-contain object-left mix-blend-multiply transition-transform duration-slow ease-out group-hover:scale-[1.02] dark:mix-blend-normal dark:opacity-80 md:block lg:h-56"
+                      />
+                    )}
                     {isFeatured && <FeaturedSparkline />}
 
                     <span className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-secondary opacity-0 group-hover:opacity-100 -translate-x-1 group-hover:translate-x-0 transition-[opacity,transform] ease-out duration-base">

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { isTradingDay } from "@/lib/market-holidays";
+import { isPrerender } from "@/lib/prerender";
 
 export type ScreenerStock = {
   symbol: string;
@@ -106,6 +107,9 @@ export function useScreenerStocks() {
           setLoading(false); // Show the table now - the snapshot is current enough to be true.
         }
       }
+
+      // The static capture keeps the stored snapshot only; the live refresh is for visitors.
+      if (isPrerender()) return;
 
       // ─── Phase 2: Refresh prices via edge function (Yahoo Finance) ───────────
       // Runs in background - edge function checks if cache is fresh (<5 min)

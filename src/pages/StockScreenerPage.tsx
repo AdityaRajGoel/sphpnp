@@ -25,6 +25,9 @@ import MetricTable from "@/components/screener/MetricTable";
 import ScannerLibrary from "@/components/screener/ScannerLibrary";
 import CustomFilterBuilder from "@/components/screener/CustomFilterBuilder";
 import WatchlistButton from "@/components/WatchlistButton";
+import ImageBanner, { BannerStat } from "@/components/ImageBanner";
+
+const BANNER_BUTTON = "h-9 border-white/20 bg-white/10 text-white hover:bg-white/20 hover:text-white";
 import { useRiskSummaries } from "@/hooks/useRiskSummaries";
 import { useScoreSummaries } from "@/hooks/useScoreSummaries";
 import { buildMetricRows, parseRules, passesRules, serializeRules, METRIC_BY_ID, type Metric, type Rule } from "@/lib/screener-metrics";
@@ -417,32 +420,31 @@ const StockScreenerPage = () => {
       <StockTicker />
       <VisibleBreadcrumbs items={[{ name: "Home", url: "/" }, { name: "Stock Screener" }]} />
       <main className="container mx-auto px-4 py-8">
-        <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} className="mb-8 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
-          <div>
-            <h1 className="text-3xl md:text-4xl font-heading font-bold text-foreground mb-2">{t("page.screener")}</h1>
-            <p className="text-muted-foreground">Live prices for {stocks.length}+ NSE stocks • Filter by sector, market cap, P/E & more</p>
-          </div>
-          <div className="flex items-center gap-3 flex-wrap">
-            {updatedAt && (
-              <span className="text-xs text-muted-foreground">
-                Updated {new Date(updatedAt).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}
-              </span>
-            )}
-            {activeFilterCount > 0 && (
-              <Button variant="ghost" size="sm" onClick={clearAllFilters} className="h-8 text-muted-foreground hover:text-foreground">
-                <X className="w-3.5 h-3.5 mr-1" /> Clear filters ({activeFilterCount})
-              </Button>
-            )}
-            <Button variant="outline" size="sm" onClick={() => exportCsv(filtered, summaries)} disabled={filtered.length === 0}>
-              <Download className="w-4 h-4" />
-              <span className="ml-1.5">CSV</span>
+        <ImageBanner
+          slug="lens-bars"
+          className="mb-8"
+          focus={{ mobile: "50% 58%", desktop: "50% 52%" }}
+          eyebrow="Research terminal"
+          title={t("page.screener")}
+          description={<>Live prices for {stocks.length}+ NSE stocks. Scan, filter and type your own queries across more than sixty metrics.</>}
+        >
+          <BannerStat label="Stocks" value={stocks.length || "—"} />
+          <BannerStat label="Matching" value={filtered.length} />
+          {updatedAt && <BannerStat label="Updated" value={new Date(updatedAt).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })} />}
+          {activeFilterCount > 0 && (
+            <Button variant="ghost" size="sm" onClick={clearAllFilters} className={BANNER_BUTTON}>
+              <X className="w-3.5 h-3.5 mr-1" /> Clear filters ({activeFilterCount})
             </Button>
-            <Button variant="outline" size="sm" onClick={handleRefresh} disabled={refreshing}>
-              {refreshing ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
-              <span className="ml-1.5">Refresh</span>
-            </Button>
-          </div>
-        </motion.div>
+          )}
+          <Button variant="outline" size="sm" onClick={() => exportCsv(filtered, summaries)} disabled={filtered.length === 0} className={BANNER_BUTTON}>
+            <Download className="w-4 h-4" />
+            <span className="ml-1.5">CSV</span>
+          </Button>
+          <Button variant="outline" size="sm" onClick={handleRefresh} disabled={refreshing} className={BANNER_BUTTON}>
+            {refreshing ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+            <span className="ml-1.5">Refresh</span>
+          </Button>
+        </ImageBanner>
 
         {/* Exchange-style market snapshot */}
         <MarketSnapshot />

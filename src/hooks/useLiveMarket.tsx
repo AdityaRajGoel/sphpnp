@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState, useCallback, useRef, ReactNode } from "react";
+import { isPrerender } from "@/lib/prerender";
 import { supabase } from "@/integrations/supabase/client";
 
 export type LiveIndex = {
@@ -126,6 +127,12 @@ export const LiveMarketProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   const fetchData = useCallback(async () => {
+    // A static capture must never hold a live quote: it would be served as
+    // "current" long after it went stale, and ~400 captures hammer the function.
+    if (isPrerender()) {
+      setLoading(false);
+      return;
+    }
     try {
       const { data, error } = await supabase.functions.invoke('fetch-stock-prices');
       if (!error && data?.success) {

@@ -2,6 +2,8 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import VisibleBreadcrumbs from "@/components/VisibleBreadcrumbs";
 import Services from "@/components/Services";
+import FeatureStory from "@/components/FeatureStory";
+import { SERVICE_STORIES } from "@/data/feature-stories";
 import InvestmentTools from "@/components/InvestmentTools";
 import SIPCalculator from "@/components/SIPCalculator";
 import MobileApp from "@/components/MobileApp";
@@ -138,6 +140,13 @@ const ServicesPage = () => {
       <Header />
       <VisibleBreadcrumbs items={[{ name: "Home", url: "/" }, { name: "Services" }]} />
       <Services />
+      <FeatureStory
+        id="how-we-help"
+        eyebrow="Every service, explained"
+        heading="What you can do with Parasram"
+        intro="One branch, one relationship, every part of your investing life - here is how each service works."
+        items={SERVICE_STORIES}
+      />
       <InvestmentTools />
       <SIPCalculator />
       <ClientMarquee />

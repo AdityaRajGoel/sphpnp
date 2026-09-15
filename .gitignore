@@ -87,3 +87,6 @@ docs/data-sources.md
 
 # Google Search Console exports, kept local
 sphpnp.com-Performance/
+
+# Illustration sources (~70 MB). Compressed outputs live in public/illustrations via scripts/optimize-images.mjs
+new asset/

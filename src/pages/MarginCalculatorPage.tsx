@@ -1,4 +1,5 @@
 import Header from "@/components/Header";
+import ImageBanner from "@/components/ImageBanner";
 import Footer from "@/components/Footer";
 import SEOHead from "@/components/SEOHead";
 import VisibleBreadcrumbs from "@/components/VisibleBreadcrumbs";
@@ -158,13 +159,14 @@ const MarginCalculatorPage = () => {
       <Header />
       <VisibleBreadcrumbs items={[{ name: "Home", url: "/" }, { name: "Margin Calculator" }]} />
       <main className="container mx-auto px-4 py-8 max-w-4xl">
-        <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
-          <div className="flex items-center gap-3 mb-2">
-            <Calculator className="w-8 h-8 text-primary" />
-            <h1 className="text-3xl md:text-4xl font-heading font-bold text-foreground">Margin Calculator</h1>
-          </div>
-          <p className="text-muted-foreground">Calculate required margin and leverage for F&O and equity trades</p>
-        </motion.div>
+        <ImageBanner
+          slug="steps-light"
+          className="mb-8"
+          focus={{ mobile: "50% 50%", desktop: "50% 50%" }}
+          eyebrow={<><Calculator className="h-3.5 w-3.5" aria-hidden="true" /> Calculator</>}
+          title="Margin Calculator"
+          description="Calculate required margin and leverage for F&O and equity trades, with current lot sizes for every contract."
+        />
 
         <Tabs defaultValue="futures" onValueChange={setSegment}>
           <TabsList className="mb-6">

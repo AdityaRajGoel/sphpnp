@@ -8,6 +8,7 @@ import { Briefcase, MapPin, Users, TrendingUp, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import WhatsAppButton from "@/components/WhatsAppButton";
 import ScrollProgress from "@/components/ScrollProgress";
+import SplitHero from "@/components/SplitHero";
 
 
 
@@ -70,33 +71,13 @@ const CareersPage = () => {
         <VisibleBreadcrumbs items={[{ name: "Home", url: "/" }, { name: "Careers" }]} />
         
         {/* Hero Section */}
-        <section className="pt-16 pb-10 md:pt-24 md:pb-20 bg-hero text-primary-foreground text-center relative overflow-hidden">
-          <div className="container mx-auto px-4 z-10 relative">
-            <motion.div 
-              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-brand-gold/20 text-brand-gold text-sm font-semibold mb-6"
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-            >
-              <Briefcase className="w-4 h-4" /> We're Hiring!
-            </motion.div>
-            <motion.h1 
-              className="text-4xl md:text-5xl lg:text-6xl font-heading font-bold mb-6 text-white"
-              initial={{ opacity: 0, y: 24 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
-            >
-              Build Your Career in <span className="text-brand-gold">Finance</span>
-            </motion.h1>
-            <motion.p 
-              className="text-lg md:text-xl text-white/80 max-w-2xl mx-auto"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.2 }}
-            >
-              Join the fastest growing brokerage branch in Panipat. Work with a trusted legacy spanning 50+ years and help drive wealth creation.
-            </motion.p>
-          </div>
-        </section>
+        <SplitHero
+          eyebrow={<><Briefcase className="h-3.5 w-3.5 text-brand-gold" aria-hidden="true" /> We're Hiring</>}
+          title={<>Build Your Career in <span className="text-brand-gold">Finance</span></>}
+          subtitle="Join the fastest growing brokerage branch in Panipat. Work with a trusted legacy spanning 50+ years and help drive wealth creation."
+          illustration="derivatives-desk"
+          badge={<p className="text-sm"><span className="block text-[0.6875rem] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Learn on the desk</span><span className="font-semibold">Mentored by senior advisors</span></p>}
+        />
 
         {/* Culture Section */}
         <section className="py-8 md:py-16 bg-muted/30">

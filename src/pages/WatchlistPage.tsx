@@ -17,6 +17,8 @@ import { displayMetric, METRIC_BY_ID, metricTone, type MetricRow } from "@/lib/s
 import { buildChecklist, tally } from "@/lib/stock-checklist";
 import { sectorPeers } from "@/lib/stock-peers";
 import { csvCell, downloadText } from "@/lib/statement-csv";
+import { IllustrationTile } from "@/components/ui/illustration";
+import ImageBanner, { BannerStat } from "@/components/ImageBanner";
 
 const COLUMNS = ["price", "change_pct", "return_1m", "return_1y", "pe", "roe", "roce", "debt_to_equity", "rsi_14", "composite_score"];
 
@@ -67,31 +69,32 @@ export default function WatchlistPage() {
       <main className="container mx-auto max-w-6xl px-4 py-8">
         <VisibleBreadcrumbs items={[{ name: "Home", url: "/" }, { name: "Stock Screener", url: "/screener" }, { name: "My Watchlist" }]} />
 
-        <motion.header {...revealSection} className="mt-2 flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <h1 className="flex items-center gap-2 text-3xl font-bold tracking-tight md:text-4xl">
-              <Star className="h-7 w-7 fill-amber-400 text-amber-600" aria-hidden="true" /> My Watchlist
-            </h1>
-            <p className="mt-1 text-muted-foreground">
-              {watchlist.length === 0 ? "Follow stocks to see them side by side here." : `${watchlist.length} stock${watchlist.length === 1 ? "" : "s"} followed`}
-              {summary.avg !== null && (
-                <span className="tabular-nums">
-                  {" "}· <span className="text-secondary">{summary.up} up</span>, <span className="text-destructive">{summary.down} down</span>, average {summary.avg >= 0 ? "+" : ""}{summary.avg.toFixed(2)}% today
-                </span>
-              )}
-            </p>
-          </div>
+        <ImageBanner
+          slug="research-lens"
+          className="mt-2"
+          focus={{ mobile: "48% 55%", desktop: "48% 52%" }}
+          eyebrow={<><Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" aria-hidden="true" /> Your stocks</>}
+          title="My Watchlist"
+          description={watchlist.length === 0 ? "Follow stocks to see them side by side here." : "Prices, returns, valuation and quality for every stock you follow."}
+        >
+          <BannerStat label="Following" value={watchlist.length} />
+          {summary.avg !== null && (
+            <>
+              <BannerStat label="Up / down today" value={`${summary.up} / ${summary.down}`} />
+              <BannerStat label="Average move" value={`${summary.avg >= 0 ? "+" : ""}${summary.avg.toFixed(2)}%`} />
+            </>
+          )}
           {watchlist.length > 0 && (
-            <Button variant="outline" size="sm" onClick={exportCsv}>
+            <Button variant="outline" size="sm" onClick={exportCsv} className="h-9 border-white/20 bg-white/10 text-white hover:bg-white/20 hover:text-white">
               <Download className="mr-1.5 h-4 w-4" aria-hidden="true" /> Download CSV
             </Button>
           )}
-        </motion.header>
+        </ImageBanner>
 
         {watchlist.length === 0 ? (
           <motion.div {...revealSection}>
             <Card className="mt-8 p-8 text-center">
-              <Star className="mx-auto h-10 w-10 text-amber-500" aria-hidden="true" />
+              <IllustrationTile slug="art-candles" className="mx-auto h-36 w-36" sizes="144px" />
               <h2 className="mt-3 text-xl font-semibold">Your watchlist is empty</h2>
               <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
                 Tap the star beside any stock in the screener, or Watch on a stock page. Or start with some of the largest companies:

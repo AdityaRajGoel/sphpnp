@@ -16,6 +16,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { DURATION, EASE_OUT, revealItem, revealSection } from "@/lib/motion";
 import { useScrollSpy } from "@/hooks/useScrollSpy";
+import ImageBanner from "@/components/ImageBanner";
 
 type Section = { id: string; label: string; icon: typeof BookOpen };
 
@@ -172,19 +173,20 @@ export default function HelpPage() {
       <main className="container mx-auto max-w-6xl px-4 py-8">
         <VisibleBreadcrumbs items={[{ name: "Home", url: "/" }, { name: "Help & Docs" }]} />
 
-        <motion.header {...revealSection} className="relative mt-4 overflow-hidden rounded-2xl border border-border bg-card px-6 py-8 md:px-10 md:py-10">
-          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(60%_80%_at_100%_0%,hsl(var(--secondary)/0.14),transparent_60%)]" aria-hidden="true" />
-          <p className="relative text-[0.6875rem] font-semibold uppercase tracking-[0.14em] text-secondary">Help &amp; Docs</p>
-          <h1 className="relative mt-2 max-w-3xl text-3xl font-bold tracking-tight md:text-4xl [text-wrap:balance]">Everything the research terminal can do, and how to use it</h1>
-          <p className="relative mt-3 max-w-2xl text-muted-foreground">
-            Start with the market, narrow it down with scans or a typed query, then open a company for its full picture. Each section below covers one part of the site.
-          </p>
-          <div className="relative mt-5 max-w-sm">
+        <ImageBanner
+          slug="lens-rise"
+          className="mt-4"
+          focus={{ mobile: "50% 62%", desktop: "50% 58%" }}
+          eyebrow="Help & Docs"
+          title="Everything the research terminal can do, and how to use it"
+          description="Start with the market, narrow it down with scans or a typed query, then open a company for its full picture. Each section below covers one part of the site."
+        >
+          <div className="relative w-full max-w-sm">
             <label htmlFor="help-filter" className="sr-only">Filter help topics</label>
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
-            <Input id="help-filter" value={filter} onChange={(e) => setFilter(e.target.value)} placeholder="Filter topics, e.g. query" className="pl-9" autoComplete="off" />
+            <Input id="help-filter" value={filter} onChange={(e) => setFilter(e.target.value)} placeholder="Filter topics, e.g. query" className="bg-white pl-9 text-foreground" autoComplete="off" />
           </div>
-        </motion.header>
+        </ImageBanner>
 
         <div className="mt-8 grid gap-10 lg:grid-cols-[220px_minmax(0,1fr)]">
           <aside className="min-w-0 lg:sticky lg:top-24 lg:self-start">

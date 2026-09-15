@@ -14,6 +14,7 @@ import { GitCompareArrows, Search, X, TrendingUp, TrendingDown, Star, Bot, Share
 import { supabase } from "@/integrations/supabase/client";
 import type { StockForAnalysis } from "@/components/AIAnalysisModal";
 import PageTransition from "@/components/PageTransition";
+import ImageBanner from "@/components/ImageBanner";
 import { EASE_OUT } from "@/lib/motion";
 import AdvancedChartDialog from "@/components/charts/AdvancedChartDialog";
 import type { ApiChartPoint } from "@/lib/chart-data";
@@ -270,13 +271,14 @@ const StockComparisonPage = () => {
       <StockTicker />
       <VisibleBreadcrumbs items={[{ name: "Home", url: "/" }, { name: "Compare Stocks" }]} />
       <main className="container mx-auto px-4 py-8">
-        <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
-          <div className="flex items-center gap-3 mb-2">
-            <GitCompareArrows className="w-8 h-8 text-primary" />
-            <h1 className="text-3xl md:text-4xl font-heading font-bold text-foreground">Stock Comparison</h1>
-          </div>
-          <p className="text-muted-foreground">Compare up to 3 stocks side-by-side with live data, visual stat bars, and AI analysis</p>
-        </motion.div>
+        <ImageBanner
+          slug="orbit-rings"
+          className="mb-8"
+          focus={{ mobile: "40% 35%", desktop: "30% 40%" }}
+          eyebrow={<><GitCompareArrows className="h-3.5 w-3.5" aria-hidden="true" /> Side by side</>}
+          title="Stock Comparison"
+          description="Compare up to 3 stocks side-by-side with live data, visual stat bars, and AI analysis."
+        />
 
         {/* Preset chips */}
         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}

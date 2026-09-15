@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { motion } from "motion/react";
 import { ArrowUp, ArrowDown, RefreshCw, Loader2, Flame, Snowflake, Gauge } from "lucide-react";
 import Header from "@/components/Header";
+import ImageBanner, { BannerStat } from "@/components/ImageBanner";
 import Footer from "@/components/Footer";
 import VisibleBreadcrumbs from "@/components/VisibleBreadcrumbs";
 import SEOHead from "@/components/SEOHead";
@@ -142,18 +143,19 @@ const Week52TrackerPage = () => {
       <StockTicker />
       <VisibleBreadcrumbs items={[{ name: "Home", url: "/" }, { name: "52-Week Tracker" }]} />
       <main className="container mx-auto px-4 py-8">
-        <motion.header initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <h1 className="text-3xl md:text-4xl font-heading font-bold text-foreground mb-2">52-Week High / Low Tracker</h1>
-            <p className="text-muted-foreground">Which stocks sit at their yearly extremes, which sectors they cluster in, and what their trend, momentum and participation look like.</p>
-          </div>
-          <div className="flex items-center gap-3">
-            {updatedAt && <span className="text-xs text-muted-foreground">Updated {new Date(updatedAt).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}</span>}
-            <Button variant="outline" size="sm" onClick={handleRefresh} disabled={refreshing}>
-              {refreshing ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}<span className="ml-1.5">Refresh</span>
-            </Button>
-          </div>
-        </motion.header>
+        <ImageBanner
+          slug="figure-line"
+          className="mb-6"
+          focus={{ mobile: "22% 60%", desktop: "30% 58%" }}
+          eyebrow="Yearly extremes"
+          title="52-Week High / Low Tracker"
+          description="Which stocks sit at their yearly extremes, which sectors they cluster in, and what their trend, momentum and participation look like."
+        >
+          {updatedAt && <BannerStat label="Updated" value={new Date(updatedAt).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })} />}
+          <Button variant="outline" size="sm" onClick={handleRefresh} disabled={refreshing} className="h-9 border-white/20 bg-white/10 text-white hover:bg-white/20 hover:text-white">
+            {refreshing ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}<span className="ml-1.5">Refresh</span>
+          </Button>
+        </ImageBanner>
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
           {[

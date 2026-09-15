@@ -132,6 +132,20 @@ function assertStockPageCaptured(route, html) {
 // genuine capture failure. No concurrency: above 4 parallel pages capture
 // completeness was measured to collapse silently.
 const CAPTURE_ATTEMPTS = 3;
+/**
+ * With several pages open only one is in the foreground, and Chrome throttles
+ * timers and animation frames in the rest. react-helmet-async flushes <head>
+ * changes on a frame, so a background IPO page reached "ready" while still
+ * carrying its noindex tag and failed every retry. Capture pages are never
+ * really in the background, so nothing should be throttled.
+ */
+const NO_BACKGROUND_THROTTLING = [
+  '--disable-background-timer-throttling',
+  '--disable-backgrounding-occluded-windows',
+  '--disable-renderer-backgrounding',
+];
+/** Pages captured at once. Overridable for a slow machine: PRERENDER_CONCURRENCY=1. */
+const CONCURRENCY = Math.max(1, Math.min(4, Number(process.env.PRERENDER_CONCURRENCY) || 3));
 const RETRY_DELAY_MS = 1000;
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -141,6 +155,11 @@ async function captureOnce(browser, port, route) {
   const page = await browser.newPage();
   // Suppress console logs from the page
   page.on('console', () => {});
+  // Tells the app it is being captured (src/lib/prerender.ts): interactive,
+  // query-heavy panels stay out of the static HTML and off the database.
+  await page.evaluateOnNewDocument(() => {
+    window.__PRERENDER__ = true;
+  });
 
   try {
     try {
@@ -174,6 +193,12 @@ async function captureOnce(browser, port, route) {
     // detail page is noindex until then, so capturing early would ship noindex.
     if (route === '/ipo' || route === '/ipo-pipeline' || route.startsWith('/ipo/')) {
       await page.waitForSelector('[data-ipo-state="ready"]', { timeout: 25000 }).catch(() => {});
+      // The data marker is set in the same render that drops noindex, but the
+      // <head> update lands a frame later. Wait for it rather than capturing the
+      // stale robots tag; a genuine failure still fails the assertion below.
+      await page
+        .waitForFunction(() => !/noindex/i.test(document.querySelector('meta[name="robots"]')?.getAttribute('content') ?? ''), { timeout: 10000 })
+        .catch(() => {});
     }
 
     const html = cleanCapturedHtml(await page.content(), port);
@@ -238,7 +263,7 @@ async function prerender() {
         const puppeteer = (await import('puppeteer-core')).default;
         const chromium = (await import('@sparticuz/chromium')).default;
         browser = await puppeteer.launch({
-          args: [...chromium.args, '--no-sandbox', '--disable-setuid-sandbox'],
+          args: [...chromium.args, '--no-sandbox', '--disable-setuid-sandbox', ...NO_BACKGROUND_THROTTLING],
           defaultViewport: chromium.defaultViewport,
           executablePath: await chromium.executablePath(),
           headless: chromium.headless,
@@ -248,7 +273,7 @@ async function prerender() {
         const puppeteer = (await import('puppeteer')).default;
         browser = await puppeteer.launch({
           headless: "new",
-          args: ['--no-sandbox', '--disable-setuid-sandbox']
+          args: ['--no-sandbox', '--disable-setuid-sandbox', ...NO_BACKGROUND_THROTTLING]
         });
       }
 
@@ -264,23 +289,42 @@ async function prerender() {
       // robots tag - copied now, before the "/" capture below overwrites it.
       fs.copyFileSync(path.join(DIST_DIR, 'index.html'), path.join(DIST_DIR, 'ipo-shell.html'));
 
-      for (const route of [...routes, ...stockRoutes, ...ipoRoutes, ERROR_ROUTE]) {
-        console.log(`Prerendering ${route}...`);
+      // Serial capture ran out Vercel's 45-minute build limit once the universe
+      // reached 246 stocks and 105 IPOs (~397 routes at ~7s each: killed at
+      // 394). A small worker pool brings that back to a fraction. It stays at 3:
+      // above 4 parallel pages capture completeness was measured to collapse, and
+      // every page still passes the same state assertions and bounded retries,
+      // so a page that is not ready fails the build rather than shipping.
+      const queue = [...routes, ...stockRoutes, ...ipoRoutes, ERROR_ROUTE];
+      const total = queue.length;
+      let next = 0;
+      let done = 0;
+      const started = Date.now();
 
-        const html = await captureWithRetry(browser, port, route);
+      const worker = async () => {
+        while (next < queue.length) {
+          const route = queue[next++];
+          console.log(`Prerendering ${route}...`);
 
-        // 3. Save to file. routeToFilePath decodes each segment so the file a
-        // static host looks for after decoding the request path is the file we
-        // actually wrote - see route-paths.mjs.
-        const filePath = path.join(DIST_DIR, routeToFilePath(route));
-        const dir = path.dirname(filePath);
-        if (!fs.existsSync(dir)) {
-          fs.mkdirSync(dir, { recursive: true });
+          const html = await captureWithRetry(browser, port, route);
+
+          // 3. Save to file. routeToFilePath decodes each segment so the file a
+          // static host looks for after decoding the request path is the file we
+          // actually wrote - see route-paths.mjs.
+          const filePath = path.join(DIST_DIR, routeToFilePath(route));
+          const dir = path.dirname(filePath);
+          if (!fs.existsSync(dir)) {
+            fs.mkdirSync(dir, { recursive: true });
+          }
+
+          fs.writeFileSync(filePath, html);
+          done += 1;
+          console.log(`Saved ${filePath} (${done}/${total})`);
         }
+      };
 
-        fs.writeFileSync(filePath, html);
-        console.log(`Saved ${filePath}`);
-      }
+      await Promise.all(Array.from({ length: Math.min(CONCURRENCY, total) }, worker));
+      console.log(`Captured ${total} routes in ${Math.round((Date.now() - started) / 1000)}s.`);
 
       await browser.close();
       console.log('Prerendering completed successfully.');
