@@ -1,0 +1,157 @@
+# Gatus checks for sphpnp.com -> /opt/sphpnp-tools/gatus.yaml
+# Status page: https://admin.sphpnp.com:8443 (behind the admin password).
+# Alerts go to ntfy on this server; subscribe to NTFY_TOPIC in the ntfy phone app with
+# server https://admin.sphpnp.com:8446.
+
+web:
+  address: 127.0.0.1
+  port: 3003
+
+storage:
+  type: sqlite
+  path: /data/gatus.db
+
+ui:
+  title: sphpnp.com status
+  header: sphpnp.com
+
+alerting:
+  ntfy:
+    url: http://127.0.0.1:3005
+    topic: ${NTFY_TOPIC}
+    priority: 4
+    default-alert:
+      failure-threshold: 3
+      success-threshold: 2
+      send-on-resolved: true
+
+# Public HTTPS checks allow 20 s: they go out through the server's own public address,
+# and a nightly build keeps the CPU busy (the 10 s default raised false alarms).
+endpoints:
+  - name: Home page
+    group: website
+    url: https://www.sphpnp.com/
+    client:
+      timeout: 20s
+    interval: 2m
+    conditions:
+      - "[STATUS] == 200"
+      - "[RESPONSE_TIME] < 3000"
+      - "[CERTIFICATE_EXPIRATION] > 336h"
+    alerts:
+      - type: ntfy
+        description: www.sphpnp.com is down or slow
+
+  - name: Stock page
+    group: website
+    url: https://www.sphpnp.com/stock/RELIANCE
+    client:
+      timeout: 20s
+    interval: 5m
+    conditions:
+      - "[STATUS] == 200"
+      - "[BODY] == pat(*Reliance Industries*)"
+    alerts:
+      - type: ntfy
+        description: prerendered stock pages are failing
+
+  - name: IPO page
+    group: website
+    url: https://www.sphpnp.com/ipo
+    client:
+      timeout: 20s
+    interval: 5m
+    conditions:
+      - "[STATUS] == 200"
+    alerts:
+      - type: ntfy
+
+  - name: Sitemap
+    group: website
+    url: https://www.sphpnp.com/sitemap.xml
+    client:
+      timeout: 20s
+    interval: 30m
+    conditions:
+      - "[STATUS] == 200"
+      - "[BODY] == pat(*<loc>https://www.sphpnp.com/stock/*)"
+    alerts:
+      - type: ntfy
+
+  # Follows the 301 to www and checks it lands on the real site. (With
+  # ignore-redirect the request timed out inside Gatus although the redirect works;
+  # the certificate is shared with www, which the Home page check covers.)
+  - name: Bare domain reaches the site
+    group: website
+    url: https://sphpnp.com/about
+    client:
+      timeout: 20s
+    interval: 30m
+    conditions:
+      - "[STATUS] == 200"
+      - "[BODY] == pat(*Parasram*)"
+    alerts:
+      - type: ntfy
+
+  - name: Staging
+    group: website
+    url: https://staging.sphpnp.com/
+    client:
+      timeout: 20s
+    interval: 30m
+    conditions:
+      - "[STATUS] == 200"
+      - "[CERTIFICATE_EXPIRATION] > 336h"
+
+  - name: API gateway
+    group: backend
+    url: https://api.sphpnp.com/rest/v1/
+    client:
+      timeout: 20s
+    interval: 2m
+    conditions:
+      - "[STATUS] == 401"
+      # Normally ~150 ms; the nightly prerender briefly pushes it past 5 s. Only a
+      # stuck gateway should fail this check.
+      - "[RESPONSE_TIME] < 10000"
+      - "[CERTIFICATE_EXPIRATION] > 336h"
+    alerts:
+      - type: ntfy
+        description: the Supabase API is not answering
+
+  - name: Edge functions (fetch-ipos)
+    group: backend
+    url: http://127.0.0.1:8000/functions/v1/fetch-ipos
+    method: POST
+    body: "{}"
+    headers:
+      Content-Type: application/json
+    interval: 5m
+    conditions:
+      - "[STATUS] == 200"
+      - "[RESPONSE_TIME] < 10000"
+    alerts:
+      - type: ntfy
+        description: edge functions are failing
+
+  - name: Database pooler
+    group: backend
+    url: tcp://127.0.0.1:5432
+    interval: 2m
+    conditions:
+      - "[CONNECTED] == true"
+    alerts:
+      - type: ntfy
+        description: Postgres is not accepting connections
+
+  - name: Admin panel
+    group: ops
+    url: https://admin.sphpnp.com/
+    client:
+      timeout: 20s
+    interval: 30m
+    conditions:
+      - "[STATUS] == 401"
+      - "[CERTIFICATE_EXPIRATION] > 336h"
+    alerts:
+      - type: ntfy

@@ -69,24 +69,25 @@ and use Full (strict) TLS) - not enabled.
 
 ## Ops tools and admin panel
 
-`tools/` runs free, self-hosted tools in a separate Compose project (`/opt/sphpnp-tools`,
-own Postgres and Valkey, every port bound to 127.0.0.1). Install or update with
-`bash tools/setup.sh`; secrets are generated once into `/opt/sphpnp-tools/.env` (mode 600).
+Everything here is free, open-source and has no accounts of its own: the only login is
+the admin password on `admin.sphpnp.com` (basic auth, SHA-512 hash in
+`/etc/nginx/admin.htpasswd`, fail2ban bans repeated failures).
 
-| Tool | Does | Admin URL |
+`tools/` runs in a separate Compose project (`/opt/sphpnp-tools`); install or update with
+`bash tools/setup.sh`, which also removes tools no longer in the file.
+
+| Tool | Does | Where |
 |---|---|---|
-| Umami | visitor analytics (tracker served same-origin at `/insights.js`) | `https://admin.sphpnp.com:8441` |
-| GlitchTip | browser errors via `@sentry/react` (ingest proxied at `/api/1/envelope/`) | `https://admin.sphpnp.com:8442` |
-| Uptime Kuma | uptime checks and alerts | `https://admin.sphpnp.com:8443` |
-| Beszel | server and container metrics (start the agent after adding its key) | `https://admin.sphpnp.com:8444` |
-| Supabase Studio | database, auth users, storage | `https://admin.sphpnp.com:8445` |
+| Gatus | uptime, response time and certificate checks (`tools/gatus.yaml`), status page | `https://admin.sphpnp.com:8443` |
+| ntfy | push alerts from Gatus; no account, the topic in `/opt/sphpnp-tools/.env` is the key | ntfy app, server `https://admin.sphpnp.com:8446` |
+| Glances | live CPU, memory, disk, network and containers | `https://admin.sphpnp.com:8444` |
+| Supabase Studio | database, auth users, storage (nginx adds Studio's own credentials) | `https://admin.sphpnp.com:8445` |
+| GoAccess | traffic from the nginx logs: today (every 10 min) and one report per day | `https://admin.sphpnp.com/traffic-today.html`, `/traffic/` |
+| Browser errors | `src/lib/client-errors.ts` posts to `/api/client-error`; nginx logs it | `https://admin.sphpnp.com/client-errors.txt` |
+| Status | last build, live release, last backup, failed syncs, disk, memory | `https://admin.sphpnp.com/status.txt` |
 
-`https://admin.sphpnp.com` lists them. The tools do not run under a sub-path, so each keeps
-its own port on the one hostname and certificate (`nginx/admin.conf`). Every port asks for
-the admin login first (basic auth, SHA-512 hash in `/etc/nginx/admin.htpasswd`), then the
-tool's own login. Studio's gateway credentials are added by nginx from a root-only snippet
-generated from `/opt/supabase/.env`. vnStat and GoAccess are installed for bandwidth and
-traffic reports.
+`jobs/admin-reports.sh` (every 10 minutes) writes the static reports. vnStat keeps
+bandwidth history (`vnstat` on the server).
 
 ## Logs and errors
 
@@ -97,11 +98,13 @@ traffic reports.
 - `jobs/traffic-report.sh` (00:40 IST): GoAccess HTML report in `/var/log/sphpnp/traffic/`.
 - Sync, backup and build results: `/var/log/sphpnp-sync/<date>.log`; build output in
   `/opt/sphpnp/build-logs/`.
-- Browser errors: GlitchTip project `website`, only from www.sphpnp.com in a real browser.
+- Browser errors: `/var/log/nginx/client-errors.log` (JSON lines), counted in the daily digest
+  and listed at `https://admin.sphpnp.com/client-errors.txt`.
 
 ## Firewall and rate limits
 
-- ufw: 22 (rate-limited), 80, 443 and 8441-8445 (admin tools, behind basic auth). Docker
+- ufw: 22 (rate-limited), 80, 443 and 8443-8446 (admin tools behind basic auth; 8446 is
+  ntfy's push endpoint). Docker
   ports are all on 127.0.0.1, which ufw cannot see, so nothing else is reachable.
 - fail2ban (`security/fail2ban-nginx.local`): `sshd`, `recidive`, `nginx-botsearch`
   (vulnerability scanners), `nginx-http-auth` (5 wrong admin passwords in 10 minutes = 1 h

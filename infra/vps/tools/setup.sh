@@ -1,39 +1,24 @@
 #!/usr/bin/env bash
-# Install or update the ops tools in /opt/sphpnp-tools. Safe to re-run: secrets are
-# generated once and kept in .env (mode 600); images are pulled and containers
-# recreated only when something changed.
+# Install or update the ops tools in /opt/sphpnp-tools (Gatus, ntfy, Glances).
+# Safe to re-run. The ntfy topic is generated once into .env (mode 600).
 #   bash infra/vps/tools/setup.sh
 set -euo pipefail
 
 DIR=/opt/sphpnp-tools
 SRC=$(cd "$(dirname "$0")" && pwd)
 
-sudo install -d -o "$(id -u)" -g "$(id -g)" -m 750 "$DIR" "$DIR/data"
+sudo install -d -o "$(id -u)" -g "$(id -g)" -m 750 "$DIR" "$DIR/data" "$DIR/data/gatus" "$DIR/data/ntfy"
 install -m 644 "$SRC/docker-compose.yml" "$DIR/docker-compose.yml"
-install -m 644 "$SRC/init-db.sql" "$DIR/init-db.sql"
+install -m 644 "$SRC/gatus.yaml" "$DIR/gatus.yaml"
 
 cd "$DIR"
-if [ ! -f .env ]; then
-  umask 077
-  {
-    echo "TOOLS_DB_PASSWORD=$(openssl rand -hex 24)"
-    echo "UMAMI_APP_SECRET=$(openssl rand -hex 32)"
-    echo "GLITCHTIP_SECRET_KEY=$(openssl rand -hex 32)"
-    echo "BESZEL_AGENT_KEY="
-  } > .env
-  echo "generated $DIR/.env"
+touch .env && chmod 600 .env
+if ! grep -qE '^NTFY_TOPIC=.+' .env; then
+  echo "NTFY_TOPIC=sphpnp-alerts-$(openssl rand -hex 16)" >> .env
+  echo "generated a private ntfy topic in $DIR/.env"
 fi
-chmod 600 .env
 
 docker compose pull --quiet
-docker compose up -d db valkey
-docker compose run --rm glitchtip-migrate >/dev/null
-docker compose up -d umami glitchtip-web glitchtip-worker uptime-kuma beszel
-
-if grep -qE '^BESZEL_AGENT_KEY=.+' .env; then
-  docker compose --profile agent up -d beszel-agent
-else
-  echo "beszel-agent not started: add the hub's public key as BESZEL_AGENT_KEY in $DIR/.env and re-run"
-fi
-
+# --remove-orphans also removes tools that are no longer in the compose file.
+docker compose up -d --remove-orphans
 docker compose ps --format '{{.Service}}: {{.Status}}'

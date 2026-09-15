@@ -48,6 +48,7 @@ J=/opt/sphpnp/jobs/sync.sh
 # --- Logs (00:20 IST, for the day just ended): archive, error digest, traffic report ---
 20 0  * * *     deploy flock -n /tmp/logs-archive.lock /opt/sphpnp/jobs/logs-archive.sh
 40 0  * * *     deploy flock -n /tmp/traffic-report.lock /opt/sphpnp/jobs/traffic-report.sh
+*/10 * * * *    deploy flock -n /tmp/admin-reports.lock /opt/sphpnp/jobs/admin-reports.sh
 
 # --- Website rebuild (04:30 IST): fresh sitemap, new IPO pages, current data ---
 30 4  * * *     deploy flock -n /tmp/build-site.lock /opt/sphpnp/jobs/build-site.sh

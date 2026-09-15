@@ -1,5 +1,5 @@
 import React, { Component, ErrorInfo, ReactNode } from "react";
-import * as Sentry from "@sentry/react";
+import { reportClientError, toReport } from "@/lib/client-errors";
 import { AlertTriangle, RefreshCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -25,8 +25,9 @@ export class ErrorBoundary extends Component<Props, State> {
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error("Uncaught error:", error, errorInfo);
-    // A no-op unless Sentry.init ran (live site only, see main.tsx).
-    Sentry.captureException(error, { contexts: { react: { componentStack: errorInfo.componentStack ?? "" } } });
+    // Logged on the VPS (live site only, see src/lib/client-errors.ts).
+    const report = toReport("react", error, undefined, window.location.pathname);
+    reportClientError({ ...report, stack: `${report.stack ?? ""}\nComponent stack:${errorInfo.componentStack ?? ""}`.slice(0, 1500) });
   }
 
   public render() {

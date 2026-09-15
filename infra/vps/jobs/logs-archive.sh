@@ -33,6 +33,10 @@ grep -vE 'open\(\) ".*" failed \(2: No such file' "$ROOT/nginx/$DAY-error.log" |
 echo "[nginx] missing files requested: $(grep -c 'No such file' "$ROOT/nginx/$DAY-error.log")" >> "$DIGEST"
 gzip -9f "$ROOT/nginx/$DAY-error.log"
 
+client_day=$(date -d yesterday +%F)
+browser_errors=$(sudo cat /var/log/nginx/client-errors.log.1 /var/log/nginx/client-errors.log 2>/dev/null | grep -c "\"time\":\"$client_day" || true)
+echo "[browser] error reports from visitors: $browser_errors (details: https://admin.sphpnp.com/client-errors.txt)" >> "$DIGEST"
+
 sync_log="/var/log/sphpnp-sync/$DAY.log"
 if [ -f "$sync_log" ]; then
   grep -E '\((000|4[0-9][0-9]|5[0-9][0-9])\)|FAILED|ROLLED BACK|three calls in a row failed' "$sync_log" \
