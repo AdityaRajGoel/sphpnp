@@ -129,7 +129,6 @@ const InvestmentProducts = () => {
               <motion.div key={p.title} variants={itemVariants} whileHover={{ y: -6 }} className={spanClass}>
                 <Link
                   to={p.to}
-                  aria-label={`${p.title} - learn more`}
                   onMouseMove={handleCardGlow}
                   className={`card-glow group relative flex flex-col h-full bg-card border border-border/50 rounded-2xl hover:border-secondary/40 hover:shadow-xl transition-[color,background-color,border-color,box-shadow] duration-base overflow-hidden ${
                     isFeatured ? "p-5 md:p-7 bg-gradient-to-br from-card to-secondary/[0.04]" : "p-4 md:p-5"
@@ -142,7 +141,7 @@ const InvestmentProducts = () => {
                       <div className={`bg-secondary/10 rounded-xl flex items-center justify-center group-hover:bg-secondary/20 group-hover:scale-110 transition-[color,background-color,border-color,transform] ease-out duration-base ${isFeatured ? "w-14 h-14" : "w-11 h-11"}`}>
                         <Icon className={`text-secondary ${isFeatured ? "w-7 h-7" : "w-5 h-5"}`} />
                       </div>
-                      <span className="text-[9px] font-bold uppercase tracking-wide text-brand-orange bg-brand-orange/10 border border-brand-orange/20 rounded-full px-2 py-0.5">
+                      <span className="text-[9px] font-bold uppercase tracking-wide text-orange-800 dark:text-orange-300 bg-brand-orange/10 border border-brand-orange/20 rounded-full px-2 py-0.5">
                         {p.tag}
                       </span>
                     </div>

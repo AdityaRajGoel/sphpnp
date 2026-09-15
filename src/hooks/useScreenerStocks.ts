@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { isTradingDay } from "@/lib/market-holidays";
 
 export type ScreenerStock = {
   symbol: string;
@@ -21,6 +22,30 @@ export type ScreenerStock = {
 };
 
 const WEEK_MS = 7 * 86_400_000;
+
+/** During the session a snapshot older than this is not shown at all; the live refresh fills the table. */
+export const LIVE_SNAPSHOT_MAX_AGE_MS = 10 * 60_000;
+
+/** True between 09:15 and 15:30 IST on an NSE trading day. */
+export function isMarketHours(now: Date = new Date()): boolean {
+  const ist = new Date(now.getTime() + 5.5 * 3_600_000);
+  const date = ist.toISOString().slice(0, 10);
+  if (!isTradingDay(date)) return false;
+  const minutes = ist.getUTCHours() * 60 + ist.getUTCMinutes();
+  return minutes >= 9 * 60 + 15 && minutes <= 15 * 60 + 30;
+}
+
+/**
+ * Whether a stored snapshot may be shown before the live refresh answers.
+ * Outside market hours the last close IS the current price, so any recent
+ * snapshot is fine; during the session an old one would put yesterday's or
+ * this morning's prices on screen as if they were live.
+ */
+export function snapshotIsShowable(updatedAt: string | null | undefined, now: Date = new Date()): boolean {
+  const t = Date.parse(updatedAt ?? "");
+  if (!Number.isFinite(t)) return false;
+  return !isMarketHours(now) || now.getTime() - t <= LIVE_SNAPSHOT_MAX_AGE_MS;
+}
 
 /**
  * The rows worth listing: priced, and quoted within a week of the freshest
@@ -74,10 +99,11 @@ export function useScreenerStocks() {
           .select("*")
           .order("market_cap", { ascending: false });
 
-        if (cached && cached.length > 0) {
+        const freshest = cached?.reduce((max, row) => (row.updated_at > max ? row.updated_at : max), "") ?? "";
+        if (cached && cached.length > 0 && snapshotIsShowable(freshest)) {
           setStocks(currentStocks(cached.map(mapStock)));
-          setUpdatedAt(cached[0]?.updated_at || null);
-          setLoading(false); // ← Show table NOW, before Yahoo refresh
+          setUpdatedAt(freshest || null);
+          setLoading(false); // Show the table now - the snapshot is current enough to be true.
         }
       }
 

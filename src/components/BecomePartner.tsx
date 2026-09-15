@@ -181,6 +181,7 @@ const BecomePartner = () => {
                       <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-primary-foreground/40" />
                       <Input
                         name="name"
+                        aria-invalid={!!errors.name}
                         aria-label="Your Name"
                         placeholder="Your Name *"
                         value={form.name}
@@ -197,6 +198,10 @@ const BecomePartner = () => {
                       <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-primary-foreground/40" />
                       <Input
                         name="phone"
+                        type="tel"
+                        inputMode="tel"
+                        autoComplete="tel"
+                        aria-invalid={!!errors.phone}
                         aria-label="Phone Number"
                         placeholder="Phone *"
                         value={form.phone}
@@ -217,6 +222,8 @@ const BecomePartner = () => {
                       <Input
                         name="email"
                         type="email"
+                        autoComplete="email"
+                        aria-invalid={!!errors.email}
                         aria-label="Email Address"
                         placeholder="Email"
                         value={form.email}
@@ -232,6 +239,7 @@ const BecomePartner = () => {
                       <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-primary-foreground/40" />
                       <Input
                         name="city"
+                        aria-invalid={!!errors.city}
                         aria-label="City or District"
                         placeholder="City / District *"
                         value={form.city}

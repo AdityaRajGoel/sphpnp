@@ -64,6 +64,7 @@ const urls = [
   { loc: '/team',                changefreq: 'monthly', priority: '0.6',  lastmod: today },
   { loc: '/holidays',            changefreq: 'monthly', priority: '0.6',  lastmod: today },
   { loc: '/reports',             changefreq: 'weekly',  priority: '0.7',  lastmod: today },
+  { loc: '/help',                changefreq: 'monthly', priority: '0.6',  lastmod: '2026-09-15' },
   { loc: '/careers',             changefreq: 'monthly', priority: '0.5',  lastmod: today },
   { loc: '/privacy-policy',      changefreq: 'yearly',  priority: '0.3',  lastmod: '2026-01-01' },
   { loc: '/cookie-policy',       changefreq: 'yearly',  priority: '0.3',  lastmod: '2026-01-01' },

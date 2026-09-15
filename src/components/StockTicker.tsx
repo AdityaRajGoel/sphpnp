@@ -92,7 +92,7 @@ const TickerRow = ({ items, direction = "left", bgClass = "bg-brand-charcoal", t
           <button
             key={i}
             type="button"
-            aria-label={`${item.name} ${item.price}, view in stock screener`}
+            aria-label={`${item.name} ${item.price} ${item.change}, open the stock screener`}
             className="relative inline-flex items-center gap-1 md:gap-1.5 text-xs md:text-sm cursor-pointer select-none px-1 md:px-1.5 py-2.5 -my-2 rounded-md hover:bg-white/10 transition-colors group"
             onClick={() => navigate("/screener")}
           >

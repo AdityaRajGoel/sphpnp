@@ -1,10 +1,29 @@
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Link } from "react-router-dom";
-import { Cookie } from "lucide-react";
+import { BarChart3, ChevronDown, Cookie, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { DURATION, EASE_DRAWER, REVEAL_Y } from "@/lib/motion";
-import { readConsent, writeConsent, type ConsentChoice } from "@/lib/consent";
+import { DURATION, EASE_DRAWER, EASE_OUT, REVEAL_Y } from "@/lib/motion";
+import { OPEN_CONSENT_EVENT, readConsent, writeConsent, type ConsentChoice } from "@/lib/consent";
+
+/** One-off wobble when the prompt arrives - draws the eye once, then stays still. */
+const COOKIE_WOBBLE = {
+  initial: { rotate: 0 },
+  animate: { rotate: [0, -14, 10, -6, 0] },
+  transition: { duration: DURATION.ambient, delay: DURATION.base, ease: EASE_OUT },
+} as const;
+
+const DETAILS = {
+  initial: { opacity: 0, height: 0 },
+  animate: { opacity: 1, height: "auto" },
+  exit: { opacity: 0, height: 0 },
+  transition: { duration: DURATION.base, ease: EASE_OUT },
+} as const;
+
+const CATEGORIES = [
+  { icon: ShieldCheck, name: "Essential", state: "Always on", body: "Keep you signed in, remember this choice, your theme and your watchlist, and protect forms from abuse." },
+  { icon: BarChart3, name: "Analytics & performance", state: "Only with Accept All", body: "Anonymous page-view and speed measurements that show us which tools are used and where pages are slow." },
+];
 import { usePrefersReducedMotion } from "@/contexts/MotionPreferenceContext";
 
 /**
@@ -45,11 +64,23 @@ const CookieConsent = () => {
   const prefersReducedMotion = usePrefersReducedMotion();
   const titleId = useId();
   const descriptionId = useId();
+  const detailsId = useId();
+  const [showDetails, setShowDetails] = useState(false);
+
+  const [current, setCurrent] = useState<ConsentChoice | null>(null);
 
   useEffect(() => {
     // readConsent swallows a throwing localStorage, so this cannot take the
     // banner - or anything mounted after it - down in Safari private mode.
     if (readConsent() === null) setIsVisible(true);
+    // "Cookie settings" in the footer reopens the prompt: withdrawing consent
+    // has to be as easy as giving it.
+    const reopen = () => {
+      setCurrent(readConsent());
+      setIsVisible(true);
+    };
+    window.addEventListener(OPEN_CONSENT_EVENT, reopen);
+    return () => window.removeEventListener(OPEN_CONSENT_EVENT, reopen);
   }, []);
 
   const decide = useCallback((choice: ConsentChoice) => {
@@ -132,23 +163,29 @@ const CookieConsent = () => {
           >
             {/* Tight group: the icon belongs to the text, so it sits close. */}
             <div className="flex items-start gap-3.5 md:gap-4">
-              <span
+              <motion.span
                 aria-hidden="true"
+                {...(prefersReducedMotion ? {} : COOKIE_WOBBLE)}
                 className="mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-full bg-secondary/10 text-secondary"
               >
                 <Cookie className="h-[18px] w-[18px]" />
-              </span>
+              </motion.span>
               <div className="min-w-0">
                 <h2
                   id={titleId}
                   className="text-[0.9375rem] font-semibold leading-snug tracking-[-0.01em] text-foreground"
                 >
-                  We value your privacy
+                  {current ? "Your cookie settings" : "We value your privacy"}
                 </h2>
                 <p
                   id={descriptionId}
                   className="mt-1 text-[0.8125rem] leading-relaxed text-muted-foreground"
                 >
+                  {current && (
+                    <span className="font-medium text-foreground">
+                      Currently: {current === "all" ? "all cookies accepted" : "essential cookies only"}.{" "}
+                    </span>
+                  )}
                   Essential cookies keep the site working. With your consent we also use
                   non-essential cookies to understand how the site is used and improve it.
                   Read our{" "}
@@ -160,6 +197,35 @@ const CookieConsent = () => {
                   </Link>
                   .
                 </p>
+                <button
+                  type="button"
+                  onClick={() => setShowDetails((v) => !v)}
+                  aria-expanded={showDetails}
+                  aria-controls={detailsId}
+                  className="mt-1.5 inline-flex items-center gap-1 rounded text-[0.8125rem] font-medium text-foreground/80 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  {/* Deliberately avoids "accept", "allow" or "reject": this only
+                      expands details and must never read as a consent control. */}
+                  Details on each choice
+                  <ChevronDown className={`h-3.5 w-3.5 transition-transform ${showDetails ? "rotate-180" : ""}`} aria-hidden="true" />
+                </button>
+                <AnimatePresence initial={false}>
+                  {showDetails && (
+                    <motion.ul key="details" id={detailsId} {...DETAILS} className="overflow-hidden">
+                      {CATEGORIES.map(({ icon: Icon, name, state, body }) => (
+                        <li key={name} className="mt-2 flex gap-2.5 rounded-lg border border-border/70 bg-muted/40 p-2.5">
+                          <Icon className="mt-0.5 h-4 w-4 shrink-0 text-secondary" aria-hidden="true" />
+                          <div className="min-w-0 text-[0.8125rem]">
+                            <p className="flex flex-wrap items-baseline justify-between gap-x-2 font-medium text-foreground">
+                              {name} <span className="text-[0.6875rem] font-semibold uppercase tracking-[0.08em] text-muted-foreground">{state}</span>
+                            </p>
+                            <p className="text-muted-foreground">{body}</p>
+                          </div>
+                        </li>
+                      ))}
+                    </motion.ul>
+                  )}
+                </AnimatePresence>
               </div>
             </div>
 
@@ -172,13 +238,15 @@ const CookieConsent = () => {
               <Button
                 variant="outline"
                 onClick={() => decide("essential")}
-                className="w-full sm:w-auto sm:min-w-[8.5rem] font-medium transition-colors"
+                aria-pressed={current ? current === "essential" : undefined}
+                className="w-full sm:w-auto sm:min-w-[8.5rem] font-medium transition-colors pressable"
               >
                 Essential Only
               </Button>
               <Button
                 onClick={() => decide("all")}
-                className="w-full sm:w-auto sm:min-w-[8.5rem] bg-brand-navy font-medium text-white shadow-sm transition-colors hover:bg-brand-navy/90"
+                aria-pressed={current ? current === "all" : undefined}
+                className="w-full sm:w-auto sm:min-w-[8.5rem] bg-brand-navy font-medium text-white shadow-sm transition-colors hover:bg-brand-navy/90 pressable btn-shine"
               >
                 Accept All
               </Button>

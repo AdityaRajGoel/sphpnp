@@ -24,9 +24,11 @@ import RiskTable from "@/components/screener/RiskTable";
 import MetricTable from "@/components/screener/MetricTable";
 import ScannerLibrary from "@/components/screener/ScannerLibrary";
 import CustomFilterBuilder from "@/components/screener/CustomFilterBuilder";
+import WatchlistButton from "@/components/WatchlistButton";
 import { useRiskSummaries } from "@/hooks/useRiskSummaries";
 import { useScoreSummaries } from "@/hooks/useScoreSummaries";
 import { buildMetricRows, parseRules, passesRules, serializeRules, METRIC_BY_ID, type Metric, type Rule } from "@/lib/screener-metrics";
+import { evaluateQuery, parseQuery } from "@/lib/screener-query";
 import { parseScanIds, passesScans, scanCounts, SCAN_GROUPS, type ScanGroup } from "@/lib/screener-scans";
 import StockHeatmap from "@/components/StockHeatmap";
 import GlobalStockSearch from "@/components/GlobalStockSearch";
@@ -247,8 +249,9 @@ const StockScreenerPage = () => {
   // `screen` is the fundamental-screen param from before scans were unified; old links still land.
   const [activeScans, setActiveScans] = useState<string[]>(() => parseScanIds(searchParams.get("scan"), searchParams.get("screen")));
   const [rules, setRules] = useState<Rule[]>(() => parseRules(searchParams.get("f")));
+  const [query, setQuery] = useState(searchParams.get("fx") ?? "");
   const [viewMode, setViewMode] = useState<ViewMode>(() =>
-    searchParams.get("f") ? "custom" : searchParams.get("screen") ? "fundamentals" : "list",
+    searchParams.get("f") || searchParams.get("fx") ? "custom" : searchParams.get("screen") ? "fundamentals" : "list",
   );
   const [compareSymbols, setCompareSymbols] = useState<string[]>([]);
 
@@ -285,16 +288,27 @@ const StockScreenerPage = () => {
     if (activeBasket) p.set("basket", activeBasket);
     if (activeScans.length > 0) p.set("scan", activeScans.join(","));
     if (rules.length > 0) p.set("f", serializeRules(rules));
+    if (query) p.set("fx", query);
     setSearchParams(p, { replace: true });
-  }, [search, sector, peRange, capRange, sortKey, sortDir, activeBasket, activeScans, rules, setSearchParams]);
+  }, [search, sector, peRange, capRange, sortKey, sortDir, activeBasket, activeScans, rules, query, setSearchParams]);
+
+  const parsedQuery = useMemo(() => {
+    const p = query ? parseQuery(query) : null;
+    return p?.ok ? p : null;
+  }, [query]);
 
   const activeFilterCount =
     (search ? 1 : 0) + (sector !== "all" ? 1 : 0) + (peRange !== "all" ? 1 : 0) +
-    (capRange !== "all" ? 1 : 0) + (activeBasket ? 1 : 0) + activeScans.length + rules.length;
+    (capRange !== "all" ? 1 : 0) + (activeBasket ? 1 : 0) + activeScans.length + rules.length + (parsedQuery ? 1 : 0);
 
   const clearAllFilters = () => {
     setSearch(""); setSector("all"); setPeRange("all"); setCapRange("all");
-    setActiveBasket(null); setActiveScans([]); setRules([]);
+    setActiveBasket(null); setActiveScans([]); setRules([]); setQuery("");
+  };
+
+  const changeQuery = (next: string) => {
+    if (next) setViewMode("custom");
+    setQuery(next);
   };
 
   /** Turning a scan on also opens the view whose columns explain it. */
@@ -310,11 +324,15 @@ const StockScreenerPage = () => {
   };
 
   const ruleMatches = useMemo(() => [...metricRows.values()].filter((row) => passesRules(row, rules)).length, [metricRows, rules]);
-
-  const customColumns = useMemo(
-    () => metricsById(rules.length > 0 ? [...new Set([...rules.map((r) => r.metric), "composite_score"])] : DEFAULT_CUSTOM_COLUMNS),
-    [rules],
+  const queryMatches = useMemo(
+    () => (parsedQuery ? [...metricRows.values()].filter((row) => evaluateQuery(parsedQuery.cond, row)).length : null),
+    [metricRows, parsedQuery],
   );
+
+  const customColumns = useMemo(() => {
+    const ids = [...rules.map((r) => r.metric), ...(parsedQuery?.metrics.map((m) => m.id) ?? [])];
+    return metricsById(ids.length > 0 ? [...new Set([...ids, "composite_score"])] : DEFAULT_CUSTOM_COLUMNS);
+  }, [rules, parsedQuery]);
 
   const sectors = useMemo(() => [...new Set(stocks.map(s => s.sector))].sort(), [stocks]);
 
@@ -335,13 +353,14 @@ const StockScreenerPage = () => {
     }
     if (activeScans.length > 0) list = list.filter(s => passesScans(metricRows.get(s.symbol), activeScans));
     if (rules.length > 0) list = list.filter(s => passesRules(metricRows.get(s.symbol), rules));
+    if (parsedQuery) list = list.filter(s => evaluateQuery(parsedQuery.cond, metricRows.get(s.symbol)));
 
     list.sort((a, b) => {
       const av = a[sortKey], bv = b[sortKey];
       return sortDir === "asc" ? (av > bv ? 1 : -1) : (av < bv ? 1 : -1);
     });
     return list;
-  }, [stocks, search, sector, peRange, capRange, sortKey, sortDir, activeBasket, activeScans, rules, metricRows]);
+  }, [stocks, search, sector, peRange, capRange, sortKey, sortDir, activeBasket, activeScans, rules, parsedQuery, metricRows]);
 
   const toggleSort = (key: SortKey) => {
     if (sortKey === key) setSortDir(d => d === "asc" ? "desc" : "asc");
@@ -476,7 +495,7 @@ const StockScreenerPage = () => {
 
         <ScannerLibrary active={activeScans} counts={counts} onToggle={toggleScan} onClear={() => setActiveScans([])} />
 
-        <CustomFilterBuilder rules={rules} onChange={changeRules} matches={ruleMatches} />
+        <CustomFilterBuilder rules={rules} onChange={changeRules} matches={ruleMatches} query={query} onQueryChange={changeQuery} queryMatches={queryMatches} />
 
         {/* Filters */}
         <Card className="p-4 mb-6">
@@ -621,6 +640,8 @@ const StockScreenerPage = () => {
                       return (
                         <motion.tr key={s.symbol} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.01 }} onClick={openRow(s.symbol)} title={`Open ${s.name}`} className="border-b border-border/50 hover:bg-muted/40 transition-colors cursor-pointer group/row">
                           <td className="px-4 py-3">
+                            <div className="flex items-start gap-1.5">
+                            <WatchlistButton symbol={s.symbol} name={s.name} className="-ml-1.5 mt-0.5" />
                             {/* The 159 prerendered /stock/:symbol pages had no inbound
                                 link from anywhere in the app - reachable only by typing
                                 the URL or arriving from search. The screener lists the
@@ -629,13 +650,14 @@ const StockScreenerPage = () => {
                             <Link
                               to={`/stock/${encodeURIComponent(s.symbol)}`}
                               className="group inline-block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
-                              aria-label={`View financials for ${s.name} (${s.symbol})`}
+                              aria-label={`${s.symbol} ${s.name}: view financials`}
                             >
                               <div className="font-semibold text-foreground group-hover:text-primary group-focus-visible:text-primary transition-colors">
                                 {s.symbol}
                               </div>
                               <div className="text-xs text-muted-foreground">{s.name}</div>
                             </Link>
+                            </div>
                           </td>
                           <td className="px-4 py-3 font-mono font-medium text-foreground">₹{s.price.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                           <td className="px-4 py-3">

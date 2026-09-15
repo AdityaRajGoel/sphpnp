@@ -45,6 +45,11 @@ import FundamentalScorePanel from "@/components/stock/FundamentalScorePanel";
 import { useStockAnalytics } from "@/hooks/useStockAnalytics";
 import ShareholdingTable from "@/components/stock/ShareholdingTable";
 import StockResearchProfile from "@/components/stock/StockResearchProfile";
+import StockChecklist from "@/components/stock/StockChecklist";
+import PeerComparison from "@/components/stock/PeerComparison";
+import EfficiencyDays from "@/components/stock/EfficiencyDays";
+import LegalWatch from "@/components/stock/LegalWatch";
+import WatchlistButton from "@/components/WatchlistButton";
 
 // Same split the screener, comparison and search surfaces make: the modal drags
 // in recharts and react-markdown, which is more JS than this whole page ships.
@@ -199,6 +204,7 @@ export default function StockPage() {
                     </div>
                   )}
                   <div className="mt-2 flex flex-wrap items-center justify-end gap-2">
+                    {s.header && <WatchlistButton symbol={s.header.symbol} name={s.header.name} withLabel />}
                     <SymbolSwitcher />
                     {/* Gated on hasFinancials, not just on loading: a symbol the
                         sync cursor has not reached has no results for the AI to
@@ -239,6 +245,8 @@ export default function StockPage() {
             )}
 
             {s.header && <StockResearchProfile symbol={s.header.symbol} />}
+            {s.header && <StockChecklist symbol={s.header.symbol} />}
+            {s.header && <PeerComparison symbol={s.header.symbol} />}
 
             {s.header && (
               <Suspense fallback={null}>
@@ -276,7 +284,8 @@ export default function StockPage() {
                     source={statementSourceLabel(st.statements)}
                   />
                 </Suspense>
-                <StatementsSection statements={st.statements} />
+                <StatementsSection statements={st.statements} symbol={s.header?.symbol} />
+                <EfficiencyDays ratios={st.statements.ratios} />
                 {st.profile?.screener && <CompanyInsights screener={st.profile.screener} />}
                 {st.profile && <ShareholdingTable shareholding={st.profile.shareholding} filing={disclosures?.shareholding ?? null} />}
                 {st.profile?.tickertape && (
@@ -320,6 +329,7 @@ export default function StockPage() {
             {disclosures && <InsiderTrades trades={disclosures.trades} />}
             {s.header && <StockDeals symbol={s.header.symbol} />}
             {disclosures && <BseAnnouncements items={disclosures.announcements} bseCode={st.profile?.bse_code ?? null} />}
+            {s.header && <LegalWatch symbol={s.header.symbol} />}
             {s.header && <SebiActionsList symbol={s.header.symbol} />}
             {st.profile?.screener && <CompanyDocuments documents={st.profile.screener.documents} />}
             <StockProvenance filing={s.filing} />

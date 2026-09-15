@@ -18,6 +18,7 @@ import { SpeedInsights } from "@vercel/speed-insights/react";
 
 import useScrollToHash from "@/hooks/useScrollToHash";
 import SmoothScroll from "@/components/SmoothScroll";
+import { useLenis } from "lenis/react";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { useLocation } from "react-router-dom";
 import SmartPopup from "@/components/SmartPopup";
@@ -71,6 +72,8 @@ const StockPage = lazy(() => import("./pages/StockPage"));
 const IpoPage = lazy(() => import("./pages/IpoPage"));
 const IpoDetailPage = lazy(() => import("./pages/IpoDetailPage"));
 const IpoPipelinePage = lazy(() => import("./pages/IpoPipelinePage"));
+const HelpPage = lazy(() => import("./pages/HelpPage"));
+const WatchlistPage = lazy(() => import("./pages/WatchlistPage"));
 
 // --- Professional branded loading screen ---
 const candleVariants = {
@@ -152,9 +155,25 @@ const PageFallback = () => (
 
 const AnimatedRoutes = () => {
   const location = useLocation();
-  
+  const lenis = useLenis();
+
+  /*
+   * The page starts at the top when the NEW page mounts, not when the URL
+   * changes. useScrollToHash resets on the URL change, but with mode="wait" the
+   * old page is still on screen for its exit animation, and Lenis re-applies its
+   * remembered offset during it - measured on the live site, a phone-width
+   * About -> Contact tap showed Contact at the old page's bottom offset 200ms
+   * after the click. Resetting here, through Lenis as well as the window, runs
+   * after the exit and before the new page paints. Hash links keep their target.
+   */
+  const resetScroll = () => {
+    if (location.hash) return;
+    lenis?.scrollTo(0, { immediate: true, force: true });
+    window.scrollTo({ top: 0, behavior: "instant" });
+  };
+
   return (
-    <AnimatePresence mode="wait" initial={false}>
+    <AnimatePresence mode="wait" initial={false} onExitComplete={resetScroll}>
       <Routes location={location}>
         <Route path="/" element={<Index />} />
         <Route path="/about" element={<AboutPage />} />
@@ -193,6 +212,8 @@ const AnimatedRoutes = () => {
         <Route path="/ipo/:slug" element={<IpoDetailPage />} />
         <Route path="/ipo-pipeline" element={<IpoPipelinePage />} />
         <Route path="/sip-calculator" element={<SIPCalculatorPage />} />
+        <Route path="/help" element={<HelpPage />} />
+        <Route path="/watchlist" element={<WatchlistPage />} />
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
         <Route path="*" element={<NotFound />} />
       </Routes>

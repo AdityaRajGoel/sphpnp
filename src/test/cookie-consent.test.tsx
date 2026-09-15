@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { render, screen, fireEvent, cleanup } from "@testing-library/react";
+import { render, screen, fireEvent, cleanup, act } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import CookieConsent from "@/components/CookieConsent";
-import { CONSENT_KEY, readConsent, writeConsent } from "@/lib/consent";
+import { CONSENT_KEY, openConsentSettings, readConsent, writeConsent } from "@/lib/consent";
 
 const renderBanner = () =>
   render(
@@ -146,6 +146,27 @@ describe("CookieConsent", () => {
     expect(describedBy).toBeTruthy();
     expect(document.getElementById(labelledBy!)).toBeInTheDocument();
     expect(document.getElementById(describedBy!)).toBeInTheDocument();
+  });
+
+  it("reopens from cookie settings so a decision can be withdrawn", () => {
+    writeConsent("all");
+    renderBanner();
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    act(() => openConsentSettings());
+    expect(screen.getByRole("dialog")).toHaveTextContent(/all cookies accepted/i);
+    fireEvent.click(screen.getByRole("button", { name: /essential only/i }));
+    expect(readConsent()).toBe("essential");
+  });
+
+  it("explains each category on request", () => {
+    renderBanner();
+    const toggle = screen.getByRole("button", { name: /details on each choice/i });
+    // The details toggle must never be mistaken for a consent control.
+    expect(toggle.textContent).not.toMatch(/accept|allow|reject/i);
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    fireEvent.click(toggle);
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByText(/analytics & performance/i)).toBeInTheDocument();
   });
 
   it("keeps the cookie policy reachable from the banner", () => {

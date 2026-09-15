@@ -3,7 +3,7 @@ import { Gauge,
   Calculator, GitCompare, Calendar, ArrowUpDown, Activity,
   BookOpen, GraduationCap, Radio, Newspaper,
   Users, Building2, Phone, Mail, Award, ShieldCheck,
-  Search, Flame, Briefcase, Globe, KeyRound, Banknote, Percent
+  Search, Flame, Briefcase, Globe, KeyRound, Banknote, Percent, LifeBuoy
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -82,6 +82,7 @@ export const megaMenuItems: MegaMenuItem[] = [
       { label: "Articles & Guides", href: "/learn#articles", icon: GraduationCap, description: "Educational articles & tutorials" },
       { label: "Market News", href: "/learn#news", icon: Newspaper, description: "Latest business & market news" },
       { label: "Live TV", href: "/learn#live-tv", icon: Radio, description: "Zee Business & CNBC Awaaz live" },
+      { label: "Help & Docs", href: "/help", icon: LifeBuoy, description: "How to use the screener, stock pages & tools" },
     ],
   },
   {

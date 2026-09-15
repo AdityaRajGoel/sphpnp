@@ -66,3 +66,18 @@ export function writeConsent(choice: ConsentChoice): void {
 
 /** Fires on the window when a consent decision is recorded, in this document. */
 export const CONSENT_CHANGE_EVENT = "panipat:consent-change";
+
+/** Fires on the window to reopen the consent prompt, e.g. from "Cookie settings" in the footer. */
+export const OPEN_CONSENT_EVENT = "panipat:consent-open";
+
+/**
+ * Reopen the prompt so a decision can be changed. Withdrawing consent must be
+ * as easy as giving it, so this is reachable from every page.
+ */
+export function openConsentSettings(): void {
+  try {
+    window.dispatchEvent(new CustomEvent(OPEN_CONSENT_EVENT));
+  } catch {
+    /* CustomEvent unavailable */
+  }
+}

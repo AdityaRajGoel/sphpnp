@@ -22,6 +22,16 @@ import WhatsAppButton from "@/components/WhatsAppButton";
 import { RippleButton } from "@/components/ui/ripple-button";
 
 import { revealItem, revealItemX } from "@/lib/motion";
+import { validateAll, validateEmail, validateName, validatePhone, type FieldCheck } from "@/lib/form-validation";
+import { FieldMessage, fieldStateClass } from "@/components/ui/form-field";
+
+const LEAD_CHECKS: Partial<Record<"name" | "phone" | "email" | "city" | "message", FieldCheck>> = {
+  name: validateName,
+  phone: validatePhone,
+  email: validateEmail({ optional: true }),
+  city: (v) => (v.length > 100 ? "City must be 100 characters or fewer" : null),
+};
+
 const benefits = [
   { icon: Shield, title: "SEBI Registered", desc: "Trade with a trusted, regulation-compliant broker" },
   { icon: TrendingUp, title: "Multi-Exchange Access", desc: "NSE, BSE, MCX - all platforms under one roof" },
@@ -35,11 +45,31 @@ const OpenAccountPage = () => {
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [form, setForm] = useState({ name: "", email: "", phone: "", city: "", message: "" });
+  const [touched, setTouched] = useState<Partial<Record<keyof typeof form, boolean>>>({});
   const formRenderTime = useRef(Date.now());
+
+  const errors = validateAll(form, LEAD_CHECKS);
+  const shownError = (field: keyof typeof form) => (touched[field] ? errors[field] ?? null : null);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
   };
+
+  const handleBlur = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const name = e.target.name as keyof typeof form;
+    if (form[name].trim()) setTouched((prev) => ({ ...prev, [name]: true }));
+  };
+
+  const fieldProps = (field: "name" | "phone" | "email" | "city") => ({
+    id: `lead-${field}`,
+    name: field,
+    value: form[field],
+    onChange: handleChange,
+    onBlur: handleBlur,
+    "aria-invalid": shownError(field) ? true : undefined,
+    "aria-describedby": `lead-${field}-message`,
+    className: `pl-10 ${fieldStateClass(shownError(field), touched[field] && !errors[field] && !!form[field].trim())}`,
+  });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -56,16 +86,10 @@ const OpenAccountPage = () => {
       message: form.message.trim(),
     };
 
-    if (!trimmed.name || !trimmed.phone) {
-      toast({ title: "Please fill required fields", description: "Name and phone number are mandatory.", variant: "destructive" });
-      return;
-    }
-    if (trimmed.name.length > 100 || trimmed.phone.length > 20) {
-      toast({ title: "Invalid input", description: "Please check your name and phone number.", variant: "destructive" });
-      return;
-    }
-    if (trimmed.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed.email)) {
-      toast({ title: "Invalid email", description: "Please enter a valid email address.", variant: "destructive" });
+    const invalid = Object.keys(validateAll(trimmed, LEAD_CHECKS));
+    if (invalid.length > 0) {
+      setTouched({ name: true, phone: true, email: true, city: true });
+      document.getElementById(`lead-${invalid[0]}`)?.focus();
       return;
     }
 
@@ -250,46 +274,52 @@ const OpenAccountPage = () => {
               <h2 className="font-heading text-2xl md:text-3xl font-bold text-foreground mb-2">Fill Your Details</h2>
               <p className="text-sm text-muted-foreground mb-8">Our team will get in touch with you to complete the account opening process.</p>
 
-              <form onSubmit={handleSubmit} className="space-y-5">
+              <form onSubmit={handleSubmit} noValidate className="space-y-3">
                 {/* Honeypot - hidden from humans */}
                 <div className="absolute opacity-0 -z-10" style={{ position: 'absolute', left: '-9999px' }} aria-hidden="true">
                   <Input name="_website" tabIndex={-1} autoComplete="off" />
                 </div>
-                <div className="grid sm:grid-cols-2 gap-4">
+                <p className="text-xs text-muted-foreground">Fields marked <span className="text-destructive" aria-hidden="true">*</span><span className="sr-only">with an asterisk</span> are required.</p>
+                <div className="grid sm:grid-cols-2 gap-x-4">
                   <div>
-                    <label className="text-xs font-semibold text-foreground mb-1.5 block">Full Name *</label>
+                    <label htmlFor="lead-name" className="text-xs font-semibold text-foreground mb-1.5 block">Full name <span className="text-destructive" aria-hidden="true">*</span></label>
                     <div className="relative">
-                      <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                      <Input name="name" aria-label="Your Name" value={form.name} onChange={handleChange} placeholder="Enter your name" className="pl-10" required maxLength={100} />
+                      <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
+                      <Input {...fieldProps("name")} placeholder="As on your PAN card" required aria-required="true" maxLength={100} autoComplete="name" />
                     </div>
+                    <FieldMessage id="lead-name-message" error={shownError("name")} />
                   </div>
                   <div>
-                    <label className="text-xs font-semibold text-foreground mb-1.5 block">Phone Number *</label>
+                    <label htmlFor="lead-phone" className="text-xs font-semibold text-foreground mb-1.5 block">Mobile number <span className="text-destructive" aria-hidden="true">*</span></label>
                     <div className="relative">
-                      <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                      <Input name="phone" aria-label="Phone Number" value={form.phone} onChange={handleChange} placeholder="+91 XXXXX XXXXX" className="pl-10" required maxLength={20} />
+                      <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
+                      <Input {...fieldProps("phone")} type="tel" inputMode="tel" placeholder="98765 43210" required aria-required="true" maxLength={20} autoComplete="tel" />
                     </div>
+                    <FieldMessage id="lead-phone-message" error={shownError("phone")} hint="We call from a Panipat number within one working day" />
                   </div>
                 </div>
-                <div className="grid sm:grid-cols-2 gap-4">
+                <div className="grid sm:grid-cols-2 gap-x-4">
                   <div>
-                    <label className="text-xs font-semibold text-foreground mb-1.5 block">Email</label>
+                    <label htmlFor="lead-email" className="text-xs font-semibold text-foreground mb-1.5 block">Email <span className="font-normal text-muted-foreground">(optional)</span></label>
                     <div className="relative">
-                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                      <Input name="email" aria-label="Email Address" value={form.email} onChange={handleChange} placeholder="your@email.com" className="pl-10" type="email" maxLength={255} />
+                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
+                      <Input {...fieldProps("email")} placeholder="name@example.com" type="email" inputMode="email" maxLength={255} autoComplete="email" />
                     </div>
+                    <FieldMessage id="lead-email-message" error={shownError("email")} />
                   </div>
                   <div>
-                    <label className="text-xs font-semibold text-foreground mb-1.5 block">City</label>
+                    <label htmlFor="lead-city" className="text-xs font-semibold text-foreground mb-1.5 block">City <span className="font-normal text-muted-foreground">(optional)</span></label>
                     <div className="relative">
-                      <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                      <Input name="city" aria-label="City" value={form.city} onChange={handleChange} placeholder="Panipat" className="pl-10" maxLength={100} />
+                      <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
+                      <Input {...fieldProps("city")} placeholder="Panipat" maxLength={100} autoComplete="address-level2" />
                     </div>
+                    <FieldMessage id="lead-city-message" error={shownError("city")} />
                   </div>
                 </div>
                 <div>
-                  <label className="text-xs font-semibold text-foreground mb-1.5 block">Message (Optional)</label>
-                  <Textarea name="message" aria-label="Message" value={form.message} onChange={handleChange} placeholder="Any specific requirements or questions..." rows={4} maxLength={1000} />
+                  <label htmlFor="lead-message" className="text-xs font-semibold text-foreground mb-1.5 block">Message <span className="font-normal text-muted-foreground">(optional)</span></label>
+                  <Textarea id="lead-message" name="message" aria-describedby="lead-message-count" value={form.message} onChange={handleChange} placeholder="Any specific requirements or questions..." rows={4} maxLength={1000} />
+                  <p id="lead-message-count" className="pt-1 text-right text-xs tabular-nums text-muted-foreground">{form.message.length} / 1000</p>
                 </div>
                 <RippleButton type="submit" disabled={loading} className="w-full sm:w-auto bg-gradient-to-r from-brand-orange to-brand-gold text-white font-bold text-base px-10 py-6 shadow-lg shadow-brand-orange/20 hover:opacity-90 transition-opacity">
                   {loading ? "Submitting..." : "Submit Request"}

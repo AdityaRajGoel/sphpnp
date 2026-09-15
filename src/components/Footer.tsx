@@ -8,6 +8,7 @@ import logo160 from "@/assets/logo-160.webp";
 import appQr from "@/assets/app-qr.svg";
 
 import { revealFade, revealItem, revealSection } from "@/lib/motion";
+import { openConsentSettings } from "@/lib/consent";
 type FooterLink = { label: string; href: string; external?: boolean; title?: string };
 
 const companyLinks: FooterLink[] = [
@@ -36,6 +37,7 @@ const toolLinks: FooterLink[] = [
   { label: "Brokerage Calculator", href: "/brokerage-calculator" },
   { label: "Holiday Calendar", href: "/holidays" },
   { label: "Reports & Downloads", href: "/reports" },
+  { label: "Help & Docs", href: "/help" },
 ];
 
 const importantLinks: FooterLink[] = [
@@ -340,6 +342,8 @@ const Footer = () => {
                 <Link to="/privacy-policy" className="tap-area hover:text-secondary hover:underline transition-colors">Privacy Policy</Link>
                 <span className="mx-2">|</span>
                 <Link to="/cookie-policy" className="tap-area hover:text-secondary hover:underline transition-colors">Cookie Policy</Link>
+                <span className="mx-2">|</span>
+                <button type="button" onClick={openConsentSettings} className="tap-area hover:text-secondary hover:underline transition-colors">Cookie Settings</button>
                 <span className="mx-2">|</span>
                 <Link to="/terms" className="tap-area hover:text-secondary hover:underline transition-colors">Terms of Use</Link>
                 <span className="mx-2">|</span>

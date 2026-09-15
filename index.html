@@ -27,10 +27,10 @@
   <meta http-equiv="X-XSS-Protection" content="1; mode=block" />
   <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin" />
   <meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=(self)" />
-  <!-- Preload hero poster for fastest LCP -->
-    <link rel="preload" href="/logo.png" as="image" fetchpriority="high" />
-<link rel="preload" href="/hero-bg.webp" as="image" type="image/webp" fetchpriority="high" />
-  <link rel="preload" href="/hero-bg.jpg" as="image" fetchpriority="high" />
+  <!-- Preload the hero poster for LCP. WebP only: preloading the JPG as well
+       downloaded the same image twice on every visit, and the splash logo was
+       competing with it at high priority. -->
+  <link rel="preload" href="/hero-bg.webp" as="image" type="image/webp" fetchpriority="high" />
   <!-- hero-*.webm/mp4 load via the Hero component after mount; eager preload is not needed and hurts LCP -->
   <!-- Font loading -->
   <link rel="preload"

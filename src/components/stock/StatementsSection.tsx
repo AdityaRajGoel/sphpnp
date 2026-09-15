@@ -1,6 +1,9 @@
-import { useLayoutEffect, useRef } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { motion } from "motion/react";
+import { Download } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { downloadText, statementFileName, statementToCsv } from "@/lib/statement-csv";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { revealSection } from "@/lib/motion";
@@ -84,18 +87,30 @@ const asOf = (iso: string) =>
  * statement, most recent columns on the right. Renders nothing until the sync
  * has stored at least one statement for the symbol.
  */
-export default function StatementsSection({ statements }: { statements: Partial<Record<StatementKind, StatementGrid>> }) {
+export default function StatementsSection({ statements, symbol }: { statements: Partial<Record<StatementKind, StatementGrid>>; symbol?: string }) {
   const { source, tabs: available } = statementTabs(statements);
+  const [active, setActive] = useState<string | null>(null);
   if (available.length === 0) return null;
   const fetchedAt = available.map((tab) => statements[tab.kind]!.fetched_at).sort().reverse()[0];
+  const current = available.find((t) => t.kind === active) ?? available[0];
+
+  const exportCsv = () => {
+    const grid = statements[current.kind];
+    if (grid) downloadText(statementToCsv(grid), statementFileName(symbol ?? "company", current.kind));
+  };
 
   return (
     <motion.section {...revealSection} aria-labelledby="statements-heading">
       <div className="flex flex-wrap items-baseline justify-between gap-3 mb-4">
         <h2 id="statements-heading" className="text-2xl font-bold">Financial statements</h2>
-        <Badge variant="secondary">₹ Crore</Badge>
+        <div className="flex items-center gap-2">
+          <Badge variant="secondary">₹ Crore</Badge>
+          <Button type="button" variant="outline" size="sm" onClick={exportCsv} aria-label={`Download ${current.label} as CSV`}>
+            <Download className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" /> CSV
+          </Button>
+        </div>
       </div>
-      <Tabs defaultValue={available[0].kind}>
+      <Tabs value={current.kind} onValueChange={setActive}>
         <TabsList className="mb-3 h-auto flex-wrap justify-start">
           {available.map((tab) => (
             <TabsTrigger key={tab.kind} value={tab.kind}>{tab.label}</TabsTrigger>

@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowUpDown } from "lucide-react";
 import { Card } from "@/components/ui/card";
+import WatchlistButton from "@/components/WatchlistButton";
 import type { ScreenerStock } from "@/hooks/useScreenerStocks";
 import { displayMetric, metricTone, sortByMetric, type Metric, type MetricRow } from "@/lib/screener-metrics";
 
@@ -69,10 +70,13 @@ export default function MetricTable({ rows, metricRows, columns, note, onOpen }:
                   className={`border-b border-border/50 hover:bg-muted/40 transition-colors ${onOpen ? "cursor-pointer" : ""}`}
                 >
                   <td className="px-4 py-2.5">
-                    <Link to={`/stock/${encodeURIComponent(s.symbol)}`} className="group inline-block rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-                      <div className="font-semibold text-foreground group-hover:text-primary transition-colors">{s.symbol}</div>
-                      <div className="text-xs text-muted-foreground max-w-[180px] truncate">{s.name}</div>
-                    </Link>
+                    <div className="flex items-start gap-1.5">
+                      <WatchlistButton symbol={s.symbol} name={s.name} className="-ml-1.5 mt-0.5" />
+                      <Link to={`/stock/${encodeURIComponent(s.symbol)}`} className="group inline-block rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                        <div className="font-semibold text-foreground group-hover:text-primary transition-colors">{s.symbol}</div>
+                        <div className="text-xs text-muted-foreground max-w-[180px] truncate">{s.name}</div>
+                      </Link>
+                    </div>
                   </td>
                   {columns.map((c) => {
                     const value = row ? c.get(row) : null;

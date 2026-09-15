@@ -28,7 +28,7 @@
     --accent: 150 55% 42%;
     --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 84.2% 50%;
+    --destructive: 0 72% 42%;
     --destructive-foreground: 210 40% 98%;
 
     --border: 210 30% 90%;
@@ -304,6 +304,45 @@
     .nav-underline:hover::after {
       transform: scaleX(1);
     }
+  }
+
+  /* Inline "go somewhere" link: underline draws in and a trailing arrow nudges forward */
+  .link-arrow {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25em;
+    text-decoration: none;
+    border-radius: 0.25rem;
+  }
+  .link-arrow::after {
+    content: "→";
+    display: inline-block;
+    transition: transform var(--duration-fast) var(--ease-out);
+  }
+  .link-arrow::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 1.1em;
+    bottom: -1px;
+    height: 1px;
+    background: currentColor;
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform var(--duration-base) var(--ease-out);
+  }
+  .link-arrow:focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 3px;
+  }
+  .link-arrow:focus-visible::before { transform: scaleX(1); }
+  @media (hover: hover) and (pointer: fine) {
+    .link-arrow:hover::before { transform: scaleX(1); }
+    .link-arrow:hover::after { transform: translateX(3px); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .link-arrow::after, .link-arrow::before { transition: none; }
   }
 
   /* Hero aurora — slow-drifting brand-colored glows behind the video overlay */

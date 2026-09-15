@@ -1,5 +1,7 @@
 # Shri Parasram Holdings Pvt Ltd (Panipat Branch)
 
+Also known as: Parasram, Parasram Holdings, Parasram India, Parasram Science of Investment, SPHPL.
+
 > **Shri Parasram Holdings Pvt. Ltd.** is one of the oldest and most trusted stock brokers in Panipat, Haryana. Established with a legacy of trust (SEBI registered since 1970), we offer free Demat accounts and comprehensive trading services including equities (NSE/BSE), mutual funds, IPOs, unlisted shares (pre-IPO), F&O, and commodities trading.
 
 ## Core Navigation & Site Structure
@@ -20,17 +22,22 @@ This file is intended to provide Large Language Models and AI Agents with a clea
 - [Depository Services](https://www.sphpnp.com/depository-services): CDSL/NSDL depository services, pledging, dematerialization, and corporate actions.
 
 ### Trading Tools & Live Analytics
-- [Stock Screener](https://www.sphpnp.com/screener): A powerful live screener filtering Indian stocks by market cap, P/E ratio, 52-week ranges, and thematic sectors (Banking, IT, Auto, etc.).
-- [Stock Comparison](https://www.sphpnp.com/compare): Side-by-side comparison tool for up to 3 NSE/BSE stocks featuring AI-powered analysis and winner determination.
-- [F&O Dashboard](https://www.sphpnp.com/fno): Real-time Futures and Options data, PCR (Put-Call Ratio), option chain insights, and major indices tracking (NIFTY, BANKNIFTY).
-- [52 Week Tracker](https://www.sphpnp.com/52-week-tracker): Live tracker for stocks hitting 52-week highs (momentum breakouts) and 52-week lows (potential value buys).
-- [Margin Calculator](https://www.sphpnp.com/margin-calculator): Calculates exact SPAN and exposure margins for equity and F&O trades based on real-time exchange rules.
+- [Market Pulse](https://www.sphpnp.com/market-pulse): India market regime (India VIX, Nifty trend, risk appetite, rupee, crude, breadth), world indices and Indian sector indices board, BeES ETF flow estimates, market breadth and scan counts, NSE provisional FII/DII cash activity, index valuations, F&O positioning and deals.
+- [Stock Screener](https://www.sphpnp.com/screener): Screens ~250 NSE stocks with 54 combinable scanners (trend, RSI, MACD, ADX, Bollinger, delivery, risk, fundamentals, Piotroski, Magic Formula) and custom rules on 63 metrics, including value/quality/momentum/low-volatility factor percentiles and the Graham number.
+- [Stock pages](https://www.sphpnp.com/stock/RELIANCE): Per-stock financial statements, ratios, shareholding, risk and technical measures, research profile with factor percentiles and matching scans, and an advanced chart with 28 indicators.
+- [Stock Comparison](https://www.sphpnp.com/compare): Side-by-side comparison of up to 3 stocks across valuation, profitability, growth, balance sheet, momentum, trend and risk.
+- [F&O Dashboard](https://www.sphpnp.com/fno): Live option chain, PCR and max pain, plus end-of-day FII/DII/pro/client open interest and futures build-up for every F&O stock.
+- [52 Week Tracker](https://www.sphpnp.com/52-week-tracker): Stocks at and near 52-week highs and lows, the sectors they cluster in, and each stock's one-year return, 200-day trend, RSI, delivery and volume.
+- [Margin Calculator](https://www.sphpnp.com/margin-calculator): NSE F&O margin estimate (SPAN + exposure) using NSE's current lot sizes for all 216 contracts with last closing prices, a full lot-size table, and equity intraday/delivery margin.
 - [Brokerage Calculator](https://www.sphpnp.com/brokerage-calculator): Transparent breakdown of brokerage, STT, GST, exchange charges, and net P&L.
+- [SIP Calculator](https://www.sphpnp.com/sip-calculator): SIP future-value calculator plus a backtest of a monthly SIP on real mutual fund NAV history (XIRR, CAGR, returns by start year).
+- [IPO Tracker](https://www.sphpnp.com/ipo): Mainboard and SME IPO calendar with recorded grey market premium history, subscription, and listing gains derived from NSE listing-day prices.
+- [IPO Pipeline](https://www.sphpnp.com/ipo-pipeline): Companies that have filed DRHP/RHP documents with SEBI, filings per month and time from draft to launch.
 
 ### Education & Market Insights
 - [Learning Center](https://www.sphpnp.com/learn): Educational hub featuring trading guides, technical analysis basics, and investment strategies.
-- [Daily Recommendations](https://www.sphpnp.com/learn/recommendations): Actionable daily stock picks, swing trading ideas, and long-term investment calls by our research experts.
-- [Market Holidays](https://www.sphpnp.com/holidays): Calendar of NSE, BSE, and MCX market closure days for the current trading year.
+- [Research Updates](https://www.sphpnp.com/learn/recommendations): Research posts from our SEBI-registered research desk's Telegram channel.
+- [Market Calendar](https://www.sphpnp.com/holidays): NSE, BSE and MCX trading holidays, every Nifty/Sensex weekly and monthly F&O expiry with holiday shifts (NSE Tuesday, BSE Thursday), market timings, and upcoming company results and board meetings.
 
 ### Legal & Compliance
 - [Privacy Policy](https://www.sphpnp.com/privacy-policy): Details on data protection and regulatory compliance.

@@ -11,7 +11,8 @@ const WhatsAppButton = () => {
       target="_blank"
       rel="noopener noreferrer"
       aria-label="Chat with us on WhatsApp"
-      className="fixed bottom-6 right-6 z-50 flex items-center gap-3 group transition-transform hover:scale-105 active:scale-[0.97] pb-[env(safe-area-inset-bottom)]"
+      // Lifts clear of the cookie prompt while it is open, like the other bottom-docked UI.
+      className="fixed bottom-[calc(1.5rem+var(--consent-dock-height,0px))] right-6 z-50 flex items-center gap-3 group transition-[transform,bottom] duration-base hover:scale-105 active:scale-[0.97] pb-[env(safe-area-inset-bottom)]"
     >
       {/* Tooltip */}
       <div className="hidden md:block bg-card/90 backdrop-blur-md text-foreground px-4 py-2 rounded-lg shadow-[0_4px_20px_-4px_rgba(0,0,0,0.3)] opacity-0 group-hover:opacity-100 transition-[opacity,transform] ease-out duration-base whitespace-nowrap translate-x-4 group-hover:translate-x-0">

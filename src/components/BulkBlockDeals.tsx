@@ -82,7 +82,7 @@ const BulkBlockDeals = () => {
                 const val = dealValueCr(d);
                 return (
                   <div key={`${d.symbol}-${d.client_name}-${i}`} className="flex items-center gap-2.5 py-1.5 border-b border-border/30 last:border-0">
-                    <span className={`shrink-0 w-9 text-center text-[9px] font-black uppercase px-1 py-0.5 rounded ${isBuy ? "bg-secondary/15 text-secondary" : "bg-destructive/10 text-destructive"}`}>
+                    <span className={`shrink-0 w-9 text-center text-[9px] font-black uppercase px-1 py-0.5 rounded ${isBuy ? "bg-secondary/15 text-secondary" : "bg-destructive/10 text-red-800 dark:text-red-300"}`}>
                       {d.buy_sell ?? "-"}
                     </span>
                     <div className="min-w-0 flex-1">

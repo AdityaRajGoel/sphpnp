@@ -100,6 +100,7 @@ const SectorHeatmap = memo(() => {
           <span className="text-[10px] text-brand-orange font-semibold">Live</span>
         </div>
         <div className="grid grid-cols-2 gap-2">
+          {sectors.length === 0 && Array.from({ length: 8 }, (_, i) => <div key={i} className="h-12 rounded-lg bg-muted/50 animate-pulse" aria-hidden="true" />)}
           {sectors.map((sector) => {
             const Icon = sectorIcons[sector.name] || Activity;
             return (
@@ -309,6 +310,7 @@ const GlobalMarkets = memo(() => {
           <span className="text-[10px] text-muted-foreground">Live</span>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+          {globalMarkets.length === 0 && Array.from({ length: 6 }, (_, i) => <div key={i} className="h-16 rounded-lg bg-muted/50 animate-pulse" aria-hidden="true" />)}
           {globalMarkets.map((market) => (
             <motion.div key={market.name} className="bg-muted/30 rounded-lg p-2.5 cursor-pointer hover:bg-muted/50 transition-colors" whileHover={{ y: -2 }}>
               <div className="text-[10px] text-muted-foreground font-medium">{market.name}</div>
@@ -379,13 +381,9 @@ const CurrencyDashboard = memo(() => {
     c.name.includes("USD/INR") || c.name.includes("EUR/INR") || c.name.includes("GBP/INR") || c.name.includes("JPY/INR")
   );
 
-  const fallbackCurrencies = [
-    { name: "USD/INR", price: "83.42", change: "+0.05%", up: true },
-    { name: "EUR/INR", price: "90.15", change: "-0.12%", up: false },
-    { name: "GBP/INR", price: "105.82", change: "+0.18%", up: true },
-  ];
-
-  const displayCurrencies = currencies.length > 0 ? currencies : fallbackCurrencies;
+  // No invented rates while the feed loads - the panel shows placeholders
+  // instead of USD/INR 83.42 presented as live.
+  const displayCurrencies = currencies;
 
   return (
     <Card className="border-border/50 overflow-hidden">
@@ -398,6 +396,7 @@ const CurrencyDashboard = memo(() => {
           <span className="text-[10px] text-brand-orange font-semibold">Live</span>
         </div>
         <div className="space-y-2">
+          {displayCurrencies.length === 0 && Array.from({ length: 3 }, (_, i) => <div key={i} className="h-14 rounded-lg bg-muted/50 animate-pulse" aria-hidden="true" />)}
           {displayCurrencies.map((curr) => (
             <motion.div key={curr.name}
               className="flex items-center justify-between p-3 bg-muted/30 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer"

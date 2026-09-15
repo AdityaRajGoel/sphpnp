@@ -12,6 +12,8 @@ import SEOHead from "@/components/SEOHead";
 import logo80 from "@/assets/logo-80.webp";
 import logo160 from "@/assets/logo-160.webp";
 import PageTransition from "@/components/PageTransition";
+import { validateEmail, validateName, validateNewPassword } from "@/lib/form-validation";
+import { FieldMessage, PasswordMeter, fieldStateClass } from "@/components/ui/form-field";
 
 type AuthMode = "login" | "signup" | "forgot";
 
@@ -26,8 +28,26 @@ const AuthPage = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
 
+  const [touched, setTouched] = useState({ email: false, password: false, fullName: false });
+  const emailError = touched.email ? validateEmail()(email) : null;
+  const passwordError = touched.password ? (mode === "signup" ? validateNewPassword(password) : password ? null : "Enter your password") : null;
+  const nameError = touched.fullName && mode === "signup" ? validateName(fullName) : null;
+
+  /** Marks every field in the current mode as touched and focuses the first one that fails. */
+  const blocked = () => {
+    setTouched({ email: true, password: true, fullName: true });
+    const failing = [
+      mode === "signup" && validateName(fullName) ? "fullName" : null,
+      validateEmail()(email) ? "email" : null,
+      mode !== "forgot" && (mode === "signup" ? validateNewPassword(password) : !password) ? "password" : null,
+    ].find(Boolean);
+    if (failing) document.getElementById(failing)?.focus();
+    return Boolean(failing);
+  };
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (blocked()) return;
     setLoading(true);
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     setLoading(false);
@@ -41,10 +61,7 @@ const AuthPage = () => {
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (password.length < 6) {
-      toast({ title: "Password too short", description: "Must be at least 6 characters", variant: "destructive" });
-      return;
-    }
+    if (blocked()) return;
     setLoading(true);
     const { error } = await supabase.auth.signUp({
       email,
@@ -65,6 +82,7 @@ const AuthPage = () => {
 
   const handleForgot = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (blocked()) return;
     setLoading(true);
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}/reset-password`,
@@ -174,7 +192,7 @@ const AuthPage = () => {
                   : "Enter your email to receive a reset link"}
               </p>
 
-              <form onSubmit={mode === "login" ? handleLogin : mode === "signup" ? handleSignup : handleForgot} className="space-y-4">
+              <form onSubmit={mode === "login" ? handleLogin : mode === "signup" ? handleSignup : handleForgot} noValidate className="space-y-3">
                 {mode === "signup" && (
                   <div className="space-y-2">
                     <Label htmlFor="fullName">Full Name</Label>
@@ -184,11 +202,17 @@ const AuthPage = () => {
                         id="fullName"
                         value={fullName}
                         onChange={(e) => setFullName(e.target.value)}
+                        onBlur={() => fullName && setTouched((t) => ({ ...t, fullName: true }))}
                         placeholder="Enter your full name"
-                        className="pl-10"
+                        className={`pl-10 ${fieldStateClass(nameError)}`}
                         required
+                        autoComplete="name"
+                        maxLength={100}
+                        aria-invalid={nameError ? true : undefined}
+                        aria-describedby="fullName-message"
                       />
                     </div>
+                    <FieldMessage id="fullName-message" error={nameError} />
                   </div>
                 )}
 
@@ -199,13 +223,20 @@ const AuthPage = () => {
                     <Input
                       id="email"
                       type="email"
+                      inputMode="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
+                      onBlur={() => email && setTouched((t) => ({ ...t, email: true }))}
                       placeholder="you@example.com"
-                      className="pl-10"
+                      className={`pl-10 ${fieldStateClass(emailError)}`}
                       required
+                      autoComplete="email"
+                      maxLength={255}
+                      aria-invalid={emailError ? true : undefined}
+                      aria-describedby="email-message"
                     />
                   </div>
+                  <FieldMessage id="email-message" error={emailError} />
                 </div>
 
                 {mode !== "forgot" && (
@@ -229,10 +260,13 @@ const AuthPage = () => {
                         type={showPassword ? "text" : "password"}
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
+                        onBlur={() => password && setTouched((t) => ({ ...t, password: true }))}
                         placeholder="••••••••"
-                        className="pl-10 pr-10"
+                        className={`pl-10 pr-10 ${fieldStateClass(passwordError)}`}
                         required
-                        minLength={6}
+                        autoComplete={mode === "signup" ? "new-password" : "current-password"}
+                        aria-invalid={passwordError ? true : undefined}
+                        aria-describedby="password-message"
                       />
                       <button
                         type="button"
@@ -244,6 +278,8 @@ const AuthPage = () => {
                         {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
                     </div>
+                    {mode === "signup" && <PasswordMeter value={password} />}
+                    <FieldMessage id="password-message" error={passwordError} />
                   </div>
                 )}
 

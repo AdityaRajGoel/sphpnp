@@ -122,7 +122,7 @@ const Header = () => {
               The shrink-on-scroll affordance is a transform on the image
               instead: it costs no layout, so scrolling can't reflow the page
               or shift what's underneath. */}
-          <Link to="/" className="flex h-10 md:h-16 items-center group">
+          <Link to="/" className="flex h-10 md:h-16 shrink-0 items-center group">
             <img
               src={logo80}
               srcSet={`${logo80} 80w, ${logo160} 160w`}
@@ -149,7 +149,7 @@ const Header = () => {
                 {item.href && !item.subItems ? (
                   <Link
                     to={item.href}
-                    className={`px-3 py-3 min-h-[48px] text-sm font-medium transition-colors rounded-md flex items-center gap-1 ${
+                    className={`px-2 2xl:px-3 py-3 min-h-[48px] text-sm font-medium transition-colors rounded-md flex items-center gap-1 ${
                       item.highlight
                         ? "text-brand-green font-bold hover:bg-accent/50"
                         : isActive(item)
@@ -161,7 +161,7 @@ const Header = () => {
                   </Link>
                 ) : (
                   <div
-                    className={`px-3 py-3 min-h-[48px] text-sm font-medium transition-colors rounded-md flex items-center gap-1 ${
+                    className={`px-2 2xl:px-3 py-3 min-h-[48px] text-sm font-medium transition-colors rounded-md flex items-center gap-1 ${
                       isActive(item)
                         ? "text-secondary"
                         : "text-foreground hover:bg-accent/50"
@@ -178,7 +178,7 @@ const Header = () => {
                 {/* Animated underline */}
                 {!item.highlight && (
                   <span
-                    className={`pointer-events-none absolute left-3 right-3 bottom-1 h-0.5 rounded-full bg-secondary origin-left transition-transform duration-fast ease-out ${
+                    className={`pointer-events-none absolute left-2 right-2 2xl:left-3 2xl:right-3 bottom-1 h-0.5 rounded-full bg-secondary origin-left transition-transform duration-fast ease-out ${
                       isActive(item) || activeMenu === item.label ? "scale-x-100" : "scale-x-0 group-hover/nav:scale-x-100"
                     }`}
                   />
@@ -187,7 +187,7 @@ const Header = () => {
             ))}
           </nav>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 lg:gap-1 2xl:gap-2">
             <LanguageSwitcher />
             <MotionToggle />
             <ThemeToggle />
@@ -198,17 +198,21 @@ const Header = () => {
                 className="relative"
                 title={`My Watchlist (${watchlist.length})`}
               >
-                <Link to="/screener" aria-label={`My Watchlist (${watchlist.length} items)`} className="p-2 rounded-md text-muted-foreground hover:text-yellow-500 hover:bg-yellow-500/10 transition-colors relative inline-flex">
-                  <Star className="w-4 h-4" />
-                  <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-yellow-500 text-[9px] text-black font-bold flex items-center justify-center">
+                <Link to="/watchlist" aria-label={`My Watchlist (${watchlist.length} items)`} className="p-2 rounded-md text-amber-600 hover:bg-amber-500/10 transition-colors relative inline-flex pressable">
+                  <Star className="w-4 h-4 fill-amber-400" aria-hidden="true" />
+                  <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-amber-400 text-[9px] text-black font-bold flex items-center justify-center tabular-nums">
                     {watchlist.length}
                   </span>
                 </Link>
               </motion.div>
             )}
-            <Button asChild variant="outline" size="sm" className="hidden sm:inline-flex border-primary/50 text-primary hover:bg-primary hover:text-primary-foreground font-semibold">
-              <a href="https://dashboard.parasramindia.com/Account/Login" target="_blank" rel="noopener noreferrer">
-                <LogIn className="w-4 h-4 mr-1" />{t("cta.clientLogin")}
+            {/* Between the desktop nav appearing (lg) and a wide screen (2xl) the
+                nav and three CTAs did not fit, pushing the header 62px past a
+                1280px viewport on every page. Client login collapses to its icon
+                there, keeping its name for assistive tech and as a tooltip. */}
+            <Button asChild variant="outline" size="sm" className="hidden sm:inline-flex border-primary/50 text-primary hover:bg-primary hover:text-primary-foreground font-semibold lg:px-2.5 2xl:px-3">
+              <a href="https://dashboard.parasramindia.com/Account/Login" target="_blank" rel="noopener noreferrer" aria-label={t("cta.clientLogin")} title={t("cta.clientLogin")}>
+                <LogIn className="w-4 h-4 sm:mr-1 lg:mr-0 2xl:mr-1" aria-hidden="true" /><span className="lg:hidden 2xl:inline">{t("cta.clientLogin")}</span>
               </a>
             </Button>
             <WebTradeMenu>

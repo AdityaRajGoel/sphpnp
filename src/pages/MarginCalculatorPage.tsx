@@ -41,6 +41,21 @@ const FALLBACK_CONTRACTS: FoContract[] = [
   { symbol: "MIDCPNIFTY", underlying: "NIFTY MID SELECT", lot_size: 120, spot: null, spot_date: null, isIndex: true },
 ];
 
+/**
+ * Shown on the page AND sent as FAQ schema - Google only honours FAQ markup for
+ * questions that are visible. Written for the searches this page gets
+ * impressions for (Search Console, Jun-Sep 2026): "what is exposure margin",
+ * "span margin vs exposure margin", "option selling margin calculator".
+ */
+const MARGIN_FAQ = [
+  { question: "What is SPAN margin?", answer: "SPAN (Standard Portfolio Analysis of Risk) margin is the minimum margin NSE requires to hold a futures or short options position. The exchange computes it from the worst likely one-day loss on the position across a range of price and volatility scenarios." },
+  { question: "What is exposure margin?", answer: "Exposure margin is collected on top of SPAN margin as a buffer against moves larger than the SPAN scenarios. For index derivatives it is typically about 2-3% of the contract value; for stock derivatives it is higher." },
+  { question: "What is the difference between SPAN margin and exposure margin?", answer: "SPAN margin covers the modelled worst-case one-day loss; exposure margin is an extra cushion above it. The total margin blocked for a futures or option-selling position is SPAN plus exposure." },
+  { question: "How much margin is needed to sell options?", answer: "Selling an option needs roughly the same SPAN plus exposure margin as a futures position on the same underlying, reduced when the position is hedged. Buying an option needs only the premium, with no SPAN or exposure margin." },
+  { question: "What is the NIFTY lot size?", answer: "NSE revises lot sizes periodically. This calculator reads NSE's current lot size for every F&O contract rather than a fixed list, and shows it for the contract you choose." },
+  { question: "How is intraday equity margin calculated?", answer: "Intraday (MIS) equity trades require a fraction of the trade value as margin, set by the exchange's peak-margin rules and the broker; delivery (CNC) trades require the full value. The calculator applies typical percentages for each." },
+];
+
 const EQUITY_SEGMENTS = [
   { key: "delivery", label: "Delivery (CNC)", marginPct: 100 },
   { key: "intraday", label: "Intraday (MIS)", marginPct: 20 },
@@ -60,6 +75,7 @@ const MarginCalculatorPage = () => {
   const contracts = contractsQuery.data?.length ? contractsQuery.data : FALLBACK_CONTRACTS;
   const contract = contracts.find((c) => c.symbol === symbol) ?? contracts[0];
   const [contractSearch, setContractSearch] = useState("");
+  const [lotFilter, setLotFilter] = useState("");
   const listed = contracts.filter((c) => !contractSearch || `${c.symbol} ${c.underlying}`.toLowerCase().includes(contractSearch.toLowerCase())).slice(0, 80);
 
   /** Choosing a contract also fills in its last end-of-day spot, when there is one. */
@@ -105,8 +121,9 @@ const MarginCalculatorPage = () => {
     <PageTransition>
     <div className="min-h-screen bg-background">
       <SEOHead 
-        title="F&O Margin Calculator - SPAN + Exposure NSE | Parasram India" 
-        description="Free margin calculator for F&O and equity trades. Calculate SPAN margin, exposure margin, leverage and required capital for NIFTY, BANKNIFTY and stock futures."
+        title="NSE F&O Margin Calculator: SPAN + Exposure for NIFTY, BANKNIFTY & Stocks | Parasram India"
+        description="Free NSE F&O margin calculator with current lot sizes for all 216 contracts. Estimate SPAN and exposure margin, leverage and capital for NIFTY, BANKNIFTY, FINNIFTY and stock futures, plus equity intraday and delivery."
+        faqItems={MARGIN_FAQ}
         breadcrumbs={[
           { name: "Home", url: "/" },
           { name: "Margin Calculator" },
@@ -167,9 +184,9 @@ const MarginCalculatorPage = () => {
                 <h2 className="font-semibold text-lg text-foreground">Trade Details</h2>
                 <div className="space-y-3">
                   <div>
-                    <Label>Contract</Label>
+                    <Label htmlFor="fo-contract">Contract</Label>
                     <Select value={symbol} onValueChange={chooseContract}>
-                      <SelectTrigger aria-label="F&O contract"><SelectValue /></SelectTrigger>
+                      <SelectTrigger id="fo-contract" aria-label="F&O contract"><SelectValue /></SelectTrigger>
                       <SelectContent className="max-h-80">
                         <div className="p-2">
                           <Input
@@ -190,12 +207,12 @@ const MarginCalculatorPage = () => {
                     </Select>
                   </div>
                   <div>
-                    <Label>Price (₹)</Label>
-                    <Input type="number" value={price} onChange={e => setPrice(e.target.value)} />
+                    <Label htmlFor="fo-price">Price (₹)</Label>
+                    <Input id="fo-price" type="number" inputMode="decimal" min="0" step="0.05" value={price} onChange={e => setPrice(e.target.value)} />
                   </div>
                   <div>
-                    <Label>Number of Lots</Label>
-                    <Input type="number" min="1" value={lots} onChange={e => setLots(e.target.value)} />
+                    <Label htmlFor="fo-lots">Number of Lots</Label>
+                    <Input id="fo-lots" type="number" inputMode="numeric" min="1" step="1" value={lots} onChange={e => setLots(e.target.value)} />
                   </div>
                   <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/50 p-2 rounded">
                     <Info className="w-3.5 h-3.5 shrink-0" />
@@ -248,9 +265,9 @@ const MarginCalculatorPage = () => {
                 <h2 className="font-semibold text-lg text-foreground">Trade Details</h2>
                 <div className="space-y-3">
                   <div>
-                    <Label>Segment</Label>
+                    <Label htmlFor="eq-segment">Segment</Label>
                     <Select value={equitySegment} onValueChange={setEquitySegment}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectTrigger id="eq-segment"><SelectValue /></SelectTrigger>
                       <SelectContent>
                         {EQUITY_SEGMENTS.map(s => (
                           <SelectItem key={s.key} value={s.key}>{s.label}</SelectItem>
@@ -259,12 +276,12 @@ const MarginCalculatorPage = () => {
                     </Select>
                   </div>
                   <div>
-                    <Label>Stock Price (₹)</Label>
-                    <Input type="number" value={equityPrice} onChange={e => setEquityPrice(e.target.value)} />
+                    <Label htmlFor="eq-price">Stock Price (₹)</Label>
+                    <Input id="eq-price" type="number" inputMode="decimal" min="0" step="0.05" value={equityPrice} onChange={e => setEquityPrice(e.target.value)} />
                   </div>
                   <div>
-                    <Label>Quantity</Label>
-                    <Input type="number" min="1" value={equityQty} onChange={e => setEquityQty(e.target.value)} />
+                    <Label htmlFor="eq-qty">Quantity</Label>
+                    <Input id="eq-qty" type="number" inputMode="numeric" min="1" step="1" value={equityQty} onChange={e => setEquityQty(e.target.value)} />
                   </div>
                 </div>
               </Card>
@@ -289,6 +306,62 @@ const MarginCalculatorPage = () => {
             </motion.div>
           </TabsContent>
         </Tabs>
+
+        <section aria-labelledby="lot-sizes" className="mt-10">
+          <h2 id="lot-sizes" className="text-2xl font-heading font-bold">NSE F&amp;O lot sizes</h2>
+          <p className="mt-1 mb-3 text-sm text-muted-foreground">
+            Current lot size for every F&amp;O contract, with the last closing price and the value of one lot. Click a row to calculate its margin.
+          </p>
+          <Input
+            aria-label="Filter lot sizes"
+            placeholder="Filter by symbol or name"
+            value={lotFilter}
+            onChange={(e) => setLotFilter(e.target.value)}
+            className="mb-3 max-w-xs"
+          />
+          <Card className="max-h-[28rem] overflow-auto p-0">
+            <table className="w-full text-sm">
+              <caption className="sr-only">NSE F&amp;O lot sizes</caption>
+              <thead className="sticky top-0 bg-card/95 backdrop-blur text-muted-foreground">
+                <tr>
+                  <th scope="col" className="px-4 py-2 text-left font-medium">Symbol</th>
+                  <th scope="col" className="px-3 py-2 text-left font-medium">Underlying</th>
+                  <th scope="col" className="px-3 py-2 text-right font-medium">Lot size</th>
+                  <th scope="col" className="px-3 py-2 text-right font-medium">Last close</th>
+                  <th scope="col" className="px-4 py-2 text-right font-medium">1 lot value</th>
+                </tr>
+              </thead>
+              <tbody>
+                {contracts
+                  .filter((c) => !lotFilter || `${c.symbol} ${c.underlying}`.toLowerCase().includes(lotFilter.toLowerCase()))
+                  .map((c) => (
+                    <tr key={c.symbol} className={`border-t cursor-pointer hover:bg-muted/30 ${c.symbol === symbol ? "bg-primary/5" : ""}`} onClick={() => { chooseContract(c.symbol); window.scrollTo({ top: 0, behavior: "smooth" }); }}>
+                      <td className="px-4 py-2 font-semibold">{c.symbol}{c.isIndex && <span className="ml-1.5 text-[10px] font-normal text-muted-foreground">index</span>}</td>
+                      <td className="px-3 py-2 text-xs text-muted-foreground">{c.underlying}</td>
+                      <td className="px-3 py-2 text-right tabular-nums">{c.lot_size.toLocaleString("en-IN")}</td>
+                      <td className="px-3 py-2 text-right tabular-nums">{c.spot ? `₹${c.spot.toLocaleString("en-IN")}` : "—"}</td>
+                      <td className="px-4 py-2 text-right tabular-nums">{c.spot ? fmt(c.spot * c.lot_size) : "—"}</td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
+          </Card>
+        </section>
+
+        <section aria-labelledby="margin-faq" className="mt-10">
+          <h2 id="margin-faq" className="text-2xl font-heading font-bold mb-3">SPAN, exposure and option margin: common questions</h2>
+          <div className="divide-y rounded-lg border">
+            {MARGIN_FAQ.map((f) => (
+              <details key={f.question} className="group px-4 py-3">
+                <summary className="cursor-pointer list-none font-semibold marker:content-none flex items-center justify-between gap-3">
+                  {f.question}
+                  <span className="text-muted-foreground transition-transform group-open:rotate-45" aria-hidden="true">+</span>
+                </summary>
+                <p className="mt-2 text-sm text-muted-foreground">{f.answer}</p>
+              </details>
+            ))}
+          </div>
+        </section>
 
         {/* Disclaimer */}
         <Card className="mt-8 p-4 bg-muted/30 border-muted">

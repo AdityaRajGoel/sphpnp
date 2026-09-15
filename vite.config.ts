@@ -28,9 +28,30 @@ export default defineConfig(({ mode }) => ({
       registerType: 'autoUpdate',
       injectRegister: 'auto',
       workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,jpg,jpeg,webp,xml}'],
+        // HTML is deliberately NOT precached. Every route is prerendered with
+        // whatever the page showed at build time, and a precached copy served a
+        // returning visitor that snapshot - old prices included - before the
+        // live feed replaced them. Hashed JS/CSS/images stay precached (they
+        // cannot go stale); pages always come from the network first.
+        globPatterns: ['**/*.{js,css,ico,png,svg,jpg,jpeg,webp}'],
         maximumFileSizeToCacheInBytes: 5000000, // 5MB limit
-        navigateFallbackDenylist: [/^\/.*\.xml$/, /^\/.*\.txt$/, /^\/yandex_.*\.html$/]
+        navigateFallback: null,
+        cleanupOutdatedCaches: true,
+        clientsClaim: true,
+        skipWaiting: true,
+        runtimeCaching: [
+          {
+            // Pages: network first, the cached copy only when offline.
+            urlPattern: ({ request }) => request.mode === 'navigate',
+            handler: 'NetworkFirst',
+            options: { cacheName: 'pages', networkTimeoutSeconds: 4, expiration: { maxEntries: 30, maxAgeSeconds: 24 * 60 * 60 } },
+          },
+          // No route for market data (Supabase, Yahoo) on purpose: a request no
+          // route matches is never touched by the worker, so prices always come
+          // straight from the network. A NetworkOnly route would only make the
+          // worker proxy those calls - same result, extra hop - and it hid them
+          // from Playwright's request mocking, breaking the modal-stacking e2e.
+        ],
       },
       manifest: {
         name: 'Parasram India - Panipat',

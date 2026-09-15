@@ -296,7 +296,7 @@ const PriceChart = ({
     });
   }, [watermark]);
 
-  return <div ref={containerRef} style={{ height }} className="w-full" aria-label="Price chart" />;
+  return <div ref={containerRef} style={{ height }} className="w-full" role="img" aria-label="Price chart" />;
 };
 
 export default PriceChart;

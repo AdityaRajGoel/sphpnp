@@ -58,6 +58,11 @@ const SEOHead = ({
     "@context": "https://schema.org",
     "@type": ["FinancialService", "LocalBusiness"],
     "name": "Shri Parasram Holdings Panipat",
+    // The names people search for us by (Search Console, Jun-Sep 2026): each of
+    // these ranked 4-6 with no clicks, so the entity is spelled out every way.
+    "legalName": "Shri Parasram Holdings Pvt. Ltd.",
+    "alternateName": ["Parasram", "Parasram Holdings", "Parasram India", "Parasram Science of Investment", "SPHPL", "Shri Parasram Holdings Pvt Ltd Panipat"],
+    "slogan": "Science of Investment",
     "image": "https://www.sphpnp.com/logo.png",
     "url": BASE_URL,
     "telephone": "+919416400314",
@@ -116,7 +121,7 @@ const SEOHead = ({
       "@context": "https://schema.org",
       "@type": "WebSite",
       "name": "Shri Parasram Holdings Panipat",
-      "alternateName": ["Shri Parasram Holdings Pvt. Ltd.", "Parasram India"],
+      "alternateName": ["Shri Parasram Holdings Pvt. Ltd.", "Parasram India", "Parasram Holdings", "Parasram Science of Investment", "SPHPL"],
       "url": BASE_URL,
       "description": "Stock broker in Panipat, Haryana. SEBI registered, serving investors since 1970. Stocks, Mutual Funds, IPO, F&O, Commodities, Unlisted Shares.",
       "inLanguage": "en-IN",

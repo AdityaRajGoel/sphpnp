@@ -32,9 +32,9 @@ const str = (v: unknown) => (typeof v === "string" && v.trim() ? v.trim().replac
 export const bseDay = (d: Date) => d.toISOString().slice(0, 10).replace(/-/g, "");
 
 /** The announcements query for one scrip over [from, to]. */
-export function bseAnnouncementsUrl(scripCode: string, from: Date, to: Date): string {
+export function bseAnnouncementsUrl(scripCode: string, from: Date, to: Date, page = 1): string {
   const q = new URLSearchParams({
-    pageno: "1", strCat: "-1", strPrevDate: bseDay(from), strScrip: scripCode,
+    pageno: String(page), strCat: "-1", strPrevDate: bseDay(from), strScrip: scripCode,
     strSearch: "P", strToDate: bseDay(to), strType: "C", subcategory: "-1",
   });
   return `https://api.bseindia.com/BseIndiaAPI/api/AnnSubCategoryGetData/w?${q}`;

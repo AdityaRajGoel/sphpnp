@@ -5,6 +5,7 @@ import express from 'express';
 import { fetchStockRoutes } from './lib/stock-routes.mjs';
 import { fetchIpoRoutes, assertIpoPageCaptured } from './lib/ipo-routes.mjs';
 import { routeToFilePath } from './lib/route-paths.mjs';
+import { cleanCapturedHtml } from './lib/prerender-html.mjs';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DIST_DIR = path.resolve(__dirname, '../dist');
 
@@ -55,6 +56,10 @@ const routes = [
   '/team',
   '/contact',
   '/holidays',
+  '/help',
+  // Per-browser and noindex, so absent from the sitemap - but prerendered so a
+  // direct visit or refresh gets a real page instead of the static 404.
+  '/watchlist',
   '/reports',
   '/careers',
   '/privacy-policy',
@@ -171,7 +176,7 @@ async function captureOnce(browser, port, route) {
       await page.waitForSelector('[data-ipo-state="ready"]', { timeout: 25000 }).catch(() => {});
     }
 
-    const html = await page.content();
+    const html = cleanCapturedHtml(await page.content(), port);
     if (route.startsWith('/stock/')) {
       assertStockPageCaptured(route, html);
     }
