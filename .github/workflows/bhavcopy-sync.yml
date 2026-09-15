@@ -7,10 +7,7 @@
 name: Bhavcopy Sync
 
 on:
-  schedule:
-    # 14:00 UTC = 19:30 IST (primary) and 16:00 UTC = 21:30 IST (retry), Mon-Fri
-    - cron: "0 14 * * 1-5"
-    - cron: "0 16 * * 1-5"
+  # Scheduled runs moved to the VPS: infra/vps/jobs/sphpnp-sync.cron.
   workflow_dispatch: {}
 
 # This workflow only calls the Supabase edge function via curl - it never

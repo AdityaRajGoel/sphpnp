@@ -256,7 +256,7 @@ const TrendingStocks = memo(() => {
   ];
   const fallback = [
     { name: "TATA POWER", change: "+4.8%", up: true },
-    { name: "ZOMATO", change: "+3.5%", up: true },
+    { name: "ETERNAL", change: "+3.5%", up: true },
     { name: "ADANI GREEN", change: "+3.9%", up: true },
     { name: "PAYTM", change: "-3.2%", up: false },
     { name: "COAL INDIA", change: "-1.5%", up: false },

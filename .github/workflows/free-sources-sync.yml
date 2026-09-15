@@ -13,8 +13,7 @@
 name: Free sources sync
 
 on:
-  schedule:
-    - cron: "30 20 * * *" # 02:00 IST daily
+  # Scheduled runs moved to the VPS: infra/vps/jobs/sphpnp-sync.cron.
   workflow_dispatch: {}
 
 permissions: {}

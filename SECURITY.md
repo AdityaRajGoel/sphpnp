@@ -47,7 +47,7 @@ how you would like to be named, or if you would rather stay anonymous.
 
 **Out of scope**
 
-- third-party services we depend on (Supabase, Vercel, market-data providers) — report
+- third-party services we depend on (Contabo, Let's Encrypt, market-data providers) — report
   those to the vendor directly
 - findings from automated scanners with no demonstrated impact
 - missing hardening headers or best-practice suggestions that are not exploitable

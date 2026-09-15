@@ -42,8 +42,8 @@ const PRESETS = [
   { label: "Banking Giants", symbols: ["HDFCBANK", "ICICIBANK", "SBIN"] },
   { label: "IT Leaders", symbols: ["TCS", "INFY", "WIPRO"] },
   { label: "Reliance vs TCS", symbols: ["RELIANCE", "TCS"] },
-  { label: "Zomato vs Swiggy", symbols: ["ZOMATO", "SWIGGY"] },
-  { label: "Auto Sector", symbols: ["MARUTI", "M&M", "TATAMOTORS"] },
+  { label: "Eternal vs Swiggy", symbols: ["ETERNAL", "SWIGGY"] },
+  { label: "Auto Sector", symbols: ["MARUTI", "M&M", "TMPV"] },
 ];
 
 // Mini bar inside a cell showing relative value

@@ -18,13 +18,14 @@ import type { IllustrationSlug } from "@/data/illustrations.generated";
 type ProductLayout = "featured" | "wide" | undefined;
 const products: { icon: typeof LineChart; title: string; desc: string; to: string; tag: string; layout?: ProductLayout; art?: IllustrationSlug }[] = [
   { icon: LineChart, title: "Stocks & Equity", desc: "Invest in NSE & BSE listed companies with a free Demat account, backed by daily research from SEBI-registered analysts.", to: "/screener", tag: "Live Screener", layout: "featured" },
-  { icon: Activity, title: "Futures & Options", desc: "Trade NIFTY, BANKNIFTY & stock F&O with live option-chain tools.", to: "/fno", tag: "PCR & Max Pain", art: "art-candles" },
-  { icon: PiggyBank, title: "Mutual Funds & SIP", desc: "Start a SIP from ₹500/month across direct & regular funds.", to: "/sip-calculator", tag: "From ₹500", art: "art-pie" },
-  { icon: Rocket, title: "IPO Investments", desc: "Apply for upcoming IPOs online via UPI/ASBA in a few taps.", to: "/ipo", tag: "UPI / ASBA", art: "steps-gold" },
-  { icon: Gem, title: "Commodities (MCX)", desc: "Trade gold, silver, crude oil & agri commodities on MCX & NCDEX.", to: "/services", tag: "MCX · NCDEX" },
-  { icon: Sparkles, title: "Unlisted & Pre-IPO", desc: "Buy verified pre-IPO and unlisted shares before they list on the exchange.", to: "/unlisted-space", tag: "Exclusive", layout: "wide" },
-  { icon: Landmark, title: "Bonds, FD & Insurance", desc: "Diversify beyond equity with FDs, corporate bonds & insurance.", to: "/products", tag: "Safer Yields", art: "art-shield" },
-  { icon: Vault, title: "Demat & Depository", desc: "Secure CDSL/NSDL depository services, pledging & transfers.", to: "/depository-services", tag: "CDSL · NSDL", art: "art-vault" },
+  // Every card uses the same flat navy/teal illustration family, each showing its own subject.
+  { icon: Activity, title: "Futures & Options", desc: "Trade NIFTY, BANKNIFTY & stock F&O with live option-chain tools.", to: "/fno", tag: "PCR & Max Pain", art: "derivatives-desk" },
+  { icon: PiggyBank, title: "Mutual Funds & SIP", desc: "Start a SIP from ₹500/month across direct & regular funds.", to: "/sip-calculator", tag: "From ₹500", art: "mutual-funds-planning" },
+  { icon: Rocket, title: "IPO Investments", desc: "Apply for upcoming IPOs online via UPI/ASBA in a few taps.", to: "/ipo", tag: "UPI / ASBA", art: "ipo-journey" },
+  { icon: Gem, title: "Commodities (MCX)", desc: "Trade gold, silver, crude oil & agri commodities on MCX & NCDEX.", to: "/services", tag: "MCX · NCDEX", art: "asset-allocation" },
+  { icon: Sparkles, title: "Unlisted & Pre-IPO", desc: "Buy verified pre-IPO and unlisted shares before they list on the exchange.", to: "/unlisted-space", tag: "Exclusive", layout: "wide", art: "market-bridge" },
+  { icon: Landmark, title: "Bonds, FD & Insurance", desc: "Diversify beyond equity with FDs, corporate bonds & insurance.", to: "/products", tag: "Safer Yields", art: "insurance-family" },
+  { icon: Vault, title: "Demat & Depository", desc: "Secure CDSL/NSDL depository services, pledging & transfers.", to: "/depository-services", tag: "CDSL · NSDL", art: "demat-network" },
 ];
 
 // Decorative market sparkline for the featured card - draws itself on scroll-in.
@@ -140,7 +141,7 @@ const InvestmentProducts = () => {
 
                   <div className="relative z-10 flex flex-col h-full">
                     {p.art && (
-                      <div className="-mx-4 -mt-4 mb-3 overflow-hidden border-b border-border/50 bg-[#f4f2ec] md:-mx-5 md:-mt-5" aria-hidden="true">
+                      <div className="-mx-4 -mt-4 mb-3 overflow-hidden border-b border-border/50 bg-white md:-mx-5 md:-mt-5" aria-hidden="true">
                         <Illustration
                           slug={p.art}
                           alt=""

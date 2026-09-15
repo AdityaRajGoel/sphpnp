@@ -13,8 +13,7 @@
 name: Fundamentals sync
 
 on:
-  schedule:
-    - cron: "17 * * * *"
+  # Scheduled runs moved to the VPS: infra/vps/jobs/sphpnp-sync.cron.
   workflow_dispatch: {}
 
 # This workflow only calls the Supabase edge function via curl - it never

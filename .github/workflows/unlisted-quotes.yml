@@ -11,9 +11,7 @@
 name: Unlisted Quotes Sync
 
 on:
-  schedule:
-    # 02:30 UTC = 08:00 IST, daily
-    - cron: "30 2 * * *"
+  # Scheduled runs moved to the VPS: infra/vps/jobs/sphpnp-sync.cron.
   workflow_dispatch: {}
 
 # Only calls the Supabase edge function via curl - never checks out the repo or

@@ -13,8 +13,6 @@ import { LanguageProvider } from "@/i18n/LanguageContext";
 import { MotionPreferenceProvider, useMotionPreference } from "@/contexts/MotionPreferenceContext";
 import { toMotionConfigValue } from "@/lib/motion-preference";
 import { AnimatePresence, motion, MotionConfig } from "motion/react";
-import { Analytics } from "@vercel/analytics/react";
-import { SpeedInsights } from "@vercel/speed-insights/react";
 
 import useScrollToHash from "@/hooks/useScrollToHash";
 import SmoothScroll from "@/components/SmoothScroll";
@@ -256,8 +254,6 @@ const App = () => (
         <LiveMarketProvider>
         <Toaster />
         <Sonner />
-        <Analytics />
-        <SpeedInsights />
         <BrowserRouter>
           <AuthProvider>
             <PageTracker />

@@ -17,8 +17,7 @@
 name: Price analytics sync
 
 on:
-  schedule:
-    - cron: "20 17 * * 1-5"
+  # Scheduled runs moved to the VPS: infra/vps/jobs/sphpnp-sync.cron.
   workflow_dispatch: {}
 
 permissions: {}

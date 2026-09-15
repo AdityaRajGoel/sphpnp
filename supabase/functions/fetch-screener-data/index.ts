@@ -63,7 +63,6 @@ const NSE_SYMBOLS: { symbol: string; yahoo: string; name: string; sector: string
 
   // Automobiles
   { symbol: "MARUTI", yahoo: "MARUTI.NS", name: "Maruti Suzuki", sector: "Auto" },
-  { symbol: "TATAMOTORS", yahoo: "TATAMOTORS.NS", name: "Tata Motors", sector: "Auto" },
   { symbol: "M&M", yahoo: "M&M.NS", name: "Mahindra & Mahindra", sector: "Auto" },
   { symbol: "BAJAJ-AUTO", yahoo: "BAJAJ-AUTO.NS", name: "Bajaj Auto", sector: "Auto" },
   { symbol: "HEROMOTOCO", yahoo: "HEROMOTOCO.NS", name: "Hero MotoCorp", sector: "Auto" },

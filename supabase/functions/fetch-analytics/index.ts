@@ -7,23 +7,63 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+// Same lockout as manage-unlisted-shares: 5 wrong passwords within 5 minutes locks
+// that IP out for 15 minutes, so the admin password cannot be guessed by brute force.
+const loginAttempts = new Map<string, { count: number; lastAttempt: number; lockedUntil: number }>();
+const MAX_ATTEMPTS = 5;
+const LOCKOUT_DURATION_MS = 15 * 60 * 1000;
+const ATTEMPT_WINDOW_MS = 5 * 60 * 1000;
+
+function clientIp(req: Request): string {
+  return req.headers.get("x-forwarded-for")?.split(",")[0].trim() || req.headers.get("cf-connecting-ip") || "unknown";
+}
+
+function lockedFor(ip: string): number {
+  const now = Date.now();
+  const record = loginAttempts.get(ip);
+  if (!record) return 0;
+  if (record.lockedUntil > now) return Math.ceil((record.lockedUntil - now) / 1000);
+  if (now - record.lastAttempt > ATTEMPT_WINDOW_MS) loginAttempts.delete(ip);
+  return 0;
+}
+
+function recordFailedAttempt(ip: string): void {
+  const now = Date.now();
+  const record = loginAttempts.get(ip) ?? { count: 0, lastAttempt: now, lockedUntil: 0 };
+  record.count += 1;
+  record.lastAttempt = now;
+  if (record.count >= MAX_ATTEMPTS) record.lockedUntil = now + LOCKOUT_DURATION_MS;
+  loginAttempts.set(ip, record);
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    const ip = clientIp(req);
+    const retryAfter = lockedFor(ip);
+    if (retryAfter > 0) {
+      return new Response(JSON.stringify({ success: false, error: "Too many attempts. Try again later." }), {
+        status: 429,
+        headers: { ...corsHeaders, "Content-Type": "application/json", "Retry-After": String(retryAfter) },
+      });
+    }
+
     const body = await req.json().catch(() => ({}));
     const { password, period } = body;
 
     // Verify admin password
     const adminPassword = Deno.env.get("ADMIN_PASSWORD");
-    if (!password || password !== adminPassword) {
+    if (!adminPassword || !password || password !== adminPassword) {
+      recordFailedAttempt(ip);
       return new Response(JSON.stringify({ success: false, error: "Unauthorized" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+    loginAttempts.delete(ip);
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;

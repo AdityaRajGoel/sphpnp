@@ -11,7 +11,8 @@ import https from "node:https";
 import crypto from "node:crypto";
 import { parseMospi, withYoy, type MacroMonthly } from "../supabase/functions/_shared/market-extra.ts";
 
-const FUNCTION_URL = "https://zbkjbbujsdlpujotgltm.supabase.co/functions/v1/sync-market-data";
+// Overridable so the same collector can feed the self-hosted stack (infra/vps/jobs/mospi.sh).
+const FUNCTION_URL = process.env.SYNC_URL ?? "https://zbkjbbujsdlpujotgltm.supabase.co/functions/v1/sync-market-data";
 const agent = new https.Agent({ secureOptions: crypto.constants.SSL_OP_LEGACY_SERVER_CONNECT });
 
 function get(url: string): Promise<unknown> {

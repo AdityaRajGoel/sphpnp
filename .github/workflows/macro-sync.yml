@@ -24,8 +24,7 @@
 name: Macro sync
 
 on:
-  schedule:
-    - cron: "50 4 * * *"
+  # Scheduled runs moved to the VPS: infra/vps/jobs/sphpnp-sync.cron.
   workflow_dispatch: {}
 
 # This workflow only calls the Supabase edge function via curl - it never

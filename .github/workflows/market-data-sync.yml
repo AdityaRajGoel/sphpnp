@@ -13,10 +13,7 @@
 name: Market data sync
 
 on:
-  schedule:
-    - cron: "0 4 * * 1-5"
-    - cron: "30 13 * * 1-5"
-    - cron: "45 18 * * 1-5"
+  # Scheduled runs moved to the VPS: infra/vps/jobs/sphpnp-sync.cron.
   workflow_dispatch: {}
 
 permissions: {}

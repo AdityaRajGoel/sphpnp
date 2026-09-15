@@ -1,0 +1,49 @@
+# Scheduled syncs for the self-hosted stack -> /etc/cron.d/sphpnp-sync
+# Mirrors .github/workflows/*-sync.yml. The server clock is IST, so every UTC
+# workflow time below is +05:30 (with day-of-week shifted when it crosses midnight).
+# flock stops a slow run from overlapping the next one.
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+J=/opt/sphpnp/jobs/sync.sh
+
+# --- Market data (NSE/BSE) ---
+30 9  * * 1-5   deploy flock -n /tmp/sync-market-data.lock $J market-data
+0  19 * * 1-5   deploy flock -n /tmp/sync-market-data.lock $J market-data
+15 0  * * 2-6   deploy flock -n /tmp/sync-market-data.lock $J market-data
+30 19 * * 1-5   deploy flock -n /tmp/sync-bhavcopy.lock $J once sync-bhavcopy '{}' 180
+30 21 * * 1-5   deploy flock -n /tmp/sync-bhavcopy.lock $J once sync-bhavcopy '{}' 180
+45 18 * * 1-5   deploy flock -n /tmp/sync-market-feed.lock $J once sync-market-feed '{}' 120
+0  21 * * 1-5   deploy flock -n /tmp/sync-market-feed.lock $J once sync-market-feed '{}' 120
+50 22 * * 1-5   deploy flock -n /tmp/sync-price-analytics.lock $J loop sync-price-analytics 12
+45 6  * * 2-6   deploy flock -n /tmp/sync-global-markets.lock $J once sync-global-markets '{}' 150
+20 10 * * *     deploy flock -n /tmp/sync-macro.lock $J once sync-macro '{}' 60
+0  10 * * 1-5   deploy flock -n /tmp/mospi.lock /opt/sphpnp/jobs/mospi.sh
+0  1  * * 2-6   deploy flock -n /tmp/sync-market-backfill.lock $J market-backfill
+
+# --- Company data and fundamentals ---
+47 *  * * *     deploy flock -n /tmp/sync-fundamentals.lock $J repeat sync-fundamentals 8 300
+7  *  * * *     deploy flock -n /tmp/sync-fundamentals-yahoo.lock $J once sync-fundamentals-yahoo '{}' 300
+40 7  * * *     deploy flock -n /tmp/sync-google-finance.lock $J once sync-google-finance '{}' 150
+10 8  * * *     deploy flock -n /tmp/build-screener.lock $J once build-screener-fundamentals '{}' 150
+40 23 * * *     deploy flock -n /tmp/sync-scores.lock $J loop sync-fundamental-scores 12
+35 9,12,15,18 * * 1-6 deploy flock -n /tmp/sync-announcements.lock $J once sync-announcements '{}' 120
+15 8,14,20 * * * deploy flock -n /tmp/sync-sebi.lock $J once sync-sebi-actions '{}' 150
+0  8  * * *     deploy flock -n /tmp/sync-unlisted.lock $J once sync-unlisted-quotes '{}' 180
+
+# Free sources pass (02:00 IST): each until its pass wraps, then BSE announcements.
+0  2  * * *     deploy flock -n /tmp/sync-free-sources.lock bash -c '$J loop sync-nse-disclosures 40; $J loop sync-screener-in 40; $J loop sync-tickertape 40; $J loop sync-bse-announcements 40'
+
+# --- IPOs ---
+45 8,13,18 * * 1-6 deploy flock -n /tmp/sync-ipos.lock $J once sync-ipos '{}' 90
+5  9,14,19 * * 1-6 deploy flock -n /tmp/sync-ipo-details.lock $J once sync-ipo-details '{"force":false}' 150
+45 19 * * *     deploy flock -n /tmp/sync-ipo-pipeline.lock $J once sync-ipo-pipeline '{"backfill":false}' 150
+50 8,13,18 * * 1-6 deploy flock -n /tmp/ipo-browser.lock /opt/sphpnp/jobs/ipo-browser.sh
+
+# --- Forecasts (Saturday 07:30 IST) ---
+30 7  * * 6     deploy flock -n /tmp/kronos.lock /opt/sphpnp/jobs/kronos.sh
+
+# --- Backups (03:15 IST, after the 02:00 free-sources pass) ---
+15 3  * * *     deploy flock -n /tmp/backup.lock /opt/sphpnp/jobs/backup.sh
+
+# Keep two weeks of sync logs.
+30 3  * * *     deploy find /var/log/sphpnp-sync -name '*.log' -mtime +14 -delete

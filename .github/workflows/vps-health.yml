@@ -1,0 +1,58 @@
+# Production health checks for the self-hosted stack on the VPS (infra/vps).
+# Runs after every push to main and every 30 minutes (GitHub may delay schedules).
+# Checks the public surface only - nothing here needs a secret.
+name: VPS health
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "*/30 * * * *"
+  workflow_dispatch: {}
+
+permissions: {}
+
+concurrency:
+  group: vps-health
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Website, API and certificates
+        run: |
+          fail=0
+          expect() { # name url expected-status
+            code=$(curl -s -o /dev/null -m 30 -w '%{http_code}' "$2" || echo 000)
+            if [ "$code" = "$3" ]; then echo "ok   $1 ($code)"; else echo "::error title=$1::$2 returned $code, expected $3"; fail=1; fi
+          }
+          expect "Home page"            https://www.sphpnp.com/                 200
+          expect "Stock page"           https://www.sphpnp.com/stock/RELIANCE   200
+          expect "IPO shell for new slugs" https://www.sphpnp.com/ipo/health-check-probe 200
+          expect "Sitemap"              https://www.sphpnp.com/sitemap.xml      200
+          expect "robots.txt"           https://www.sphpnp.com/robots.txt       200
+          expect "Real 404s"            https://www.sphpnp.com/health-check-missing-page 404
+          expect "Bare domain redirect" https://sphpnp.com/                     301
+          expect "API gateway"          https://api.sphpnp.com/rest/v1/         401
+          expect "Edge functions"       https://api.sphpnp.com/functions/v1/fetch-ipos 401
+
+          location=$(curl -s -o /dev/null -m 30 -w '%{redirect_url}' https://sphpnp.com/stocks)
+          [ "$location" = "https://www.sphpnp.com/stocks" ] && echo "ok   bare domain keeps the path" || { echo "::error title=Redirect::sphpnp.com/stocks redirected to '$location'"; fail=1; }
+
+          headers=$(curl -sI -m 30 https://www.sphpnp.com/)
+          for h in strict-transport-security content-security-policy x-content-type-options x-frame-options referrer-policy permissions-policy; do
+            echo "$headers" | grep -qi "^$h:" && echo "ok   header $h" || { echo "::error title=Missing header::$h"; fail=1; }
+          done
+
+          grep -q '<loc>https://www.sphpnp.com/stock/' <(curl -s -m 30 https://www.sphpnp.com/sitemap.xml) \
+            && echo "ok   sitemap lists stock pages" || { echo "::error title=Sitemap::no stock pages listed"; fail=1; }
+
+          for host in www.sphpnp.com sphpnp.com api.sphpnp.com; do
+            end=$(echo | openssl s_client -connect "$host:443" -servername "$host" 2>/dev/null | openssl x509 -noout -enddate | cut -d= -f2)
+            days=$(( ($(date -d "$end" +%s) - $(date +%s)) / 86400 ))
+            if [ "$days" -ge 14 ]; then echo "ok   certificate $host ($days days left)"; else echo "::error title=Certificate::$host expires in $days days"; fail=1; fi
+          done
+
+          exit $fail

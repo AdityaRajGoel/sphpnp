@@ -7,8 +7,7 @@
 name: Global markets sync
 
 on:
-  schedule:
-    - cron: "15 1 * * 2-6" # 06:45 IST Tue-Sat, after each US session closes
+  # Scheduled runs moved to the VPS: infra/vps/jobs/sphpnp-sync.cron.
   workflow_dispatch: {}
 
 permissions: {}

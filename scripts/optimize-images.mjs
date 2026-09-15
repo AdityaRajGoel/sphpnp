@@ -59,6 +59,7 @@ const ILLUSTRATIONS = {
   "derivatives-desk": { file: "parasram-equity-derivatives-refined.png", alt: "A senior advisor mentoring a trader through candlestick charts at a multi-screen desk" },
   "mutual-funds-planning": { file: "parasram-mutual-funds-refined.png", alt: "An advisor mapping mutual fund investments to a client's goals such as home, education and retirement" },
   "insurance-family": { file: "parasram-insurance-refined.png", alt: "An advisor explaining health, home and vehicle insurance cover to an Indian family" },
+  "asset-allocation": { file: "parasram-mutual-funds.png", alt: "An allocation dashboard branching into gold, property and other asset classes" },
   "demat-network": {
     file: "parasram-demat-depository.png",
     // Ends above the source's white footer band (from y 0.787).
@@ -81,7 +82,6 @@ const ILLUSTRATIONS = {
   "steps-glow": { file: "parasram-ipo_1.png", alt: "" },
   "steps-stack": { file: "parasram-ipo-2.png", alt: "" },
   "steps-light": { file: "parasram-ipo-3.png", alt: "" },
-  "steps-gold": { file: "parasram-ipo-4.png", alt: "" },
   "figure-light": { file: "parasram-website-hero_1.png", alt: "" },
   "figure-line": { file: "parasram-website-hero-4.png", alt: "" },
   "orbit-arc": { file: "parasram-trust-about_1.png", alt: "" },
@@ -91,7 +91,6 @@ const ILLUSTRATIONS = {
   // Light icon art for product cards: square crops centred on the small subject.
   "art-pie": { file: "parasram-mutual-funds-2.png", crop: { x: 0.25, y: 0.166, w: 0.5, h: 0.668 }, alt: "" },
   "art-shield": { file: "parasram-insurance-3.png", crop: { x: 0.25, y: 0.166, w: 0.5, h: 0.668 }, alt: "" },
-  "art-vault": { file: "parasram-demat-depository-2.png", crop: { x: 0.25, y: 0.166, w: 0.5, h: 0.668 }, alt: "" },
   "art-candles": { file: "parasram-equity-derivatives_1.png", crop: { x: 0.25, y: 0.166, w: 0.5, h: 0.668 }, alt: "" },
 };
 

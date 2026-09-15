@@ -1,4 +1,4 @@
-# Catches broken builds BEFORE Vercel deploys them.
+# Catches broken builds before they are deployed to the VPS (infra/vps).
 # Hard gates: typecheck, tests, production build.
 # Lint reports but does not block (101 pre-existing issues to burn down).
 name: CI
@@ -72,7 +72,7 @@ jobs:
           check /ipo
           check /stock/RELIANCE
           grep -q '<div id="root">' /tmp/body || { echo "deep link did not get the app shell"; exit 1; }
-          # Security headers must survive the move off Vercel.
+          # The self-host image must carry the same security headers as production.
           curl -sI http://localhost:8090/ | grep -qi '^x-content-type-options: nosniff' || { echo "missing security headers"; exit 1; }
           # The image's own HEALTHCHECK must pass, or orchestrators restart it
           # forever. Its first probe runs 30s after start (--interval=30s).

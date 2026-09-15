@@ -33,10 +33,12 @@ multiple languages.
 **Frontend** : Vite · React 18 · TypeScript · Tailwind CSS · shadcn/ui · React Router ·
 TanStack Query · Recharts · Zod
 
-**Backend** : Supabase (Postgres + Auth + Storage) and 14 Deno edge functions
+**Backend** : self-hosted Supabase (Postgres 17, Auth, Storage, PostgREST) and 41 Deno edge
+functions, in Docker
 
-**Infra** : Vercel (hosting) · GitHub Actions (CI + scheduled data syncs) · Docker + nginx
-(self-host option)
+**Infra** : one Ubuntu VPS — nginx + Let's Encrypt serve the prerendered site at
+`www.sphpnp.com` and the API at `api.sphpnp.com`; cron runs the data syncs; daily backups.
+GitHub Actions runs CI and a production health check. See [`infra/vps`](infra/vps/README.md).
 
 ---
 
@@ -61,22 +63,22 @@ public by design** — the Supabase anon key is safe to expose because every tab
 protected by Row Level Security.
 
 ```sh
-VITE_SUPABASE_URL=https://your-project-id.supabase.co
+VITE_SUPABASE_URL=https://api.sphpnp.com
 VITE_SUPABASE_PUBLISHABLE_KEY=your-anon-public-key
-VITE_SUPABASE_PROJECT_ID=your-project-id
+VITE_SUPABASE_PROJECT_ID=self-hosted
 ```
 
-Server-side secrets are **never** stored in this repo or in `.env`. They are read via
-`Deno.env` inside edge functions and set as Supabase secrets:
+Server-side secrets are **never** stored in this repo or in `.env`. On the VPS they live in
+`/opt/supabase/functions.env` (mode 600) and are read via `Deno.env` inside edge functions:
 
 ```sh
-supabase secrets set OPENROUTER_API_KEY=...   # primary AI provider
-supabase secrets set GROQ_API_KEY=...         # + _SECOND/_THIRD/_FOURTH for quota rotation
-supabase secrets set GEMINI_API_KEY=...       # + _SECOND
-supabase secrets set SYNC_SECRET=...          # guards the scheduled sync functions
-supabase secrets set TELEGRAM_BOT_TOKEN=...
-supabase secrets set TELEGRAM_WEBHOOK_SECRET=...
-supabase secrets set ADMIN_PASSWORD=...
+OPENROUTER_API_KEY=...   # primary AI provider
+GROQ_API_KEY=...         # + _SECOND/_THIRD/_FOURTH for quota rotation
+GEMINI_API_KEY=...       # + _SECOND
+SYNC_SECRET=...          # guards the scheduled sync functions
+TELEGRAM_BOT_TOKEN=...
+TELEGRAM_WEBHOOK_SECRET=...
+ADMIN_PASSWORD=...
 ```
 
 See [`.env.example`](.env.example) for the full annotated list.
@@ -109,18 +111,19 @@ src/
 └── lib/               # utilities
 
 supabase/
-├── functions/         # 14 Deno edge functions
+├── functions/         # 41 Deno edge functions
 └── migrations/        # SQL schema migrations
 
-scripts/               # sitemap generation, prerendering, IndexNow
+infra/vps/             # server bootstrap, Supabase config, nginx, cron jobs, backups
+scripts/               # sitemap generation, prerendering, IndexNow, browser scrapers
 e2e/                   # Playwright specs
 ```
 
 ### Edge functions
 
-Data fetchers (`fetch-*`) proxy and cache third-party market data. Sync jobs
-(`sync-market-feed`, `sync-bhavcopy`) are triggered on a cron by GitHub Actions and write
-with the service-role key — both are guarded by `SYNC_SECRET`. `ai-stock-analysis` runs the
+Data fetchers (`fetch-*`) proxy and cache third-party market data. Sync jobs (`sync-*`) are
+triggered by cron on the VPS (`infra/vps/jobs/sphpnp-sync.cron`) and write with the
+service-role key — all are guarded by `SYNC_SECRET`. `ai-stock-analysis` runs the
 provider cascade and is rate-limited per client. `telegram-webhook` ingests channel posts
 and verifies Telegram's `X-Telegram-Bot-Api-Secret-Token`.
 
@@ -129,8 +132,9 @@ and verifies Telegram's `X-Telegram-Bot-Api-Secret-Token`.
 ## Testing & CI
 
 CI runs on every push to `main` and on pull requests: typecheck, unit tests, production
-build, Playwright smoke tests, and a Docker image build. Two scheduled workflows trigger
-the NSE data syncs on weekday evenings (IST).
+build, Playwright smoke tests, and a Docker image build. `VPS health` checks the live site,
+API, security headers, sitemap and certificates after every push and every 30 minutes. The
+`*-sync` workflows are kept for manual runs only; their schedules moved to the VPS.
 
 ```sh
 npm test           # unit
@@ -140,13 +144,18 @@ npx tsc --noEmit   # typecheck
 
 ---
 
-## Self-hosting
+## Hosting
+
+Production runs on a single VPS; everything needed to rebuild it is in
+[`infra/vps`](infra/vps/README.md): bootstrap scripts, the Supabase Docker config, nginx for
+`www.sphpnp.com`, `api.sphpnp.com` and `staging.sphpnp.com`, the sync and backup cron jobs,
+and the restore steps.
+
+For a quick local preview without prerendering:
 
 ```sh
 docker compose up --build   # → http://localhost:8090
 ```
-
-Builds the Vite app and serves it via nginx.
 
 ---
 

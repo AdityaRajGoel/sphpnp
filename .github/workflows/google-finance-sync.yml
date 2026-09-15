@@ -13,8 +13,7 @@
 name: Google Finance sync
 
 on:
-  schedule:
-    - cron: "10 2 * * *" # 07:40 IST daily
+  # Scheduled runs moved to the VPS: infra/vps/jobs/sphpnp-sync.cron.
   workflow_dispatch: {}
 
 permissions: {}

@@ -1,7 +1,7 @@
 # Portable production image for the SPA.
-# NOTE: production runs on Vercel — this container is a self-host/preview
-# fallback. It intentionally skips the Puppeteer prerender postbuild step
-# (SEO prerendering is only wired up for the Vercel deploy).
+# NOTE: production runs on the VPS (infra/vps) as a prerendered build served by
+# nginx. This container is a quick self-host/preview fallback and skips the
+# prerender postbuild step, so it serves the SPA shell without SEO snapshots.
 
 # --- build stage ---
 FROM node:22-alpine AS build

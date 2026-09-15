@@ -112,6 +112,17 @@ export const ILLUSTRATIONS = {
     ],
     "alt": "An advisor explaining health, home and vehicle insurance cover to an Indian family"
   },
+  "asset-allocation": {
+    "hash": "1f6e2aa5",
+    "width": 2400,
+    "height": 1792,
+    "widths": [
+      640,
+      1024,
+      1600
+    ],
+    "alt": "An allocation dashboard branching into gold, property and other asset classes"
+  },
   "demat-network": {
     "hash": "d4152174",
     "width": 1272,
@@ -200,17 +211,6 @@ export const ILLUSTRATIONS = {
     ],
     "alt": ""
   },
-  "steps-gold": {
-    "hash": "d2316cbe",
-    "width": 1232,
-    "height": 928,
-    "widths": [
-      640,
-      1024,
-      1232
-    ],
-    "alt": ""
-  },
   "figure-light": {
     "hash": "ad33641e",
     "width": 1232,
@@ -265,15 +265,6 @@ export const ILLUSTRATIONS = {
   },
   "art-shield": {
     "hash": "01fbdd30",
-    "width": 616,
-    "height": 620,
-    "widths": [
-      616
-    ],
-    "alt": ""
-  },
-  "art-vault": {
-    "hash": "14cf5a9e",
     "width": 616,
     "height": 620,
     "widths": [

@@ -1,0 +1,22 @@
+# Overrides on top of upstream supabase/docker/docker-compose.yml.
+#
+# Docker-published ports bypass ufw, so the upstream "0.0.0.0" bindings would put
+# the API gateway and Postgres straight on the internet. Everything binds to
+# localhost; nginx is the only public entry point.
+services:
+  api-gw:
+    ports: !override
+      - "127.0.0.1:8000:8000/tcp"
+
+  supavisor:
+    ports: !override
+      - "127.0.0.1:${POSTGRES_PORT}:5432"
+      - "127.0.0.1:${POOLER_PROXY_PORT_TRANSACTION}:6543"
+
+  functions:
+    # Provider API keys and SYNC_SECRET for the edge functions (chmod 600, never in git).
+    env_file:
+      - ./functions.env
+    # Do not set net.ipv6.conf.*.disable_ipv6 here: Deno resolves AAAA records itself,
+    # so with IPv6 off every dual-stack host fails with "os error 99" instead of
+    # falling back to IPv4.

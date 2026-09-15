@@ -12,8 +12,7 @@
 name: Fundamental scores sync
 
 on:
-  schedule:
-    - cron: "10 18 * * *"
+  # Scheduled runs moved to the VPS: infra/vps/jobs/sphpnp-sync.cron.
   workflow_dispatch: {}
 
 permissions: {}

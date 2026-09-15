@@ -8,8 +8,7 @@
 name: Screener fundamentals
 
 on:
-  schedule:
-    - cron: "40 2 * * *" # 08:10 IST daily, after google-finance-sync
+  # Scheduled runs moved to the VPS: infra/vps/jobs/sphpnp-sync.cron.
   workflow_dispatch: {}
 
 permissions: {}

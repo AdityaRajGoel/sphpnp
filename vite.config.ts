@@ -24,6 +24,16 @@ export default defineConfig(({ mode }) => ({
   plugins: [
     react(),
 
+    // index.html preconnects to the hosted Supabase project. A build pointed at
+    // another backend (the self-hosted VPS stack) preconnects to that instead.
+    {
+      name: "supabase-preconnect",
+      transformIndexHtml(html: string) {
+        const url = process.env.VITE_SUPABASE_URL;
+        return url ? html.replace("https://zbkjbbujsdlpujotgltm.supabase.co", new URL(url).origin) : html;
+      },
+    },
+
     VitePWA({
       registerType: 'autoUpdate',
       injectRegister: 'auto',

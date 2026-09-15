@@ -35,8 +35,7 @@
 name: IPO Browser Sync
 
 on:
-  schedule:
-    - cron: "20 3,8,13 * * 1-6" # 08:50, 13:50, 18:50 IST, Mon-Sat
+  # Scheduled runs moved to the VPS: infra/vps/jobs/sphpnp-sync.cron.
   workflow_dispatch: {}
 
 permissions:

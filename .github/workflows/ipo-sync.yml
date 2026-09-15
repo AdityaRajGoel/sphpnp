@@ -4,8 +4,7 @@
 name: IPO Sync
 
 on:
-  schedule:
-    - cron: "15 3,8,13 * * 1-6" # 08:45, 13:45, 18:45 IST, Mon-Sat
+  # Scheduled runs moved to the VPS: infra/vps/jobs/sphpnp-sync.cron.
   workflow_dispatch: {}
 
 permissions: {}

@@ -79,19 +79,31 @@
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://www.sphpnp.com/ipo/fx-multitech</loc>
-    <lastmod>2026-09-15</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
     <loc>https://www.sphpnp.com/ipo/robokidz-eduventures</loc>
     <lastmod>2026-09-15</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
+    <loc>https://www.sphpnp.com/ipo/fx-multitech</loc>
+    <lastmod>2026-09-15</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
     <loc>https://www.sphpnp.com/ipo/axiom-gas-engineering</loc>
+    <lastmod>2026-09-15</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://www.sphpnp.com/ipo/spectraa-technology-solutions</loc>
+    <lastmod>2026-09-15</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://www.sphpnp.com/ipo/kheria-autocomp</loc>
     <lastmod>2026-09-15</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
@@ -109,24 +121,6 @@
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://www.sphpnp.com/ipo/kheria-autocomp</loc>
-    <lastmod>2026-09-15</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://www.sphpnp.com/ipo/spectraa-technology-solutions</loc>
-    <lastmod>2026-09-15</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://www.sphpnp.com/ipo/ss-retail</loc>
-    <lastmod>2026-09-15</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
     <loc>https://www.sphpnp.com/ipo/jindal-supreme</loc>
     <lastmod>2026-09-15</lastmod>
     <changefreq>daily</changefreq>
@@ -139,13 +133,13 @@
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://www.sphpnp.com/ipo/vama-wovenfab</loc>
+    <loc>https://www.sphpnp.com/ipo/ss-retail</loc>
     <lastmod>2026-09-15</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://www.sphpnp.com/ipo/shakti-polytarp</loc>
+    <loc>https://www.sphpnp.com/ipo/vama-wovenfab</loc>
     <lastmod>2026-09-15</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
@@ -157,13 +151,7 @@
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://www.sphpnp.com/ipo/injecto-polymers</loc>
-    <lastmod>2026-09-15</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://www.sphpnp.com/ipo/manika-plastech</loc>
+    <loc>https://www.sphpnp.com/ipo/shakti-polytarp</loc>
     <lastmod>2026-09-15</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
@@ -175,7 +163,25 @@
     <priority>0.6</priority>
   </url>
   <url>
+    <loc>https://www.sphpnp.com/ipo/manika-plastech</loc>
+    <lastmod>2026-09-15</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://www.sphpnp.com/ipo/injecto-polymers</loc>
+    <lastmod>2026-09-15</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
     <loc>https://www.sphpnp.com/ipo/maharaja-speedex</loc>
+    <lastmod>2026-09-15</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://www.sphpnp.com/ipo/panchatv-bharat</loc>
     <lastmod>2026-09-15</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
@@ -193,19 +199,7 @@
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://www.sphpnp.com/ipo/panchatv-bharat</loc>
-    <lastmod>2026-09-15</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
     <loc>https://www.sphpnp.com/ipo/om-galaxy</loc>
-    <lastmod>2026-09-15</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://www.sphpnp.com/ipo/karamtara-engineering</loc>
     <lastmod>2026-09-15</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
@@ -217,37 +211,13 @@
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://www.sphpnp.com/ipo/infrax-renewable</loc>
-    <lastmod>2026-09-15</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://www.sphpnp.com/ipo/steamhouse-india</loc>
-    <lastmod>2026-09-15</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
     <loc>https://www.sphpnp.com/ipo/manipal-payment</loc>
     <lastmod>2026-09-15</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://www.sphpnp.com/ipo/amtech-esters</loc>
-    <lastmod>2026-09-15</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://www.sphpnp.com/ipo/asset-reconstruction</loc>
-    <lastmod>2026-09-15</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://www.sphpnp.com/ipo/lcc-projects</loc>
+    <loc>https://www.sphpnp.com/ipo/karamtara-engineering</loc>
     <lastmod>2026-09-15</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
@@ -259,13 +229,31 @@
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://www.sphpnp.com/ipo/glass-wall-systems</loc>
+    <loc>https://www.sphpnp.com/ipo/asset-reconstruction</loc>
     <lastmod>2026-09-15</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://www.sphpnp.com/ipo/kanohar-electricals</loc>
+    <loc>https://www.sphpnp.com/ipo/infrax-renewable</loc>
+    <lastmod>2026-09-15</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://www.sphpnp.com/ipo/amtech-esters</loc>
+    <lastmod>2026-09-15</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://www.sphpnp.com/ipo/lcc-projects</loc>
+    <lastmod>2026-09-15</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://www.sphpnp.com/ipo/steamhouse-india</loc>
     <lastmod>2026-09-15</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
@@ -277,7 +265,13 @@
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://www.sphpnp.com/ipo/pranav-constructions</loc>
+    <loc>https://www.sphpnp.com/ipo/kanohar-electricals</loc>
+    <lastmod>2026-09-15</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://www.sphpnp.com/ipo/glass-wall-systems</loc>
     <lastmod>2026-09-15</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
@@ -289,7 +283,25 @@
     <priority>0.6</priority>
   </url>
   <url>
+    <loc>https://www.sphpnp.com/ipo/pranav-constructions</loc>
+    <lastmod>2026-09-15</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
     <loc>https://www.sphpnp.com/ipo/qualiance-international</loc>
+    <lastmod>2026-09-15</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://www.sphpnp.com/ipo/fly-hi-maritime-travels</loc>
+    <lastmod>2026-09-15</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://www.sphpnp.com/ipo/deepa-jewellers</loc>
     <lastmod>2026-09-15</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
@@ -307,19 +319,7 @@
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://www.sphpnp.com/ipo/deepa-jewellers</loc>
-    <lastmod>2026-09-15</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://www.sphpnp.com/ipo/fly-hi-maritime-travels</loc>
-    <lastmod>2026-09-15</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://www.sphpnp.com/ipo/purple-style-labs</loc>
+    <loc>https://www.sphpnp.com/ipo/shanti-inorganics</loc>
     <lastmod>2026-09-15</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
@@ -337,7 +337,7 @@
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://www.sphpnp.com/ipo/shanti-inorganics</loc>
+    <loc>https://www.sphpnp.com/ipo/purple-style-labs</loc>
     <lastmod>2026-09-15</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
@@ -349,7 +349,7 @@
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://www.sphpnp.com/ipo/paluck-technologies</loc>
+    <loc>https://www.sphpnp.com/ipo/complete-sports-management-india</loc>
     <lastmod>2026-09-15</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
@@ -361,7 +361,7 @@
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://www.sphpnp.com/ipo/complete-sports-management-india</loc>
+    <loc>https://www.sphpnp.com/ipo/paluck-technologies</loc>
     <lastmod>2026-09-15</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
@@ -379,31 +379,13 @@
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://www.sphpnp.com/ipo/annu-projects</loc>
-    <lastmod>2026-09-15</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
     <loc>https://www.sphpnp.com/ipo/sumax-engineering</loc>
     <lastmod>2026-09-15</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://www.sphpnp.com/ipo/abh-healthcare</loc>
-    <lastmod>2026-09-15</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://www.sphpnp.com/ipo/skyways-air-services</loc>
-    <lastmod>2026-09-15</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://www.sphpnp.com/ipo/hy-tech-engineers</loc>
+    <loc>https://www.sphpnp.com/ipo/annu-projects</loc>
     <lastmod>2026-09-15</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
@@ -415,7 +397,25 @@
     <priority>0.6</priority>
   </url>
   <url>
+    <loc>https://www.sphpnp.com/ipo/hy-tech-engineers</loc>
+    <lastmod>2026-09-15</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://www.sphpnp.com/ipo/abh-healthcare</loc>
+    <lastmod>2026-09-15</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
     <loc>https://www.sphpnp.com/ipo/symbiotec-pharmalab</loc>
+    <lastmod>2026-09-15</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://www.sphpnp.com/ipo/skyways-air-services</loc>
     <lastmod>2026-09-15</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
@@ -433,13 +433,13 @@
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://www.sphpnp.com/ipo/gaja-alternative-asset-management</loc>
+    <loc>https://www.sphpnp.com/ipo/mopshop-distribution</loc>
     <lastmod>2026-09-15</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://www.sphpnp.com/ipo/mopshop-distribution</loc>
+    <loc>https://www.sphpnp.com/ipo/gaja-alternative-asset-management</loc>
     <lastmod>2026-09-15</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
@@ -475,12 +475,6 @@
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://www.sphpnp.com/ipo/skytech-infinite-platform</loc>
-    <lastmod>2026-09-15</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
     <loc>https://www.sphpnp.com/ipo/technocrats-plasma-systems</loc>
     <lastmod>2026-09-15</lastmod>
     <changefreq>daily</changefreq>
@@ -493,13 +487,13 @@
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://www.sphpnp.com/ipo/credent-connect-n-care</loc>
+    <loc>https://www.sphpnp.com/ipo/skytech-infinite-platform</loc>
     <lastmod>2026-09-15</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://www.sphpnp.com/ipo/pramodini-medicare</loc>
+    <loc>https://www.sphpnp.com/ipo/credent-connect-n-care</loc>
     <lastmod>2026-09-15</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
@@ -511,25 +505,19 @@
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://www.sphpnp.com/ipo/q-t-foods</loc>
-    <lastmod>2026-09-15</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
     <loc>https://www.sphpnp.com/ipo/shiprocket</loc>
     <lastmod>2026-09-15</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://www.sphpnp.com/ipo/fascinate-textiles</loc>
+    <loc>https://www.sphpnp.com/ipo/pramodini-medicare</loc>
     <lastmod>2026-09-15</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://www.sphpnp.com/ipo/sham-foam</loc>
+    <loc>https://www.sphpnp.com/ipo/q-t-foods</loc>
     <lastmod>2026-09-15</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
@@ -541,13 +529,25 @@
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://www.sphpnp.com/ipo/dhoot-transmission</loc>
+    <loc>https://www.sphpnp.com/ipo/sham-foam</loc>
+    <lastmod>2026-09-15</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://www.sphpnp.com/ipo/fascinate-textiles</loc>
     <lastmod>2026-09-15</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
     <loc>https://www.sphpnp.com/ipo/molbio-diagnostics</loc>
+    <lastmod>2026-09-15</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://www.sphpnp.com/ipo/dhoot-transmission</loc>
     <lastmod>2026-09-15</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
@@ -595,13 +595,13 @@
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://www.sphpnp.com/ipo/g-v-electricals-g-v-electricals</loc>
+    <loc>https://www.sphpnp.com/ipo/fusion-klassroom-edutech</loc>
     <lastmod>2026-09-15</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://www.sphpnp.com/ipo/fusion-klassroom-edutech</loc>
+    <loc>https://www.sphpnp.com/ipo/g-v-electricals-g-v-electricals</loc>
     <lastmod>2026-09-15</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
@@ -619,25 +619,25 @@
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://www.sphpnp.com/ipo/juniper-green-energy</loc>
-    <lastmod>2026-09-15</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
     <loc>https://www.sphpnp.com/ipo/mv-electrosystems</loc>
     <lastmod>2026-09-15</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://www.sphpnp.com/ipo/manipal-health-enterprises</loc>
+    <loc>https://www.sphpnp.com/ipo/juniper-green-energy</loc>
     <lastmod>2026-09-15</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
     <loc>https://www.sphpnp.com/ipo/h-r-hygiene-products-h-r-hygiene-products</loc>
+    <lastmod>2026-09-15</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://www.sphpnp.com/ipo/manipal-health-enterprises</loc>
     <lastmod>2026-09-15</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>

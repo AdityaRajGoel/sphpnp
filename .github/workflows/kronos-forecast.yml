@@ -22,8 +22,7 @@
 name: Kronos forecast
 
 on:
-  schedule:
-    - cron: "0 2 * * 6"
+  # Scheduled runs moved to the VPS: infra/vps/jobs/sphpnp-sync.cron.
   workflow_dispatch:
     inputs:
       symbols:
