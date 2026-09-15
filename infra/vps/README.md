@@ -70,8 +70,20 @@ and use Full (strict) TLS) - not enabled.
 ## Ops tools and admin panel
 
 Everything here is free, open-source and has no accounts of its own: the only login is
-the admin password on `admin.sphpnp.com` (basic auth, SHA-512 hash in
-`/etc/nginx/admin.htpasswd`, fail2ban bans repeated failures).
+the admin sign-in on `admin.sphpnp.com`, served by Authelia (`tools/authelia/`).
+
+- nginx asks Authelia about every request to the dashboard and to ports 8443-8445
+  (`nginx/authelia-location.conf`, `nginx/authelia-authrequest.conf`). Without a session
+  it redirects to `https://admin.sphpnp.com/auth/` and back after sign-in.
+- One session cookie covers every admin port. It ends after 1 hour idle or 12 hours
+  (7 days with "Remember me"). **Log out** on the dashboard
+  (`https://admin.sphpnp.com/auth/logout`) signs out of all of them.
+- 5 wrong passwords in 10 minutes lock the account for an hour.
+- The user and its argon2 password hash are in `/opt/sphpnp-tools/authelia/users.yml`
+  (mode 600). The session, storage and JWT secrets are in `authelia/secrets/`, generated
+  once. Neither is in git. To change the password:
+  `printf '%s\n' 'NEW-PASSWORD' | bash tools/setup.sh --set-admin-password aditya`.
+- ntfy (8446) stays outside the login because the phone app cannot sign in.
 
 `tools/` runs in a separate Compose project (`/opt/sphpnp-tools`); install or update with
 `bash tools/setup.sh`, which also removes tools no longer in the file.
@@ -84,7 +96,12 @@ the admin password on `admin.sphpnp.com` (basic auth, SHA-512 hash in
 | Supabase Studio | database, auth users, storage (nginx adds Studio's own credentials) | `https://admin.sphpnp.com:8445` |
 | GoAccess | traffic from the nginx logs: today (every 10 min) and one report per day | `https://admin.sphpnp.com/traffic-today.html`, `/traffic/` |
 | Browser errors | `src/lib/client-errors.ts` posts to `/api/client-error`; nginx logs it | `https://admin.sphpnp.com/client-errors.txt` |
+| Authelia | sign-in, sign-out and lockout for everything above | `https://admin.sphpnp.com/auth/` |
 | Status | last build, live release, last backup, failed syncs, disk, memory | `https://admin.sphpnp.com/status.txt` |
+
+The dashboard (`admin/index.html`, served from `/var/www/admin`) shows who is signed in, a
+Log out button, the Gatus checks live (`/status-api/`), build, backup and disk summaries,
+and links to every tool.
 
 `jobs/admin-reports.sh` (every 10 minutes) writes the static reports. vnStat keeps
 bandwidth history (`vnstat` on the server).
@@ -103,12 +120,12 @@ bandwidth history (`vnstat` on the server).
 
 ## Firewall and rate limits
 
-- ufw: 22 (rate-limited), 80, 443 and 8443-8446 (admin tools behind basic auth; 8446 is
-  ntfy's push endpoint). Docker
+- ufw: 22 (rate-limited), 80, 443 and 8443-8446 (admin tools behind the Authelia sign-in; 8446
+  is ntfy's push endpoint). Docker
   ports are all on 127.0.0.1, which ufw cannot see, so nothing else is reachable.
 - fail2ban (`security/fail2ban-nginx.local`): `sshd`, `recidive`, `nginx-botsearch`
-  (vulnerability scanners), `nginx-http-auth` (5 wrong admin passwords in 10 minutes = 1 h
-  ban) and `nginx-limit-req`.
+  (vulnerability scanners) and `nginx-limit-req`. Wrong admin passwords are handled by
+  Authelia's own lockout.
 - nginx rate limits (`nginx/rate-limits.conf`) were sized from real traffic: a stock page
   fires 21-40 API requests in a second and mobile users share IPs, so the API allows 50 r/s
   with a burst of 300 per IP. The VPS's own addresses are exempt; the prerender calls the

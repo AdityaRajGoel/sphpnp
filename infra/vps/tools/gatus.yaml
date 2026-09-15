@@ -1,5 +1,5 @@
 # Gatus checks for sphpnp.com -> /opt/sphpnp-tools/gatus.yaml
-# Status page: https://admin.sphpnp.com:8443 (behind the admin password).
+# Status page: https://admin.sphpnp.com:8443 (behind the admin sign-in).
 # Alerts go to ntfy on this server; subscribe to NTFY_TOPIC in the ntfy phone app with
 # server https://admin.sphpnp.com:8446.
 
@@ -149,9 +149,11 @@ endpoints:
     url: https://admin.sphpnp.com/
     client:
       timeout: 20s
+      # Signed out, the panel redirects to the Authelia sign-in page.
+      ignore-redirect: true
     interval: 30m
     conditions:
-      - "[STATUS] == 401"
+      - "[STATUS] == 302"
       - "[CERTIFICATE_EXPIRATION] > 336h"
     alerts:
       - type: ntfy

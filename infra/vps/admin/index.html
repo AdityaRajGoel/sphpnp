@@ -6,53 +6,186 @@
   <meta name="robots" content="noindex, nofollow" />
   <title>sphpnp admin</title>
   <style>
-    :root { --bg: #f4f6f8; --card: #ffffff; --ink: #0a192f; --muted: #5b6b7b; --line: #dde3e9; --accent: #0f6e56; }
+    :root {
+      --bg: #f3f5f7; --card: #ffffff; --ink: #0a192f; --muted: #5a6878; --line: #dfe4ea;
+      --accent: #0f6e56; --accent-soft: #e2f2ec; --warn: #9a6100; --warn-soft: #fbefd9;
+      --bad: #b3261e; --bad-soft: #fbe3e1; --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
     @media (prefers-color-scheme: dark) {
-      :root { --bg: #0b1320; --card: #121c2b; --ink: #e6edf5; --muted: #95a4b5; --line: #243246; --accent: #4fc29c; }
+      :root {
+        --bg: #0a111c; --card: #111b29; --ink: #e6edf5; --muted: #93a2b4; --line: #223043;
+        --accent: #4fc29c; --accent-soft: #12302a; --warn: #e3b25a; --warn-soft: #33270f;
+        --bad: #f28b82; --bad-soft: #3a1b19;
+      }
     }
     * { box-sizing: border-box; }
-    body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; padding: 40px 16px; }
-    main { max-width: 760px; margin: 0 auto; display: grid; gap: 28px; }
-    h1 { margin: 0; font-size: 1.5rem; }
-    h2 { margin: 0 0 8px; font-size: 0.8rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
-    p { margin: 0; color: var(--muted); }
-    ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
-    li a { display: grid; grid-template-columns: 9.5rem 1fr auto; gap: 12px; align-items: baseline; padding: 14px 16px; background: var(--card); color: inherit; text-decoration: none; }
-    li a:hover, li a:focus-visible { background: color-mix(in srgb, var(--accent) 8%, var(--card)); outline: none; }
-    li b { font-weight: 600; }
-    li span { color: var(--muted); }
-    li code { color: var(--accent); font-size: 0.85rem; }
-    @media (max-width: 520px) { li a { grid-template-columns: 1fr; gap: 2px; } }
+    body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+    header { background: var(--card); border-bottom: 1px solid var(--line); }
+    .bar { max-width: 1080px; margin: 0 auto; padding: 14px 16px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+    .bar h1 { margin: 0; font-size: 1.05rem; font-weight: 650; }
+    .bar h1 span { color: var(--muted); font-weight: 500; }
+    .who { margin-left: auto; display: flex; align-items: center; gap: 12px; color: var(--muted); font-size: 0.9rem; }
+    .who b { color: var(--ink); font-weight: 600; }
+    .logout { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border: 1px solid var(--line); border-radius: 8px; color: var(--ink); text-decoration: none; font-weight: 600; font-size: 0.9rem; background: var(--card); }
+    .logout:hover, .logout:focus-visible { border-color: var(--bad); color: var(--bad); outline: none; }
+    main { max-width: 1080px; margin: 0 auto; padding: 24px 16px 48px; display: grid; gap: 24px; }
+    h2 { margin: 0 0 10px; font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+    .summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; }
+    .tile { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; display: grid; gap: 4px; }
+    .tile .label { color: var(--muted); font-size: 0.8rem; }
+    .tile .value { font-size: 1.35rem; font-weight: 650; font-variant-numeric: tabular-nums; }
+    .tile .hint { color: var(--muted); font-size: 0.8rem; overflow-wrap: anywhere; }
+    .ok { color: var(--accent); } .warn { color: var(--warn); } .bad { color: var(--bad); }
+    .grid2 { display: grid; grid-template-columns: 1.3fr 1fr; gap: 24px; align-items: start; }
+    @media (max-width: 820px) { .grid2 { grid-template-columns: 1fr; } }
+    .panel { background: var(--card); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+    .checks { list-style: none; margin: 0; padding: 0; }
+    .checks li { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center; padding: 10px 14px; border-top: 1px solid var(--line); }
+    .checks li:first-child { border-top: 0; }
+    .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--muted); }
+    .dot.up { background: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+    .dot.down { background: var(--bad); box-shadow: 0 0 0 3px var(--bad-soft); }
+    .checks .group { color: var(--muted); font-size: 0.8rem; }
+    .checks .ms { color: var(--muted); font-family: var(--mono); font-size: 0.8rem; }
+    .links { list-style: none; margin: 0; padding: 0; }
+    .links a { display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; padding: 12px 14px; border-top: 1px solid var(--line); color: inherit; text-decoration: none; }
+    .links li:first-child a { border-top: 0; }
+    .links a:hover, .links a:focus-visible { background: var(--accent-soft); outline: none; }
+    .links b { font-weight: 600; }
+    .links span { grid-column: 1; color: var(--muted); font-size: 0.85rem; }
+    .links code { grid-row: 1 / span 2; grid-column: 2; align-self: center; color: var(--accent); font-family: var(--mono); font-size: 0.8rem; }
+    pre { margin: 0; padding: 12px 14px; font: 0.8rem/1.55 var(--mono); white-space: pre-wrap; overflow-wrap: anywhere; color: var(--ink); max-height: 260px; overflow: auto; }
+    .muted { color: var(--muted); }
+    .note { color: var(--muted); font-size: 0.85rem; }
+    .note code { font-family: var(--mono); color: var(--ink); }
   </style>
 </head>
 <body>
-  <main>
-    <div>
-      <h1>sphpnp.com admin</h1>
-      <p>Open-source tools running on the VPS. No accounts: this page's login is the only one.</p>
+  <header>
+    <div class="bar">
+      <h1>sphpnp.com <span>admin</span></h1>
+      <div class="who">
+        <span id="who">Signed in</span>
+        <a class="logout" href="/auth/logout?rd=https%3A%2F%2Fadmin.sphpnp.com%2F">Log out</a>
+      </div>
     </div>
-    <section>
-      <h2>Live</h2>
-      <ul>
-        <li><a href="https://admin.sphpnp.com:8443/"><b>Gatus</b><span>Uptime, response times, certificate expiry</span><code>:8443</code></a></li>
-        <li><a href="https://admin.sphpnp.com:8444/"><b>Glances</b><span>CPU, memory, disk, network, containers</span><code>:8444</code></a></li>
-        <li><a href="https://admin.sphpnp.com:8445/"><b>Supabase Studio</b><span>Database tables, auth users, storage</span><code>:8445</code></a></li>
-      </ul>
+  </header>
+
+  <main>
+    <section aria-labelledby="h-summary">
+      <h2 id="h-summary">At a glance</h2>
+      <div class="summary">
+        <div class="tile"><span class="label">Uptime checks</span><span class="value" id="t-checks">…</span><span class="hint" id="t-checks-hint">Gatus</span></div>
+        <div class="tile"><span class="label">Website build</span><span class="value" id="t-build">…</span><span class="hint" id="t-build-hint"></span></div>
+        <div class="tile"><span class="label">Last backup</span><span class="value" id="t-backup">…</span><span class="hint">nightly 03:15 IST, 7 kept</span></div>
+        <div class="tile"><span class="label">Server</span><span class="value" id="t-disk">…</span><span class="hint" id="t-server-hint"></span></div>
+      </div>
     </section>
-    <section>
-      <h2>Reports</h2>
-      <ul>
-        <li><a href="/traffic-today.html"><b>Traffic today</b><span>GoAccess, refreshed every 10 minutes</span><code>html</code></a></li>
-        <li><a href="/traffic/"><b>Traffic by day</b><span>One GoAccess report per day, 30 days</span><code>dir</code></a></li>
-        <li><a href="/client-errors.txt"><b>Browser errors</b><span>Latest errors reported by visitors' browsers</span><code>txt</code></a></li>
-        <li><a href="/errors/"><b>Error digests</b><span>Daily: containers, nginx, failed syncs and builds</span><code>dir</code></a></li>
-        <li><a href="/status.txt"><b>Jobs and backups</b><span>Last build, backup, and sync results</span><code>txt</code></a></li>
-      </ul>
-    </section>
-    <section>
-      <h2>Alerts</h2>
-      <p>Install the ntfy app, add server <code>https://admin.sphpnp.com:8446</code> and subscribe to the topic stored as NTFY_TOPIC in /opt/sphpnp-tools/.env.</p>
+
+    <div class="grid2">
+      <section aria-labelledby="h-checks">
+        <h2 id="h-checks">Checks</h2>
+        <div class="panel"><ul class="checks" id="checks"><li><span class="dot"></span><span class="muted">Loading…</span><span></span></li></ul></div>
+      </section>
+
+      <section aria-labelledby="h-tools">
+        <h2 id="h-tools">Tools and reports</h2>
+        <div class="panel">
+          <ul class="links">
+            <li><a href="https://admin.sphpnp.com:8443/"><b>Gatus</b><span>Uptime history, response times, certificates</span><code>:8443</code></a></li>
+            <li><a href="https://admin.sphpnp.com:8444/"><b>Glances</b><span>CPU, memory, disk, network, containers</span><code>:8444</code></a></li>
+            <li><a href="https://admin.sphpnp.com:8445/"><b>Supabase Studio</b><span>Tables, auth users, storage</span><code>:8445</code></a></li>
+            <li><a href="/traffic-today.html"><b>Traffic today</b><span>GoAccess, refreshed every 10 minutes</span><code>html</code></a></li>
+            <li><a href="/traffic/"><b>Traffic by day</b><span>One report per day, 30 days</span><code>dir</code></a></li>
+            <li><a href="/client-errors.txt"><b>Browser errors</b><span>Errors from visitors' browsers</span><code>txt</code></a></li>
+            <li><a href="/errors/"><b>Error digests</b><span>Daily: containers, nginx, syncs, builds</span><code>dir</code></a></li>
+            <li><a href="https://www.sphpnp.com/"><b>Website</b><span>www.sphpnp.com</span><code>live</code></a></li>
+          </ul>
+        </div>
+      </section>
+    </div>
+
+    <section aria-labelledby="h-status">
+      <h2 id="h-status">Jobs and server</h2>
+      <div class="panel"><pre id="status">Loading…</pre></div>
+      <p class="note">Alerts: install the ntfy app, add server <code>https://admin.sphpnp.com:8446</code> and subscribe to the topic stored as <code>NTFY_TOPIC</code> in <code>/opt/sphpnp-tools/.env</code>.</p>
     </section>
   </main>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const setTone = (el, tone) => { el.classList.remove("ok", "warn", "bad"); if (tone) el.classList.add(tone); };
+
+    async function loadWho() {
+      try {
+        // Authelia's own API, through the /auth/ proxy with the session cookie.
+        const res = await fetch("/auth/api/user/info", { cache: "no-store", credentials: "same-origin" });
+        const name = (await res.json())?.data?.display_name;
+        if (name) {
+          $("who").innerHTML = "Signed in as <b></b>";
+          $("who").querySelector("b").textContent = name;
+        }
+      } catch { /* the header keeps its default text */ }
+    }
+
+    async function loadChecks() {
+      const list = $("checks");
+      try {
+        const res = await fetch("/status-api/v1/endpoints/statuses", { cache: "no-store" });
+        const rows = await res.json();
+        list.replaceChildren();
+        let up = 0;
+        for (const row of rows) {
+          const last = (row.results || []).at(-1) || {};
+          const ok = last.success === true;
+          if (ok) up += 1;
+          const li = document.createElement("li");
+          const dot = document.createElement("span");
+          dot.className = "dot " + (row.results?.length ? (ok ? "up" : "down") : "");
+          const name = document.createElement("span");
+          name.innerHTML = "<span></span> <span class='group'></span>";
+          name.firstChild.textContent = row.name;
+          name.lastChild.textContent = row.group || "";
+          const ms = document.createElement("span");
+          ms.className = "ms";
+          ms.textContent = last.duration ? Math.round(last.duration / 1e6) + " ms" : "";
+          li.append(dot, name, ms);
+          list.append(li);
+        }
+        $("t-checks").textContent = `${up} / ${rows.length} up`;
+        setTone($("t-checks"), up === rows.length ? "ok" : up >= rows.length - 1 ? "warn" : "bad");
+        $("t-checks-hint").textContent = "Gatus, updated " + new Date().toLocaleTimeString();
+      } catch {
+        list.innerHTML = "<li><span class='dot down'></span><span>Could not reach Gatus</span><span></span></li>";
+        $("t-checks").textContent = "unknown"; setTone($("t-checks"), "bad");
+      }
+    }
+
+    async function loadStatus() {
+      try {
+        const text = await (await fetch("/status.txt", { cache: "no-store" })).text();
+        $("status").textContent = text.trim();
+        const line = (label) => (text.match(new RegExp("^" + label + ":\\s*(.*)$", "m")) || [])[1] || "";
+        const build = line("Website build");
+        $("t-build").textContent = /build-site ok/.test(build) ? "Published" : /FAILED/.test(build) ? "Failed" : /ROLLED|STOPPED/.test(build) ? "Stopped" : "—";
+        setTone($("t-build"), /build-site ok/.test(build) ? "ok" : /FAILED/.test(build) ? "bad" : "warn");
+        $("t-build-hint").textContent = (build.match(/^\S+ \S+/) || [""])[0] + " · release " + line("Live release");
+        const backup = line("Last backup");
+        $("t-backup").textContent = backup ? backup.slice(5, 16) : "never";
+        const ageHours = backup ? (Date.now() - new Date(backup.replace(" ", "T") + "+05:30")) / 36e5 : Infinity;
+        setTone($("t-backup"), ageHours < 30 ? "ok" : ageHours < 54 ? "warn" : "bad");
+        const disk = (line("Disk").match(/\((\d+)%\)/) || [])[1];
+        $("t-disk").textContent = disk ? disk + "% disk" : "—";
+        setTone($("t-disk"), disk && +disk < 75 ? "ok" : disk && +disk < 90 ? "warn" : "bad");
+        $("t-server-hint").textContent = [line("Memory"), "load " + line("Load")].filter(Boolean).join(" · ");
+      } catch {
+        $("status").textContent = "Could not load status.txt";
+      }
+    }
+
+    loadWho(); loadChecks(); loadStatus();
+    setInterval(loadChecks, 60000);
+    setInterval(loadStatus, 120000);
+  </script>
 </body>
 </html>

@@ -9,6 +9,27 @@
 name: sphpnp-tools
 
 services:
+  # Login portal for admin.sphpnp.com: one session cookie for every admin port, a real
+  # logout, and lockout after repeated wrong passwords (authelia/configuration.yml).
+  authelia:
+    image: authelia/authelia:4.39
+    restart: unless-stopped
+    environment:
+      X_AUTHELIA_CONFIG: /config/configuration.yml
+      AUTHELIA_IDENTITY_VALIDATION_RESET_PASSWORD_JWT_SECRET_FILE: /secrets/jwt_secret
+      AUTHELIA_SESSION_SECRET_FILE: /secrets/session_secret
+      AUTHELIA_STORAGE_ENCRYPTION_KEY_FILE: /secrets/storage_encryption_key
+      TZ: Asia/Kolkata
+    volumes:
+      - ./authelia/configuration.yml:/config/configuration.yml:ro
+      - ./authelia/users.yml:/config/users.yml:ro
+      - ./authelia/secrets:/secrets:ro
+      - ./data/authelia:/data
+    ports:
+      - "127.0.0.1:9091:9091"
+    # Each argon2 password check uses ~64 MB; 128m was OOM-killed during sign-in.
+    mem_limit: 384m
+
   gatus:
     image: twinproduction/gatus:stable
     restart: unless-stopped
