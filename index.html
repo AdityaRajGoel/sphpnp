@@ -31,6 +31,10 @@
        downloaded the same image twice on every visit, and the splash logo was
        competing with it at high priority. -->
   <link rel="preload" href="/hero-bg.webp" as="image" type="image/webp" fetchpriority="high" />
+  <!-- Umami analytics, self-hosted on the VPS and served same-origin by nginx
+       (infra/vps/tools). data-domains limits counting to the live site, so the
+       prerender's localhost captures never register as visits. -->
+  <script defer src="/insights.js" data-website-id="c07c8206-0a73-47e6-80a6-7aba3ac4e135" data-domains="www.sphpnp.com"></script>
   <!-- hero-*.webm/mp4 load via the Hero component after mount; eager preload is not needed and hurts LCP -->
   <!-- Font loading -->
   <link rel="preload"

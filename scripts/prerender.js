@@ -5,7 +5,7 @@ import express from 'express';
 import { fetchStockRoutes } from './lib/stock-routes.mjs';
 import { fetchIpoRoutes, assertIpoPageCaptured } from './lib/ipo-routes.mjs';
 import { routeToFilePath } from './lib/route-paths.mjs';
-import { cleanCapturedHtml } from './lib/prerender-html.mjs';
+import { assertHeadCaptured, cleanCapturedHtml, expectedCanonical } from './lib/prerender-html.mjs';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DIST_DIR = path.resolve(__dirname, '../dist');
 
@@ -131,7 +131,9 @@ function assertStockPageCaptured(route, html) {
 // this buys back transient puppeteer noise without becoming a way to mask a
 // genuine capture failure. No concurrency: above 4 parallel pages capture
 // completeness was measured to collapse silently.
-const CAPTURE_ATTEMPTS = 3;
+// Four on the VPS: capture shares 4 vCPUs with the database and edge functions,
+// and a busy moment can starve one page twice in a row.
+const CAPTURE_ATTEMPTS = 4;
 /**
  * With several pages open only one is in the foreground, and Chrome throttles
  * timers and animation frames in the rest. react-helmet-async flushes <head>
@@ -146,9 +148,22 @@ const NO_BACKGROUND_THROTTLING = [
 ];
 /** Pages captured at once. Overridable for a slow machine: PRERENDER_CONCURRENCY=1. */
 const CONCURRENCY = Math.max(1, Math.min(4, Number(process.env.PRERENDER_CONCURRENCY) || 3));
-const RETRY_DELAY_MS = 1000;
+/** A short breather before a retry lets a momentarily busy server catch up. */
+const RETRY_DELAY_MS = 3000;
+/** How long the head (canonical + title) may take after the body is ready. */
+const HEAD_WAIT_MS = 30000;
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/**
+ * The raw build output of index.html, read before any capture. Captures overwrite
+ * dist/index.html with the prerendered homepage, and serving THAT to every later
+ * route booted each page with the homepage's head - its title and its canonical -
+ * which Helmet only replaces a frame later. Every route now boots from this.
+ */
+let RAW_SHELL = '';
+/** The <title> the raw shell ships with; only "/" may be captured with it. */
+let GENERIC_TITLE = '';
 
 /** One attempt on a fresh page. The page is always closed, success or not. */
 async function captureOnce(browser, port, route) {
@@ -159,6 +174,13 @@ async function captureOnce(browser, port, route) {
   // query-heavy panels stay out of the static HTML and off the database.
   await page.evaluateOnNewDocument(() => {
     window.__PRERENDER__ = true;
+    // react-helmet-async writes <head> inside requestAnimationFrame, and headless
+    // Chrome gives animation frames only to the tab in front. With several pages
+    // captured at once the others rendered their body but never their head (no
+    // title, no canonical) - the flags in NO_BACKGROUND_THROTTLING keep timers
+    // running but not frames. Timers are never paused, so run frames on them.
+    window.requestAnimationFrame = (callback) => setTimeout(() => callback(performance.now()), 16);
+    window.cancelAnimationFrame = (id) => clearTimeout(id);
   });
 
   try {
@@ -201,7 +223,28 @@ async function captureOnce(browser, port, route) {
         .catch(() => {});
     }
 
+    // Helmet writes <head> a frame after the body settles. Wait until the head
+    // names THIS page: its own canonical URL and a title other than the shell's.
+    // A page that never gets there fails the assertion below and is retried.
+    const checkCanonical = route !== ERROR_ROUTE;
+    await page
+      .waitForFunction(
+        (wantCanonical, genericTitle, isHome, check) => {
+          const link = document.querySelector('link[rel="canonical"]');
+          if (!link) return false;
+          if (check && decodeURIComponent(link.href) !== decodeURIComponent(wantCanonical)) return false;
+          return isHome || document.title.trim() !== genericTitle.trim();
+        },
+        { timeout: HEAD_WAIT_MS },
+        expectedCanonical(route),
+        GENERIC_TITLE,
+        route === '/',
+        checkCanonical,
+      )
+      .catch(() => {});
+
     const html = cleanCapturedHtml(await page.content(), port);
+    assertHeadCaptured(route, html, { genericTitle: GENERIC_TITLE, checkCanonical });
     if (route.startsWith('/stock/')) {
       assertStockPageCaptured(route, html);
     }
@@ -241,14 +284,21 @@ async function prerender() {
   console.log('Starting prerendering process...');
 
   // 1. Start a local static server to serve the built SPA
+  RAW_SHELL = fs.readFileSync(path.join(DIST_DIR, 'index.html'), 'utf8');
+  GENERIC_TITLE = RAW_SHELL.match(/<title[^>]*>([^<]*)<\/title>/i)?.[1] ?? '';
   const app = express();
-  app.use(express.static(DIST_DIR));
-  // Fallback for SPA routing
+  // index: false - "/" must boot from the raw shell too, never a captured page.
+  app.use(express.static(DIST_DIR, { index: false }));
+  // Fallback for SPA routing: always the raw shell read above, never the
+  // dist/index.html the "/" capture overwrites (see RAW_SHELL).
   app.use((req, res) => {
-    // `send`'s dotfile guard rejects the whole path when any segment starts with a
-    // dot, so path.join() 404s every route from a checkout under e.g. .claude/.
-    // Rooting the call scopes that check to the filename.
-    res.sendFile('index.html', { root: DIST_DIR });
+    // A missing file (e.g. /insights.js, served by nginx in production, not from
+    // dist/) must not get the HTML shell: the page would try to run HTML as a script.
+    if (/\.[a-z0-9]+$/i.test(req.path)) {
+      res.status(404).end();
+      return;
+    }
+    res.type('html').send(RAW_SHELL);
   });
 
   const server = app.listen(0, async () => {
@@ -285,9 +335,13 @@ async function prerender() {
       // New IPOs arrive several times a day, but pages are only prerendered on
       // deploy. vercel.json rewrites any /ipo/:slug without a file to this shell,
       // so an issue added since the last deploy is a 200 that renders in the
-      // browser, not a 404. It is the raw build output - no canonical, no
-      // robots tag - copied now, before the "/" capture below overwrites it.
-      fs.copyFileSync(path.join(DIST_DIR, 'index.html'), path.join(DIST_DIR, 'ipo-shell.html'));
+      // browser, not a 404. It is the raw build output - no canonical - copied
+      // now, before the "/" capture below overwrites it. It carries noindex: the
+      // same shell also answers mistyped or retired slugs, and without it every
+      // one was an indexable copy of the homepage (a soft 404). A real new issue
+      // becomes an indexable page at the next build (infra/vps/jobs/build-site.sh).
+      const shell = RAW_SHELL.replace('<head>', '<head>\n    <meta name="robots" content="noindex, follow" />');
+      fs.writeFileSync(path.join(DIST_DIR, 'ipo-shell.html'), shell);
 
       // Serial capture ran out Vercel's 45-minute build limit once the universe
       // reached 246 stocks and 105 IPOs (~397 routes at ~7s each: killed at

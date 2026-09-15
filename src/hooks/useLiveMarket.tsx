@@ -129,8 +129,10 @@ export const LiveMarketProvider = ({ children }: { children: ReactNode }) => {
   const fetchData = useCallback(async () => {
     // A static capture must never hold a live quote: it would be served as
     // "current" long after it went stale, and ~400 captures hammer the function.
+    // Loading stays true: every consumer then renders its skeleton, so the static
+    // HTML carries the page's structure but no prices at all - live figures are
+    // fetched in the visitor's browser.
     if (isPrerender()) {
-      setLoading(false);
       return;
     }
     try {

@@ -52,6 +52,67 @@ sitemap or robots.txt, or with fewer than 300 prerendered pages. Roll back by po
 the VPS). `nginx/sphpnp-com.conf` and `nginx/sphpnp-headers.conf` carry the redirects, clean
 URLs and security headers that used to live in `vercel.json`.
 
+## Nightly rebuild and performance
+
+`jobs/build-site.sh` runs at 04:30 IST: `npm run build` (sitemap, prerender of every page,
+IndexNow), then `deploy-site.sh`. A failed build or a rejected `dist/` leaves the live site
+as it was; the result is logged to the day's sync log. The prerender refuses any page
+captured before its `<head>` (title, description, canonical, JSON-LD) was written.
+
+nginx serves HTTP/2 on every TLS listener. `deploy-site.sh` writes `.br` and `.gz` copies of
+every text file and nginx serves them with `brotli_static` / `gzip_static` (brotli modules:
+`libnginx-mod-http-brotli-static`, `libnginx-mod-http-brotli-filter`). HTML is cached for 5
+minutes with background revalidation, images and video for a week, and hashed `/assets`
+for a year. Visitors are mostly in India and the server is in Europe; a free Cloudflare
+proxy in front of `www` would cut handshake and first-byte time there (keep `api` DNS-only
+and use Full (strict) TLS) - not enabled.
+
+## Ops tools and admin panel
+
+`tools/` runs free, self-hosted tools in a separate Compose project (`/opt/sphpnp-tools`,
+own Postgres and Valkey, every port bound to 127.0.0.1). Install or update with
+`bash tools/setup.sh`; secrets are generated once into `/opt/sphpnp-tools/.env` (mode 600).
+
+| Tool | Does | Admin URL |
+|---|---|---|
+| Umami | visitor analytics (tracker served same-origin at `/insights.js`) | `https://admin.sphpnp.com:8441` |
+| GlitchTip | browser errors via `@sentry/react` (ingest proxied at `/api/1/envelope/`) | `https://admin.sphpnp.com:8442` |
+| Uptime Kuma | uptime checks and alerts | `https://admin.sphpnp.com:8443` |
+| Beszel | server and container metrics (start the agent after adding its key) | `https://admin.sphpnp.com:8444` |
+| Supabase Studio | database, auth users, storage | `https://admin.sphpnp.com:8445` |
+
+`https://admin.sphpnp.com` lists them. The tools do not run under a sub-path, so each keeps
+its own port on the one hostname and certificate (`nginx/admin.conf`). Every port asks for
+the admin login first (basic auth, SHA-512 hash in `/etc/nginx/admin.htpasswd`), then the
+tool's own login. Studio's gateway credentials are added by nginx from a root-only snippet
+generated from `/opt/supabase/.env`. vnStat and GoAccess are installed for bandwidth and
+traffic reports.
+
+## Logs and errors
+
+- `jobs/logs-archive.sh` (00:20 IST): each container's logs for the previous day, gzipped, in
+  `/var/log/sphpnp/containers/<date>/` (90 days), nginx error lines in
+  `/var/log/sphpnp/nginx/` (90 days), and one digest of container errors, nginx errors,
+  failed syncs and failed builds in `/var/log/sphpnp/errors/<date>.log` (365 days).
+- `jobs/traffic-report.sh` (00:40 IST): GoAccess HTML report in `/var/log/sphpnp/traffic/`.
+- Sync, backup and build results: `/var/log/sphpnp-sync/<date>.log`; build output in
+  `/opt/sphpnp/build-logs/`.
+- Browser errors: GlitchTip project `website`, only from www.sphpnp.com in a real browser.
+
+## Firewall and rate limits
+
+- ufw: 22 (rate-limited), 80, 443 and 8441-8445 (admin tools, behind basic auth). Docker
+  ports are all on 127.0.0.1, which ufw cannot see, so nothing else is reachable.
+- fail2ban (`security/fail2ban-nginx.local`): `sshd`, `recidive`, `nginx-botsearch`
+  (vulnerability scanners), `nginx-http-auth` (5 wrong admin passwords in 10 minutes = 1 h
+  ban) and `nginx-limit-req`.
+- nginx rate limits (`nginx/rate-limits.conf`) were sized from real traffic: a stock page
+  fires 21-40 API requests in a second and mobile users share IPs, so the API allows 50 r/s
+  with a burst of 300 per IP. The VPS's own addresses are exempt; the prerender calls the
+  API through its public hostname and was otherwise throttled into failed builds.
+- Changing a zone's key or size needs `systemctl restart nginx`: a reload fails and nginx
+  keeps the old config even though `nginx -t` passes. Check `error.log` after reloads.
+
 ## Edge function auth
 
 Self-hosted Supabase applies one `FUNCTIONS_VERIFY_JWT` setting to every function (hosted
@@ -120,6 +181,6 @@ the Contabo control panel.
 |---|---|
 | `01-base-system.sh` | hostname, IST timezone, full upgrade, base packages, 4 GB swap, sysctl hardening, journald cap, unattended security updates, chrony, auditd |
 | `02-docker.sh` | Docker Engine + Compose plugin from Docker's repo, log rotation, live-restore |
-| `03-tooling.sh` | Node 22, PostgreSQL 17 client, Supabase CLI, Deno, Caddy, cloudflared, rclone, age, Chromium libraries for the prerender |
+| `03-tooling.sh` | Node 22, PostgreSQL 17 client, Supabase CLI, Deno, nginx + brotli modules, certbot (auto-renew), brotli/pigz, cloudflared, rclone, age, Chromium libraries for the prerender (Caddy installed but disabled) |
 | `04-access.sh` | `deploy` user with key login, ufw (SSH only, rate-limited), fail2ban |
 | `05-ssh-lockdown.sh` | key-only SSH, no root login, `AllowUsers deploy` |

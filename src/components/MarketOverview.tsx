@@ -220,12 +220,16 @@ const MarketOverview = () => {
 
   const activeConfig = dynamicTabConfig.find(t => t.key === activeTab)!;
 
-  const liveAdvances = liveData?.advances ?? 1456;
-  const liveDeclines = liveData?.declines ?? 892;
-  const liveUnchanged = liveData?.unchanged ?? 186;
+  // No invented figures: these used to default to 1,456 / 892 / 186 and VIX 13.45,
+  // which the prerendered HTML served as if they were today's market. Until real
+  // breadth arrives (and always in the static HTML) the tiles show a dash.
+  const hasBreadth = liveData != null;
+  const liveAdvances = liveData?.advances ?? 0;
+  const liveDeclines = liveData?.declines ?? 0;
+  const liveUnchanged = liveData?.unchanged ?? 0;
   const totalStocks = liveAdvances + liveDeclines + liveUnchanged;
 
-  const liveVix = vix?.price ?? "13.45";
+  const liveVix = vix?.price ?? "—";
   const liveMostActive = liveData?.mostActive?.[0]?.name ?? "—";
 
   // FII/DII from the admin-fed market_flows table; "—" until published.
@@ -237,18 +241,22 @@ const MarketOverview = () => {
   };
   const fiiFlow = fmtFlow("fii_cash");
   const diiFlow = fmtFlow("dii_cash");
-  const breadthPct = totalStocks > 0 ? Math.round((liveAdvances / totalStocks) * 100) : 50;
+  const breadthPct = hasBreadth && totalStocks > 0 ? Math.round((liveAdvances / totalStocks) * 100) : null;
+  const neutral = { color: "text-muted-foreground", bgColor: "bg-muted/40" };
 
   const marketStats = useMemo(() => [
-    { icon: BarChart3, label: "Breadth (Adv)", value: `${breadthPct}%`, color: breadthPct >= 50 ? "text-secondary" : "text-destructive", bgColor: breadthPct >= 50 ? "bg-secondary/10" : "bg-destructive/10" },
-    { icon: Activity, label: "Unchanged", value: liveUnchanged.toLocaleString(), color: "text-brand-gold", bgColor: "bg-brand-gold/10" },
-    { icon: TrendingUp, label: "Advances", value: liveAdvances.toLocaleString(), color: "text-secondary", bgColor: "bg-secondary/10" },
-    { icon: TrendingDown, label: "Declines", value: liveDeclines.toLocaleString(), color: "text-destructive", bgColor: "bg-destructive/10" },
+    breadthPct == null
+      ? { icon: BarChart3, label: "Breadth (Adv)", value: "—", ...neutral }
+      : { icon: BarChart3, label: "Breadth (Adv)", value: `${breadthPct}%`, color: breadthPct >= 50 ? "text-secondary" : "text-destructive", bgColor: breadthPct >= 50 ? "bg-secondary/10" : "bg-destructive/10" },
+    { icon: Activity, label: "Unchanged", value: hasBreadth ? liveUnchanged.toLocaleString() : "—", color: "text-brand-gold", bgColor: "bg-brand-gold/10" },
+    { icon: TrendingUp, label: "Advances", value: hasBreadth ? liveAdvances.toLocaleString() : "—", color: "text-secondary", bgColor: "bg-secondary/10" },
+    { icon: TrendingDown, label: "Declines", value: hasBreadth ? liveDeclines.toLocaleString() : "—", color: "text-destructive", bgColor: "bg-destructive/10" },
     { icon: Eye, label: "Most Active", value: liveMostActive, color: "text-primary", bgColor: "bg-primary/10" },
     { icon: Activity, label: "India VIX", value: liveVix, color: "text-brand-gold", bgColor: "bg-brand-gold/10" },
     { icon: IndianRupee, label: "FII Flow", value: fiiFlow?.value ?? "—", color: fiiFlow ? (fiiFlow.up ? "text-secondary" : "text-destructive") : "text-muted-foreground", bgColor: fiiFlow ? (fiiFlow.up ? "bg-secondary/10" : "bg-destructive/10") : "bg-muted/40" },
     { icon: Percent, label: "DII Flow", value: diiFlow?.value ?? "—", color: diiFlow ? (diiFlow.up ? "text-secondary" : "text-destructive") : "text-muted-foreground", bgColor: diiFlow ? (diiFlow.up ? "bg-secondary/10" : "bg-destructive/10") : "bg-muted/40" },
-  ], [liveAdvances, liveDeclines, liveUnchanged, liveMostActive, liveVix, fiiFlow, diiFlow, breadthPct]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- `neutral` is a constant literal
+  ], [hasBreadth, liveAdvances, liveDeclines, liveUnchanged, liveMostActive, liveVix, fiiFlow, diiFlow, breadthPct]);
 
   // Real history for the selected scrip. Previously this component generated a
   // Math.random() walk per stock name and cached it, so a visitor clicking

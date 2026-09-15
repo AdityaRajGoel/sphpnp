@@ -11,6 +11,7 @@ import { revealItem, revealSection } from "@/lib/motion";
 import { useScreenerUniverse } from "@/hooks/useScreenerUniverse";
 import { computeBreadth } from "@/lib/market-breadth";
 import { getWorldBoard } from "@/lib/world-markets";
+import { isPrerender } from "@/lib/prerender";
 import FiiDiiCashCard from "./FiiDiiCashCard";
 import { HeatStrip } from "./WorldMarketsSection";
 
@@ -21,7 +22,9 @@ import { HeatStrip } from "./WorldMarketsSection";
  */
 export default function HomeMarketGlance() {
   const universe = useScreenerUniverse();
-  const board = useQuery({ queryKey: ["world-board"], queryFn: getWorldBoard, staleTime: 15 * 60_000, retry: 1 });
+  // World index levels are live figures: fetched in the browser, never baked into
+  // the prerendered HTML.
+  const board = useQuery({ queryKey: ["world-board"], queryFn: getWorldBoard, staleTime: 15 * 60_000, retry: 1, enabled: !isPrerender() });
   const breadth = useMemo(() => (universe.data ? computeBreadth(universe.data.values()) : null), [universe.data]);
 
   const tiles = breadth

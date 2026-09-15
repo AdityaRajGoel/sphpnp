@@ -1,8 +1,26 @@
 import { createRoot } from "react-dom/client";
+import * as Sentry from "@sentry/react";
 import { registerSW } from "virtual:pwa-register";
 import App from "./App.tsx";
 import "./index.css";
 import { applyMotionPreference, readMotionPreference } from "@/lib/motion-preference";
+
+// Browser errors go to the self-hosted GlitchTip on the VPS (Sentry-compatible),
+// through nginx on the same origin. Only on the live site in a real browser: never
+// during the Puppeteer prerender (navigator.webdriver), in local dev or on staging.
+if (window.location.hostname === "www.sphpnp.com" && !navigator.webdriver) {
+  Sentry.init({
+    dsn: "https://5f056a03d6ba45f1a02023d57da1b0d0@www.sphpnp.com/1",
+    environment: "production",
+    // Errors only: no performance tracing, session replay or default PII.
+    tracesSampleRate: 0,
+    sendDefaultPii: false,
+    // Noise that is not ours: extensions, blocked third-party scripts, stale chunks
+    // after a deploy (the page reloads itself for those).
+    denyUrls: [/^chrome-extension:\/\//, /^moz-extension:\/\//, /^safari-web-extension:\/\//],
+    ignoreErrors: ["ResizeObserver loop limit exceeded", "ResizeObserver loop completed with undelivered notifications"],
+  });
+}
 
 // Register Service Worker for PWA
 registerSW({ immediate: true });

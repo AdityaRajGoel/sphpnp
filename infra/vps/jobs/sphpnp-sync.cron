@@ -45,5 +45,12 @@ J=/opt/sphpnp/jobs/sync.sh
 # --- Backups (03:15 IST, after the 02:00 free-sources pass) ---
 15 3  * * *     deploy flock -n /tmp/backup.lock /opt/sphpnp/jobs/backup.sh
 
+# --- Logs (00:20 IST, for the day just ended): archive, error digest, traffic report ---
+20 0  * * *     deploy flock -n /tmp/logs-archive.lock /opt/sphpnp/jobs/logs-archive.sh
+40 0  * * *     deploy flock -n /tmp/traffic-report.lock /opt/sphpnp/jobs/traffic-report.sh
+
+# --- Website rebuild (04:30 IST): fresh sitemap, new IPO pages, current data ---
+30 4  * * *     deploy flock -n /tmp/build-site.lock /opt/sphpnp/jobs/build-site.sh
+
 # Keep two weeks of sync logs.
 30 3  * * *     deploy find /var/log/sphpnp-sync -name '*.log' -mtime +14 -delete

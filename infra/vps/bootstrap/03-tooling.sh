@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Tooling for the backend, backups and (later) building and serving the website.
+# Tooling for the backend, backups, and building and serving the website.
 set -euo pipefail
 export DEBIAN_FRONTEND=noninteractive
 
@@ -46,7 +46,16 @@ apt-get install -y --no-install-recommends \
   libnss3 libatk1.0-0t64 libatk-bridge2.0-0t64 libcups2t64 libxkbcommon0 libxcomposite1 libxdamage1 \
   libxrandr2 libgbm1 libasound2t64 libpango-1.0-0 libcairo2 libxshmfence1 fonts-liberation fonts-noto-color-emoji
 
-# Caddy is installed for the web phase; keep it stopped until it is configured.
+# Web serving: nginx with the brotli modules (nginx/sphpnp-com.conf uses brotli_static),
+# certbot for Let's Encrypt with automatic renewal, and the compressors deploy-site.sh
+# uses to precompress each release.
+apt-get install -y --no-install-recommends \
+  nginx certbot python3-certbot-nginx \
+  libnginx-mod-http-brotli-static libnginx-mod-http-brotli-filter brotli pigz
+systemctl enable --now nginx certbot.timer
+
+# Caddy was the first choice for the web phase; nginx serves the site instead.
+# Keep it installed but stopped so it never competes for ports 80 and 443.
 systemctl disable --now caddy >/dev/null 2>&1 || true
 
 # Supabase CLI - applies migrations and manages functions against the stack.
@@ -74,4 +83,4 @@ if ! deno --version 2>/dev/null | grep -q "deno ${DENO_VERSION}"; then
   rm -rf "$tmp"
 fi
 
-echo "node $(node --version) | npm $(npm --version) | $(psql --version) | supabase $(supabase --version) | $(deno --version | head -1) | caddy $(caddy version | cut -d' ' -f1) | $(cloudflared --version) | $(rclone version | head -1) | age $(age --version)"
+echo "node $(node --version) | npm $(npm --version) | $(psql --version) | supabase $(supabase --version) | $(deno --version | head -1) | $(nginx -v 2>&1) | $(certbot --version 2>&1) | $(cloudflared --version) | $(rclone version | head -1) | age $(age --version)"

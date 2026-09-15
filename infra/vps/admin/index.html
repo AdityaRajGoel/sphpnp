@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>sphpnp admin</title>
+  <style>
+    :root { --bg: #f4f6f8; --card: #ffffff; --ink: #0a192f; --muted: #5b6b7b; --line: #dde3e9; --accent: #0f6e56; }
+    @media (prefers-color-scheme: dark) {
+      :root { --bg: #0b1320; --card: #121c2b; --ink: #e6edf5; --muted: #95a4b5; --line: #243246; --accent: #4fc29c; }
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; padding: 40px 16px; }
+    main { max-width: 760px; margin: 0 auto; display: grid; gap: 24px; }
+    h1 { margin: 0; font-size: 1.5rem; }
+    p { margin: 0; color: var(--muted); }
+    ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+    li a { display: grid; grid-template-columns: 9rem 1fr auto; gap: 12px; align-items: baseline; padding: 14px 16px; background: var(--card); color: inherit; text-decoration: none; }
+    li a:hover, li a:focus-visible { background: color-mix(in srgb, var(--accent) 8%, var(--card)); outline: none; }
+    li b { font-weight: 600; }
+    li span { color: var(--muted); }
+    li code { color: var(--accent); font-size: 0.85rem; }
+    @media (max-width: 520px) { li a { grid-template-columns: 1fr; gap: 2px; } }
+  </style>
+</head>
+<body>
+  <main>
+    <div>
+      <h1>sphpnp.com admin</h1>
+      <p>Tools running on the VPS. Each asks for the admin password, then its own login.</p>
+    </div>
+    <ul>
+      <li><a href="https://admin.sphpnp.com:8441/"><b>Umami</b><span>Visitor analytics for www.sphpnp.com</span><code>:8441</code></a></li>
+      <li><a href="https://admin.sphpnp.com:8442/"><b>GlitchTip</b><span>Errors from the website and edge functions</span><code>:8442</code></a></li>
+      <li><a href="https://admin.sphpnp.com:8443/"><b>Uptime Kuma</b><span>Uptime checks and alerts</span><code>:8443</code></a></li>
+      <li><a href="https://admin.sphpnp.com:8444/"><b>Beszel</b><span>Server and container CPU, memory, disk, network</span><code>:8444</code></a></li>
+      <li><a href="https://admin.sphpnp.com:8445/"><b>Supabase Studio</b><span>Database tables, auth users, storage</span><code>:8445</code></a></li>
+      <li><a href="https://www.sphpnp.com/"><b>Website</b><span>www.sphpnp.com</span><code>live</code></a></li>
+    </ul>
+    <p>Daily traffic reports and error digests are on the server in /var/log/sphpnp.</p>
+  </main>
+</body>
+</html>

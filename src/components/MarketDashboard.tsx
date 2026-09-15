@@ -200,13 +200,16 @@ const FIIDIIFlow = memo(() => {
 // Options Analysis
 const PutCallRatio = memo(() => {
   const { vix, marketOverview } = useLiveMarket();
-  const advances = marketOverview?.advances ?? 12;
-  const declines = marketOverview?.declines ?? 8;
-  const pcr = advances > 0 && declines > 0 ? parseFloat((declines / advances * 1.1).toFixed(2)) : 0.87;
-  const pcrColor = pcr > 1 ? "text-secondary" : pcr > 0.7 ? "text-brand-gold" : "text-destructive";
-  const sentiment = pcr > 1.2 ? "Bullish" : pcr > 0.8 ? "Neutral" : "Bearish";
-  const vixPrice = vix?.price || "13.45";
-  const vixChange = vix?.change || "-2.1%";
+  // No invented figures: until real breadth and VIX arrive (and always in the
+  // prerendered HTML) the tiles show a dash, never a made-up "Live" number.
+  const hasBreadth = marketOverview != null;
+  const advances = marketOverview?.advances ?? 0;
+  const declines = marketOverview?.declines ?? 0;
+  const pcr = hasBreadth && advances > 0 && declines > 0 ? parseFloat((declines / advances * 1.1).toFixed(2)) : null;
+  const pcrColor = pcr == null ? "text-muted-foreground" : pcr > 1 ? "text-secondary" : pcr > 0.7 ? "text-brand-gold" : "text-destructive";
+  const sentiment = pcr == null ? "" : pcr > 1.2 ? "Bullish" : pcr > 0.8 ? "Neutral" : "Bearish";
+  const vixPrice = vix?.price || "—";
+  const vixChange = vix?.change || "";
   const vixUp = vix?.up ?? false;
 
   return (
@@ -221,7 +224,7 @@ const PutCallRatio = memo(() => {
         <div className="grid grid-cols-2 gap-3">
           <div className="bg-muted/30 rounded-lg p-3 text-center">
             <div className="text-[10px] text-muted-foreground mb-1">NIFTY PCR</div>
-            <div className={`text-2xl font-bold ${pcrColor}`}>{pcr}</div>
+            <div className={`text-2xl font-bold ${pcrColor}`}>{pcr ?? "—"}</div>
             <div className={`text-[10px] font-semibold ${pcrColor}`}>{sentiment}</div>
           </div>
           <div className="bg-muted/30 rounded-lg p-3 text-center">
@@ -231,15 +234,17 @@ const PutCallRatio = memo(() => {
           </div>
           <div className="bg-muted/30 rounded-lg p-3 text-center">
             <div className="text-[10px] text-muted-foreground mb-1">Advances</div>
-            <div className="text-lg font-bold text-secondary">{advances}</div>
+            <div className="text-lg font-bold text-secondary">{hasBreadth ? advances : "—"}</div>
           </div>
           <div className="bg-muted/30 rounded-lg p-3 text-center">
             <div className="text-[10px] text-muted-foreground mb-1">Declines</div>
-            <div className="text-lg font-bold text-destructive">{declines}</div>
+            <div className="text-lg font-bold text-destructive">{hasBreadth ? declines : "—"}</div>
           </div>
         </div>
         <div className="mt-3 flex items-center justify-between text-[10px] text-muted-foreground">
-          <span>Market Mood: <b className={advances > declines ? "text-secondary" : "text-destructive"}>{advances > declines ? "Bullish" : "Bearish"}</b></span>
+          <span>Market Mood: {hasBreadth
+            ? <b className={advances > declines ? "text-secondary" : "text-destructive"}>{advances > declines ? "Bullish" : "Bearish"}</b>
+            : <b>—</b>}</span>
           <span className="flex items-center gap-1 text-brand-orange font-semibold"><Zap className="w-3 h-3" /> Live</span>
         </div>
       </CardContent>
@@ -254,14 +259,10 @@ const TrendingStocks = memo(() => {
     ...(marketOverview?.gainers?.slice(0, 3) || []),
     ...(marketOverview?.losers?.slice(0, 2) || []),
   ];
-  const fallback = [
-    { name: "TATA POWER", change: "+4.8%", up: true },
-    { name: "ETERNAL", change: "+3.5%", up: true },
-    { name: "ADANI GREEN", change: "+3.9%", up: true },
-    { name: "PAYTM", change: "-3.2%", up: false },
-    { name: "COAL INDIA", change: "-1.5%", up: false },
-  ];
-  const stocks = trending.length >= 3 ? trending : fallback;
+  // Real movers only. This used to fall back to a hardcoded list labelled "Live",
+  // which the prerendered HTML then served to every visitor and crawler.
+  const ready = trending.length >= 3;
+  const stocks = ready ? trending : [];
 
   return (
     <Card className="border-border/50 overflow-hidden bg-gradient-to-r from-brand-charcoal to-brand-navy">
@@ -275,6 +276,9 @@ const TrendingStocks = memo(() => {
           </div>
         </div>
         <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-1">
+          {!ready && Array.from({ length: 5 }, (_, i) => (
+            <div key={i} aria-hidden="true" className="flex-shrink-0 min-w-[160px] h-[46px] rounded-lg bg-white/8 border border-white/10 animate-pulse" />
+          ))}
           {stocks.map((stock) => (
             <motion.div key={stock.name}
               className="flex-shrink-0 bg-white/8 border border-white/10 rounded-lg px-3 py-2 backdrop-blur-sm cursor-pointer min-w-[160px]"

@@ -1,0 +1,129 @@
+# Free, self-hosted ops tools for sphpnp.com -> /opt/sphpnp-tools
+#   Umami         visitor analytics (replaces Vercel Analytics)
+#   GlitchTip     browser and edge-function errors (Sentry SDK compatible)
+#   Uptime Kuma   uptime checks and alerts
+#   Beszel        server and container metrics
+# Kept apart from the Supabase stack, with its own small Postgres, so the site's
+# database never shares load or credentials with these tools. Every port binds to
+# 127.0.0.1: dashboards are reached over an SSH tunnel; nginx proxies only
+# Umami's tracker and collect paths and GlitchTip's ingest path under www.
+name: sphpnp-tools
+
+services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: tools
+      POSTGRES_PASSWORD: ${TOOLS_DB_PASSWORD}
+      POSTGRES_DB: tools
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tools"]
+      interval: 10s
+      retries: 10
+    mem_limit: 512m
+
+  valkey:
+    image: valkey/valkey:8-alpine
+    restart: unless-stopped
+    command: ["valkey-server", "--save", "", "--maxmemory", "96mb", "--maxmemory-policy", "allkeys-lru"]
+    mem_limit: 128m
+
+  umami:
+    image: docker.umami.is/umami-software/umami:postgresql-latest
+    restart: unless-stopped
+    depends_on:
+      db: { condition: service_healthy }
+    environment:
+      DATABASE_URL: postgresql://tools:${TOOLS_DB_PASSWORD}@db:5432/umami
+      APP_SECRET: ${UMAMI_APP_SECRET}
+      # Served under www.sphpnp.com by nginx; neutral names avoid ad blockers.
+      TRACKER_SCRIPT_NAME: insights.js
+      COLLECT_API_ENDPOINT: /api/insights
+      CLIENT_IP_HEADER: X-Real-IP
+      DISABLE_TELEMETRY: "1"
+      DISABLE_UPDATES: "1"
+    ports:
+      - "127.0.0.1:3001:3000"
+    mem_limit: 384m
+
+  glitchtip-web:
+    image: glitchtip/glitchtip:latest
+    restart: unless-stopped
+    depends_on:
+      db: { condition: service_healthy }
+    environment: &glitchtip-env
+      DATABASE_URL: postgres://tools:${TOOLS_DB_PASSWORD}@db:5432/glitchtip
+      REDIS_URL: redis://valkey:6379/0
+      SECRET_KEY: ${GLITCHTIP_SECRET_KEY}
+      # SDKs post events to <domain>/api/<project>/envelope/, proxied by nginx on www.
+      # The dashboard is served at admin.sphpnp.com:8442 (nginx/admin.conf), so logins
+      # and CSRF checks use that origin. The browser SDK still sends events through
+      # www (nginx/sphpnp-com.conf), which only needs the project key.
+      GLITCHTIP_DOMAIN: https://admin.sphpnp.com:8442
+      ALLOWED_HOSTS: localhost,127.0.0.1,www.sphpnp.com,admin.sphpnp.com
+      DEFAULT_FROM_EMAIL: alerts@sphpnp.com
+      # No SMTP yet: e-mails are written to the container log.
+      EMAIL_URL: consolemail://
+      ENABLE_USER_REGISTRATION: "false"
+      ENABLE_ORGANIZATION_CREATION: "false"
+      GLITCHTIP_MAX_EVENT_LIFE_DAYS: "90"
+      CELERY_WORKER_AUTOSCALE: "1,2"
+      PORT: "8000"
+    ports:
+      - "127.0.0.1:3002:8000"
+    mem_limit: 512m
+
+  glitchtip-worker:
+    image: glitchtip/glitchtip:latest
+    restart: unless-stopped
+    command: ./bin/run-celery-with-beat.sh
+    depends_on:
+      db: { condition: service_healthy }
+    environment: *glitchtip-env
+    mem_limit: 384m
+
+  glitchtip-migrate:
+    image: glitchtip/glitchtip:latest
+    depends_on:
+      db: { condition: service_healthy }
+    command: ./manage.py migrate
+    environment: *glitchtip-env
+    restart: "no"
+
+  uptime-kuma:
+    image: louislam/uptime-kuma:2
+    restart: unless-stopped
+    volumes:
+      - ./data/uptime-kuma:/app/data
+    ports:
+      - "127.0.0.1:3003:3001"
+    mem_limit: 256m
+
+  beszel:
+    image: henrygd/beszel:latest
+    restart: unless-stopped
+    volumes:
+      - ./data/beszel:/beszel_data
+      - ./data/beszel-socket:/beszel_socket
+    ports:
+      - "127.0.0.1:3004:8090"
+    mem_limit: 128m
+
+  beszel-agent:
+    image: henrygd/beszel-agent:latest
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./data/beszel-socket:/beszel_socket
+    environment:
+      LISTEN: /beszel_socket/beszel.sock
+      # The hub shows this public key after first login (Add System); setup.sh
+      # leaves the agent stopped until BESZEL_AGENT_KEY is filled in .env.
+      KEY: ${BESZEL_AGENT_KEY:-}
+    profiles: ["agent"]
+    mem_limit: 64m
