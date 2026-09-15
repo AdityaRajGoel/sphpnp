@@ -1,0 +1,25 @@
+# fail2ban jails for nginx -> /etc/fail2ban/jail.d/sphpnp-nginx.local
+# The sshd and recidive jails come from bootstrap/04-access.sh. Bans go through ufw.
+# Admin logins are protected by Authelia's own lockout (tools/authelia/configuration.yml),
+# so there is no basic-auth jail any more.
+
+[DEFAULT]
+banaction = ufw
+
+# Vulnerability scanners probing for WordPress, .env, .git, phpMyAdmin and the like.
+[nginx-botsearch]
+enabled  = true
+port     = http,https
+logpath  = /var/log/nginx/access.log
+maxretry = 5
+findtime = 10m
+bantime  = 24h
+
+# Clients that keep hitting the rate limits in nginx/rate-limits.conf.
+[nginx-limit-req]
+enabled  = true
+port     = http,https
+logpath  = /var/log/nginx/error.log
+maxretry = 20
+findtime = 5m
+bantime  = 1h
