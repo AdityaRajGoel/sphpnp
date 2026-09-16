@@ -8,6 +8,14 @@
 # jobs/admin-reports.sh, not services.
 name: sphpnp-tools
 
+# PgHero needs to reach the database container, which lives in the Supabase project's
+# own network; everything else stays on this project's default network.
+networks:
+  default:
+  supabase:
+    external: true
+    name: supabase_default
+
 services:
   # Login portal for admin.sphpnp.com: one session cookie for every admin port, a real
   # logout, and lockout after repeated wrong passwords (authelia/configuration.yml).
@@ -65,6 +73,53 @@ services:
     ports:
       - "127.0.0.1:3005:80"
     mem_limit: 64m
+
+  # Live container logs in the browser, so routine checks need no SSH. Read-only docker
+  # socket; it can read logs and nothing else.
+  dozzle:
+    image: amir20/dozzle:latest
+    restart: unless-stopped
+    environment:
+      DOZZLE_NO_ANALYTICS: "true"
+      DOZZLE_ADDR: ":8080"
+      # Sign-in is Authelia's, in front (nginx/admin.conf).
+      DOZZLE_AUTH_PROVIDER: none
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    ports:
+      - "127.0.0.1:3006:8080"
+    mem_limit: 128m
+
+  # Slow queries, missing indexes and table bloat for the Supabase database.
+  # pg_stat_statements is already preloaded by the Supabase image.
+  pghero:
+    image: ankane/pghero:latest
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: ${PGHERO_DATABASE_URL}
+      RAILS_LOG_TO_STDOUT: "true"
+      # No PgHero login: Authelia guards the port.
+      PGHERO_TIME_ZONE: Asia/Kolkata
+    networks:
+      - default
+      - supabase
+    ports:
+      - "127.0.0.1:3007:8080"
+    mem_limit: 256m
+
+  # Watches pages that have no API (exchange circulars, regulator notices) and records
+  # what changed. Feeds new data sources; alerts can go to the ntfy topic.
+  changedetection:
+    image: ghcr.io/dgtlmoon/changedetection.io:latest
+    restart: unless-stopped
+    environment:
+      BASE_URL: https://admin.sphpnp.com:8449
+      USE_X_SETTINGS: "1"
+    volumes:
+      - ./data/changedetection:/datastore
+    ports:
+      - "127.0.0.1:3008:5000"
+    mem_limit: 512m
 
   glances:
     image: nicolargo/glances:latest-full

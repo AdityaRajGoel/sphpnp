@@ -14,7 +14,7 @@ SRC=$(cd "$(dirname "$0")" && pwd)
 AUTHELIA_IMAGE=authelia/authelia:4.39
 
 sudo install -d -o "$(id -u)" -g "$(id -g)" -m 750 "$DIR" "$DIR/data" "$DIR/data/gatus" "$DIR/data/ntfy"
-mkdir -p "$DIR/data/authelia" "$DIR/authelia/secrets"
+mkdir -p "$DIR/data/authelia" "$DIR/data/changedetection" "$DIR/authelia/secrets"
 chmod 700 "$DIR/authelia/secrets"
 install -m 644 "$SRC/docker-compose.yml" "$DIR/docker-compose.yml"
 install -m 644 "$SRC/gatus.yaml" "$DIR/gatus.yaml"
@@ -25,6 +25,15 @@ touch .env && chmod 600 .env
 if ! grep -qE '^NTFY_TOPIC=.+' .env; then
   echo "NTFY_TOPIC=sphpnp-alerts-$(openssl rand -hex 16)" >> .env
   echo "generated a private ntfy topic in $DIR/.env"
+fi
+
+# PgHero reads the database directly. The password is copied from the Supabase env on
+# this server, never typed or committed.
+if ! grep -qE '^PGHERO_DATABASE_URL=.+' .env; then
+  pw=$(sudo grep -m1 '^POSTGRES_PASSWORD=' /opt/supabase/.env | cut -d= -f2-)
+  [ -n "$pw" ] || { echo "could not read POSTGRES_PASSWORD from /opt/supabase/.env" >&2; exit 1; }
+  echo "PGHERO_DATABASE_URL=postgres://postgres:${pw}@supabase-db:5432/postgres" >> .env
+  echo "wrote the PgHero connection string to $DIR/.env"
 fi
 
 # Authelia secrets: generated once; regenerating would sign everyone out and make the

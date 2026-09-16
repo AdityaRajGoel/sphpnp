@@ -96,6 +96,10 @@ the admin sign-in on `admin.sphpnp.com`, served by Authelia (`tools/authelia/`).
 | Supabase Studio | database, auth users, storage (nginx adds Studio's own credentials) | `https://admin.sphpnp.com:8445` |
 | GoAccess | traffic from the nginx logs: today (every 10 min) and one report per day | `https://admin.sphpnp.com/traffic-today.html`, `/traffic/` |
 | Browser errors | `src/lib/client-errors.ts` posts to `/api/client-error`; nginx logs it | `https://admin.sphpnp.com/client-errors.txt` |
+| Dozzle | live container logs in the browser (read-only docker socket) | `https://admin.sphpnp.com:8447` |
+| PgHero | slow queries, missing indexes, table bloat (`pg_stat_statements` is preloaded) | `https://admin.sphpnp.com:8448` |
+| changedetection.io | watches pages with no API (circulars, notices) and records what changed | `https://admin.sphpnp.com:8449` |
+| lychee | nightly broken-link crawl of the sitemap (`jobs/link-check.sh`) | `https://admin.sphpnp.com/link-check.txt` |
 | Authelia | sign-in, sign-out and lockout for everything above | `https://admin.sphpnp.com/auth/` |
 | Status | last build, live release, last backup, failed syncs, disk, memory | `https://admin.sphpnp.com/status.txt` |
 
@@ -120,8 +124,8 @@ bandwidth history (`vnstat` on the server).
 
 ## Firewall and rate limits
 
-- ufw: 22 (rate-limited), 80, 443 and 8443-8446 (admin tools behind the Authelia sign-in; 8446
-  is ntfy's push endpoint). Docker
+- ufw: 22 (rate-limited), 80, 443 and 8443-8449 (admin tools behind the Authelia sign-in; 8446
+  is ntfy's push endpoint, the only one open). Docker
   ports are all on 127.0.0.1, which ufw cannot see, so nothing else is reachable.
 - fail2ban (`security/fail2ban-nginx.local`): `sshd`, `recidive`, `nginx-botsearch`
   (vulnerability scanners) and `nginx-limit-req`. Wrong admin passwords are handled by

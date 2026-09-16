@@ -15,6 +15,17 @@ maxretry = 5
 findtime = 10m
 bantime  = 24h
 
+# Scanners asking for secrets and backups (security/filter-sphpnp-probes.conf). The
+# stock botsearch filter did not match the paths this server actually sees.
+[sphpnp-probes]
+enabled  = true
+filter   = sphpnp-probes
+port     = http,https
+logpath  = /var/log/nginx/access.log
+maxretry = 3
+findtime = 10m
+bantime  = 24h
+
 # Clients that keep hitting the rate limits in nginx/rate-limits.conf.
 [nginx-limit-req]
 enabled  = true
