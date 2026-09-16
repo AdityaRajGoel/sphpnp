@@ -272,7 +272,14 @@ async function run(ctx: Ctx, dataset: string, body: Record<string, unknown>): Pr
       return { rows: await upsert(sb, "nse_ipos", rows, "symbol"), matched: rows.filter((r) => r.ipo_slug).length };
     }
     case "fpi": {
-      const rows = parseFpiDaily(await fetchText("https://www.fpi.nsdl.co.in/web/Reports/Latest.aspx", { "User-Agent": NSE_HEADERS["User-Agent"] }));
+      // NSDL is unreachable from this runtime (measured: "error sending request for
+      // url (https://www.fpi.nsdl.co.in/...)"), while the same request from the VPS
+      // host answers 200. jobs/host-fetch.sh sends the page it fetched as `html`;
+      // parsing and the write stay here, exactly as macro_ingest does for MoSPI.
+      const html = typeof body.html === "string" && body.html.length > 0
+        ? body.html
+        : await fetchText("https://www.fpi.nsdl.co.in/web/Reports/Latest.aspx", { "User-Agent": NSE_HEADERS["User-Agent"] });
+      const rows = parseFpiDaily(html);
       return { rows: await upsert(sb, "fpi_daily", rows, "report_date,section,category,route"), date: rows[0]?.report_date ?? null };
     }
     case "fpi_sectors": {
@@ -342,9 +349,15 @@ async function run(ctx: Ctx, dataset: string, body: Record<string, unknown>): Pr
       return { rows: await upsert(sb, "fo_lot_sizes", [...new Map(rows.map((r) => [r.symbol, r])).values()], "symbol") };
     }
     case "calendar": {
-      const nse = parseNseEventCalendar(await fetchJson("https://www.nseindia.com/api/event-calendar"));
-      await sleep(1000);
-      const bse = parseBseResultsCalendar(await fetchJson("https://api.bseindia.com/BseIndiaAPI/api/Corpforthresults/w", BSE_HEADERS), await bseCodes(sb));
+      // Same gap as `fpi`: api.bseindia.com fails from this runtime and answers 200
+      // from the VPS host. Either feed may be supplied by jobs/host-fetch.sh; each
+      // one that is missing is still fetched here, so a partial feed still works.
+      const nse = parseNseEventCalendar(body.nse ?? await fetchJson("https://www.nseindia.com/api/event-calendar"));
+      if (body.bse === undefined) await sleep(1000);
+      const bse = parseBseResultsCalendar(
+        body.bse ?? await fetchJson("https://api.bseindia.com/BseIndiaAPI/api/Corpforthresults/w", BSE_HEADERS),
+        await bseCodes(sb),
+      );
       const rows = [...new Map([...nse, ...bse].map((e) => [e.event_key, e])).values()];
       await sb.from("corporate_calendar").delete().lt("event_date", daysAgo(60));
       return { rows: await upsert(sb, "corporate_calendar", rows, "event_key"), nse: nse.length, bse: bse.length };

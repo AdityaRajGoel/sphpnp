@@ -53,6 +53,11 @@ J=/opt/sphpnp/jobs/sync.sh
 # --- Website rebuild (04:30 IST): fresh sitemap, new IPO pages, current data ---
 30 4  * * *     deploy flock -n /tmp/build-site.lock /opt/sphpnp/jobs/build-site.sh
 
+# --- Feeds the edge runtime cannot reach, fetched from this host (jobs/host-fetch.sh) ---
+# NSDL publishes the day's FPI flows in the evening; the results calendar moves slowly.
+25 20 * * 1-5   deploy flock -n /tmp/host-fetch.lock /opt/sphpnp/jobs/host-fetch.sh
+25 7  * * *     deploy flock -n /tmp/host-fetch.lock /opt/sphpnp/jobs/host-fetch.sh
+
 # --- Broken links (05:10 IST): crawls the sitemap of the build that just went live ---
 10 5  * * *     deploy flock -n /tmp/link-check.lock /opt/sphpnp/jobs/link-check.sh
 
