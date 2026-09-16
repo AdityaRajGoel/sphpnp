@@ -126,6 +126,11 @@ bandwidth history (`vnstat` on the server).
 - fail2ban (`security/fail2ban-nginx.local`): `sshd`, `recidive`, `nginx-botsearch`
   (vulnerability scanners) and `nginx-limit-req`. Wrong admin passwords are handled by
   Authelia's own lockout.
+- `nginx/default-server.conf` answers anything addressed to the bare IP or an unknown
+  hostname: port 80 closes the connection (444) and port 443 refuses the TLS handshake.
+  Without it the first server block in file order (admin.conf) took those requests, and
+  every scanner hit ran the admin login check against a hostname Authelia has no session
+  for - about 1,700 error 500s a day.
 - nginx rate limits (`nginx/rate-limits.conf`) were sized from real traffic: a stock page
   fires 21-40 API requests in a second and mobile users share IPs, so the API allows 50 r/s
   with a burst of 300 per IP. The VPS's own addresses are exempt; the prerender calls the
