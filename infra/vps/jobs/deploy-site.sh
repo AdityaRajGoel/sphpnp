@@ -9,7 +9,7 @@ set -euo pipefail
 SITE=${1:-sphpnp}
 DIST=/opt/sphpnp/app/dist
 ROOT=/var/www/$SITE
-KEEP=5
+KEEP=3
 MIN_PAGES=300
 STAMP=$(date +%Y%m%d-%H%M%S)
 REL="$ROOT/releases/$STAMP"
