@@ -3,15 +3,17 @@
 # Safe to re-run: secrets and the ntfy topic are generated once.
 #
 #   bash infra/vps/tools/setup.sh
-#   printf '%s' 'NEW-PASSWORD' | bash infra/vps/tools/setup.sh --set-admin-password aditya
+#   read -rs pw && printf '%s' "$pw" | bash infra/vps/tools/setup.sh --set-admin-password aditya; unset pw
 #
 # The admin password is read from stdin, hashed with argon2 inside the Authelia image,
 # and only the hash is written (authelia/users.yml, mode 600). It is never stored in git.
+# Type it into `read -rs` as shown rather than putting it in the command line: that keeps
+# it out of shell history and out of `ps` output.
 set -euo pipefail
 
 DIR=/opt/sphpnp-tools
 SRC=$(cd "$(dirname "$0")" && pwd)
-AUTHELIA_IMAGE=authelia/authelia:4.39
+AUTHELIA_IMAGE=authelia/authelia:4.39.27   # same pin as docker-compose.yml
 
 sudo install -d -o "$(id -u)" -g "$(id -g)" -m 750 "$DIR" "$DIR/data" "$DIR/data/gatus" "$DIR/data/ntfy"
 mkdir -p "$DIR/data/authelia" "$DIR/data/changedetection" "$DIR/authelia/secrets"
@@ -27,13 +29,25 @@ if ! grep -qE '^NTFY_TOPIC=.+' .env; then
   echo "generated a private ntfy topic in $DIR/.env"
 fi
 
-# PgHero reads the database directly. The password is copied from the Supabase env on
-# this server, never typed or committed.
+# PgHero reads the database through its own role, not the superuser: it needs only the
+# statistics and catalogue views, and Dozzle can show any container's environment to an
+# admin session, so a superuser password must not be sitting in one.
 if ! grep -qE '^PGHERO_DATABASE_URL=.+' .env; then
-  pw=$(sudo grep -m1 '^POSTGRES_PASSWORD=' /opt/supabase/.env | cut -d= -f2-)
-  [ -n "$pw" ] || { echo "could not read POSTGRES_PASSWORD from /opt/supabase/.env" >&2; exit 1; }
-  echo "PGHERO_DATABASE_URL=postgres://postgres:${pw}@supabase-db:5432/postgres" >> .env
-  echo "wrote the PgHero connection string to $DIR/.env"
+  pw=$(openssl rand -hex 24)
+  # pg_monitor covers pg_stat_statements and the other stats views; nothing is writable.
+  # \gexec builds each statement as a string and runs it, so the password arrives as a
+  # psql variable and never reaches a command line. It cannot be done inside a do $$ $$
+  # block: psql does not substitute :'pw' inside dollar quotes.
+  docker exec -i supabase-db psql -U postgres -v ON_ERROR_STOP=1 -q \
+    -v pw="$pw" <<'SQL' || { echo "could not create the pghero role" >&2; exit 1; }
+select format('create role pghero login password %L', :'pw')
+where not exists (select 1 from pg_roles where rolname = 'pghero') \gexec
+select format('alter role pghero login password %L', :'pw') \gexec
+grant pg_monitor to pghero;
+grant connect on database postgres to pghero;
+SQL
+  echo "PGHERO_DATABASE_URL=postgres://pghero:${pw}@supabase-db:5432/postgres" >> .env
+  echo "created the read-only pghero role and wrote its connection string to $DIR/.env"
 fi
 
 # Authelia secrets: generated once; regenerating would sign everyone out and make the
@@ -49,7 +63,11 @@ if [ "${1:-}" = "--set-admin-password" ]; then
   user=${2:?user name}
   IFS= read -r password || [ -n "$password" ]
   [ ${#password} -ge 8 ] || { echo "password must be at least 8 characters" >&2; exit 1; }
-  hash=$(docker run --rm -i --entrypoint sh "$AUTHELIA_IMAGE" -c 'read -r p; authelia crypto hash generate argon2 --password "$p"' <<< "$password" | sed -n 's/^Digest: //p')
+  # Fed to the CLI's own prompt (it asks twice) rather than `--password`, which would put
+  # the plaintext into that process's argv where any local user could read it in `ps`.
+  hash=$(printf '%s\n%s\n' "$password" "$password" \
+    | docker run --rm -i --entrypoint authelia "$AUTHELIA_IMAGE" crypto hash generate argon2 \
+    | sed -n 's/^Digest: //p')
   [ -n "$hash" ] || { echo "could not hash the password" >&2; exit 1; }
   umask 077
   cat > "$DIR/authelia/users.yml" <<EOF

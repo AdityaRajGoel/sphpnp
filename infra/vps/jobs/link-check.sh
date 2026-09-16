@@ -15,7 +15,10 @@ umask 022
 # address is exempt from them anyway. Mail and tel links are not HTTP.
 # Flags kept to the ones this lychee build accepts; the report format follows the .md
 # output extension. Mail links are excluded by default.
-docker run --rm --network host -v "$TMP:/out" lycheeverse/lychee:latest \
+# Pinned by digest: lychee publishes no usable version tag (the flags this build accepts
+# are what the script above is written against).
+docker run --rm --network host -v "$TMP:/out" \
+  lycheeverse/lychee@sha256:eaff3e0a13603c9a701accfcc84f44158bb77bf36ecfa4622b626056c3463892 \
   --no-progress --max-concurrency 8 --timeout 20 --max-retries 2 \
   --output /out/report.md \
   https://www.sphpnp.com/sitemap.xml > "$TMP/run.log" 2>&1

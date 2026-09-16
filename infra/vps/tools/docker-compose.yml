@@ -20,8 +20,12 @@ services:
   # Login portal for admin.sphpnp.com: one session cookie for every admin port, a real
   # logout, and lockout after repeated wrong passwords (authelia/configuration.yml).
   authelia:
-    image: authelia/authelia:4.39
+    image: authelia/authelia:4.39.27
     restart: unless-stopped
+    # Stays root: the image's entrypoint chowns /config and su-execs, which needs
+    # CHOWN/SETUID/SETGID. Tried read_only + cap_drop + user 1001 (2026-09-16); it failed
+    # with "su-exec: setgroups(0): Operation not permitted" and the panel went 502.
+    security_opt: ["no-new-privileges:true"]
     environment:
       X_AUTHELIA_CONFIG: /config/configuration.yml
       AUTHELIA_IDENTITY_VALIDATION_RESET_PASSWORD_JWT_SECRET_FILE: /secrets/jwt_secret
@@ -39,8 +43,16 @@ services:
     mem_limit: 384m
 
   gatus:
-    image: twinproduction/gatus:stable
+    image: twinproduction/gatus:v5.36.0
     restart: unless-stopped
+    # Runs as the data directory's owner (deploy) instead of root: with every capability
+    # dropped, a root process can no longer bypass file permissions (no DAC_OVERRIDE),
+    # which is what broke the first attempt at this.
+    user: "1001:1001"
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
     # Host network: checks can reach the local gateway and ntfy on 127.0.0.1, and the
     # UI listens only on 127.0.0.1:3003 (web.address in gatus.yaml).
     network_mode: host
@@ -53,8 +65,13 @@ services:
     mem_limit: 96m
 
   ntfy:
-    image: binwiederhier/ntfy:latest
+    image: binwiederhier/ntfy:v2.28.0
     restart: unless-stopped
+    user: "1001:1001"
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
     command: serve
     environment:
       NTFY_BASE_URL: https://admin.sphpnp.com:8446
@@ -77,8 +94,12 @@ services:
   # Live container logs in the browser, so routine checks need no SSH. Read-only docker
   # socket; it can read logs and nothing else.
   dozzle:
-    image: amir20/dozzle:latest
+    image: amir20/dozzle:v11.1.0
     restart: unless-stopped
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
     environment:
       DOZZLE_NO_ANALYTICS: "true"
       DOZZLE_ADDR: ":8080"
@@ -93,8 +114,14 @@ services:
   # Slow queries, missing indexes and table bloat for the Supabase database.
   # pg_stat_statements is already preloaded by the Supabase image.
   pghero:
-    image: ankane/pghero:latest
+    # No usable version tag is published, so this is pinned by digest (PgHero 4.0.1).
+    image: ankane/pghero@sha256:5c84930b3b8050da57bf4f5243454d323097599cf44bb57a5e7acec6433155e7
     restart: unless-stopped
+    read_only: true
+    # Rails writes its pid and cache under /tmp and /app/tmp.
+    tmpfs: [/tmp, /app/tmp]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
     environment:
       DATABASE_URL: ${PGHERO_DATABASE_URL}
       RAILS_LOG_TO_STDOUT: "true"
@@ -110,8 +137,11 @@ services:
   # Watches pages that have no API (exchange circulars, regulator notices) and records
   # what changed. Feeds new data sources; alerts can go to the ntfy topic.
   changedetection:
-    image: ghcr.io/dgtlmoon/changedetection.io:latest
+    image: ghcr.io/dgtlmoon/changedetection.io:0.60.6
     restart: unless-stopped
+    # Stays root and writable: it creates per-watch directories under /datastore at
+    # startup, which failed as a non-root user with capabilities dropped.
+    security_opt: ["no-new-privileges:true"]
     environment:
       BASE_URL: https://admin.sphpnp.com:8449
       USE_X_SETTINGS: "1"
@@ -122,8 +152,11 @@ services:
     mem_limit: 512m
 
   glances:
-    image: nicolargo/glances:latest-full
+    image: nicolargo/glances:4.5.6-full
     restart: unless-stopped
+    # Reads host processes and the docker socket, so it keeps its capabilities and a
+    # writable filesystem; it still cannot gain new privileges.
+    security_opt: ["no-new-privileges:true"]
     pid: host
     network_mode: host
     environment:

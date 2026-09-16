@@ -110,6 +110,25 @@ and links to every tool.
 `jobs/admin-reports.sh` (every 10 minutes) writes the static reports. vnStat keeps
 bandwidth history (`vnstat` on the server).
 
+### Container hardening
+
+Every image in `tools/docker-compose.yml` is pinned to a version (or to a digest, where
+the project publishes no usable version tag: PgHero and lychee). `:latest` meant a bad
+upstream push would land silently on the next restart.
+
+Where a tool tolerates it, the container runs with a read-only root filesystem, a
+`tmpfs` for the few paths it must write, every Linux capability dropped, and
+`no-new-privileges`: Authelia, Gatus, ntfy, Dozzle and PgHero. changedetection.io keeps a
+writable filesystem (it unpacks state outside its volume) and Glances keeps its
+capabilities (it reads host processes and the docker socket); both still run with
+`no-new-privileges`. Docker applies the `docker-default` AppArmor profile, and AppArmor
+is enabled on the host.
+
+`jobs/image-scan.sh` (Sunday 05:40 IST) scans every running image with Trivy - run from
+its own container, nothing installed on the host - and reports HIGH and CRITICAL issues
+that have a fix available, at `https://admin.sphpnp.com/image-scan.txt`. Only critical
+findings raise an ntfy alert.
+
 ## Logs and errors
 
 - `jobs/logs-archive.sh` (00:20 IST): each container's logs for the previous day, gzipped, in
