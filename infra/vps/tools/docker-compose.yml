@@ -125,6 +125,13 @@ services:
     environment:
       DATABASE_URL: ${PGHERO_DATABASE_URL}
       RAILS_LOG_TO_STDOUT: "true"
+      # Puma defaults to a cluster of workers, which cost ~120 MB each; one person
+      # opening a dashboard occasionally needs exactly one. MALLOC_ARENA_MAX stops
+      # glibc handing every thread its own arena, the usual reason a small Ruby app
+      # sits far above its live heap.
+      WEB_CONCURRENCY: "1"
+      RAILS_MAX_THREADS: "2"
+      MALLOC_ARENA_MAX: "2"
       # No PgHero login: Authelia guards the port.
       PGHERO_TIME_ZONE: Asia/Kolkata
     networks:
@@ -150,6 +157,29 @@ services:
     ports:
       - "127.0.0.1:3008:5000"
     mem_limit: 512m
+
+  # One board listing every service on the server, with live status read from the tools
+  # themselves (homepage/*.yaml). No login of its own: nginx puts it behind the same
+  # Authelia sign-in on port 8450.
+  homepage:
+    image: ghcr.io/gethomepage/homepage:v1.5.0
+    restart: unless-stopped
+    # Host networking, like gatus and glances: their APIs listen on the server's
+    # loopback only, and that is where the widgets read from. ufw keeps the port
+    # private; nginx on 8450 is the only way in.
+    network_mode: host
+    environment:
+      PORT: 3010
+      # Required since v1.0 for any host other than localhost.
+      HOMEPAGE_ALLOWED_HOSTS: admin.sphpnp.com:8450,admin.sphpnp.com,127.0.0.1:3010
+      TZ: Asia/Kolkata
+    volumes:
+      - ./homepage:/app/config
+      # Read-only, the same access Dozzle has: it turns the tiles into live
+      # running/stopped indicators.
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    security_opt: ["no-new-privileges:true"]
+    mem_limit: 256m
 
   glances:
     image: nicolargo/glances:4.5.6-full

@@ -1,0 +1,25 @@
+# Header widgets -> /opt/sphpnp-tools/homepage/widgets.yaml
+# Host figures come from Glances rather than from Homepage reading /proc: the container
+# would otherwise report its own cgroup, not the machine.
+
+- greeting:
+    text_size: xl
+    text: sphpnp.com operations
+
+- glances:
+    url: http://127.0.0.1:3004
+    version: 4
+    cpu: true
+    mem: true
+    disk: /
+    uptime: true
+    expanded: true
+    label: VPS
+
+- datetime:
+    text_size: xl
+    format:
+        timeStyle: short
+        dateStyle: medium
+        hourCycle: h23
+        timeZone: Asia/Kolkata

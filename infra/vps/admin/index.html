@@ -54,6 +54,18 @@
     .links b { font-weight: 600; }
     .links span { grid-column: 1; color: var(--muted); font-size: 0.85rem; }
     .links code { grid-row: 1 / span 2; grid-column: 2; align-self: center; color: var(--accent); font-family: var(--mono); font-size: 0.8rem; }
+    .deploy-bar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 12px 14px; border-bottom: 1px solid var(--line); }
+    .deploy-bar .muted { font-size: 0.85rem; }
+    .btn { margin-left: auto; padding: 7px 14px; border: 1px solid var(--line); border-radius: 8px; background: var(--card); color: var(--ink); font: inherit; font-size: 0.875rem; font-weight: 600; cursor: pointer; }
+    .btn:hover:not(:disabled), .btn:focus-visible { border-color: var(--accent); color: var(--accent); outline: none; }
+    .btn:disabled { opacity: 0.55; cursor: not-allowed; }
+    .releases { list-style: none; margin: 0; padding: 0; }
+    .releases li { display: grid; grid-template-columns: auto 1fr auto; gap: 4px 12px; align-items: center; padding: 11px 14px; border-top: 1px solid var(--line); }
+    .releases li:first-child { border-top: 0; }
+    .releases .when { font-weight: 600; font-variant-numeric: tabular-nums; }
+    .releases .meta { grid-column: 2; color: var(--muted); font-size: 0.82rem; }
+    .releases .live { grid-row: 1 / span 2; align-self: center; padding: 2px 9px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); font-size: 0.72rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
+    .releases .btn { grid-row: 1 / span 2; align-self: center; margin-left: 0; }
     pre { margin: 0; padding: 12px 14px; font: 0.8rem/1.55 var(--mono); white-space: pre-wrap; overflow-wrap: anywhere; color: var(--ink); max-height: 260px; overflow: auto; }
     .muted { color: var(--muted); }
     .note { color: var(--muted); font-size: 0.85rem; }
@@ -82,6 +94,18 @@
       </div>
     </section>
 
+    <section aria-labelledby="h-deploy">
+      <h2 id="h-deploy">Deployments</h2>
+      <div class="panel">
+        <div class="deploy-bar">
+          <span class="muted" id="deploy-note">Switching takes effect on the next request - no rebuild, no downtime.</span>
+          <button type="button" class="btn" id="rebuild">Rebuild now</button>
+        </div>
+        <ul class="releases" id="releases"><li><span class="muted">Loading…</span></li></ul>
+      </div>
+      <pre id="build-log" hidden></pre>
+    </section>
+
     <div class="grid2">
       <section aria-labelledby="h-checks">
         <h2 id="h-checks">Checks</h2>
@@ -95,6 +119,7 @@
             <li><a href="https://admin.sphpnp.com:8443/"><b>Gatus</b><span>Uptime history, response times, certificates</span><code>:8443</code></a></li>
             <li><a href="https://admin.sphpnp.com:8444/"><b>Glances</b><span>CPU, memory, disk, network, containers</span><code>:8444</code></a></li>
             <li><a href="https://admin.sphpnp.com:8445/"><b>Supabase Studio</b><span>Tables, auth users, storage</span><code>:8445</code></a></li>
+            <li><a href="https://admin.sphpnp.com:8450/"><b>Service board</b><span>Every service on one page, with live status</span><code>:8450</code></a></li>
             <li><a href="https://admin.sphpnp.com:8447/"><b>Dozzle</b><span>Live container logs, no SSH needed</span><code>:8447</code></a></li>
             <li><a href="https://admin.sphpnp.com:8448/"><b>PgHero</b><span>Slow queries, missing indexes, table bloat</span><code>:8448</code></a></li>
             <li><a href="https://admin.sphpnp.com:8449/"><b>Page watcher</b><span>Circulars and notices that have no API</span><code>:8449</code></a></li>
@@ -187,9 +212,107 @@
       }
     }
 
-    loadWho(); loadChecks(); loadStatus();
+    const fmtBytes = (n) => (n == null ? "" : `${(n / 1048576).toFixed(0)} MB`);
+
+    async function deployApi(path, body) {
+      const res = await fetch(`/deploy-api/${path}`, body
+        ? { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }
+        : { cache: "no-store" });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+      return data;
+    }
+
+    async function loadReleases() {
+      const list = $("releases");
+      try {
+        const { releases } = await deployApi("releases");
+        list.replaceChildren();
+        for (const r of releases) {
+          const li = document.createElement("li");
+          const when = document.createElement("span");
+          when.className = "when";
+          when.textContent = r.builtAt;
+          const meta = document.createElement("span");
+          meta.className = "meta";
+          meta.textContent = [r.pages != null ? `${r.pages} pages` : null, fmtBytes(r.bytes), r.name]
+            .filter(Boolean).join(" · ");
+          li.append(when, meta);
+          if (r.current) {
+            const live = document.createElement("span");
+            live.className = "live";
+            live.textContent = "Live";
+            li.append(live);
+          } else {
+            const btn = document.createElement("button");
+            btn.type = "button";
+            btn.className = "btn";
+            btn.textContent = "Switch to this";
+            btn.addEventListener("click", () => switchRelease(r, btn));
+            li.append(btn);
+          }
+          list.append(li);
+        }
+      } catch (err) {
+        list.replaceChildren();
+        const li = document.createElement("li");
+        li.innerHTML = "<span class='muted'></span>";
+        li.firstChild.textContent = `Could not load releases: ${err.message}`;
+        list.append(li);
+      }
+    }
+
+    async function switchRelease(release, btn) {
+      if (!confirm(`Serve the build from ${release.builtAt} instead?\n\nIt takes effect on the next request. You can switch back here.`)) return;
+      btn.disabled = true;
+      btn.textContent = "Switching…";
+      try {
+        await deployApi("switch", { release: release.name });
+        $("deploy-note").textContent = `Now serving ${release.builtAt}.`;
+        await loadReleases();
+        loadStatus();
+      } catch (err) {
+        $("deploy-note").textContent = `Switch failed: ${err.message}`;
+        btn.disabled = false;
+        btn.textContent = "Switch to this";
+      }
+    }
+
+    async function rebuild() {
+      const btn = $("rebuild");
+      if (!confirm("Start a full rebuild now?\n\nIt takes around 10 minutes and publishes itself when it passes the checks.")) return;
+      btn.disabled = true;
+      btn.textContent = "Building…";
+      try {
+        await deployApi("rebuild", {});
+        $("deploy-note").textContent = "Build started. The log appears below and updates every 15 seconds.";
+        pollBuild();
+      } catch (err) {
+        $("deploy-note").textContent = `Could not start a build: ${err.message}`;
+        btn.disabled = false;
+        btn.textContent = "Rebuild now";
+      }
+    }
+
+    async function pollBuild() {
+      try {
+        const { running, log } = await deployApi("build-log");
+        const pre = $("build-log");
+        pre.hidden = !log;
+        pre.textContent = log || "";
+        $("rebuild").disabled = running;
+        $("rebuild").textContent = running ? "Building…" : "Rebuild now";
+        if (running) setTimeout(pollBuild, 15000);
+        else loadReleases();
+      } catch { /* the build continues regardless of this page */ }
+    }
+
+    $("rebuild").addEventListener("click", rebuild);
+
+    loadWho(); loadChecks(); loadStatus(); loadReleases(); pollBuild();
     setInterval(loadChecks, 60000);
     setInterval(loadStatus, 120000);
+    setInterval(loadReleases, 300000);
   </script>
 </body>
 </html>

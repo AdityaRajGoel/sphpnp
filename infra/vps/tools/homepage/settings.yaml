@@ -1,0 +1,32 @@
+# Homepage settings -> /opt/sphpnp-tools/homepage/settings.yaml
+
+title: sphpnp.com operations
+description: Every service on the VPS, behind the admin sign-in
+
+headerStyle: clean
+statusStyle: dot
+hideVersion: true
+disableCollapse: false
+
+# Matches the admin dashboard's palette so the two pages read as one panel.
+color: slate
+theme: dark
+
+layout:
+    Website:
+        style: rows
+        columns: 3
+    Monitoring:
+        style: rows
+        columns: 4
+    Data:
+        style: rows
+        columns: 4
+    Reports:
+        style: rows
+        columns: 5
+
+quicklaunch:
+    searchDescriptions: true
+    hideInternetSearch: true
+    hideVisitURL: true

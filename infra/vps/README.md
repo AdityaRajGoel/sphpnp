@@ -96,6 +96,8 @@ the admin sign-in on `admin.sphpnp.com`, served by Authelia (`tools/authelia/`).
 | Supabase Studio | database, auth users, storage (nginx adds Studio's own credentials) | `https://admin.sphpnp.com:8445` |
 | GoAccess | traffic from the nginx logs: today (every 10 min) and one report per day | `https://admin.sphpnp.com/traffic-today.html`, `/traffic/` |
 | Browser errors | `src/lib/client-errors.ts` posts to `/api/client-error`; nginx logs it | `https://admin.sphpnp.com/client-errors.txt` |
+| Service board | every service on one page with live status (Homepage; Gatus, Glances and container widgets) | `https://admin.sphpnp.com:8450` |
+| Deployments | list the built releases, switch the live one, start a rebuild | dashboard, `https://admin.sphpnp.com/` |
 | Dozzle | live container logs in the browser (read-only docker socket) | `https://admin.sphpnp.com:8447` |
 | PgHero | slow queries, missing indexes, table bloat (`pg_stat_statements` is preloaded) | `https://admin.sphpnp.com:8448` |
 | changedetection.io | watches pages with no API (circulars, notices) and records what changed | `https://admin.sphpnp.com:8449` |
@@ -109,6 +111,40 @@ and links to every tool.
 
 `jobs/admin-reports.sh` (every 10 minutes) writes the static reports. vnStat keeps
 bandwidth history (`vnstat` on the server).
+
+### Deployments (rollback and rebuild from the panel)
+
+`tools/deploy-api` is a small Node service (`/opt/sphpnp/deploy-api/server.mjs`, unit
+`sphpnp-deploy-api.service`) that the dashboard calls through `nginx /deploy-api/`. It
+lists the releases under `/var/www/sphpnp/releases`, switches the live one, and starts a
+rebuild. Publishing is a symlink swap and `/var/www/sphpnp` is owned by `deploy`, so
+**none of this needs root** - but a static page cannot swap a symlink, and this is the
+smallest thing that can.
+
+What it deliberately cannot do: run a shell, touch the docker socket, or accept a path.
+A release name must match `YYYYmmdd-HHMMSS` *and* exist in the releases directory, so
+`../../etc` is rejected before anything is opened. State-changing calls require this
+site's own `Origin` and a JSON content type, so another site cannot post to it using the
+visitor's session. Every switch and rebuild is logged to the day's sync log with the name
+Authelia authenticated, and raises an ntfy alert.
+
+Switching takes effect on the next request - nginx has no `open_file_cache`, so there is
+no reload and no downtime (verified: the site answered 200 throughout a switch). A
+rebuild runs under the same `flock` as the 04:30 cron job, so the two can never overlap.
+`KEEP=3` in `deploy-site.sh` sets how many releases stay available to roll back to.
+
+Install or update (listens on `127.0.0.1:3009` only):
+
+```bash
+sudo install -D -m 644 -o deploy -g deploy infra/vps/tools/deploy-api/server.mjs /opt/sphpnp/deploy-api/server.mjs
+sudo install -m 644 infra/vps/tools/deploy-api/sphpnp-deploy-api.service /etc/systemd/system/
+sudo systemctl daemon-reload && sudo systemctl enable --now sphpnp-deploy-api
+sudo systemctl restart sphpnp-deploy-api   # after changing server.mjs
+```
+
+The unit runs as `deploy` with `NoNewPrivileges`, `PrivateDevices`, `ProtectSystem=full`,
+kernel/cgroup protection and `MemoryMax=192M`. `PrivateTmp` is deliberately off: the
+build lock lives in `/tmp` and must be the same file the cron job locks.
 
 ### Container hardening
 

@@ -21,6 +21,9 @@ chmod 700 "$DIR/authelia/secrets"
 install -m 644 "$SRC/docker-compose.yml" "$DIR/docker-compose.yml"
 install -m 644 "$SRC/gatus.yaml" "$DIR/gatus.yaml"
 install -m 644 "$SRC/authelia/configuration.yml" "$DIR/authelia/configuration.yml"
+# Homepage reads every file in this directory; it holds no secrets, only the board.
+install -d -m 755 "$DIR/homepage"
+install -m 644 "$SRC"/homepage/*.yaml "$DIR/homepage/"
 
 cd "$DIR"
 touch .env && chmod 600 .env

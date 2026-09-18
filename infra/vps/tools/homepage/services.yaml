@@ -1,0 +1,102 @@
+# Homepage service board -> /opt/sphpnp-tools/homepage/services.yaml
+# One page listing everything on this server, with live status pulled from the tools
+# themselves. Homepage has no login of its own; nginx puts it behind the same Authelia
+# sign-in as the rest of admin.sphpnp.com (port 8450).
+#
+# The container runs with host networking, so 127.0.0.1 here is the server's own
+# loopback - the same address Gatus, Glances and ntfy already bind to.
+
+- Website:
+    - Production site:
+        icon: si-googlechrome
+        href: https://www.sphpnp.com/
+        description: www.sphpnp.com - the prerendered build nginx is serving now
+    - Deployments:
+        icon: si-vercel
+        href: https://admin.sphpnp.com/#deployments
+        description: Releases, rollback and rebuild (admin dashboard)
+    - Staging:
+        icon: si-testcafe
+        href: https://staging.sphpnp.com/
+        description: staging.sphpnp.com
+        # No siteMonitor here or on the production tile: Gatus already checks both of
+        # those exact URLs (its widget is on this board), and the duplicate check only
+        # produced "getaddrinfo EAI_AGAIN" noise in the container's log.
+
+- Monitoring:
+    - Gatus:
+        icon: si-statuspage
+        href: https://admin.sphpnp.com:8443/
+        description: Uptime, response time and certificate checks
+        server: local-docker
+        container: sphpnp-tools-gatus-1
+        widget:
+            type: gatus
+            url: http://127.0.0.1:3003
+    - Glances:
+        icon: si-linux
+        href: https://admin.sphpnp.com:8444/
+        description: CPU, memory, disk, network and containers
+        server: local-docker
+        container: sphpnp-tools-glances-1
+    - Dozzle:
+        icon: si-docker
+        href: https://admin.sphpnp.com:8447/
+        description: Live container logs
+        server: local-docker
+        container: sphpnp-tools-dozzle-1
+    - ntfy:
+        icon: si-ntfy
+        href: https://admin.sphpnp.com:8446/
+        description: Push alerts to the phone app (no account, secret topic)
+        server: local-docker
+        container: sphpnp-tools-ntfy-1
+
+- Data:
+    - Supabase Studio:
+        icon: si-supabase
+        href: https://admin.sphpnp.com:8445/
+        description: Tables, auth users, storage
+        server: local-docker
+        container: supabase-studio
+    - PgHero:
+        icon: si-postgresql
+        href: https://admin.sphpnp.com:8448/
+        description: Slow queries, missing indexes, table bloat
+        server: local-docker
+        container: sphpnp-tools-pghero-1
+    - API gateway:
+        icon: si-kong
+        href: https://api.sphpnp.com/rest/v1/
+        description: Kong - PostgREST, auth, storage and edge functions
+        server: local-docker
+        container: supabase-envoy
+    - Database:
+        icon: si-postgresql
+        description: Postgres 17 - the site's only datastore
+        server: local-docker
+        container: supabase-db
+
+- Reports:
+    - Traffic today:
+        icon: si-googleanalytics
+        href: https://admin.sphpnp.com/traffic-today.html
+        description: GoAccess, refreshed every 10 minutes
+    - Browser errors:
+        icon: si-sentry
+        href: https://admin.sphpnp.com/client-errors.txt
+        description: Errors reported by visitors' browsers
+    - Broken links:
+        icon: si-linktree
+        href: https://admin.sphpnp.com/link-check.txt
+        description: Nightly lychee crawl of the sitemap
+    - Image scan:
+        icon: si-aqua
+        href: https://admin.sphpnp.com/image-scan.txt
+        description: Weekly Trivy scan of every running image
+    - Page watcher:
+        icon: si-rss
+        href: https://admin.sphpnp.com:8449/
+        description: Circulars and notices that have no API
+        server: local-docker
+        container: sphpnp-tools-changedetection-1

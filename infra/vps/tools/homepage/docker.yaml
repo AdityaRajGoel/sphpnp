@@ -1,0 +1,6 @@
+# Docker connection -> /opt/sphpnp-tools/homepage/docker.yaml
+# Read-only socket, the same access Dozzle and Glances already have: it is what turns the
+# service tiles into live running/stopped indicators.
+
+local-docker:
+    socket: /var/run/docker.sock

@@ -1,0 +1,35 @@
+# Deployments API for the admin panel -> /etc/systemd/system/sphpnp-deploy-api.service
+#   sudo systemctl enable --now sphpnp-deploy-api
+# Runs as deploy, which already owns /var/www/sphpnp, so switching a release needs no
+# root. It listens on 127.0.0.1 only; nginx on admin.sphpnp.com is the only way in, and
+# Authelia has already authenticated anything that arrives.
+
+[Unit]
+Description=sphpnp deployments API (admin panel)
+After=network.target
+Documentation=https://github.com/AdityaRajGoel/sphpnp/blob/main/infra/vps/README.md
+
+[Service]
+Type=simple
+User=deploy
+Group=deploy
+ExecStart=/usr/bin/node /opt/sphpnp/deploy-api/server.mjs
+Restart=on-failure
+RestartSec=5s
+
+# It can publish a release and start a build, and nothing else.
+NoNewPrivileges=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictSUIDSGID=yes
+RestrictRealtime=yes
+ProtectSystem=full
+# Not PrivateTmp: the build lock in /tmp must be the same file the cron job takes, or
+# a panel-triggered build could run alongside the 04:30 one.
+PrivateTmp=no
+MemoryMax=192M
+
+[Install]
+WantedBy=multi-user.target
