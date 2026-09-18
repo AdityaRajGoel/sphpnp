@@ -18,6 +18,7 @@ import {
   oneReportingBasis,
   piotroskiScore,
   qualityMetrics,
+  trailingYear,
   yearEarlier,
   type BalancePeriod,
   type CashflowPeriod,
@@ -46,13 +47,17 @@ const TIME_BUDGET_MS = 110_000;
 
 type SupabaseClient = ReturnType<typeof createClient>;
 type IncomeRow = IncomePeriod & { is_consolidated?: boolean | null };
+type CashflowRow = CashflowPeriod & { period_type?: "3M" | "12M" | null };
+
+const hasCashFigures = (row: CashflowRow) =>
+  [row.operating_cf, row.capex, row.free_cash_flow].some((value) => typeof value === "number" && Number.isFinite(value));
 type UniverseRow = { symbol: string; market_cap: number | null; pe: number | null };
 
 type SymbolData = {
   income: IncomeRow[];
   basis: "consolidated" | "standalone";
   balance: BalancePeriod[];
-  cashflow: CashflowPeriod[];
+  cashflow: CashflowRow[];
 };
 
 async function readSymbol(supabase: SupabaseClient, symbol: string): Promise<SymbolData> {
@@ -73,10 +78,11 @@ async function readSymbol(supabase: SupabaseClient, symbol: string): Promise<Sym
       .limit(PERIODS),
     supabase
       .from("fundamentals_cashflow")
-      .select("period_end, operating_cf, capex, free_cash_flow")
+      .select("period_end, period_type, operating_cf, capex, free_cash_flow")
       .eq("symbol", symbol)
       .order("period_end", { ascending: false })
-      .limit(PERIODS),
+      // Both lengths share dates, so twice the limit keeps PERIODS of each.
+      .limit(PERIODS * 2),
   ]);
 
   const raw = (income.data ?? []) as IncomeRow[];
@@ -84,7 +90,7 @@ async function readSymbol(supabase: SupabaseClient, symbol: string): Promise<Sym
     income: oneReportingBasis(raw),
     basis: raw.some((row) => row.is_consolidated === true) ? "consolidated" : "standalone",
     balance: (balance.data ?? []) as BalancePeriod[],
-    cashflow: (cashflow.data ?? []) as CashflowPeriod[],
+    cashflow: (cashflow.data ?? []) as CashflowRow[],
   };
 }
 
@@ -183,7 +189,10 @@ Deno.serve(async (req) => {
       // Statements joined on date. Reading data.income[0] directly would
       // reintroduce the mismatch alignPeriods exists to prevent - the newest
       // income row is routinely a quarter the balance sheet does not carry.
-      const periods = alignPeriods(data.income, data.balance, data.cashflow);
+      // Quarterly cash flow beside quarterly statements; the annual figures are
+      // used on their own below, against a full year of income.
+      const quarterlyCash = data.cashflow.filter((row) => row.period_type !== "12M");
+      const periods = alignPeriods(data.income, data.balance, quarterlyCash);
       if (periods.length === 0) {
         summary.tooThin++;
         continue;
@@ -195,7 +204,7 @@ Deno.serve(async (req) => {
       // first corrected run that was 245 of 246 symbols written off over a
       // score most of them can never have.
       const latest = periods[0];
-      const piotroski = piotroskiScore(data.income, data.balance, data.cashflow);
+      const piotroski = piotroskiScore(data.income, data.balance, quarterlyCash);
 
       // Growth for the PEG denominator comes from the RATIOS' period and its
       // own anniversary, not from whichever pair the score happened to use -
@@ -203,17 +212,39 @@ Deno.serve(async (req) => {
       const priorForGrowth = yearEarlier(periods, latest);
 
       const market = marketBySymbol.get(symbol);
-      const metrics = qualityMetrics(
-        [latest.income],
-        [latest.balance],
-        latest.cashflow ? [latest.cashflow] : [],
-        {
-          // screener_stocks quotes this in crore; qualityMetrics converts.
-          market_cap_crore: market?.market_cap ?? null,
-          pe: market?.pe ?? null,
-          profit_growth_yoy_pct: priorForGrowth ? profitGrowth(latest.income, priorForGrowth.income) : null,
-        },
-      );
+      const marketInputs = {
+        // screener_stocks quotes this in crore; qualityMetrics converts.
+        market_cap_crore: market?.market_cap ?? null,
+        pe: market?.pe ?? null,
+        profit_growth_yoy_pct: priorForGrowth ? profitGrowth(latest.income, priorForGrowth.income) : null,
+      };
+      // Balance-sheet measures from the latest aligned period, with a YEAR of
+      // revenue behind EV/sales - one quarter's revenue printed it ~4x too high.
+      const trailing = trailingYear(data.income, latest.period_end);
+      const base = qualityMetrics(trailing ? [trailing] : [], [latest.balance], [], marketInputs);
+
+      // Cash measures from the newest annual cash flow, each against the SAME
+      // fiscal year: its four quarters of income and that year-end's balance
+      // sheet. Free cash flow and its yield need no income, so they survive a
+      // missing quarter; the ratios against profit or revenue do not.
+      const annualCash = data.cashflow.find((row) => row.period_type === "12M" && hasCashFigures(row)) ?? null;
+      const fiscalYear = annualCash ? trailingYear(data.income, annualCash.period_end) : null;
+      const yearEnd = annualCash
+        ? data.balance.find((row) => row.period_end === annualCash.period_end && row.total_assets != null) ?? latest.balance
+        : latest.balance;
+      const cash = annualCash
+        ? qualityMetrics(fiscalYear ? [fiscalYear] : [], [yearEnd], [annualCash], marketInputs)
+        : null;
+      const metrics = cash
+        ? {
+          ...base,
+          accruals_ratio: cash.accruals_ratio,
+          cash_conversion: cash.cash_conversion,
+          capex_intensity: cash.capex_intensity,
+          free_cash_flow: cash.free_cash_flow,
+          fcf_yield: cash.fcf_yield,
+        }
+        : base;
 
       if (piotroski) summary.scored++;
       else summary.metricsOnly++;

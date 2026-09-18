@@ -11,14 +11,23 @@
 
 export const DAILY_BUDGET = 18;
 
-export type GlobalTicker = { ticker: string; name: string; group: "US" | "Europe" | "Asia" | "Currency" | "Commodity" | "Crypto"; unit: "points" | "rupees" | "dollars" };
+export type GlobalTicker = {
+  ticker: string;
+  name: string;
+  group: "US" | "Europe" | "Asia" | "Currency" | "Commodity" | "Crypto";
+  unit: "points" | "rupees" | "dollars";
+  /** Fetched from Yahoo's keyless chart instead of EODHD (stored under `ticker`). */
+  yahoo?: string;
+};
 
 export const GLOBAL_TICKERS: GlobalTicker[] = [
   { ticker: "GSPC.INDX", name: "S&P 500", group: "US", unit: "points" },
   { ticker: "IXIC.INDX", name: "Nasdaq Composite", group: "US", unit: "points" },
   { ticker: "DJI.INDX", name: "Dow Jones", group: "US", unit: "points" },
   { ticker: "VIX.INDX", name: "CBOE VIX", group: "US", unit: "points" },
-  { ticker: "FTSE.INDX", name: "FTSE 100", group: "Europe", unit: "points" },
+  // EODHD returned 0 rows for FTSE.INDX every day (checked 2026-09-17/18), so it
+  // comes from Yahoo and no longer spends a call of the plan on nothing.
+  { ticker: "FTSE.INDX", name: "FTSE 100", group: "Europe", unit: "points", yahoo: "^FTSE" },
   { ticker: "GDAXI.INDX", name: "DAX", group: "Europe", unit: "points" },
   { ticker: "N225.INDX", name: "Nikkei 225", group: "Asia", unit: "points" },
   { ticker: "HSI.INDX", name: "Hang Seng", group: "Asia", unit: "points" },
@@ -53,4 +62,25 @@ export function parseEodhdEod(raw: unknown, ticker: string): GlobalBar[] {
 /** The request for one ticker: a full year when history is short, the last fortnight otherwise - one call either way. */
 export function eodUrl(ticker: string, token: string, from: string): string {
   return `https://eodhd.com/api/eod/${encodeURIComponent(ticker)}?api_token=${encodeURIComponent(token)}&fmt=json&from=${from}`;
+}
+
+/** Daily bars from Yahoo's v8 chart endpoint, in the same shape as EODHD's. */
+export function parseYahooBars(raw: unknown, ticker: string): GlobalBar[] {
+  const result = (raw as { chart?: { result?: unknown[] } })?.chart?.result?.[0] as
+    | { timestamp?: number[]; indicators?: { quote?: Record<string, (number | null)[]>[] } }
+    | undefined;
+  const quote = result?.indicators?.quote?.[0] ?? {};
+  const out = new Map<string, GlobalBar>();
+  (result?.timestamp ?? []).forEach((t, i) => {
+    const close = num(quote.close?.[i]);
+    if (close === null) return;
+    const trade_date = new Date(t * 1000).toISOString().slice(0, 10);
+    out.set(trade_date, { ticker, trade_date, open: num(quote.open?.[i]), high: num(quote.high?.[i]), low: num(quote.low?.[i]), close, volume: num(quote.volume?.[i]) });
+  });
+  return [...out.values()].sort((a, b) => a.trade_date.localeCompare(b.trade_date));
+}
+
+/** A year of daily bars when history is short, a month otherwise. Keyless. */
+export function yahooChartUrl(symbol: string, long: boolean): string {
+  return `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?range=${long ? "1y" : "1mo"}&interval=1d`;
 }

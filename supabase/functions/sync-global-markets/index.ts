@@ -7,7 +7,10 @@
 // morning IST (after the US close). Protected by SYNC_SECRET.
 
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { DAILY_BUDGET, GLOBAL_TICKERS, eodUrl, parseEodhdEod } from "../_shared/eodhd.ts";
+import { DAILY_BUDGET, GLOBAL_TICKERS, eodUrl, parseEodhdEod, parseYahooBars, yahooChartUrl } from "../_shared/eodhd.ts";
+
+// Yahoo refuses requests without a browser User-Agent, like every other feed here.
+const YAHOO_UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126 Safari/537.36";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -44,6 +47,25 @@ Deno.serve(async (req) => {
 
   const results: Record<string, number | string> = {};
   for (const t of GLOBAL_TICKERS) {
+    if (t.yahoo) {
+      // Keyless and outside the EODHD plan, so it spends no budget.
+      try {
+        const res = await fetch(yahooChartUrl(t.yahoo, (stored.get(t.ticker) ?? 0) < 150), {
+          headers: { "User-Agent": YAHOO_UA },
+          signal: AbortSignal.timeout(20_000),
+        });
+        if (!res.ok) { results[t.ticker] = `Yahoo HTTP ${res.status}`; await res.body?.cancel(); continue; }
+        const bars = parseYahooBars(await res.json(), t.ticker);
+        if (bars.length > 0) {
+          const { error } = await sb.from("global_markets_daily").upsert(bars, { onConflict: "ticker,trade_date" });
+          if (error) throw new Error(error.message);
+        }
+        results[t.ticker] = bars.length;
+      } catch (e) {
+        results[t.ticker] = (e as Error).message;
+      }
+      continue;
+    }
     if (calls >= DAILY_BUDGET) { results[t.ticker] = "skipped: daily budget used"; continue; }
     // Counted before the request: a call that fails still counts against the plan.
     calls++;

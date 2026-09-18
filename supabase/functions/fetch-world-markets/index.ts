@@ -1,7 +1,20 @@
 // World indices, Indian sector indices and Indian ETFs in one call, so the
-// board does not fan out ~75 chart requests from the browser. Yahoo's chart
-// endpoint is keyless; it needs a browser User-Agent like every other feed here.
-import { BOARD, summariseChart, type BoardGroup, type BoardRow } from "../_shared/world-markets.ts";
+// board does not fan out ~70 chart requests from the browser. World indices and
+// ETFs come from Yahoo's keyless chart endpoint (it needs a browser User-Agent);
+// sector indices come from NSE's own daily file, already in index_valuation_daily.
+import { createClient } from "npm:@supabase/supabase-js@2";
+import {
+  INDIA_ETFS,
+  INDIA_SECTORS,
+  WORLD_INDICES,
+  chartPoints,
+  fxSymbol,
+  inDollars,
+  summariseSeries,
+  type BoardGroup,
+  type BoardRow,
+  type DailyPoint,
+} from "../_shared/world-markets.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -25,16 +38,78 @@ async function fetchOne(symbol: string): Promise<unknown | null> {
   }
 }
 
+/** ~95 sessions back is enough for the 62-session quarter change and the spark. */
+const SECTOR_LOOKBACK_DAYS = 140;
+
+async function sectorRows(): Promise<{ rows: BoardRow[]; failed: string[] }> {
+  const since = new Date(Date.now() - SECTOR_LOOKBACK_DAYS * 86_400_000).toISOString().slice(0, 10);
+  const db = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!);
+  // One query per index: all fifteen in one request came to ~1,400 rows, past
+  // PostgREST's 1,000-row cap, and oldest-first ordering cut off the newest six
+  // weeks - every tile showed early August as "latest".
+  const series = await Promise.all(INDIA_SECTORS.map(async (item) => {
+    const { data, error } = await db
+      .from("index_valuation_daily")
+      .select("trade_date, close, volume")
+      .eq("index_name", item.nse!)
+      .gte("trade_date", since)
+      .order("trade_date", { ascending: true });
+    if (error) console.error(`sector ${item.nse} read failed:`, error.message);
+    const points: DailyPoint[] = (data ?? []).map((row) => ({
+      date: row.trade_date,
+      close: Number(row.close),
+      volume: row.volume === null ? null : Number(row.volume),
+    }));
+    return { item, row: summariseSeries(item, points, "INR") };
+  }));
+  return {
+    rows: series.flatMap((s) => (s.row ? [s.row] : [])),
+    failed: series.filter((s) => !s.row).map((s) => s.item.symbol),
+  };
+}
+
+/** Fetches Yahoo charts CONCURRENCY at a time, keyed by symbol. */
+async function fetchAll(symbols: string[]): Promise<Map<string, unknown>> {
+  const out = new Map<string, unknown>();
+  for (let i = 0; i < symbols.length; i += CONCURRENCY) {
+    const batch = symbols.slice(i, i + CONCURRENCY);
+    const results = await Promise.all(batch.map((symbol) => fetchOne(symbol)));
+    batch.forEach((symbol, j) => { if (results[j]) out.set(symbol, results[j]); });
+  }
+  return out;
+}
+
+const returnsOf = (row: BoardRow | null) =>
+  row ? { day: row.day, week: row.week, month: row.month, quarter: row.quarter } : null;
+
 async function build(): Promise<string> {
-  const rows: BoardRow[] = [];
-  const failed: string[] = [];
-  for (let i = 0; i < BOARD.length; i += CONCURRENCY) {
-    const batch = BOARD.slice(i, i + CONCURRENCY);
-    const results = await Promise.all(batch.map((item) => fetchOne(item.symbol)));
-    batch.forEach((item, j) => {
-      const row = results[j] ? summariseChart(item, results[j]) : null;
-      if (row) rows.push(row); else failed.push(item.symbol);
-    });
+  const sectors = await sectorRows();
+  const rows: BoardRow[] = [...sectors.rows];
+  const failed: string[] = [...sectors.failed];
+  const fromYahoo = [...WORLD_INDICES, ...INDIA_ETFS];
+  const charts = await fetchAll(fromYahoo.map((item) => item.symbol));
+
+  // World markets also carry their returns in dollars: each index converted at
+  // its currency's daily units-per-dollar rate, one rate series per currency.
+  const parsed = new Map(fromYahoo.map((item) => [item.symbol, chartPoints(charts.get(item.symbol))]));
+  const fxSymbols = [...new Set(WORLD_INDICES.map((item) => fxSymbol(parsed.get(item.symbol)!.currency)).filter((s): s is string => s !== null))];
+  const fxCharts = await fetchAll(fxSymbols);
+
+  for (const item of fromYahoo) {
+    const { points, currency } = parsed.get(item.symbol)!;
+    const row = summariseSeries(item, points, currency);
+    if (!row) { failed.push(item.symbol); continue; }
+    if (item.group !== "world") { rows.push(row); continue; }
+    const fx = fxSymbol(currency);
+    const rates = fx ? chartPoints(fxCharts.get(fx)).points : null;
+    // No currency in the quote (Yahoo omits it for MERVAL) means no dollar
+    // return - treating it as dollars would show the peso's move as a dollar one.
+    const usd = !currency
+      ? null
+      : fx === null
+        ? returnsOf(row)
+        : rates && rates.length > 0 ? returnsOf(summariseSeries(item, inDollars(points, rates), "USD")) : null;
+    rows.push({ ...row, usd });
   }
   const groups = Object.fromEntries((["world", "sectors", "etfs"] as BoardGroup[]).map((g) => [g, rows.filter((r) => r.group === g)]));
   return JSON.stringify({ success: rows.length > 0, generated_at: new Date().toISOString(), groups, failed });

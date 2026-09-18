@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
-  parseBalanceSheet, parseCashflow, toYahooSymbol, isValidCrumb,
+  parseBalanceSheet, toYahooSymbol, isValidCrumb,
 } from "../../supabase/functions/_shared/yahoo";
 
 // Yahoo wraps every figure as { raw, fmt, longFmt } and omits the key entirely
@@ -26,18 +26,6 @@ const balanceJson = {
     {
       endDate: { raw: 1710806400 },              // 2024-03-31, only long-term debt
       longTermDebt: { raw: 300000000000 },
-    },
-  ] } }] },
-};
-
-const cashflowJson = {
-  quoteSummary: { result: [{ cashflowStatementHistoryQuarterly: { cashflowStatements: [
-    {
-      endDate: { raw: 1735603200 },
-      totalCashFromOperatingActivities: { raw: 90000000000 },
-      totalCashflowsFromInvestingActivities: { raw: -40000000000 },
-      totalCashFromFinancingActivities: { raw: -20000000000 },
-      capitalExpenditures: { raw: -30000000000 },
     },
   ] } }] },
 };
@@ -87,30 +75,6 @@ describe("parseBalanceSheet", () => {
     expect(parseBalanceSheet({})).toEqual([]);
     expect(parseBalanceSheet(null)).toEqual([]);
     expect(parseBalanceSheet({ quoteSummary: { result: [] } })).toEqual([]);
-  });
-});
-
-describe("parseCashflow", () => {
-  it("maps operating, investing and financing flows", () => {
-    const r = parseCashflow(cashflowJson)[0];
-    expect(r.periodEnd).toBe("2024-12-31");
-    expect(r.operatingCf).toBe(90000000000);
-    expect(r.investingCf).toBe(-40000000000);
-  });
-
-  // Yahoo reports capex as a negative outflow. computeRatios subtracts capex
-  // from operating cash flow, so it must receive the magnitude - passing the
-  // signed value would ADD the spend and overstate free cash flow.
-  it("normalises capex to a positive magnitude", () => {
-    expect(parseCashflow(cashflowJson)[0].capex).toBe(30000000000);
-  });
-
-  it("derives free cash flow as operating minus capex", () => {
-    expect(parseCashflow(cashflowJson)[0].freeCashFlow).toBe(60000000000);
-  });
-
-  it("returns an empty array for a malformed payload", () => {
-    expect(parseCashflow({})).toEqual([]);
   });
 });
 

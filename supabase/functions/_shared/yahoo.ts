@@ -121,6 +121,9 @@ export type BalanceRow = {
 
 export type CashflowRow = {
   periodEnd: string;
+  /** "12M" (a fiscal year) or "3M" (a quarter). Indian companies file cash flow
+   * annually, so most symbols only have 12M; the two must never be compared. */
+  periodType: "12M" | "3M";
   operatingCf: number | null;
   investingCf: number | null;
   financingCf: number | null;
@@ -202,6 +205,30 @@ export type IncomeRow = {
  * confident wrong ratio, which is worse than an absent one. Missing figures
  * stay null for the same reason computeRatios treats null as "cannot compute".
  */
+/**
+ * Figures are stored as rupees. Yahoo reports a few companies' statements in
+ * another currency (INFY in US dollars), and stored as rupees those made its
+ * free cash flow read Rs 373 crore and every ratio against the rupee market cap
+ * ~90x off. An observation without a currency code is assumed to be rupees.
+ */
+const inRupees = (observation: Record<string, unknown> | null | undefined) =>
+  typeof observation?.currencyCode !== "string" || observation.currencyCode === "INR";
+
+/** The first non-rupee currency in a timeseries payload, or null when it is all rupees. */
+export function foreignReportingCurrency(json: unknown): string | null {
+  const result = (json as { timeseries?: { result?: unknown[] } } | null)?.timeseries?.result;
+  if (!Array.isArray(result)) return null;
+  for (const entry of result as Record<string, unknown>[]) {
+    for (const value of Object.values(entry)) {
+      if (!Array.isArray(value)) continue;
+      for (const observation of value as Record<string, unknown>[]) {
+        if (!inRupees(observation)) return String(observation.currencyCode);
+      }
+    }
+  }
+  return null;
+}
+
 /** The timeseries series names this parser reads, mapped to BalanceRow fields. */
 const TIMESERIES_BALANCE_FIELDS = {
   quarterlyTotalAssets: "totalAssets",
@@ -248,7 +275,7 @@ export function parseTimeseriesBalance(json: unknown): BalanceRow[] {
 
       for (const raw of observations as Record<string, unknown>[]) {
         const periodEnd = typeof raw?.asOfDate === "string" ? raw.asOfDate : null;
-        if (!periodEnd) continue;
+        if (!periodEnd || !inRupees(raw)) continue;
         // num() unwraps Yahoo's { raw, fmt } itself, so hand it the wrapper.
         const value = num(raw.reportedValue);
         if (value === null) continue;
@@ -285,25 +312,56 @@ export function parseIncomeStatement(json: unknown): IncomeRow[] {
     });
 }
 
-export function parseCashflow(json: unknown): CashflowRow[] {
-  return statements(json, "cashflowStatementHistoryQuarterly", "cashflowStatements")
-    .flatMap((s) => {
-      const periodEnd = toIso(s.endDate);
-      if (!periodEnd) return [];
-      const operatingCf = num(s.totalCashFromOperatingActivities);
-      // Yahoo reports capex as a negative outflow. computeRatios subtracts it,
-      // so it must be a magnitude - passing -30000 would ADD the spend.
-      const rawCapex = num(s.capitalExpenditures);
-      const capex = rawCapex === null ? null : Math.abs(rawCapex);
-      const freeCashFlow =
-        operatingCf === null || capex === null ? null : operatingCf - capex;
-      return [{
-        periodEnd,
-        operatingCf,
-        investingCf: num(s.totalCashflowsFromInvestingActivities),
-        financingCf: num(s.totalCashFromFinancingActivities),
-        capex,
-        freeCashFlow,
-      }];
-    });
+/** The cash-flow series read from fundamentals-timeseries, for both period lengths. */
+const CASHFLOW_SERIES = {
+  OperatingCashFlow: "operatingCf",
+  InvestingCashFlow: "investingCf",
+  FinancingCashFlow: "financingCf",
+  CapitalExpenditure: "capex",
+  FreeCashFlow: "freeCashFlow",
+} as const;
+
+export const TIMESERIES_CASHFLOW_TYPES = Object.keys(CASHFLOW_SERIES)
+  .flatMap((name) => [`annual${name}`, `quarterly${name}`])
+  .join(",");
+
+/**
+ * Cash flow from the fundamentals-timeseries endpoint, one row per period and
+ * length. quoteSummary's cashflowStatementHistoryQuarterly was gutted upstream
+ * (dated objects with no figures), which left every stored cash-flow row empty.
+ *
+ * Annual and quarterly observations share dates (31 March), so the key is date
+ * plus length; mixing them would pair a year's cash with a quarter's profit.
+ */
+export function parseTimeseriesCashflow(json: unknown): CashflowRow[] {
+  const result = (json as { timeseries?: { result?: unknown[] } } | null)?.timeseries?.result;
+  if (!Array.isArray(result)) return [];
+
+  const rows = new Map<string, CashflowRow>();
+  for (const entry of result as Record<string, unknown>[]) {
+    for (const [name, field] of Object.entries(CASHFLOW_SERIES)) {
+      for (const [prefix, periodType] of [["annual", "12M"], ["quarterly", "3M"]] as const) {
+        const observations = entry[`${prefix}${name}`];
+        if (!Array.isArray(observations)) continue;
+        for (const raw of observations as Record<string, unknown>[]) {
+          const periodEnd = typeof raw?.asOfDate === "string" ? raw.asOfDate : null;
+          const value = num(raw?.reportedValue);
+          if (!periodEnd || value === null || !inRupees(raw)) continue;
+          const key = `${periodEnd}|${periodType}`;
+          const row = rows.get(key) ?? {
+            periodEnd, periodType, operatingCf: null, investingCf: null, financingCf: null, capex: null, freeCashFlow: null,
+          };
+          // Yahoo reports capex as a negative outflow; the scores subtract a positive spend.
+          row[field] = field === "capex" ? Math.abs(value) : value;
+          rows.set(key, row);
+        }
+      }
+    }
+  }
+  for (const row of rows.values()) {
+    if (row.freeCashFlow === null && row.operatingCf !== null && row.capex !== null) {
+      row.freeCashFlow = row.operatingCf - row.capex;
+    }
+  }
+  return [...rows.values()];
 }

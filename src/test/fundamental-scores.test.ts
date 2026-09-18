@@ -6,6 +6,7 @@ import {
   oneReportingBasis,
   piotroskiScore,
   qualityMetrics,
+  trailingYear,
   type BalancePeriod,
   type CashflowPeriod,
   type IncomePeriod,
@@ -436,5 +437,39 @@ describe("the crore / rupee boundary", () => {
 
     expect(metrics.fcf_yield!).toBeGreaterThan(0);
     expect(metrics.fcf_yield!).toBeLessThan(0.2);
+  });
+});
+
+describe("trailingYear", () => {
+  const q = (period_end: string, revenue: number, profit_after_tax: number) =>
+    ({ period_end, revenue, total_income: revenue, total_expenses: revenue - profit_after_tax, profit_after_tax });
+  const quarters = [q("2026-03-31", 400, 40), q("2025-12-31", 300, 30), q("2025-09-30", 200, 20), q("2025-06-30", 100, 10)];
+
+  it("sums the four quarters ending on the date into one year", () => {
+    const year = trailingYear(quarters, "2026-03-31")!;
+    expect(year).toMatchObject({ period_end: "2026-03-31", revenue: 1000, profit_after_tax: 100 });
+  });
+
+  it("refuses a year with a missing quarter rather than understating it", () => {
+    expect(trailingYear(quarters.filter((r) => r.period_end !== "2025-09-30"), "2026-03-31")).toBeNull();
+  });
+
+  it("refuses a year whose end quarter is not reported", () => {
+    expect(trailingYear(quarters, "2026-06-30")).toBeNull();
+  });
+
+  it("keeps a sum unknown when any quarter lacks that figure", () => {
+    const gappy = [{ ...quarters[0], revenue: null }, ...quarters.slice(1)];
+    expect(trailingYear(gappy, "2026-03-31")!.revenue).toBeNull();
+  });
+});
+
+describe("EV to sales", () => {
+  it("is computed on a year of revenue, not one quarter", () => {
+    // It used to take the latest QUARTER's revenue, printing every EV/sales
+    // about four times too high (RELIANCE showed 13.6).
+    const year = { period_end: "2026-03-31", revenue: 1000 * 1e7 };
+    const metrics = qualityMetrics([year], [{ period_end: "2026-03-31", total_debt: 0, cash_and_equivalents: 0 }], [], { market_cap_crore: 3000 });
+    expect(metrics.ev_to_sales).toBeCloseTo(3);
   });
 });

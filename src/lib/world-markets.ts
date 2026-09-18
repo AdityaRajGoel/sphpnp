@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { indexValuationHistory } from "@/lib/market-data";
 import type { BoardGroup, BoardRow } from "../../supabase/functions/_shared/world-markets";
 
 export type { BoardGroup, BoardRow };
@@ -14,11 +15,19 @@ export async function getWorldBoard(): Promise<WorldBoard> {
 
 export type ClosePoint = { date: string; close: number };
 
-/** Daily closes for one symbol through fetch-stock-chart (indices pass as ^SYMBOL). */
-export async function getCloses(symbol: string, range: "3mo" | "6mo" = "6mo"): Promise<ClosePoint[]> {
-  const { data, error } = await supabase.functions.invoke("fetch-stock-chart", { body: { symbol, range } });
-  if (error || !data?.success) return [];
-  return ((data.dataPoints ?? []) as { t: number; c: number }[])
-    .filter((p) => Number.isFinite(p.c) && p.c > 0)
-    .map((p) => ({ date: new Date(p.t).toISOString().slice(0, 10), close: p.c }));
+/** About six months of sessions, the window the regime's rules read. */
+const INDEX_SESSIONS = 130;
+
+/**
+ * Daily closes for an NSE index by its NSE name ("Nifty FMCG", "India VIX"),
+ * from index_valuation_daily - NSE's own file, loaded every evening. Yahoo's
+ * ^CNX* symbols stopped resolving, which silently emptied inputs that used them.
+ * Empty on failure, so one missing series costs one input, not the section.
+ */
+export async function getIndexCloses(indexName: string): Promise<ClosePoint[]> {
+  const history = await indexValuationHistory(indexName).catch(() => []);
+  return history
+    .slice(-INDEX_SESSIONS)
+    .map((row) => ({ date: row.trade_date, close: Number(row.close) }))
+    .filter((p) => Number.isFinite(p.close) && p.close > 0);
 }

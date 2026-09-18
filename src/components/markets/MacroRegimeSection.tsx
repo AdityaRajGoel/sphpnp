@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { globalMarkets } from "@/lib/market-data";
-import { getCloses } from "@/lib/world-markets";
+import { getIndexCloses } from "@/lib/world-markets";
 import { classifyRegime, ratioSeries, type Lean } from "@/lib/macro-regime";
 import { computeBreadth } from "@/lib/market-breadth";
 import { useScreenerUniverse } from "@/hooks/useScreenerUniverse";
@@ -18,9 +18,11 @@ const LEAN_STYLE: Record<Lean, { label: string; className: string }> = {
 
 async function loadInputs() {
   const [vix, nifty, fmcg, global] = await Promise.all([
-    getCloses("^INDIAVIX"),
-    getCloses("^NSEI"),
-    getCloses("^CNXFMCG"),
+    // NSE's own index closes: the Yahoo ^CNXFMCG symbol stopped resolving and
+    // silently dropped the Nifty-vs-FMCG input.
+    getIndexCloses("India VIX"),
+    getIndexCloses("Nifty 50"),
+    getIndexCloses("Nifty FMCG"),
     globalMarkets().catch(() => []),
   ]);
   const closes = (ticker: string) => global.filter((b) => b.ticker === ticker).sort((a, b) => a.trade_date.localeCompare(b.trade_date)).map((b) => b.close);

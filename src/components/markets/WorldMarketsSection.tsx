@@ -63,10 +63,15 @@ export default function WorldMarketsSection() {
   const { data, isLoading, error } = useQuery({ queryKey: ["world-board"], queryFn: getWorldBoard, staleTime: 15 * 60_000, retry: 1 });
   const [tab, setTab] = useState<BoardGroup>("world");
   const [sort, setSort] = useState<SortKey>("day");
+  // World markets can be read in their own currency or as a dollar holder saw them.
+  const [inUsd, setInUsd] = useState(false);
+  const usd = inUsd && tab === "world";
+  const ret = (r: BoardRow, k: SortKey) => (usd ? r.usd?.[k] ?? null : r[k]);
   const rows = useMemo(() => {
     const list = data?.groups[tab] ?? [];
-    return [...list].sort((a, b) => (b[sort] ?? -Infinity) - (a[sort] ?? -Infinity));
-  }, [data, tab, sort]);
+    const value = (r: BoardRow) => (usd ? r.usd?.[sort] ?? null : r[sort]);
+    return [...list].sort((a, b) => (value(b) ?? -Infinity) - (value(a) ?? -Infinity));
+  }, [data, tab, sort, usd]);
   const active = TABS.find((t) => t.id === tab)!;
   const regions = [...new Set(rows.map((r) => r.region).filter(Boolean))] as string[];
 
@@ -86,7 +91,21 @@ export default function WorldMarketsSection() {
         <EmptyState text="The world board is not reachable right now." />
       ) : (
         <>
-          {tab === "world" && <Card className="p-3"><HeatStrip rows={rows} /></Card>}
+          {tab === "world" && (
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="text-xs text-muted-foreground">
+                {usd ? "Returns in US dollars: each market's move plus its currency's move against the dollar." : "Returns in each market's own currency."}
+              </p>
+              <div role="group" aria-label="Currency of returns" className="flex gap-1 rounded-lg bg-muted p-1">
+                {([false, true] as const).map((v) => (
+                  <button key={String(v)} type="button" aria-pressed={inUsd === v} onClick={() => setInUsd(v)} className={`rounded-md px-3 py-1 text-xs font-semibold transition-colors ${inUsd === v ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
+                    {v ? "USD" : "Local"}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+          {tab === "world" && <Card className="p-3"><HeatStrip rows={usd ? rows.map((r) => ({ ...r, day: r.usd?.day ?? null })) : rows} /></Card>}
           <Card className="overflow-x-auto p-0">
             <table className="w-full text-sm">
               <caption className="sr-only">{active.label}</caption>
@@ -111,11 +130,13 @@ export default function WorldMarketsSection() {
                     {rows.filter((r) => !region || r.region === region).map((r) => (
                       <tr key={r.symbol} className="border-t hover:bg-muted/30">
                         <td className="px-4 py-2"><span className="font-semibold">{r.name}</span>{r.country && <span className="ml-2 text-xs text-muted-foreground">{r.country}</span>}</td>
-                        <td className="px-3 py-2 text-right tabular-nums">{r.last.toLocaleString("en-IN", { maximumFractionDigits: 2 })}</td>
-                        <td className={`px-3 py-2 text-right tabular-nums ${tone(r.day)}`}>{pct(r.day)}</td>
-                        <td className={`px-3 py-2 text-right tabular-nums ${tone(r.week)}`}>{pct(r.week)}</td>
-                        <td className={`px-3 py-2 text-right tabular-nums ${tone(r.month)}`}>{pct(r.month)}</td>
-                        <td className={`px-3 py-2 text-right tabular-nums ${tone(r.quarter)}`}>{pct(r.quarter)}</td>
+                        <td className="px-3 py-2 text-right tabular-nums">
+                          {r.last.toLocaleString("en-IN", { maximumFractionDigits: 2 })}
+                          {tab === "world" && r.currency && <span className="ml-1 text-[10px] text-muted-foreground">{r.currency}</span>}
+                        </td>
+                        {(["day", "week", "month", "quarter"] as SortKey[]).map((k) => (
+                          <td key={k} className={`px-3 py-2 text-right tabular-nums ${tone(ret(r, k))}`}>{pct(ret(r, k))}</td>
+                        ))}
                         {tab === "etfs" && <td className={`px-3 py-2 text-right tabular-nums ${tone(r.est_flow_cr)}`}>{r.est_flow_cr === null ? "—" : `${r.est_flow_cr >= 0 ? "+" : "−"}₹${Math.abs(r.est_flow_cr).toFixed(1)} Cr`}</td>}
                         <td className="px-3 py-2 text-right tabular-nums text-muted-foreground">{r.volume_ratio === null ? "—" : `${r.volume_ratio.toFixed(1)}×`}</td>
                         <td className="px-4 py-2"><div className="flex justify-end"><Spark values={r.spark} /></div></td>

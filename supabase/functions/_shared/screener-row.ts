@@ -128,3 +128,36 @@ export function groupRowsByShape(
   }
   return [...groups.values()];
 }
+
+export type ExchangeBar = {
+  symbol: string;
+  trade_date: string;
+  prev_close: number | null;
+  open: number | null;
+  high: number | null;
+  low: number | null;
+  close: number | null;
+  volume: number | null;
+};
+
+/**
+ * A screener quote from NSE's own daily close (eq_eod), for a listed stock Yahoo
+ * gave nothing usable for. Without it the row froze: ITC Hotels sat at its
+ * 3 August price for six weeks. Only the day's fields are set; market cap, P/E
+ * and the 52-week range keep their stored values. Null without a usable close.
+ */
+export function exchangeCloseRow(bar: ExchangeBar): Record<string, unknown> | null {
+  const close = typeof bar.close === "number" && Number.isFinite(bar.close) && bar.close > 0 ? bar.close : null;
+  if (close === null) return null;
+  const prev = typeof bar.prev_close === "number" && bar.prev_close > 0 ? bar.prev_close : null;
+  return {
+    symbol: bar.symbol,
+    price: close,
+    open_price: bar.open,
+    day_high: bar.high,
+    day_low: bar.low,
+    volume: bar.volume,
+    ...(prev === null ? {} : { prev_close: prev, change: close - prev, change_pct: ((close - prev) / prev) * 100 }),
+    updated_at: new Date().toISOString(),
+  };
+}

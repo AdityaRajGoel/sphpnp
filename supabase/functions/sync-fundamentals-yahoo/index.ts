@@ -16,11 +16,13 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 import {
   fetchQuoteSummary,
   toYahooSymbol,
-  parseCashflow,
+  parseTimeseriesCashflow,
+  foreignReportingCurrency,
   parseIncomeStatement,
   fetchTimeseries,
   parseTimeseriesBalance,
   TIMESERIES_BALANCE_TYPES,
+  TIMESERIES_CASHFLOW_TYPES,
   type IncomeRow,
   type BalanceRow,
   type CashflowRow,
@@ -46,6 +48,9 @@ const JOB = "fundamentals-yahoo";
  * that killed the XBRL sync's first real run.
  */
 const BATCH_SIZE = 5;
+/** How far back the timeseries call reaches. Yahoo holds ~4 fiscal years for most
+ * Indian symbols; asking for more costs nothing and keeps anything older it has. */
+const TIMESERIES_YEARS_BACK = 10;
 
 type IncomeBasisRow = {
   period_end: string;
@@ -219,10 +224,26 @@ Deno.serve(async (req) => {
          * every single one, and why no stock on the site could show a ROE: the
          * rows existed, so nothing looked broken.
          */
-        const tsJson = await fetchTimeseries(yahooSymbol, TIMESERIES_BALANCE_TYPES);
-        balance = parseTimeseriesBalance(tsJson);
-        cashflow = parseCashflow(json);
-        income = parseIncomeStatement(json);
+        // Cash flow rides the same call: quoteSummary's cash-flow module was
+        // gutted the same way, which left every stored cash-flow row empty.
+        // Ten years back keeps whatever history Yahoo has; upserts never delete,
+        // so it accumulates from here.
+        const tsJson = await fetchTimeseries(
+          yahooSymbol,
+          `${TIMESERIES_BALANCE_TYPES},${TIMESERIES_CASHFLOW_TYPES}`,
+          TIMESERIES_YEARS_BACK,
+        );
+        // A company Yahoo reports in another currency (INFY: US dollars) gets no
+        // Yahoo statements at all - its quoteSummary income is in that currency
+        // too, and none of it may be stored as rupees. NSE's filings still cover it.
+        const currency = foreignReportingCurrency(tsJson);
+        if (currency) {
+          console.warn(`${symbol}: Yahoo reports in ${currency}; storing no Yahoo statements for it`);
+        } else {
+          balance = parseTimeseriesBalance(tsJson);
+          cashflow = parseTimeseriesCashflow(tsJson);
+          income = parseIncomeStatement(json);
+        }
       } catch (err) {
         console.error(`yahoo parse failed for ${symbol}:`, (err as Error).message);
         parseFailed = true;
@@ -300,6 +321,7 @@ Deno.serve(async (req) => {
         cashflow.map((c) => ({
           symbol,
           period_end: c.periodEnd,
+          period_type: c.periodType,
           operating_cf: c.operatingCf,
           investing_cf: c.investingCf,
           financing_cf: c.financingCf,
@@ -308,7 +330,7 @@ Deno.serve(async (req) => {
           source: "yahoo",
           fetched_at: new Date().toISOString(),
         })),
-        { onConflict: "symbol,period_end" },
+        { onConflict: "symbol,period_end,period_type" },
       );
       if (cfErr) {
         console.error(`cashflow upsert failed for ${symbol}:`, cfErr.message);
@@ -360,7 +382,9 @@ Deno.serve(async (req) => {
           current_assets: b.currentAssets,
           current_liabilities: b.currentLiabilities,
         }));
-        const cashflowLike = cashflow.map((c) => ({
+        // Quarterly cash flow only: these ratios sit beside a quarter's profit,
+        // and an annual figure on the same 31 March would be four times too big.
+        const cashflowLike = cashflow.filter((c) => c.periodType === "3M").map((c) => ({
           period_end: c.periodEnd,
           operating_cf: c.operatingCf,
           capex: c.capex,

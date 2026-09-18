@@ -1,5 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { buildStockRow, groupRowsByShape, isStaleQuote } from "../_shared/screener-row.ts";
+import { buildStockRow, exchangeCloseRow, groupRowsByShape, isStaleQuote, type ExchangeBar } from "../_shared/screener-row.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -40,7 +40,6 @@ const NSE_SYMBOLS: { symbol: string; yahoo: string; name: string; sector: string
   { symbol: "HCLTECH", yahoo: "HCLTECH.NS", name: "HCL Technologies", sector: "IT" },
   { symbol: "WIPRO", yahoo: "WIPRO.NS", name: "Wipro", sector: "IT" },
   { symbol: "TECHM", yahoo: "TECHM.NS", name: "Tech Mahindra", sector: "IT" },
-  { symbol: "LTIM", yahoo: "LTIM.NS", name: "LTIMindtree", sector: "IT" },
   { symbol: "PERSISTENT", yahoo: "PERSISTENT.NS", name: "Persistent Systems", sector: "IT" },
   { symbol: "COFORGE", yahoo: "COFORGE.NS", name: "Coforge", sector: "IT" },
   { symbol: "MPHASIS", yahoo: "MPHASIS.NS", name: "Mphasis", sector: "IT" },
@@ -169,7 +168,7 @@ const NSE_SYMBOLS: { symbol: string; yahoo: string; name: string; sector: string
   { symbol: "PAYTM", yahoo: "PAYTM.NS", name: "One97 Communications", sector: "Tech" },
   { symbol: "NYKAA", yahoo: "NYKAA.NS", name: "FSN E-Commerce", sector: "Tech" },
   { symbol: "POLICYBZR", yahoo: "POLICYBZR.NS", name: "PB Fintech", sector: "Tech" },
-  { symbol: "INDIGRID", yahoo: "INDIGRID.NS", name: "India Grid Trust", sector: "Tech" },
+  { symbol: "INDIGRID", yahoo: "INDIGRID.NS", name: "India Grid Trust", sector: "Energy" },
 
   // Diversified / Others
   { symbol: "ASIANPAINT", yahoo: "ASIANPAINT.NS", name: "Asian Paints", sector: "Diversified" },
@@ -271,6 +270,8 @@ const NSE_SYMBOLS: { symbol: string; yahoo: string; name: string; sector: string
   { symbol: "HYUNDAI", yahoo: "HYUNDAI.NS", name: "Hyundai Motor India", sector: "Auto" },
   { symbol: "IEX", yahoo: "IEX.NS", name: "Indian Energy Exchange", sector: "NBFC" },
   { symbol: "INDHOTEL", yahoo: "INDHOTEL.NS", name: "The Indian Hotels Company", sector: "Consumer" },
+  // Demerged from ITC in January 2025 and never added, so its row froze.
+  { symbol: "ITCHOTELS", yahoo: "ITCHOTELS.NS", name: "ITC Hotels", sector: "Consumer" },
   { symbol: "INDIANB", yahoo: "INDIANB.NS", name: "Indian Bank", sector: "Banking" },
   { symbol: "INDUSTOWER", yahoo: "INDUSTOWER.NS", name: "Indus Towers", sector: "Telecom" },
   { symbol: "INOXWIND", yahoo: "INOXWIND.NS", name: "Inox Wind", sector: "Energy" },
@@ -281,7 +282,8 @@ const NSE_SYMBOLS: { symbol: string; yahoo: string; name: string; sector: string
   { symbol: "LAURUSLABS", yahoo: "LAURUSLABS.NS", name: "Laurus Labs", sector: "Pharma" },
   { symbol: "LICHSGFIN", yahoo: "LICHSGFIN.NS", name: "LIC Housing Finance", sector: "NBFC" },
   { symbol: "LTF", yahoo: "LTF.NS", name: "L&T Finance", sector: "NBFC" },
-  { symbol: "LTM", yahoo: "LTM.NS", name: "LTM", sector: "IT" },
+  // LTIMindtree, quoted as LTM since NSE renamed it from LTIM (last traded 26-Feb-2026).
+  { symbol: "LTM", yahoo: "LTM.NS", name: "LTIMindtree", sector: "IT" },
   { symbol: "MANAPPURAM", yahoo: "MANAPPURAM.NS", name: "Manappuram Finance", sector: "NBFC" },
   { symbol: "MCX", yahoo: "MCX.NS", name: "Multi Commodity Exchange of India", sector: "NBFC" },
   { symbol: "MFSL", yahoo: "MFSL.NS", name: "Max Financial Services", sector: "Insurance" },
@@ -427,6 +429,118 @@ const BOT_USER_AGENTS = [
   "slackbot", "vkShare", "W3C_Validator", "redditbot", "Applebot", "WhatsApp", "flipboard", 
   "Tumblr", "bitlybot", "SkypeShell", "TelegramBot", "Skype", "node-fetch", "axios", "python-requests"
 ];
+
+/** A listed stock whose quote is this old is re-quoted from NSE's daily close. */
+const EXCHANGE_FALLBACK_MS = 2 * 86_400_000;
+
+/**
+ * Quotes Yahoo left stale (nothing usable, or a quote that stopped trading) are
+ * filled from eq_eod, the exchange's own daily close. IndiGrid showed Rs 140 against an
+ * NSE close of Rs 173 until this existed.
+ */
+async function fillFromExchange(sb: ReturnType<typeof createClient>): Promise<void> {
+  const cutoff = new Date(Date.now() - EXCHANGE_FALLBACK_MS).toISOString();
+  const { data: stale, error: staleErr } = await sb
+    .from("screener_stocks")
+    .select("symbol")
+    .in("symbol", NSE_SYMBOLS.map((s) => s.symbol))
+    .lt("updated_at", cutoff);
+  if (staleErr || !stale?.length) return;
+
+  const { data: latest } = await sb.from("eq_eod").select("trade_date").order("trade_date", { ascending: false }).limit(1);
+  const day = latest?.[0]?.trade_date;
+  if (!day) return;
+  const { data: bars, error: barsErr } = await sb
+    .from("eq_eod")
+    .select("symbol, exchange, trade_date, prev_close, open, high, low, close, volume")
+    .eq("trade_date", day)
+    .in("symbol", stale.map((row: { symbol: string }) => row.symbol));
+  if (barsErr) { console.error("exchange fallback read failed:", barsErr.message); return; }
+
+  // NSE's close where it has one; BSE otherwise - InvITs such as IndiGrid are only
+  // in the BSE file this table loads.
+  const bySymbol = new Map<string, ExchangeBar & { exchange: string }>();
+  for (const bar of (bars ?? []) as (ExchangeBar & { exchange: string })[]) {
+    const held = bySymbol.get(bar.symbol);
+    if (!held || (held.exchange !== "NSE" && bar.exchange === "NSE")) bySymbol.set(bar.symbol, bar);
+  }
+  const rows = [...bySymbol.values()].flatMap(({ exchange: _exchange, ...bar }) => exchangeCloseRow(bar) ?? []);
+  // UPDATE, not upsert: these rows exist, and an upsert's insert half fails the
+  // NOT NULL name/sector columns a partial quote does not carry.
+  const filled: string[] = [];
+  const meta = new Map(NSE_SYMBOLS.map((s) => [s.symbol, { name: s.name, sector: s.sector }]));
+  for (const { symbol, ...quote } of rows) {
+    const { error } = await sb.from("screener_stocks").update({ ...quote, ...meta.get(symbol as string) }).eq("symbol", symbol as string);
+    if (error) console.error(`exchange fallback update failed for ${symbol}:`, error.message);
+    else filled.push(symbol as string);
+  }
+  if (filled.length) console.log(`[exchange-fallback] ${filled.length} stale quotes filled from the exchange close of ${day}: ${filled.join(", ")}`);
+}
+
+/**
+ * Re-quote the whole universe from Yahoo and upsert it. Takes ~35s for ~246
+ * symbols, so visitors are never made to wait for it (see the handler).
+ */
+async function refreshFromYahoo(sb: ReturnType<typeof createClient>): Promise<void> {
+  console.log(`Fetching ${NSE_SYMBOLS.length} stocks from Yahoo Finance...`);
+  const { crumb, cookie } = await getYahooCrumb();
+  const stockData = await processBatch(NSE_SYMBOLS, crumb, cookie, 5, 500);
+  console.log(`Got data for ${stockData.length} stocks`);
+
+  if (stockData.length > 0) {
+    // Group rows by shape before upserting. buildStockRow omits price,
+    // change, change_pct, pe, high_52, low_52, volume, day_high, day_low,
+    // open_price, prev_close and market_cap individually whenever Yahoo's
+    // quote had no usable value for that field this run (see
+    // ../_shared/screener-row.ts). Rows that omit different columns must
+    // never share a batch: PostgREST's bulk upsert derives one fixed
+    // column list per call, so mixing shapes would either error or fill
+    // a "missing" row's omitted column with NULL — overwriting whatever
+    // good value is already stored (the MCDOWELL/ZOMATO price-stuck-at-0
+    // defect this grouping exists to close). groupRowsByShape buckets by
+    // the exact key set each row carries, so every call in a batch
+    // references only the columns every row in it actually has.
+    const shapeGroups = groupRowsByShape(stockData);
+    const incomplete = stockData.filter(row =>
+      !["price", "change", "change_pct", "pe", "high_52", "low_52", "volume",
+        "day_high", "day_low", "open_price", "prev_close", "market_cap"]
+        .every(col => col in row)
+    );
+    if (incomplete.length > 0) {
+      console.warn(
+        `[quote-fields] ${incomplete.length}/${stockData.length} symbols had one or more unusable quote fields from Yahoo this run — existing stored values preserved for those columns: ${incomplete.map(r => r.symbol).join(", ")}`
+      );
+    }
+
+    for (const rows of shapeGroups) {
+      const shapeLabel = Object.keys(rows[0]).sort().join(",");
+      for (let i = 0; i < rows.length; i += 50) {
+        const batch = rows.slice(i, i + 50);
+        // postgrest-js resolves with an { error } object rather than
+        // throwing on failure — check it explicitly on every write.
+        const { error } = await sb
+          .from("screener_stocks")
+          .upsert(batch, { onConflict: "symbol" });
+        if (error) console.error(`Upsert error (shape ${shapeLabel}, batch starting at ${i}):`, error.message);
+      }
+    }
+  }
+  await fillFromExchange(sb);
+}
+
+/** One refresh at a time per worker; concurrent stale requests share it. */
+let inFlight: Promise<void> | null = null;
+
+declare const EdgeRuntime: { waitUntil(promise: Promise<unknown>): void } | undefined;
+
+function refreshInBackground(sb: ReturnType<typeof createClient>): void {
+  if (inFlight) return;
+  inFlight = refreshFromYahoo(sb)
+    .catch((e) => console.error("background refresh failed:", (e as Error).message))
+    .finally(() => { inFlight = null; });
+  // Keeps the worker alive until the refresh lands, after the response is sent.
+  if (typeof EdgeRuntime !== "undefined") EdgeRuntime.waitUntil(inFlight);
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -575,51 +689,14 @@ Deno.serve(async (req) => {
       }
     }
 
-    if (!isFresh || forceRefresh) {
-      console.log(`Fetching ${NSE_SYMBOLS.length} stocks from Yahoo Finance...`);
-      const { crumb, cookie } = await getYahooCrumb();
-      const stockData = await processBatch(NSE_SYMBOLS, crumb, cookie, 5, 500);
-      console.log(`Got data for ${stockData.length} stocks`);
-
-      if (stockData.length > 0) {
-        // Group rows by shape before upserting. buildStockRow omits price,
-        // change, change_pct, pe, high_52, low_52, volume, day_high, day_low,
-        // open_price, prev_close and market_cap individually whenever Yahoo's
-        // quote had no usable value for that field this run (see
-        // ../_shared/screener-row.ts). Rows that omit different columns must
-        // never share a batch: PostgREST's bulk upsert derives one fixed
-        // column list per call, so mixing shapes would either error or fill
-        // a "missing" row's omitted column with NULL — overwriting whatever
-        // good value is already stored (the MCDOWELL/ZOMATO price-stuck-at-0
-        // defect this grouping exists to close). groupRowsByShape buckets by
-        // the exact key set each row carries, so every call in a batch
-        // references only the columns every row in it actually has.
-        const shapeGroups = groupRowsByShape(stockData);
-        const incomplete = stockData.filter(row =>
-          !["price", "change", "change_pct", "pe", "high_52", "low_52", "volume",
-            "day_high", "day_low", "open_price", "prev_close", "market_cap"]
-            .every(col => col in row)
-        );
-        if (incomplete.length > 0) {
-          console.warn(
-            `[quote-fields] ${incomplete.length}/${stockData.length} symbols had one or more unusable quote fields from Yahoo this run — existing stored values preserved for those columns: ${incomplete.map(r => r.symbol).join(", ")}`
-          );
-        }
-
-        for (const rows of shapeGroups) {
-          const shapeLabel = Object.keys(rows[0]).sort().join(",");
-          for (let i = 0; i < rows.length; i += 50) {
-            const batch = rows.slice(i, i + 50);
-            // postgrest-js resolves with an { error } object rather than
-            // throwing on failure — check it explicitly on every write.
-            const { error } = await sb
-              .from("screener_stocks")
-              .upsert(batch, { onConflict: "symbol" });
-            if (error) console.error(`Upsert error (shape ${shapeLabel}, batch starting at ${i}):`, error.message);
-          }
-        }
-      }
-    }
+    // Stale-while-revalidate. A visitor used to wait ~35s whenever the stored
+    // quotes were over five minutes old, because the whole universe was
+    // re-quoted inside their request. Now they get the stored rows at once and
+    // the refresh runs behind the response. Only an explicit refresh, or an
+    // empty table with nothing to serve, waits for Yahoo.
+    const refreshedNow = forceRefresh || !lastUpdate;
+    if (refreshedNow) await refreshFromYahoo(sb);
+    else if (!isFresh) refreshInBackground(sb);
 
     const { data: stocks, error } = await sb
       .from("screener_stocks")
@@ -632,7 +709,8 @@ Deno.serve(async (req) => {
       success: true,
       stocks: stocks || [],
       count: stocks?.length || 0,
-      cached: isFresh && !forceRefresh,
+      cached: !refreshedNow,
+      refreshing: !refreshedNow && !isFresh,
       updated_at: stocks?.[0]?.updated_at || null,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

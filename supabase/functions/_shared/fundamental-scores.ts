@@ -131,6 +131,33 @@ const daysBetween = (later: string, earlier: string) =>
   (Date.parse(`${later}T00:00:00Z`) - Date.parse(`${earlier}T00:00:00Z`)) / 86_400_000;
 
 /**
+ * One year of income ending on `periodEnd`: the four quarters that close inside
+ * that year, summed. The income tables hold QUARTERS, and a ratio against a
+ * year (EV/sales, anything beside annual cash flow) read one quarter as the
+ * year - EV/sales came out four times too high. A missing quarter makes the
+ * year unknown rather than three-quarters of one, and a figure absent in any
+ * quarter stays null in the sum.
+ */
+export function trailingYear(income: IncomePeriod[], periodEnd: string): IncomePeriod | null {
+  const quarters = income.filter((row) => {
+    const age = daysBetween(periodEnd, row.period_end);
+    return age >= 0 && age < 330;
+  });
+  const distinct = new Map(quarters.map((row) => [row.period_end, row]));
+  if (!distinct.has(periodEnd) || distinct.size !== 4) return null;
+  const rows = [...distinct.values()];
+  const sum = (key: "revenue" | "total_income" | "total_expenses" | "profit_after_tax") =>
+    rows.every((row) => finite(row[key])) ? rows.reduce((total, row) => total + (row[key] as number), 0) : null;
+  return {
+    period_end: periodEnd,
+    revenue: sum("revenue"),
+    total_income: sum("total_income"),
+    total_expenses: sum("total_expenses"),
+    profit_after_tax: sum("profit_after_tax"),
+  };
+}
+
+/**
  * The comparison period for a year-on-year test: the aligned period closest to
  * twelve months before `latest`, within a tolerance that absorbs a filing
  * landing a few weeks either side of its anniversary.
