@@ -11,7 +11,7 @@ const COOKIE_WOBBLE = {
   initial: { rotate: 0 },
   animate: { rotate: [0, -14, 10, -6, 0] },
   transition: { duration: DURATION.ambient, delay: DURATION.base, ease: EASE_OUT },
-} as const;
+};
 
 const DETAILS = {
   initial: { opacity: 0, height: 0 },
@@ -171,12 +171,12 @@ const CookieConsent = () => {
                 <Cookie className="h-[18px] w-[18px]" />
               </motion.span>
               <div className="min-w-0">
-                <h2
+                <p
                   id={titleId}
                   className="text-[0.9375rem] font-semibold leading-snug tracking-[-0.01em] text-foreground"
                 >
                   {current ? "Your cookie settings" : "We value your privacy"}
-                </h2>
+                </p>
                 <p
                   id={descriptionId}
                   className="mt-1 text-[0.8125rem] leading-relaxed text-muted-foreground"

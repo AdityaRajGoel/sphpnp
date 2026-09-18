@@ -23,8 +23,8 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ["Open Sans", "sans-serif"],
-        heading: ["Montserrat", "sans-serif"],
+        sans: ["Open Sans Variable", "Open Sans", "sans-serif"],
+        heading: ["Montserrat Variable", "Montserrat", "sans-serif"],
       },
       colors: {
         border: "hsl(var(--border))",

@@ -204,11 +204,11 @@
 
   body {
     @apply bg-background text-foreground font-sans;
-    font-family: 'Open Sans', system-ui, -apple-system, sans-serif;
+    font-family: 'Open Sans Variable', 'Open Sans', system-ui, -apple-system, sans-serif;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Montserrat', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-family: 'Montserrat Variable', 'Montserrat', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     font-display: swap;
   }
 

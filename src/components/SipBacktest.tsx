@@ -65,7 +65,7 @@ export default function SipBacktest() {
         <div className="grid gap-3 sm:grid-cols-3">
           <label className="text-sm">
             <span className="mb-1 block font-medium text-muted-foreground">Fund</span>
-            <Select value={scheme ?? undefined} onValueChange={setCode} disabled={!funds.data?.length}>
+            <Select value={scheme ?? ""} onValueChange={setCode} disabled={!funds.data?.length}>
               <SelectTrigger aria-label="Fund"><SelectValue placeholder={funds.isLoading ? "Loading funds…" : "Choose a fund"} /></SelectTrigger>
               <SelectContent>{(funds.data ?? []).map((f) => <SelectItem key={f.scheme_code} value={f.scheme_code}>{f.scheme_name}</SelectItem>)}</SelectContent>
             </Select>

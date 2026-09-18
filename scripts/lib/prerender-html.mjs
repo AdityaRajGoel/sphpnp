@@ -10,9 +10,9 @@
  *    asked the browser to fetch scripts from localhost - blocked by the CSP and
  *    logged as console errors on every page (Lighthouse, Sept 2026).
  *
- *  - index.html loads Google Fonts non-blocking: rel="preload" with an onload
- *    that flips it to rel="stylesheet". The flip happens during capture, so the
- *    written HTML contained a render-blocking stylesheet (~0.9s on mobile).
+ *  - index.html preloads the homepage hero image, and every route is captured
+ *    from that same shell. Only "/" renders the hero, so on every other page the
+ *    preload was a wasted high-priority download (and a console warning).
  */
 
 /** Makes any URL on the capture server's origin relative to the site root. */
@@ -21,16 +21,14 @@ export function stripCaptureOrigin(html, port) {
   return html.replace(origin, "");
 }
 
-/** Turns the fonts stylesheet the onload handler flipped back into its non-blocking preload. */
-export function restoreNonBlockingFonts(html) {
-  return html.replace(/<link\b[^>]*>/g, (tag) => {
-    if (!/fonts\.googleapis\.com/.test(tag) || !/\bas="style"/.test(tag) || !/\bonload=/.test(tag)) return tag;
-    return tag.replace(/\brel="stylesheet"/, 'rel="preload"');
-  });
+/** Removes the hero image preload from routes that do not render the hero. */
+export function dropHeroPreload(html, route) {
+  if (route === "/") return html;
+  return html.replace(/<link\b[^>]*\brel="preload"[^>]*href="\/hero-bg\.webp"[^>]*>/g, "");
 }
 
-export function cleanCapturedHtml(html, port) {
-  return restoreNonBlockingFonts(stripCaptureOrigin(html, port));
+export function cleanCapturedHtml(html, port, route) {
+  return dropHeroPreload(stripCaptureOrigin(html, port), route);
 }
 
 export const SITE_ORIGIN = "https://www.sphpnp.com";

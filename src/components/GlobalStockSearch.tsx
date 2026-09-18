@@ -267,7 +267,7 @@ const GlobalStockSearch = ({ className }: Props) => {
               )}
               {exchangeResults.map(stock => (
                 <button
-                  key={stock.yahoo}
+                  key={stock.yahoo ?? stock.symbol}
                   className="w-full px-4 py-3 flex items-center justify-between hover:bg-muted/50 transition-colors text-left border-b border-border/30 last:border-0"
                   onClick={() => handleSelect(stock, true)}
                 >
@@ -275,7 +275,7 @@ const GlobalStockSearch = ({ className }: Props) => {
                     <div className="flex items-center gap-2">
                       <span className="font-semibold text-sm text-foreground">{stock.symbol}</span>
                       <Badge variant="outline" className="text-[10px] h-4 px-1 leading-none uppercase">
-                        {stock.yahoo.split('.')[1]}
+                        {stock.yahoo?.split('.')[1] ?? "NSE"}
                       </Badge>
                     </div>
                     <div className="text-xs text-muted-foreground">{stock.name}</div>

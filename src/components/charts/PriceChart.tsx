@@ -128,7 +128,7 @@ const PriceChart = ({
       layout: {
         background: { color: "transparent" },
         textColor: c.text,
-        fontFamily: "'Open Sans', system-ui, sans-serif",
+        fontFamily: "'Open Sans Variable', 'Open Sans', system-ui, sans-serif",
         attributionLogo: false,
       },
       grid: {

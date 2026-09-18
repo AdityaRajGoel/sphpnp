@@ -144,7 +144,7 @@ const InvestmentProducts = () => {
                       <div className="-mx-4 -mt-4 mb-3 overflow-hidden border-b border-border/50 bg-white md:-mx-5 md:-mt-5" aria-hidden="true">
                         <Illustration
                           slug={p.art}
-                          alt=""
+                          alt={`${p.title} illustration`}
                           sizes="(min-width: 1024px) 280px, 50vw"
                           className="h-24 w-full object-cover transition-transform duration-slow ease-out group-hover:scale-110 sm:h-28 md:h-32"
                         />

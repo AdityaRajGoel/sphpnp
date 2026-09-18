@@ -243,7 +243,7 @@ async function captureOnce(browser, port, route) {
       )
       .catch(() => {});
 
-    const html = cleanCapturedHtml(await page.content(), port);
+    const html = cleanCapturedHtml(await page.content(), port, route);
     assertHeadCaptured(route, html, { genericTitle: GENERIC_TITLE, checkCanonical });
     if (route.startsWith('/stock/')) {
       assertStockPageCaptured(route, html);

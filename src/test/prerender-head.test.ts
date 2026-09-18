@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { assertHeadCaptured, expectedCanonical } from "../../scripts/lib/prerender-html.mjs";
 
-const GENERIC = "Best Stock Broker in Panipat | Shri Parasram Holdings Panipat";
+const GENERIC = "Best Stock Broker in Panipat | Shri Parasram Holdings";
 
 function page(title: string, canonical?: string) {
   const link = canonical ? `<link data-rh="true" rel="canonical" href="${canonical}">` : "";

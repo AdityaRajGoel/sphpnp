@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { cleanCapturedHtml, restoreNonBlockingFonts, stripCaptureOrigin } from "../../scripts/lib/prerender-html.mjs";
+import { cleanCapturedHtml, dropHeroPreload, stripCaptureOrigin } from "../../scripts/lib/prerender-html.mjs";
 
 describe("stripCaptureOrigin", () => {
   it("makes capture-server URLs root-relative and leaves real origins alone", () => {
@@ -12,25 +12,21 @@ describe("stripCaptureOrigin", () => {
   });
 });
 
-describe("restoreNonBlockingFonts", () => {
-  const flipped = '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat&display=swap" as="style" onload="this.onload=null;this.rel=\'stylesheet\'">';
+describe("dropHeroPreload", () => {
+  const preload = '<link rel="preload" href="/hero-bg.webp" as="image" type="image/webp" fetchpriority="high">';
 
-  it("turns the flipped fonts link back into a preload", () => {
-    expect(restoreNonBlockingFonts(flipped)).toContain('rel="preload"');
-    expect(restoreNonBlockingFonts(flipped)).not.toMatch(/rel="stylesheet"\s/);
+  it("removes the hero image preload from pages that have no hero", () => {
+    expect(dropHeroPreload(`<head>${preload}<link rel="icon" href="/favicon.ico"></head>`, "/about")).toBe('<head><link rel="icon" href="/favicon.ico"></head>');
   });
 
-  it("leaves the noscript fallback and unrelated stylesheets untouched", () => {
-    const noscript = '<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat"></noscript>';
-    const appCss = '<link rel="stylesheet" href="/assets/index.css">';
-    expect(restoreNonBlockingFonts(noscript)).toBe(noscript);
-    expect(restoreNonBlockingFonts(appCss)).toBe(appCss);
+  it("keeps it on the homepage, where the hero is the LCP image", () => {
+    expect(dropHeroPreload(preload, "/")).toBe(preload);
   });
 });
 
 describe("cleanCapturedHtml", () => {
   it("applies both fixes", () => {
-    const html = '<link rel="modulepreload" href="http://localhost:9/assets/a.js"><link rel="stylesheet" href="https://fonts.googleapis.com/css2" as="style" onload="x">';
-    expect(cleanCapturedHtml(html, 9)).toBe('<link rel="modulepreload" href="/assets/a.js"><link rel="preload" href="https://fonts.googleapis.com/css2" as="style" onload="x">');
+    const html = '<link rel="modulepreload" href="http://localhost:9/assets/a.js"><link rel="preload" href="/hero-bg.webp" as="image">';
+    expect(cleanCapturedHtml(html, 9, "/ipo")).toBe('<link rel="modulepreload" href="/assets/a.js">');
   });
 });

@@ -22,8 +22,13 @@ ERR='error|exception|fatal|panic|traceback|unhandled|killed|oom|refused|timed ou
 for name in $(docker ps -a --format '{{.Names}}' | grep -E '^(supabase|realtime|sphpnp-tools)'); do
   out="$ROOT/containers/$DAY/$name.log.gz"
   docker logs --since "$SINCE" --until "$UNTIL" --timestamps "$name" 2>&1 | gzip -9 > "$out"
-  # Error lines, minus routine noise (health probes, expected 401s on locked functions).
-  zcat "$out" | grep -iE "$ERR" | grep -viE 'healthcheck|x-sync-secret|Unauthorized|401' \
+  # Error lines, minus routine noise: health probes, expected 401s on locked functions,
+  # Gatus logging passing checks ("success=true; errors=0"), access-log lines that
+  # answered 2xx/3xx but mention "error" in the URL, clients hanging up mid-response,
+  # and Supavisor's scheduler monitor (its messages carry "timeout:"). Those were ~95%
+  # of the ~4,000 lines a day and buried the real ones.
+  zcat "$out" | grep -iE "$ERR" \
+    | grep -viE 'healthcheck|x-sync-secret|Unauthorized|401|success=true|" [23][0-9]{2} |connection reset by peer|broken pipe|ErlSysMon' \
     | sed "s/^/[$name] /" | cut -c1-400 >> "$DIGEST"
 done
 

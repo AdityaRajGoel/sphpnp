@@ -11,17 +11,15 @@
        (SEOHead.tsx) and baked into the prerendered HTML. Do NOT add static
        og:/twitter: tags here - they duplicate the Helmet tags and first-tag-wins
        parsers (Facebook/LinkedIn) would read the wrong values. -->
-  <title>Best Stock Broker in Panipat | Shri Parasram Holdings Panipat</title>
+  <title>Best Stock Broker in Panipat | Shri Parasram Holdings</title>
   <link rel="icon" type="image/x-icon" href="/favicon.ico" />
   <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
   <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
   <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+  <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="Parasram" />
-  <!-- Google Fonts: preconnect for speed, then non-blocking stylesheet -->
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="preconnect" href="https://zbkjbbujsdlpujotgltm.supabase.co" crossorigin />
   <meta http-equiv="X-Content-Type-Options" content="nosniff" />
   <meta http-equiv="X-XSS-Protection" content="1; mode=block" />
@@ -31,14 +29,7 @@
        downloaded the same image twice on every visit, and the splash logo was
        competing with it at high priority. -->
   <link rel="preload" href="/hero-bg.webp" as="image" type="image/webp" fetchpriority="high" />  <!-- hero-*.webm/mp4 load via the Hero component after mount; eager preload is not needed and hurts LCP -->
-  <!-- Font loading -->
-  <link rel="preload"
-    href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Open+Sans:wght@400;500;600&display=swap"
-    as="style" onload="this.onload=null;this.rel='stylesheet'" />
-  <noscript>
-    <link rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Open+Sans:wght@400;500;600&display=swap" />
-  </noscript>
+  <!-- Fonts are self-hosted (@fontsource-variable, imported in src/main.tsx). -->
   <!-- Critical inline CSS to avoid render-blocking -->
   <style>
     :root {
@@ -57,7 +48,7 @@
 
     body {
       margin: 0;
-      font-family: 'Open Sans', system-ui, -apple-system, sans-serif;
+      font-family: 'Open Sans Variable', 'Open Sans', system-ui, -apple-system, sans-serif;
       background: hsl(var(--background));
       color: hsl(var(--foreground))
     }
