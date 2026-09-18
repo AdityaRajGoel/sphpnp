@@ -125,12 +125,13 @@ services:
     environment:
       DATABASE_URL: ${PGHERO_DATABASE_URL}
       RAILS_LOG_TO_STDOUT: "true"
-      # Puma defaults to a cluster of workers, which cost ~120 MB each; one person
-      # opening a dashboard occasionally needs exactly one. MALLOC_ARENA_MAX stops
-      # glibc handing every thread its own arena, the usual reason a small Ruby app
-      # sits far above its live heap.
-      WEB_CONCURRENCY: "1"
-      RAILS_MAX_THREADS: "2"
+      # The image's config/puma.rb defaults to 3 forked workers x 16 threads, which
+      # pinned the container at its 256 MB limit. PUMA_WORKERS=0 is Puma's single
+      # mode - one process, no forks - plenty for one person opening a dashboard.
+      # (It reads PUMA_WORKERS / MAX_THREADS, not WEB_CONCURRENCY / RAILS_MAX_THREADS.)
+      # MALLOC_ARENA_MAX stops glibc giving every thread its own arena.
+      PUMA_WORKERS: "0"
+      MAX_THREADS: "4"
       MALLOC_ARENA_MAX: "2"
       # No PgHero login: Authelia guards the port.
       PGHERO_TIME_ZONE: Asia/Kolkata

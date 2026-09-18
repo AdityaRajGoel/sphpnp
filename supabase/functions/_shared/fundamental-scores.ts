@@ -107,8 +107,13 @@ export function alignPeriods(
   balance: BalancePeriod[],
   cashflow: CashflowPeriod[],
 ): AlignedPeriod[] {
-  const balanceByDate = new Map(balance.map((row) => [row.period_end, row]));
-  const cashflowByDate = new Map(cashflow.map((row) => [row.period_end, row]));
+  // A dated row with no figures is not that period's statement. Yahoo writes one
+  // for every recent quarter it has no numbers for; counted as real, the empty
+  // newest quarter became "latest" and nulled every ratio for 234 of 236 stocks.
+  const hasFigures = (row: object) =>
+    Object.entries(row).some(([key, value]) => key !== "period_end" && finite(value as number | null));
+  const balanceByDate = new Map(balance.filter(hasFigures).map((row) => [row.period_end, row]));
+  const cashflowByDate = new Map(cashflow.filter(hasFigures).map((row) => [row.period_end, row]));
 
   return income
     .filter((row) => balanceByDate.has(row.period_end))

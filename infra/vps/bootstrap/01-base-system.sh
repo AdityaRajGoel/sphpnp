@@ -71,5 +71,20 @@ EOF
 
 systemctl enable --now chrony auditd sysstat unattended-upgrades
 
+# Resolve our own hostnames locally. Every name here is served by this machine, yet
+# Gatus, Homepage and the jobs looked them up through Contabo's resolvers, and a
+# dropped query cost a 5s client retry: 42 of 49 failed "Home page" checks were exactly
+# that, not a slow site. Public DNS is still checked from outside by the GitHub
+# vps-health workflow. cloud-init rewrites /etc/hosts at boot, so the template too.
+PUBLIC_IP=$(curl -4 -s https://api.ipify.org || true)
+if [ -n "$PUBLIC_IP" ]; then
+  line="$PUBLIC_IP www.sphpnp.com sphpnp.com api.sphpnp.com staging.sphpnp.com admin.sphpnp.com"
+  for f in /etc/hosts /etc/cloud/templates/hosts.debian.tmpl; do
+    [ -f "$f" ] || continue
+    sed -i '/ www\.sphpnp\.com /d' "$f"
+    printf '%s\n' "$line" >> "$f"
+  done
+fi
+
 echo "01-base-system done: $(hostname), $(timedatectl show -p Timezone --value), swap $(swapon --show --noheadings | awk '{print $3}')"
 [ -f /var/run/reboot-required ] && echo "NOTE: reboot required to load updated kernel" || true

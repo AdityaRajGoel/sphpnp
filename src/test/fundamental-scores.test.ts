@@ -255,6 +255,25 @@ describe("period alignment", () => {
     expect(aligned[0].balance.total_assets).toBe(2000);
   });
 
+  it("skips a statement row that carries no figures", () => {
+    // Yahoo writes a dated row for every recent quarter even when it has no
+    // numbers for it. Treated as real, that empty June balance sheet became the
+    // "latest" period and every ratio came out null (234 of 236 stocks).
+    const income = [
+      { period_end: "2026-06-30", revenue: 300, total_income: 310, total_expenses: 250, profit_after_tax: 45 },
+      { period_end: "2026-03-31", revenue: 1200, total_income: 1250, total_expenses: 1000, profit_after_tax: 180 },
+    ];
+    const balance = [{ period_end: "2026-06-30", total_assets: null, total_equity: null }, ...improvingBalance];
+    const cashflow = [
+      { period_end: "2026-03-31", operating_cf: null, capex: null, free_cash_flow: null },
+    ];
+
+    const aligned = alignPeriods(income, balance, cashflow);
+
+    expect(aligned[0].period_end).toBe("2026-03-31");
+    expect(aligned[0].cashflow).toBeNull();
+  });
+
   it("scores the aligned pair and reports both dates", () => {
     const result = piotroskiScore(improvingIncome, improvingBalance, improvingCashflow)!;
 

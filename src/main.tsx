@@ -10,12 +10,14 @@ import { applyMotionPreference, readMotionPreference } from "@/lib/motion-prefer
 import { installClientErrorReporting } from "@/lib/client-errors";
 import { installChunkReload } from "@/lib/chunk-reload";
 import { installDomMutationGuard } from "@/lib/dom-mutation-guard";
+import { installAnalyticsConsent } from "@/lib/analytics-consent";
 
 // Uncaught browser errors are logged on the VPS itself (src/lib/client-errors.ts):
 // live site only, never the prerender, local dev or staging.
 installClientErrorReporting();
 installChunkReload();
 installDomMutationGuard();
+installAnalyticsConsent();
 
 // Register Service Worker for PWA
 registerSW({ immediate: true });
