@@ -52,6 +52,7 @@ const openDialogTitles = (page: import("@playwright/test").Page) =>
       .map((d) =>
         (
           d.getAttribute("aria-label") ||
+          document.getElementById(d.getAttribute("aria-labelledby") ?? "")?.textContent ||
           d.querySelector("h2, h3")?.textContent ||
           "untitled"
         )

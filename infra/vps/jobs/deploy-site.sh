@@ -43,9 +43,14 @@ cp -a "$DIST" "$REL"
 # (browser cache, the PWA service worker, or a tab left open) lazy-loads chunks by
 # their old hashed names; without these they 404 and parts of the page never load.
 # Names are content hashes, so nothing in the new build is overwritten (-n).
+# Only chunks built in the last CARRY_DAYS come along: each release carries its
+# predecessor's carried files too, so without a cutoff the folder only ever grows.
+# HTML is cached for at most a day, so a week covers old tabs and service workers.
+CARRY_DAYS=7
 prev=$(readlink -f "$ROOT/current" 2>/dev/null || true)
 if [ -n "$prev" ] && [ -d "$prev/assets" ]; then
-  cp -a --update=none "$prev/assets/." "$REL/assets/"
+  (cd "$prev/assets" && find . -type f -mtime -"$CARRY_DAYS" -print0 \
+    | xargs -0 -r cp -a --update=none --parents -t "$REL/assets/")
 fi
 
 # Precompress once here so nginx serves .br/.gz files (brotli_static, gzip_static)

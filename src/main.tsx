@@ -8,10 +8,14 @@ import "@fontsource-variable/open-sans";
 import "./index.css";
 import { applyMotionPreference, readMotionPreference } from "@/lib/motion-preference";
 import { installClientErrorReporting } from "@/lib/client-errors";
+import { installChunkReload } from "@/lib/chunk-reload";
+import { installDomMutationGuard } from "@/lib/dom-mutation-guard";
 
 // Uncaught browser errors are logged on the VPS itself (src/lib/client-errors.ts):
 // live site only, never the prerender, local dev or staging.
 installClientErrorReporting();
+installChunkReload();
+installDomMutationGuard();
 
 // Register Service Worker for PWA
 registerSW({ immediate: true });
