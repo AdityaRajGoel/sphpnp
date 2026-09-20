@@ -19,7 +19,7 @@ const ServicesPage = () => {
       <div className="min-h-screen bg-background">
       <SEOHead
         title="Stock Broking Services in Panipat | Parasram India"
-        description="Equity trading, mutual funds, SIP, IPO applications, F&O, commodities and unlisted shares in Panipat. SEBI-registered broker serving investors since 1970, with 10L+ happy clients."
+        description="Equity trading, mutual funds, SIP, IPO applications, F&O, commodities and unlisted shares in Panipat, from a SEBI-registered broker since 1970."
         breadcrumbs={[
           { name: "Home", url: "/" },
           { name: "Services" },

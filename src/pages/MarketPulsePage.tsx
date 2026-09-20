@@ -38,8 +38,8 @@ export default function MarketPulsePage() {
   return (
     <PageTransition>
       <SEOHead
-        title="Market Pulse: Nifty P/E, FII Positions, PCR, FPI Flows & Deals"
-        description="Is the market expensive? Nifty and sector index P/E, P/B and dividend yield against history, FII and DII F&O positions, option-chain PCR and max pain, NSDL FPI flows, CPI and IIP, bulk and block deals, and the ASM/GSM lists."
+        title="Market Pulse: Nifty P/E, FII Positions & PCR | Parasram"
+        description="Is the market expensive? Nifty and sector P/E against history, FII and DII F&O positions, option-chain PCR and max pain, FPI flows and bulk deals."
         breadcrumbs={breadcrumbs}
       />
       <ScrollProgress />

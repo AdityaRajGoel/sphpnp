@@ -380,7 +380,7 @@ const StockScreenerPage = () => {
     <PageTransition>
     <div className="min-h-screen bg-background">
       <SEOHead 
-        title="Stock Screener | Live NSE BSE Stocks | Parasram India Panipat"
+        title="Stock Screener: Live NSE &amp; BSE Stocks | Parasram India"
         description="Screen and filter live Indian stocks by sector, market cap, P/E ratio, 52-week high/low range. Free real-time stock screener by Parasram India Panipat."
         breadcrumbs={[
           { name: "Home", url: "/" },

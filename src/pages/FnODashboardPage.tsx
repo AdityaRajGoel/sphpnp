@@ -226,7 +226,7 @@ const FnODashboardPage = () => {
     <PageTransition>
     <div className="min-h-screen bg-background">
       <SEOHead 
-        title="F&O Dashboard | Options Chain, PCR & Max Pain | Parasram India"
+        title="F&O Dashboard: Option Chain, PCR & Max Pain | Parasram"
         description="Live F&O dashboard with options chain, Put-Call ratio and max pain for NIFTY, BANKNIFTY and FINNIFTY. Free real-time open interest data. Parasram India Panipat."
         breadcrumbs={[
           { name: "Home", url: "/" },

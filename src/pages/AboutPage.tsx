@@ -27,7 +27,7 @@ const AboutPage = () => {
       <div className="min-h-screen bg-background">
       <SEOHead
         title="About Parasram India Panipat | 50+ Years Legacy Stock Broker"
-        description="Parasram India - a SEBI-registered stock broker serving investors since 1970, with a Panipat branch since 1997. NSE, BSE & MCX member. Open your free Demat account today."
+        description="Parasram India: a SEBI-registered stock broker serving investors since 1970, with a Panipat branch since 1997. NSE, BSE and MCX member."
         breadcrumbs={[
           { name: "Home", url: "/" },
           { name: "About Us" },

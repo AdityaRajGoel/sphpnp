@@ -131,7 +131,7 @@ export default function IpoPipelinePage() {
       <ScrollProgress />
       <SEOHead
         title="IPO Pipeline: Companies That Have Filed a DRHP with SEBI"
-        description="Upcoming IPOs before they open: every company that has filed a draft or red herring prospectus with SEBI, with links to the filings. Information only; not investment advice."
+        description="Upcoming IPOs before they open: every company that has filed a draft or red herring prospectus with SEBI, with links to the filings themselves."
         breadcrumbs={breadcrumbs}
       />
       <Header />

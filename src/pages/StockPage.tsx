@@ -1,4 +1,5 @@
 import { lazy, Suspense, useState } from "react";
+import { stockPageTitle } from "@/lib/seo-title";
 import { useParams } from "react-router-dom";
 import { motion } from "motion/react";
 import { Bot } from "lucide-react";
@@ -144,7 +145,7 @@ export default function StockPage() {
     <PageTransition>
       <ScrollProgress />
       <SEOHead
-        title={`${title} | Shri Parasram Holdings Panipat`}
+        title={stockPageTitle(s.header?.name ?? null, symbol?.toUpperCase() ?? "")}
         description={
           s.header
             ? `Quarterly results, profit & loss, balance sheet, cash flow, ratios and shareholding for ${s.header.name} (${s.header.symbol}).`

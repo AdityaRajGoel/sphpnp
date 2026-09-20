@@ -125,7 +125,7 @@ const Week52TrackerPage = () => {
     <PageTransition>
     <div className="min-h-screen bg-background">
       <SEOHead
-        title="52-Week High Low Tracker | NSE Stocks Near Yearly Highs & Lows | Parasram India"
+        title="52-Week High Low Tracker for NSE Stocks | Parasram India"
         description="NSE stocks at and near their 52-week highs and lows, with the sectors they cluster in, one-year return, 200-day trend, RSI, delivery and volume spikes."
         breadcrumbs={[{ name: "Home", url: "/" }, { name: "52-Week High/Low Tracker" }]}
         jsonLd={{

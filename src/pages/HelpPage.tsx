@@ -163,8 +163,8 @@ export default function HelpPage() {
     <PageTransition>
       <ScrollProgress />
       <SEOHead
-        title="Help & Docs - How to Use the Research Tools | Shri Parasram Holdings"
-        description="Guide to the Parasram research terminal: Market Pulse, the stock screener and query language, stock pages, comparison, F&O, IPO tracker, calculators, watchlist and keyboard shortcuts."
+        title="Help & Docs: Using the Research Tools | Parasram India"
+        description="How to use the Parasram research terminal: Market Pulse, the stock screener and its query language, stock pages, F&O, the IPO tracker and calculators."
         canonical="https://www.sphpnp.com/help"
         faqItems={faqItems}
         breadcrumbs={[{ name: "Home", url: "https://www.sphpnp.com/" }, { name: "Help & Docs", url: "https://www.sphpnp.com/help" }]}
