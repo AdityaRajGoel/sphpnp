@@ -1,5 +1,7 @@
 import { lazy, Suspense, useState } from "react";
 import { stockPageTitle } from "@/lib/seo-title";
+import { stockDataset, stockFaqItems } from "@/lib/stock-structured-data";
+import FAQ from "@/components/FAQ";
 import { useParams } from "react-router-dom";
 import { motion } from "motion/react";
 import { Bot } from "lucide-react";
@@ -141,10 +143,16 @@ export default function StockPage() {
     ? `${s.header.name} (${s.header.symbol})`
     : symbol?.toUpperCase() ?? "Stock";
 
+  // The same questions go to the markup and to the page: FAQ markup may only
+  // describe answers a reader can see.
+  const faqItems = stockFaqItems(s.header);
+
   return (
     <PageTransition>
       <ScrollProgress />
       <SEOHead
+        faqItems={faqItems}
+        jsonLd={stockDataset(s.header) ?? undefined}
         title={stockPageTitle(s.header?.name ?? null, symbol?.toUpperCase() ?? "")}
         description={
           s.header
@@ -338,6 +346,13 @@ export default function StockPage() {
             {st.profile?.screener && <CompanyDocuments documents={st.profile.screener.documents} />}
             <StockProvenance filing={s.filing} />
           </div>
+        )}
+        {faqItems.length > 0 && (
+          <FAQ
+            title={`${s.header?.name ?? symbol?.toUpperCase() ?? "This stock"}: common questions`}
+            subtitle="Answered from the figures on this page."
+            items={faqItems.map((item) => ({ q: item.question, a: item.answer }))}
+          />
         )}
       </main>
       <WhatsAppButton />

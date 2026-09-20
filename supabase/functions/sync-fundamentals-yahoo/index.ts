@@ -239,6 +239,21 @@ Deno.serve(async (req) => {
         const currency = foreignReportingCurrency(tsJson);
         if (currency) {
           console.warn(`${symbol}: Yahoo reports in ${currency}; storing no Yahoo statements for it`);
+          // Anything this job stored for the symbol before the currency was
+          // noticed is in that currency and cannot be read as rupees: INFY's
+          // free cash flow showed as Rs 373 crore against a real ~Rs 33,000
+          // crore, and every ratio against the rupee market cap was ~90x off.
+          // Its NSE filings, which are in rupees, are left alone.
+          for (const table of ["fundamentals_balance", "fundamentals_cashflow", "fundamentals_income"]) {
+            const { error } = await supabase.from(table).delete().eq("symbol", symbol).eq("source", "yahoo");
+            if (error) console.error(`clearing ${table} for ${symbol} failed:`, error.message);
+          }
+          // The scores were computed from those rows; the next run rebuilds any
+          // that the remaining sources can still support.
+          const { error: scoreErr } = await supabase.from("stock_fundamental_scores").delete().eq("symbol", symbol);
+          if (scoreErr) console.error(`clearing scores for ${symbol} failed:`, scoreErr.message);
+          const { error: derivedErr } = await supabase.from("fundamentals_derived").update({ free_cash_flow: null }).eq("symbol", symbol);
+          if (derivedErr) console.error(`clearing derived cash flow for ${symbol} failed:`, derivedErr.message);
         } else {
           balance = parseTimeseriesBalance(tsJson);
           cashflow = parseTimeseriesCashflow(tsJson);

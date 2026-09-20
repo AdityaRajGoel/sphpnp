@@ -8,6 +8,8 @@ import PageTransition from "@/components/PageTransition";
 import ScrollProgress from "@/components/ScrollProgress";
 import WhatsAppButton from "@/components/WhatsAppButton";
 import VisibleBreadcrumbs from "@/components/VisibleBreadcrumbs";
+import FAQ from "@/components/FAQ";
+import { ipoDataset, ipoFaqItems } from "@/lib/ipo-structured-data";
 import IPOGmpChart from "@/components/ipo/IPOGmpChart";
 import IPOGmpHistoryTable from "@/components/ipo/IPOGmpHistoryTable";
 import IPOIssueDetailsCard from "@/components/ipo/IPOIssueDetailsCard";
@@ -40,7 +42,10 @@ export default function IpoDetailPage() {
     : [];
   const subscriptionMax = Math.max(1, ...subscriptions.map(([, value]) => value));
 
-  return <PageTransition><ScrollProgress /><SEOHead title={ipo ? `${ipo.name} IPO GMP, dates and details` : "IPO details"} description={ipo ? `IPO dates, price band and recorded GMP history for ${ipo.name}. Information only; not investment advice.` : "IPO details and GMP history."} noindex={!ipo} breadcrumbs={[{ name: "Home", url: "/" }, { name: "IPO Tracker", url: "/ipo" }, { name: ipo?.name ?? "IPO details" }]} /><Header />
+  // The same questions go to the markup and to the page below.
+  const faqItems = ipoFaqItems(ipo);
+
+  return <PageTransition><ScrollProgress /><SEOHead faqItems={faqItems} jsonLd={ipoDataset(ipo) ?? undefined} title={ipo ? `${ipo.name} IPO GMP, dates and details` : "IPO details"} description={ipo ? `IPO dates, price band and recorded GMP history for ${ipo.name}. Information only; not investment advice.` : "IPO details and GMP history."} noindex={!ipo} breadcrumbs={[{ name: "Home", url: "/" }, { name: "IPO Tracker", url: "/ipo" }, { name: ipo?.name ?? "IPO details" }]} /><Header />
     {/* "ready" only once the IPO has rendered: until then SEOHead is noindex, and the prerender must not capture that. */}
     <main className="container mx-auto max-w-6xl px-4 py-8 md:py-12" data-ipo-state={loading ? "loading" : error ? "error" : ipo ? "ready" : "missing"}><VisibleBreadcrumbs items={[{ name: "Home", url: "/" }, { name: "IPO Tracker", url: "/ipo" }, { name: ipo?.name ?? "IPO details" }]} />
       {loading ? <div className="space-y-5 mt-6"><div className="h-28 w-2/3 animate-pulse bg-muted rounded-xl" /><div className="h-72 animate-pulse bg-muted rounded-xl" /></div> : error ? <Message text={error} /> : !ipo ? <Message text="This IPO is not currently in our published catalogue." /> : <>
@@ -82,6 +87,13 @@ export default function IpoDetailPage() {
         <IPOPageSections sections={ipo.details?.sections ?? []} fetchedAt={ipo.details_fetched_at} />
         <section className="mt-8"><Card><CardContent className="p-5 md:p-6"><SectionTitle icon={Newspaper} title={`${ipo.name} IPO in the news`} subtitle="Recent coverage in the financial press. Headlines are the publishers' own; verify details with the RHP." />{news.length === 0 ? <p className="mt-5 text-sm text-muted-foreground">No coverage found yet.</p> : <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-5">{news.map((item) => <a key={item.url} href={item.url} target="_blank" rel="noopener noreferrer" className="min-w-0 rounded-lg border border-border p-4 hover:border-secondary/50 transition-colors"><p className="font-semibold text-sm break-words">{item.title}</p><p className="text-xs text-muted-foreground mt-2">{item.source} · {new Intl.DateTimeFormat("en-IN", { dateStyle: "medium" }).format(new Date(item.published_at))}</p></a>)}</div>}</CardContent></Card></section>
       </>}
+      {faqItems.length > 0 && (
+        <FAQ
+          title={`${ipo?.name ?? "This IPO"}: common questions`}
+          subtitle="Answered from this issue's own record."
+          items={faqItems.map((item) => ({ q: item.question, a: item.answer }))}
+        />
+      )}
     </main><WhatsAppButton /><Footer /></PageTransition>;
 }
 
