@@ -38,9 +38,14 @@ const AccordionContent = React.forwardRef<
   React.ElementRef<typeof AccordionPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof AccordionPrimitive.Content>
 >(({ className, children, ...props }, ref) => (
+  // forceMount: Radix unmounts a collapsed panel, which left every FAQ answer
+  // out of the prerendered HTML - the questions shipped, the answers did not,
+  // so FAQPage markup described text no crawler could find. Mounted here and
+  // hidden by CSS instead, which also keeps the content searchable in-page.
   <AccordionPrimitive.Content
     ref={ref}
-    className="overflow-hidden text-sm transition-colors data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down"
+    forceMount
+    className="overflow-hidden text-sm transition-colors data-[state=closed]:hidden data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down"
     {...props}
   >
     <div className={cn("pb-4 pt-0", className)}>{children}</div>
