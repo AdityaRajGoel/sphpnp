@@ -7,9 +7,10 @@ import { GLOBAL_TICKERS, type GlobalTicker } from "../../../supabase/functions/_
 import { globalMarkets, shortDate, summariseGlobal, type GlobalSummary } from "@/lib/market-data";
 import { CHART, axisTick, tooltipStyle, SectionHeading, EmptyState } from "./chart-kit";
 
-const GROUPS: GlobalTicker["group"][] = ["US", "Europe", "Asia", "Currency", "Commodity", "Crypto"];
+const GROUPS: GlobalTicker["group"][] = ["US", "Europe", "Asia", "Rates", "Currency", "Commodity", "Crypto"];
 
 const price = (v: number, unit: GlobalTicker["unit"]) =>
+  unit === "percent" ? `${v.toFixed(2)}%` :
   unit === "rupees" ? `₹${v.toFixed(2)}` : unit === "dollars" ? `$${v.toLocaleString("en-US", { maximumFractionDigits: v < 100 ? 2 : 0 })}` : v.toLocaleString("en-IN", { maximumFractionDigits: 2 });
 const pct = (v: number | null) => (v === null ? "—" : `${v >= 0 ? "+" : ""}${v.toFixed(2)}%`);
 const tone = (v: number | null) => (v === null ? "text-muted-foreground" : v >= 0 ? "text-secondary" : "text-destructive");

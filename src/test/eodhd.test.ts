@@ -33,6 +33,16 @@ describe("the free-plan budget", () => {
   });
 });
 
+describe("the US 10-year yield", () => {
+  it("is on the board, keyless", () => {
+    // EODHD's free plan carries no bond yields; this is only possible because
+    // the board reads from Yahoo's chart now.
+    const tnx = GLOBAL_TICKERS.find((t) => t.ticker === "US10Y.YIELD")!;
+    expect(tnx.yahoo).toBe("^TNX");
+    expect(tnx.unit).toBe("percent");
+  });
+});
+
 describe("FTSE from Yahoo", () => {
   it("is fetched from Yahoo's ^FTSE, under its stored key", () => {
     // EODHD returned 0 rows for FTSE.INDX every day; the stored key stays so

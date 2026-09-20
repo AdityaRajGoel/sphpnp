@@ -16,8 +16,8 @@ export const DAILY_BUDGET = 18;
 export type GlobalTicker = {
   ticker: string;
   name: string;
-  group: "US" | "Europe" | "Asia" | "Currency" | "Commodity" | "Crypto";
-  unit: "points" | "rupees" | "dollars";
+  group: "US" | "Europe" | "Asia" | "Currency" | "Commodity" | "Crypto" | "Rates";
+  unit: "points" | "rupees" | "dollars" | "percent";
   /** Fetched from Yahoo's keyless chart instead of EODHD (stored under `ticker`). */
   yahoo?: string;
 };
@@ -43,6 +43,10 @@ export const GLOBAL_TICKERS: GlobalTicker[] = [
   { ticker: "XAGUSD.FOREX", name: "Silver (per oz)", group: "Commodity", unit: "dollars" },
   { ticker: "BNO.US", name: "Brent crude (BNO ETF)", group: "Commodity", unit: "dollars", yahoo: "BNO" },
   { ticker: "BTC-USD.CC", name: "Bitcoin", group: "Crypto", unit: "dollars", yahoo: "BTC-USD" },
+  // The global rate cue an Indian desk watches before the open. Keyless, and
+  // EODHD's free plan has no bond yields at all, so this exists only because the
+  // board no longer depends on that plan.
+  { ticker: "US10Y.YIELD", name: "US 10-year Treasury yield", group: "Rates", unit: "percent", yahoo: "^TNX" },
 ];
 
 export type GlobalBar = { ticker: string; trade_date: string; open: number | null; high: number | null; low: number | null; close: number; volume: number | null };
