@@ -49,6 +49,8 @@ const formatDateRange = (ipo: IpoRow) => {
   return ipo.close_date ? `${format(ipo.open_date)} – ${format(ipo.close_date)}` : format(ipo.open_date);
 };
 
+import { forListing } from "../_shared/ipo-payload.ts";
+
 const client = () => createClient(
   Deno.env.get("SUPABASE_URL")!,
   Deno.env.get("SUPABASE_ANON_KEY")!,
@@ -102,6 +104,7 @@ Deno.serve(async (req) => {
     // a day on weekdays, so a stored status can be up to a weekend old. The
     // stored value only ever moves the answer forward (see ipo-status.ts).
     const today = istDate();
+    const single = Boolean(body.slug);
     const payload = ipos.map((ipo) => {
       const history = snapshotMap.get(ipo.id) ?? [];
       const latest = history.at(-1) ?? null;
@@ -124,7 +127,7 @@ Deno.serve(async (req) => {
         est_listing_price: latest?.est_listing_price ?? null,
         gmp_history: history,
       };
-    });
+    }).map((ipo) => forListing(ipo, single));
 
     return new Response(JSON.stringify({ success: true, ipos: payload, fetchedAt: new Date().toISOString() }), { headers: { ...cors, "Content-Type": "application/json", "Cache-Control": "public, max-age=300" } });
   } catch (error) {
