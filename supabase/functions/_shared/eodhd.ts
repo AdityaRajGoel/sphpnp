@@ -4,8 +4,10 @@
 // stocks ("Ticker Not Found") and no bond yields, so it is used for exactly
 // what NSE cannot give: world indices, currencies, metals, oil and bitcoin.
 //
-// 15 tickers a day, leaving a margin under the limit (sync-global-markets
-// also counts every call in provider_usage and stops at DAILY_BUDGET).
+// Twelve of the fifteen tickers now come from Yahoo's keyless chart instead, so
+// the key is spent only on gold and silver (EODHD stays the fallback for the
+// rest). sync-global-markets still counts every EODHD call in provider_usage
+// and stops at DAILY_BUDGET.
 //
 // Pure: no fetch.
 
@@ -21,23 +23,26 @@ export type GlobalTicker = {
 };
 
 export const GLOBAL_TICKERS: GlobalTicker[] = [
-  { ticker: "GSPC.INDX", name: "S&P 500", group: "US", unit: "points" },
-  { ticker: "IXIC.INDX", name: "Nasdaq Composite", group: "US", unit: "points" },
-  { ticker: "DJI.INDX", name: "Dow Jones", group: "US", unit: "points" },
-  { ticker: "VIX.INDX", name: "CBOE VIX", group: "US", unit: "points" },
-  // EODHD returned 0 rows for FTSE.INDX every day (checked 2026-09-17/18), so it
-  // comes from Yahoo and no longer spends a call of the plan on nothing.
+  // Yahoo's keyless chart carries every one of these, so the EODHD key is spent
+  // only where Yahoo has no equivalent. FTSE also returned 0 rows from EODHD
+  // every day (checked 2026-09-17/18). Gold and silver stay on EODHD: Yahoo has
+  // no spot series for them and its futures sit ~1.8% above spot, which would
+  // put a false step in the stored history.
+  { ticker: "GSPC.INDX", name: "S&P 500", group: "US", unit: "points", yahoo: "^GSPC" },
+  { ticker: "IXIC.INDX", name: "Nasdaq Composite", group: "US", unit: "points", yahoo: "^IXIC" },
+  { ticker: "DJI.INDX", name: "Dow Jones", group: "US", unit: "points", yahoo: "^DJI" },
+  { ticker: "VIX.INDX", name: "CBOE VIX", group: "US", unit: "points", yahoo: "^VIX" },
   { ticker: "FTSE.INDX", name: "FTSE 100", group: "Europe", unit: "points", yahoo: "^FTSE" },
-  { ticker: "GDAXI.INDX", name: "DAX", group: "Europe", unit: "points" },
-  { ticker: "N225.INDX", name: "Nikkei 225", group: "Asia", unit: "points" },
-  { ticker: "HSI.INDX", name: "Hang Seng", group: "Asia", unit: "points" },
-  { ticker: "SSEC.INDX", name: "Shanghai Composite", group: "Asia", unit: "points" },
-  { ticker: "USDINR.FOREX", name: "USD / INR", group: "Currency", unit: "rupees" },
-  { ticker: "DXY.INDX", name: "US Dollar Index", group: "Currency", unit: "points" },
+  { ticker: "GDAXI.INDX", name: "DAX", group: "Europe", unit: "points", yahoo: "^GDAXI" },
+  { ticker: "N225.INDX", name: "Nikkei 225", group: "Asia", unit: "points", yahoo: "^N225" },
+  { ticker: "HSI.INDX", name: "Hang Seng", group: "Asia", unit: "points", yahoo: "^HSI" },
+  { ticker: "SSEC.INDX", name: "Shanghai Composite", group: "Asia", unit: "points", yahoo: "000001.SS" },
+  { ticker: "USDINR.FOREX", name: "USD / INR", group: "Currency", unit: "rupees", yahoo: "INR=X" },
+  { ticker: "DXY.INDX", name: "US Dollar Index", group: "Currency", unit: "points", yahoo: "DX-Y.NYB" },
   { ticker: "XAUUSD.FOREX", name: "Gold (per oz)", group: "Commodity", unit: "dollars" },
   { ticker: "XAGUSD.FOREX", name: "Silver (per oz)", group: "Commodity", unit: "dollars" },
-  { ticker: "BNO.US", name: "Brent crude (BNO ETF)", group: "Commodity", unit: "dollars" },
-  { ticker: "BTC-USD.CC", name: "Bitcoin", group: "Crypto", unit: "dollars" },
+  { ticker: "BNO.US", name: "Brent crude (BNO ETF)", group: "Commodity", unit: "dollars", yahoo: "BNO" },
+  { ticker: "BTC-USD.CC", name: "Bitcoin", group: "Crypto", unit: "dollars", yahoo: "BTC-USD" },
 ];
 
 export type GlobalBar = { ticker: string; trade_date: string; open: number | null; high: number | null; low: number | null; close: number; volume: number | null };
