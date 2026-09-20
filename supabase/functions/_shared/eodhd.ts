@@ -85,7 +85,11 @@ export function parseYahooBars(raw: unknown, ticker: string): GlobalBar[] {
   return [...out.values()].sort((a, b) => a.trade_date.localeCompare(b.trade_date));
 }
 
-/** A year of daily bars when history is short, a month otherwise. Keyless. */
+/**
+ * Keyless daily bars: ten years when the stored history is short, a month
+ * otherwise. Yahoo charges nothing per call, so the deep history is fetched
+ * once and kept - EODHD's plan is what used to cap this at a year.
+ */
 export function yahooChartUrl(symbol: string, long: boolean): string {
-  return `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?range=${long ? "1y" : "1mo"}&interval=1d`;
+  return `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?range=${long ? "10y" : "1mo"}&interval=1d`;
 }

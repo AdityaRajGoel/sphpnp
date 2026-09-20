@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
-import { DAILY_BUDGET, GLOBAL_TICKERS, eodUrl, parseEodhdEod, parseYahooBars } from "../../supabase/functions/_shared/eodhd";
+import { DAILY_BUDGET, GLOBAL_TICKERS, eodUrl, parseEodhdEod, parseYahooBars, yahooChartUrl } from "../../supabase/functions/_shared/eodhd";
 
 /* EODHD end-of-day responses on the free plan, captured 2026-09-11. */
 
@@ -39,6 +39,12 @@ describe("FTSE from Yahoo", () => {
     // the series the site already reads simply starts filling.
     const ftse = GLOBAL_TICKERS.find((t) => t.ticker === "FTSE.INDX")!;
     expect(ftse.yahoo).toBe("^FTSE");
+  });
+
+  it("asks for ten years when the stored history is short", () => {
+    // Keyless, so deep history costs nothing and is fetched once.
+    expect(yahooChartUrl("^FTSE", true)).toContain("range=10y");
+    expect(yahooChartUrl("^FTSE", false)).toContain("range=1mo");
   });
 
   it("turns a Yahoo chart into daily bars, dropping sessions with no close", () => {

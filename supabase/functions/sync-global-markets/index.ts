@@ -28,6 +28,10 @@ Deno.serve(async (req) => {
   const token = Deno.env.get("EODHD_API_KEY");
   if (!token) return json({ error: "EODHD_API_KEY is not set" }, 500);
   const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+  // {"backfill":true} asks Yahoo for its full ten years for every ticker. The
+  // daily run only reaches that far for a ticker with little stored, so the deep
+  // history is a deliberate one-off; upserts never delete, so it is kept.
+  const backfill = (await req.json().catch(() => ({})) as { backfill?: boolean }).backfill === true;
 
   // EODHD's daily allowance resets at midnight UTC.
   const day = new Date().toISOString().slice(0, 10);
@@ -52,7 +56,7 @@ Deno.serve(async (req) => {
       // failure falls through to EODHD below rather than losing the day.
       let bars: GlobalBar[] = [];
       try {
-        const res = await fetch(yahooChartUrl(t.yahoo, (stored.get(t.ticker) ?? 0) < 150), {
+        const res = await fetch(yahooChartUrl(t.yahoo, backfill || (stored.get(t.ticker) ?? 0) < 150), {
           headers: { "User-Agent": YAHOO_UA },
           signal: AbortSignal.timeout(20_000),
         });
