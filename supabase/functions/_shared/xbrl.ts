@@ -115,8 +115,11 @@ export type IncomeStatement = {
  */
 function fact(xml: string, tags: readonly string[], contextRef: string): number | null {
   for (const tag of tags) {
+    // Both taxonomies' prefixes: results filed up to the December 2024 quarter
+    // use in-bse-fin:, the Integrated Filing regime that replaced them uses
+    // in-capmkt:. The tag name and the context stay exact.
     const re = new RegExp(
-      `<in-bse-fin:${tag}\\s+contextRef="${contextRef}"[^>]*>([-\\d.]+)<`,
+      `<(?:in-bse-fin|in-capmkt):${tag}\\s+contextRef="${contextRef}"[^>]*>([-\\d.]+)<`,
     );
     const m = re.exec(xml);
     if (!m) continue;

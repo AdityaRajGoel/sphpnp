@@ -220,7 +220,12 @@ Deno.serve(async (req) => {
       };
       // Balance-sheet measures from the latest aligned period, with a YEAR of
       // revenue behind EV/sales - one quarter's revenue printed it ~4x too high.
-      const trailing = trailingYear(data.income, latest.period_end);
+      // The year is anchored to the newest INCOME quarter, not to the aligned
+      // period: the balance sheet lands a quarter later than the income
+      // statement, and Yahoo carries only four quarters, so anchoring it to the
+      // balance date asked for a fifth quarter that does not exist. Enterprise
+      // value still uses the latest balance sheet, as it should.
+      const trailing = trailingYear(data.income, data.income[0]?.period_end ?? latest.period_end);
       const base = qualityMetrics(trailing ? [trailing] : [], [latest.balance], [], marketInputs);
 
       // Cash measures from the newest annual cash flow, each against the SAME

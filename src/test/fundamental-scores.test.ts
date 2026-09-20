@@ -473,3 +473,21 @@ describe("EV to sales", () => {
     expect(metrics.ev_to_sales).toBeCloseTo(3);
   });
 });
+
+describe("the year EV/sales is measured over", () => {
+  // Yahoo carries only the four newest quarters, and the balance sheet arrives a
+  // quarter later. Anchoring the year to the newest BALANCE date asked for a
+  // fifth quarter nobody had, so EV/sales covered 50 of 234 stocks; anchoring it
+  // to the newest income quarter uses exactly what Yahoo provides.
+  const income = ["2026-06-30", "2026-03-31", "2025-12-31", "2025-09-30"].map((period_end, i) => ({
+    period_end, revenue: 1000 - i * 10, total_income: 1000, total_expenses: 800, profit_after_tax: 100,
+  }));
+
+  it("builds the year from the newest income quarter", () => {
+    expect(trailingYear(income, income[0].period_end)!.revenue).toBe(1000 + 990 + 980 + 970);
+  });
+
+  it("cannot build it from the newest balance-sheet quarter alone", () => {
+    expect(trailingYear(income, "2026-03-31")).toBeNull();
+  });
+});

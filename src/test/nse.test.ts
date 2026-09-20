@@ -6,6 +6,7 @@ import {
   toIsoDate,
   toIsoTimestamp,
   fetchFilingRegistry,
+  fetchIntegratedFilings,
   fetchXbrl,
   fetchCorporateActions,
   classifyActions,
@@ -173,7 +174,11 @@ function baseActionRow(
   };
 }
 
-// --- nseGet retry policy, exercised via fetchFilingRegistry / fetchXbrl ---
+// --- nseGet retry policy, exercised via fetchIntegratedFilings / fetchXbrl ---
+//
+// One registry, not fetchFilingRegistry: that now asks BOTH filing registries
+// (the old endpoint stops at the December 2024 quarter), so its call count no
+// longer isolates the retry policy these tests are about.
 //
 // These assert call COUNT, not just outcome: NSE is the exchange's own
 // public endpoint, not an API sold to us, so an assertion that only checks
@@ -195,7 +200,7 @@ describe("nseGet retry policy", () => {
       .mockResolvedValueOnce(okJsonResponse([]));
     vi.stubGlobal("fetch", mockFetch);
 
-    const resultPromise = fetchFilingRegistry("RELIANCE");
+    const resultPromise = fetchIntegratedFilings("RELIANCE");
     await vi.advanceTimersByTimeAsync(3000);
     const result = await resultPromise;
 
@@ -211,7 +216,7 @@ describe("nseGet retry policy", () => {
       .mockResolvedValueOnce(errorResponse(502));
     vi.stubGlobal("fetch", mockFetch);
 
-    const resultPromise = fetchFilingRegistry("RELIANCE");
+    const resultPromise = fetchIntegratedFilings("RELIANCE");
     const assertion = expect(resultPromise).rejects.toThrow();
     await vi.advanceTimersByTimeAsync(3000);
     await assertion;
@@ -223,7 +228,7 @@ describe("nseGet retry policy", () => {
     const mockFetch = vi.fn().mockResolvedValueOnce(errorResponse(404));
     vi.stubGlobal("fetch", mockFetch);
 
-    await expect(fetchFilingRegistry("RELIANCE")).rejects.toThrow();
+    await expect(fetchIntegratedFilings("RELIANCE")).rejects.toThrow();
 
     expect(mockFetch).toHaveBeenCalledTimes(1);
   });
@@ -487,5 +492,29 @@ describe("fetchCorporateActions", () => {
     expect(result).toHaveLength(1);
     expect(result[0].actionType).toBe("dividend");
     expect(result[0].value).toBe(10);
+  });
+});
+
+describe("fetchFilingRegistry across both regimes", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("merges the two registries and prefers the integrated filing for a shared period", async () => {
+    const legacy = [{
+      symbol: "RELIANCE", period: "Quarterly", fromDate: "01-Oct-2024", toDate: "31-Dec-2024",
+      consolidated: "Consolidated", audited: "Un-Audited", filingDate: "16-Jan-2025 20:20:21",
+      xbrl: "https://nsearchives.nseindia.com/corporate/xbrl/INDAS_old.xml",
+    }];
+    const integrated = { data: [
+      { type: "Integrated Filing- Financials", qe_Date: "31-DEC-2024", consolidated: "Consolidated", audited: "Un-Audited", broadcast_Date: "16-Jan-2025 20:20:21", xbrl: "https://nsearchives.nseindia.com/corporate/xbrl/INTEGRATED_new.xml" },
+      { type: "Integrated Filing- Financials", qe_Date: "30-JUN-2026", consolidated: "Consolidated", audited: "Un-Audited", broadcast_Date: "17-Jul-2026 19:50:03", xbrl: "https://nsearchives.nseindia.com/corporate/xbrl/INTEGRATED_june.xml" },
+      { type: "Integrated Filing- Governance", qe_Date: "30-JUN-2026", xbrl: "https://nsearchives.nseindia.com/corporate/xbrl/INTEGRATED_gov.xml" },
+    ] };
+    vi.stubGlobal("fetch", vi.fn(async (url: string) =>
+      okJsonResponse(String(url).includes("integrated-filing-results") ? integrated : legacy)));
+
+    const rows = await fetchFilingRegistry("RELIANCE");
+
+    expect(rows.map((r) => r.toDate).sort()).toEqual(["2024-12-31", "2026-06-30"]);
+    expect(rows.find((r) => r.toDate === "2024-12-31")!.xbrlUrl).toContain("INTEGRATED_new");
   });
 });

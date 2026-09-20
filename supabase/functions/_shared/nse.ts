@@ -108,6 +108,21 @@ async function nseGet(url: string, asText = false): Promise<unknown> {
 }
 
 export async function fetchFilingRegistry(symbol: string): Promise<FilingRecord[]> {
+  // Both regimes: the old endpoint holds everything up to the December 2024
+  // quarter, the integrated one everything since. A period present in both is
+  // taken from the integrated registry, which is the current filing.
+  const [legacy, integrated] = await Promise.all([
+    fetchLegacyFilingRegistry(symbol),
+    fetchIntegratedFilings(symbol).catch((err) => {
+      console.error(`integrated filings failed for ${symbol}:`, (err as Error).message);
+      return [] as FilingRecord[];
+    }),
+  ]);
+  const seen = new Set(integrated.map((f) => `${f.toDate}|${f.isConsolidated}`));
+  return [...integrated, ...legacy.filter((f) => !seen.has(`${f.toDate}|${f.isConsolidated}`))];
+}
+
+async function fetchLegacyFilingRegistry(symbol: string): Promise<FilingRecord[]> {
   const url =
     `https://www.nseindia.com/api/corporates-financial-results` +
     `?index=equities&symbol=${encodeURIComponent(symbol)}&period=Quarterly`;
@@ -134,6 +149,55 @@ export async function fetchFilingRegistry(symbol: string): Promise<FilingRecord[
       filingDate: toIsoTimestamp(r.filingDate ?? ""),
     }];
   });
+}
+
+/**
+ * The quarter start for a quarter-end date: integrated filings carry only the
+ * quarter end, and (symbol, from_date, to_date) is the filings table's key.
+ */
+function quarterStart(isoEnd: string): string {
+  const [year, month] = isoEnd.split("-").map(Number);
+  const start = new Date(Date.UTC(year, month - 3, 1));
+  return start.toISOString().slice(0, 10);
+}
+
+/**
+ * Filings from the Integrated Filing regime, which is where NSE publishes
+ * quarterly results now: corporates-financial-results stops at the December
+ * 2024 quarter (RELIANCE, checked 2026-09-20). Only "Integrated Filing-
+ * Financials" rows carry figures; the governance ones are skipped. The XBRL is
+ * the same in-capmkt vocabulary the existing parser reads.
+ */
+export function parseIntegratedFilings(symbol: string, payload: unknown): FilingRecord[] {
+  const rows = Array.isArray(payload)
+    ? payload as Array<Record<string, string>>
+    : ((payload as { data?: Array<Record<string, string>> } | null)?.data ?? []);
+  if (!Array.isArray(rows)) return [];
+
+  return rows.flatMap((r) => {
+    if (!/Financials/i.test(r.type ?? "")) return [];
+    // "30-JUN-2026" here, "30-Jun-2026" in the older endpoint.
+    const quarterEnd = (r.qe_Date ?? "").replace(/-([A-Z]{3})-/, (_, m: string) => `-${m[0]}${m.slice(1).toLowerCase()}-`);
+    const toDate = toIsoDate(quarterEnd);
+    const xbrlUrl = r.xbrl ?? "";
+    if (!toDate || !xbrlUrl.endsWith(".xml")) return [];
+    return [{
+      symbol,
+      period: "Quarterly",
+      fromDate: quarterStart(toDate),
+      toDate,
+      isConsolidated: r.consolidated === "Consolidated",
+      isAudited: r.audited === "Audited",
+      xbrlUrl,
+      filingDate: toIsoTimestamp(r.broadcast_Date ?? ""),
+    }];
+  });
+}
+
+/** The integrated-filing registry for one symbol. */
+export async function fetchIntegratedFilings(symbol: string): Promise<FilingRecord[]> {
+  const url = `https://www.nseindia.com/api/integrated-filing-results?index=equities&symbol=${encodeURIComponent(symbol)}`;
+  return parseIntegratedFilings(symbol, await nseGet(url));
 }
 
 export async function fetchXbrl(url: string): Promise<string> {
