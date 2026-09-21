@@ -49,10 +49,15 @@ const years = [year - 2, year - 1, year];
 const rows: MacroMonthly[] = [];
 const report: Record<string, number | string> = {};
 
+// New base years (CPI 2024=100 from Feb 2026, IIP and WPI 2022-23): the old
+// series stopped at Dec 2025 (CPI), Mar 2026 (IIP) and Apr 2026 (WPI) and the
+// API kept answering "No Data Found" for them, so the collector reported 0 rows
+// for months. Every year here is fetched on the new base: WPI's YoY is computed
+// from its index, and mixing bases would divide a 2022-23 level by a 2011-12 one.
+// CPI 2024 lives at getCPIData (not getCPIIndex) and rejects a limit under 10.
 for (const y of years) {
   for (const [kind, url] of [
-    ["cpi", `https://api.mospi.gov.in/api/cpi/getCPIIndex?base_year=2012&series=Current&year=${y}&state_code=99&Format=JSON`],
-    ["iip", `https://api.mospi.gov.in/api/iip/getIipData?base_year=2011-12&frequency=Monthly&year=${y}&type=General&Format=JSON`],
+    ["iip", `https://api.mospi.gov.in/api/iip/getIIPMonthly?base_year=2022-23&year=${y}&type=General&Format=JSON`],
   ] as const) {
     try {
       const parsed = parseMospi(await allPages(url), kind);
@@ -63,19 +68,26 @@ for (const y of years) {
     }
     await sleep(1000);
   }
-  // WPI lists ~870 commodity rows a month (10,000+ a year); the all-commodities
-  // headline is each month's first row, so one small page per month is enough.
-  let wpi = 0;
-  for (let month = 1; month <= 12; month++) {
-    try {
-      const page = await get(`https://api.mospi.gov.in/api/wpi/getWpiRecords?base_year=2011-12&year=${y}&month_code=${month}&Format=JSON&limit=5&page=1`);
-      const parsed = parseMospi(page, "wpi");
-      rows.push(...parsed);
-      wpi += parsed.length;
-    } catch { /* a month not yet published */ }
-    await sleep(600);
+  // CPI 2024 and WPI list every state, sector and item (thousands of rows a
+  // month); each month's headline rows come first, so one small page a month.
+  for (const kind of ["cpi", "wpi"] as const) {
+    let count = 0;
+    for (let month = 1; month <= 12; month++) {
+      const url = kind === "cpi"
+        ? `https://api.mospi.gov.in/api/cpi/getCPIData?base_year=2024&series=Current&year=${y}&month_code=${month}&Format=JSON&limit=10&page=1`
+        : `https://api.mospi.gov.in/api/wpi/getWpiRecords?base_year=2022-23&year=${y}&month_code=${month}&Format=JSON&limit=10&page=1`;
+      try {
+        let parsed = parseMospi(await get(url), kind);
+        // CPI 2024=100 starts its Current series in 2025; earlier months (needed for
+        // 2025's year-on-year change) are in the Back series on the same base.
+        if (kind === "cpi" && parsed.length === 0) parsed = parseMospi(await get(url.replace("series=Current", "series=Back")), kind);
+        rows.push(...parsed);
+        count += parsed.length;
+      } catch { /* a month not yet published */ }
+      await sleep(600);
+    }
+    report[`${kind} ${y}`] = count;
   }
-  report[`wpi ${y}`] = wpi;
 }
 
 const unique = [...new Map(withYoy(rows).map((r) => [`${r.series}|${r.period}`, r])).values()];

@@ -123,7 +123,6 @@ export const TICKERTAPE_PATHS: Record<string, string> = {
   "SIEMENS": "/stocks/siemens-SIEM",
   "SUNPHARMA": "/stocks/sun-pharmaceutical-industries-SUN",
   "TATAINVEST": "/stocks/tata-investment-corporation-TINV",
-  "TATAMETALI": "/stocks/tata-metaliks-TMET",
   "TORNTPHARM": "/stocks/torrent-pharmaceuticals-TORP",
 };
 

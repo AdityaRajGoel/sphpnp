@@ -180,7 +180,8 @@ export function parseMospi(raw: unknown, kind: "cpi" | "iip" | "wpi"): MacroMont
     const p = period(r.year, r.month);
     if (!p) return [];
     if (kind === "cpi") {
-      if (r.state !== "All India" || r.sector !== "Combined" || r.group !== "General") return [];
+      // Base 2012 marks the headline group "General"; base 2024 marks the division "CPI (General)".
+      if (r.state !== "All India" || r.sector !== "Combined" || (r.group !== "General" && r.division !== "CPI (General)")) return [];
       const value = num(r.index);
       return value === null ? [] : [{ series: "CPI (Combined)", period: p, value, change_pct: num(r.inflation), source: "mospi" }];
     }
@@ -189,7 +190,8 @@ export function parseMospi(raw: unknown, kind: "cpi" | "iip" | "wpi"): MacroMont
       const value = num(r.index);
       return value === null ? [] : [{ series: "IIP (General)", period: p, value, change_pct: num(r.growth_rate), source: "mospi" }];
     }
-    if (r.majorgroup !== "Wholesale price index" || r.group) return [];
+    // "majorgroup: Wholesale price index" on base 2011-12, "major_group: Wholesale Price Index" on 2022-23.
+    if (String(r.majorgroup ?? r.major_group ?? "").toLowerCase() !== "wholesale price index" || r.group) return [];
     const value = num(r.index_value);
     return value === null ? [] : [{ series: "WPI (All commodities)", period: p, value, change_pct: null, source: "mospi" }];
   });

@@ -64,12 +64,13 @@ async function readSymbol(supabase: SupabaseClient, symbol: string): Promise<Sym
   const [income, balance, cashflow] = await Promise.all([
     supabase
       .from("fundamentals_income")
-      .select("period_end, is_consolidated, revenue, total_income, total_expenses, profit_after_tax")
+      .select("period_end, is_consolidated, source, revenue, total_income, total_expenses, profit_after_tax")
       .eq("symbol", symbol)
       .order("period_end", { ascending: false })
       // Twice the limit, because roughly half the rows are the other reporting
       // basis and the collapse below discards them.
-      .limit(PERIODS * 2),
+      // Three times: each basis, and a vendor copy of the same quarter (source ranked in oneReportingBasis).
+      .limit(PERIODS * 3),
     supabase
       .from("fundamentals_balance")
       .select("period_end, total_assets, total_debt, total_equity, cash_and_equivalents, current_assets, current_liabilities")

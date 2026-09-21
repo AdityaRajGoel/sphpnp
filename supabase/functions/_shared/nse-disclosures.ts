@@ -133,5 +133,84 @@ export function parseInsiderTrades(raw: unknown, symbol: string): InsiderTrade[]
       xbrl_url: xbrl(row.xbrl),
     });
   }
-  return trades.sort((a, b) => (b.disclosed_at ?? "").localeCompare(a.disclosed_at ?? ""));
+  return trades.map(sanedDates).sort((a, b) => (b.disclosed_at ?? "").localeCompare(a.disclosed_at ?? ""));
+}
+
+/**
+ * A trade cannot happen after it was disclosed. Companies do mistype these
+ * (SOLARINDS filed "09-Nov-2026" in September 2026), and a future date sorts the
+ * trade to the top of every "latest" list and out of every date window.
+ */
+function sanedDates(t: InsiderTrade): InsiderTrade {
+  const day = t.disclosed_at?.slice(0, 10);
+  if (!day) return t;
+  const ok = (d: string | null) => (d && d > day ? null : d);
+  return { ...t, traded_from: ok(t.traded_from), traded_to: ok(t.traded_to) };
+}
+
+/** One filing from corporates-pit-gg, NSE's insider-trading list since May 2026. */
+export type PitFiling = { appId: string; xbrlUrl: string; disclosedAt: string | null };
+
+export function parsePitFilings(raw: unknown, symbol: string): PitFiling[] {
+  const rows = isRecord(raw) && Array.isArray(raw.data) ? raw.data : [];
+  return rows.filter(isRecord).flatMap((r) => {
+    const appId = str(r.appId);
+    const xbrlUrl = xbrl(r.xmlFileName);
+    if (!appId || !xbrlUrl || (str(r.symbol) && str(r.symbol) !== symbol)) return [];
+    return [{ appId, xbrlUrl, disclosedAt: nseTimestamp(r.broadcastDateTime ?? r.exchdisstime) }];
+  });
+}
+
+/**
+ * The trades inside one Regulation 7 filing: NSE stopped putting them in the
+ * corporates-pit JSON after April 2026, so they are read from the XBRL, which
+ * carries one "DisclosureN" context per trade line.
+ */
+export function parseInsiderXbrl(xml: string, symbol: string, filing: PitFiling): InsiderTrade[] {
+  const byContext = new Map<string, Record<string, string>>();
+  const fact = /<[\w-]+:(\w+)\b[^>]*\bcontextRef="(Disclosure\d+)"[^>]*>([^<]*)</g;
+  for (const [, name, ctx, value] of xml.matchAll(fact)) {
+    const facts = byContext.get(ctx) ?? {};
+    facts[name] = value.trim();
+    byContext.set(ctx, facts);
+  }
+  const trades: InsiderTrade[] = [];
+  for (const [ctx, f] of byContext) {
+    const person = str(f.NameOfThePerson);
+    if (!person) continue;
+    const iso = (v: string | undefined) => (v && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : null);
+    trades.push(sanedDates({
+      symbol,
+      disclosure_id: `gg:${filing.appId}:${ctx}`,
+      person,
+      category: str(f.CategoryOfPerson),
+      transaction: transactionOf(str(f.SecuritiesAcquiredOrDisposedTransactionType)),
+      mode: str(f.ModeOfAcquisitionOrDisposal),
+      security: str(f.TypeOfInstrument),
+      quantity: num(f.SecuritiesAcquiredOrDisposedNumberOfSecurity),
+      value: num(f.SecuritiesAcquiredOrDisposedValueOfSecurity),
+      holding_after_pct: num(f.SecuritiesHeldPostAcquistionOrDisposalPercentageOfShareholding),
+      traded_from: iso(f.DateOfAllotmentAdviceOrAcquisitionOfSharesOrSaleOfSharesSpecifyFromDate),
+      traded_to: iso(f.DateOfAllotmentAdviceOrAcquisitionOfSharesOrSaleOfSharesSpecifyToDate),
+      disclosed_at: filing.disclosedAt,
+      xbrl_url: filing.xbrlUrl,
+    }));
+  }
+  return trades;
+}
+
+/**
+ * The promoter group's holding and pledge from a shareholding-pattern XBRL
+ * (the "ShareholdingOfPromoterAndPromoterGroup" total). Null when the filing
+ * has no promoter total, as for a company with no promoter.
+ */
+export function parseShpPledge(xml: string): { promoter_shares: number; promoter_pledged_shares: number; promoter_pledged_pct: number } | null {
+  const fact = (name: string) => {
+    const m = new RegExp(`<[\\w-]+:${name}\\b[^>]*contextRef="ShareholdingOfPromoterAndPromoterGroup_ContextI"[^>]*>([^<]*)<`).exec(xml);
+    return m ? num(m[1]) : null;
+  };
+  const held = fact("NumberOfShares");
+  if (!held) return null;
+  const pledged = fact("NumberOfSharesEncumberedUnderPledged") ?? 0;
+  return { promoter_shares: held, promoter_pledged_shares: pledged, promoter_pledged_pct: (pledged / held) * 100 };
 }

@@ -225,13 +225,17 @@ export function parsePledges(raw: unknown): PledgeRow[] {
     const company = str(r.comName);
     const shp_date = isoDate(r.shp);
     if (!company || !shp_date) continue;
-    const pledged = num(r.numSharesPledged);
+    // totPromoterShares is the promoters' own encumbered shares. numSharesPledged
+    // is every share pledged in the depositories by anyone (mostly broker margin
+    // pledges): reading it as the promoter pledge put Reliance at 2.6%, L&T at
+    // 190% and Zee at 714% of promoter holding until September 2026.
+    const pledged = num(r.totPromoterShares);
     const promoter = num(r.totPromoterHolding);
     const row: PledgeRow = {
       company, shp_date, broadcast_at: istTimestamp(r.broadcastDt),
       promoter_pct: num(r.percPromoterHolding), pledged_shares: pledged, promoter_shares: promoter, total_shares: num(r.totIssuedShares),
-      pledged_pct_of_promoter: pledged !== null && promoter ? (pledged / promoter) * 100 : null,
-      pledged_pct_of_total: num(r.percSharesPledged),
+      pledged_pct_of_promoter: num(r.percPromoterShares) ?? (pledged !== null && promoter ? (pledged / promoter) * 100 : null),
+      pledged_pct_of_total: num(r.percTotShares),
     };
     // The latest disclosure for a quarter wins.
     const key = `${company}|${shp_date}`;

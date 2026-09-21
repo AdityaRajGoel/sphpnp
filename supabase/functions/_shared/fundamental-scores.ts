@@ -64,15 +64,24 @@ const ratio = (numerator: number | null | undefined, denominator: number | null 
  * the balance sheet and cash flow sources (Yahoo) report - the point is that
  * every number in a score comes from the same set of books, not which set.
  */
-export function oneReportingBasis<T extends { period_end: string; is_consolidated?: boolean | null }>(rows: T[]): T[] {
+const SOURCE_RANK: Record<string, number> = { nse_xbrl: 0, screener_in: 1, indianapi: 2, yahoo: 3 };
+
+export function oneReportingBasis<T extends { period_end: string; is_consolidated?: boolean | null; source?: string | null }>(rows: T[]): T[] {
   if (rows.length === 0) return rows;
   const consolidated = rows.filter((row) => row.is_consolidated === true);
   const chosen = consolidated.length > 0 ? consolidated : rows.filter((row) => row.is_consolidated !== true);
 
   // One row per period even within a basis: a re-filed period can appear twice,
-  // and the first of an ordered list is the one to keep.
+  // and several sources can hold the same quarter. The company's own filing wins:
+  // Yahoo labels standalone figures as consolidated for about 1 quarter in 6
+  // (129 of 742 checked in September 2026), and date order alone left the pick
+  // between them to chance.
+  const rank = (row: T) => SOURCE_RANK[row.source ?? "nse_xbrl"] ?? 9;
+  const ordered = chosen.map((row, i) => ({ row, i }))
+    .sort((a, b) => (a.row.period_end === b.row.period_end ? rank(a.row) - rank(b.row) || a.i - b.i : a.i - b.i))
+    .map((x) => x.row);
   const seen = new Set<string>();
-  return chosen.filter((row) => {
+  return ordered.filter((row) => {
     if (seen.has(row.period_end)) return false;
     seen.add(row.period_end);
     return true;

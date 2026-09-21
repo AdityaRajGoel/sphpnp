@@ -132,8 +132,9 @@ async function fetchLegacyFilingRegistry(symbol: string): Promise<FilingRecord[]
   return rows.flatMap((r) => {
     const fromDate = toIsoDate(r.fromDate);
     const toDate = toIsoDate(r.toDate);
-    // No XBRL means nothing to parse; no dates means nothing to key on.
-    if (!r.xbrl || !fromDate || !toDate) return [];
+    // No XBRL means nothing to parse; no dates means nothing to key on. NSE marks
+    // a missing document with a ".../xbrl/-" link, which only ever 404s.
+    if (!r.xbrl?.endsWith(".xml") || !fromDate || !toDate) return [];
     return [{
       symbol,
       period: r.period ?? "Quarterly",

@@ -15,7 +15,8 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { financialGrids, parseKeyStats, verifyGoogleFinance } from "../_shared/google-finance.ts";
 
-const PER_RUN = Number(Deno.env.get("SERPAPI_PER_RUN") ?? "8");
+// 7 a day spends the 225 above RESERVE across a 30-day cycle; 8 ran dry around day 28.
+const PER_RUN = Number(Deno.env.get("SERPAPI_PER_RUN") ?? "7");
 const RESERVE = Number(Deno.env.get("SERPAPI_RESERVE") ?? "25");
 const REFRESH_DAYS = 30;
 const RETRY_DAYS = 7;

@@ -1,15 +1,14 @@
 // Per-stock NSE disclosures for the whole tracked universe: corporate actions
 // (dividends, splits, bonuses), each quarter's shareholding-pattern filing, and
-// insider trades. Three light JSON calls per stock - no XBRL downloads, which
-// is what keeps sync-fundamentals to two stocks a run - so a batch covers
-// twenty stocks and the workflow finishes a full pass in one run.
+// insider trades. Light JSON calls per stock, plus the XBRL of each new insider
+// filing (capped by MAX_NEW_FILINGS); the pass loops until `wrapped`.
 //
 // Trigger: GitHub Actions (.github/workflows/free-sources-sync.yml), which
 // calls again until the response says `wrapped`. Protected by SYNC_SECRET.
 
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { NSE_DELAY_MS, NSE_HEADERS, fetchCorporateActions, sleep } from "../_shared/nse.ts";
-import { parseInsiderTrades, parseShareholdingMaster } from "../_shared/nse-disclosures.ts";
+import { parseInsiderTrades, parseInsiderXbrl, parsePitFilings, parseShareholdingMaster, parseShpPledge } from "../_shared/nse-disclosures.ts";
 import { cursorAfter, nextBatch } from "../_shared/batch-cursor.ts";
 
 const cors = {
@@ -30,6 +29,13 @@ const MAX_TRADES = 100;
  * that size killed the worker mid-batch (2026-09-11).
  */
 const TRADE_WINDOW_DAYS = 365;
+/**
+ * Since May 2026 corporates-pit stops at April and new disclosures are listed on
+ * corporates-pit-gg, one XBRL per filing. New filings read per stock per run: a
+ * few a day in steady state, and the first pass's backlog drains over a few nights.
+ */
+const PIT_GG_WINDOW_DAYS = 90;
+const MAX_NEW_FILINGS = 4;
 const nseDay = (d: Date) => `${String(d.getUTCDate()).padStart(2, "0")}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${d.getUTCFullYear()}`;
 
 async function nseJson(url: string): Promise<unknown> {
@@ -52,7 +58,7 @@ Deno.serve(async (req) => {
   const previous = (cursorRow?.cursor as string | null) ?? null;
   const { batch, wrapped } = nextBatch(symbols, previous, BATCH_SIZE);
 
-  const counts = { actions: 0, shareholding: 0, trades: 0 };
+  const counts = { actions: 0, shareholding: 0, trades: 0, pledges: 0 };
   const failures: { symbol: string; part: string; reason: string }[] = [];
   let done = 0;
 
@@ -91,6 +97,19 @@ Deno.serve(async (req) => {
           .upsert(filings.map((f) => ({ ...f, fetched_at: fetchedAt })), { onConflict: "symbol,quarter_end" });
         if (error) throw new Error(error.message);
         counts.shareholding += filings.length;
+        // The promoter pledge, once per quarter: only the newest filing, only until read.
+        const latest = filings[0];
+        const { data: row } = await supabase.from("nse_shareholding_filings").select("promoter_shares").eq("symbol", symbol).eq("quarter_end", latest.quarter_end).maybeSingle();
+        if (latest.xbrl_url && row && row.promoter_shares === null) {
+          await sleep(NSE_DELAY_MS);
+          const res = await fetch(latest.xbrl_url, { headers: NSE_HEADERS, signal: AbortSignal.timeout(20_000) });
+          if (!res.ok) throw new Error(`shareholding XBRL HTTP ${res.status}`);
+          // No promoter total (a company with no promoter) is recorded as 0 so it is not re-read every run.
+          const pledge = parseShpPledge(await res.text()) ?? { promoter_shares: 0, promoter_pledged_shares: null, promoter_pledged_pct: null };
+          const { error: pErr } = await supabase.from("nse_shareholding_filings").update(pledge).eq("symbol", symbol).eq("quarter_end", latest.quarter_end);
+          if (pErr) throw new Error(pErr.message);
+          counts.pledges++;
+        }
       }
     } catch (e) {
       failures.push({ symbol, part: "shareholding", reason: (e as Error).message });
@@ -112,6 +131,32 @@ Deno.serve(async (req) => {
       failures.push({ symbol, part: "insider trades", reason: (e as Error).message });
     }
     await sleep(NSE_DELAY_MS);
+
+    try {
+      const filings = parsePitFilings(
+        await nseJson(`https://www.nseindia.com/api/corporates-pit-gg?index=equities&symbol=${encodeURIComponent(symbol)}&from_date=${nseDay(new Date(Date.now() - PIT_GG_WINDOW_DAYS * 86_400_000))}&to_date=${nseDay(new Date())}`),
+        symbol,
+      );
+      const { data: stored } = await supabase.from("nse_insider_trades").select("disclosure_id").eq("symbol", symbol).like("disclosure_id", "gg:%");
+      const seen = new Set((stored ?? []).map((r) => String(r.disclosure_id).split(":")[1]));
+      // ponytail: a filing with no trade lines stores nothing and is re-read each run; add a seen-filings table if that shows up in the logs.
+      for (const filing of filings.filter((f) => !seen.has(f.appId)).slice(0, MAX_NEW_FILINGS)) {
+        await sleep(NSE_DELAY_MS);
+        const res = await fetch(filing.xbrlUrl, { headers: NSE_HEADERS, signal: AbortSignal.timeout(20_000) });
+        if (!res.ok) {
+          failures.push({ symbol, part: "insider xbrl", reason: `HTTP ${res.status} ${filing.appId}` });
+          continue;
+        }
+        const trades = parseInsiderXbrl(await res.text(), symbol, filing).map((t) => ({ ...t, fetched_at: fetchedAt }));
+        if (trades.length === 0) continue;
+        const { error } = await supabase.from("nse_insider_trades").upsert(trades, { onConflict: "disclosure_id" });
+        if (error) throw new Error(error.message);
+        counts.trades += trades.length;
+      }
+    } catch (e) {
+      failures.push({ symbol, part: "insider filings", reason: (e as Error).message });
+    }
+    await sleep(NSE_DELAY_MS);
     done++;
     // Saved per stock, so a worker killed mid-batch resumes after the last
     // stock done instead of repeating the batch - and dying on it - forever.
@@ -125,6 +170,6 @@ Deno.serve(async (req) => {
   );
 
   // Every part failing for every stock is NSE refusing us, not a quiet day.
-  const blocked = done > 0 && failures.length >= done * 3;
+  const blocked = done > 0 && failures.length >= done * 4;
   return json({ ok: !blocked, symbols: done, from: batch[0] ?? null, to: batch[done - 1] ?? null, wrapped: finished, ...counts, failed: failures.length, failures: failures.slice(0, 20) }, blocked ? 502 : 200);
 });

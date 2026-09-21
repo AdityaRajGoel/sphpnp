@@ -24,6 +24,8 @@ export type Basis = "consolidated" | "standalone";
  * standalone in the next, rendered as a trend, with nothing on screen saying
  * so. Consolidated wins when present because it describes the whole group.
  */
+const SOURCE_RANK: Record<string, number> = { nse_xbrl: 0, screener_in: 1, indianapi: 2, yahoo: 3 };
+
 export function selectBasis(rows: IncomeRow[]): {
   basis: Basis | null;
   rows: IncomeRow[];
@@ -35,7 +37,11 @@ export function selectBasis(rows: IncomeRow[]): {
   const chosen = consolidated.length > 0 ? consolidated : standalone;
   const basis: Basis | null =
     chosen.length === 0 ? null : consolidated.length > 0 ? "consolidated" : "standalone";
-  const sorted = [...chosen].sort((a, b) => b.period_end.localeCompare(a.period_end));
+  // One row per quarter: NSE's filing and a Yahoo copy of the same quarter both
+  // arrive here, and showing both put every such quarter in the table twice.
+  const rank = (r: IncomeRow) => SOURCE_RANK[(r as { source?: string }).source ?? "nse_xbrl"] ?? 9;
+  const sorted = [...chosen].sort((a, b) => b.period_end.localeCompare(a.period_end) || rank(a) - rank(b))
+    .filter((r, i, all) => i === 0 || all[i - 1].period_end !== r.period_end);
   return { basis, rows: sorted, bothAvailable };
 }
 

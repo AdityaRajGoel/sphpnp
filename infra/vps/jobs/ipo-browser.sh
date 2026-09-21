@@ -7,5 +7,7 @@ export SUPABASE_ANON_KEY=$(grep '^ANON_KEY=' /opt/supabase/.env | cut -d= -f2-)
 export MARKET_SYNC_SECRET=$(grep '^SYNC_SECRET=' /opt/supabase/functions.env | cut -d= -f2-)
 export SYNC_URL="http://127.0.0.1:8000/functions/v1/sync-ipos"
 mkdir -p /var/log/sphpnp-sync
+# A Playwright bump or a cleared ~/.cache leaves no browser (broke 16-21 Sep 2026); no-op when present.
+npx playwright install chromium-headless-shell >/dev/null 2>&1 || true
 node --experimental-strip-types scripts/ipo-browser-scrape.mts 2>&1 \
   | sed "s/^/$(date '+%F %T') ipo-browser /" | cut -c1-900 >> "/var/log/sphpnp-sync/$(date +%F).log"

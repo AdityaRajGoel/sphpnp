@@ -176,6 +176,15 @@ describe("cagr", () => {
 });
 
 describe("oneReportingBasis", () => {
+  it("keeps the NSE filing over a Yahoo copy of the same quarter, whatever the row order", () => {
+    const rows = [
+      { period_end: "2026-03-31", is_consolidated: true, source: "yahoo", profit_after_tax: 74 },
+      { period_end: "2026-03-31", is_consolidated: true, source: "nse_xbrl", profit_after_tax: 205 },
+      { period_end: "2025-12-31", is_consolidated: true, source: "yahoo", profit_after_tax: 180 },
+    ];
+    expect(oneReportingBasis(rows).map((r) => [r.period_end, r.source])).toEqual([["2026-03-31", "nse_xbrl"], ["2025-12-31", "yahoo"]]);
+  });
+
   it("keeps consolidated rows and drops the standalone twins", () => {
     // The trap: fundamentals_income is unique on
     // (symbol, period_end, is_consolidated), so most symbols hold two rows per

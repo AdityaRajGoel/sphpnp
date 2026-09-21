@@ -244,6 +244,10 @@ async function run(ctx: Ctx, dataset: string, body: Record<string, unknown>): Pr
       const resolve = await universeResolver(sb);
       const rows = parsePledges(await fetchJson("https://www.nseindia.com/api/corporate-pledgedata?index=equities"))
         .map((p) => ({ ...p, symbol: resolve(p.company), fetched_at: new Date().toISOString() }));
+      // The feed covers ~1,500 companies, so empty is never a quiet day: since
+      // 21 Sep 2026 NSE answers {"data":[]} here. Fail loudly rather than log "ok".
+      // (The promoter pledge itself now comes from the shareholding XBRL.)
+      if (rows.length === 0) throw new Error("NSE pledge feed returned no rows");
       return { rows: await upsert(sb, "pledge_snapshots", rows, "company,shp_date"), matched: rows.filter((r) => r.symbol).length };
     }
     case "deals": {

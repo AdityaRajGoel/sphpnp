@@ -75,6 +75,20 @@ describe("parseMospi", () => {
     expect(wpi[0]).toMatchObject({ series: "WPI (All commodities)", period: "2026-04-01", value: 167 });
   });
 
+  it("reads the new-base rows (CPI 2024=100, WPI 2022-23), as the API returned them in September 2026", () => {
+    const cpi = parseMospi({ data: [
+      { base_year: "2024", series: "Current", year: "2026", month: "August", state: "All India", sector: "Rural", division: "CPI (General)", group: null, index: "109.27", inflation: "5.23" },
+      { base_year: "2024", series: "Current", year: "2026", month: "August", state: "All India", sector: "Combined", division: "CPI (General)", group: null, index: "108.74", inflation: "4.82" },
+      { base_year: "2024", series: "Current", year: "2026", month: "August", state: "All India", sector: "Combined", division: "Food and beverages", group: null, index: "111.2", inflation: "6.1" },
+    ] }, "cpi");
+    expect(cpi).toEqual([{ series: "CPI (Combined)", period: "2026-08-01", value: 108.74, change_pct: 4.82, source: "mospi" }]);
+    const wpi = parseMospi({ data: [
+      { base_year: "2022-23", year: 2026, month: "August", major_group: "Wholesale Price Index", group: null, index_value: "110.8" },
+      { base_year: "2022-23", year: 2026, month: "August", major_group: "Primary Articles", group: "Food Articles", index_value: "122.9" },
+    ] }, "wpi");
+    expect(wpi).toEqual([{ series: "WPI (All commodities)", period: "2026-08-01", value: 110.8, change_pct: null, source: "mospi" }]);
+  });
+
   it("derives year-on-year change where the source gives only the index", () => {
     const rows = withYoy([
       { series: "WPI", period: "2025-04-01", value: 160, change_pct: null, source: "mospi" },

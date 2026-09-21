@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
-import { parseShareholdingMaster, parseInsiderTrades, nseDate, nseTimestamp } from "../../supabase/functions/_shared/nse-disclosures";
+import { parseShareholdingMaster, parseInsiderTrades, parseInsiderXbrl, parsePitFilings, parseShpPledge, nseDate, nseTimestamp } from "../../supabase/functions/_shared/nse-disclosures";
 
 /*
  * NSE's shareholding-pattern filings and insider-trade (PIT) disclosures for
@@ -62,5 +62,56 @@ describe("parseInsiderTrades", () => {
 
   it("drops another company's rows", () => {
     expect(parseInsiderTrades({ data: [{ did: "1", acqName: "A", symbol: "TCS", tdpTransactionType: "Buy" }] }, "RELIANCE")).toEqual([]);
+  });
+});
+
+describe("NSE insider filings since May 2026 (corporates-pit-gg + XBRL)", () => {
+  const filing = { appId: "3425", xbrlUrl: "https://nsearchives.nseindia.com/corporate/xbrl/IT_1828.xml", disclosedAt: "2026-09-18T14:11:31.000Z" };
+  const fact = (name: string, ctx: string, v: string) => `<in-bse-co:${name} contextRef="${ctx}" decimals="INF">${v}</in-bse-co:${name}>`;
+  const line = (ctx: string, person: string, type: string, value: string, to: string) => [
+    fact("CategoryOfPerson", ctx, "Promoter Group"), fact("NameOfThePerson", ctx, person),
+    fact("SecuritiesAcquiredOrDisposedNumberOfSecurity", ctx, "514"), fact("SecuritiesAcquiredOrDisposedValueOfSecurity", ctx, value),
+    fact("SecuritiesAcquiredOrDisposedTransactionType", ctx, type), fact("ModeOfAcquisitionOrDisposal", ctx, "Market Sale"),
+    fact("DateOfAllotmentAdviceOrAcquisitionOfSharesOrSaleOfSharesSpecifyFromDate", ctx, to),
+    fact("DateOfAllotmentAdviceOrAcquisitionOfSharesOrSaleOfSharesSpecifyToDate", ctx, to),
+  ].join("");
+  const xml = `<xbrli:xbrl>${fact("Symbol", "MainI", "HCLTECH")}${line("Disclosure1", "A Person", "Buy", "641883", "2026-09-09")}${line("Disclosure2", "B Person", "Sell", "1000", "2026-11-09")}</xbrli:xbrl>`;
+
+  it("reads one trade per DisclosureN context, keyed by filing and line", () => {
+    const trades = parseInsiderXbrl(xml, "HCLTECH", filing);
+    expect(trades.map((t) => [t.disclosure_id, t.person, t.transaction, t.value])).toEqual([
+      ["gg:3425:Disclosure1", "A Person", "buy", 641883],
+      ["gg:3425:Disclosure2", "B Person", "sell", 1000],
+    ]);
+    expect(trades[0].traded_to).toBe("2026-09-09");
+  });
+
+  it("drops a trade date later than the disclosure, which is a filing typo", () => {
+    expect(parseInsiderXbrl(xml, "HCLTECH", filing)[1].traded_to).toBeNull();
+  });
+
+  it("lists filings with an XBRL link for the requested symbol only", () => {
+    const raw = { data: [
+      { appId: "1", symbol: "HCLTECH", xmlFileName: "https://nsearchives.nseindia.com/corporate/xbrl/a.xml", broadcastDateTime: "18-Sep-2026 19:41:31" },
+      { appId: "2", symbol: "TCS", xmlFileName: "https://nsearchives.nseindia.com/corporate/xbrl/b.xml" },
+      { appId: "3", symbol: "HCLTECH", xmlFileName: "-" },
+    ] };
+    expect(parsePitFilings(raw, "HCLTECH")).toEqual([{ appId: "1", xbrlUrl: "https://nsearchives.nseindia.com/corporate/xbrl/a.xml", disclosedAt: "2026-09-18T14:11:31.000Z" }]);
+  });
+});
+
+describe("parseShpPledge", () => {
+  const f = (name: string, ctx: string, v: string) => `<in-bse-shp:${name} contextRef="${ctx}" unitRef="shares">${v}</in-bse-shp:${name}>`;
+  it("reads the promoter group's pledge from the shareholding-pattern total", () => {
+    const xml = f("NumberOfShares", "ShareholdingOfPromoterAndPromoterGroup_ContextI", "974234554")
+      + f("NumberOfSharesEncumberedUnderPledged", "ShareholdingOfPromoterAndPromoterGroup_ContextI", "7700000")
+      + f("NumberOfSharesEncumberedUnderPledged", "Indian_ContextI", "99");
+    const p = parseShpPledge(xml)!;
+    expect(p.promoter_shares).toBe(974234554);
+    expect(p.promoter_pledged_shares).toBe(7700000);
+    expect(p.promoter_pledged_pct).toBeCloseTo(0.79, 2);
+  });
+  it("returns null for a company with no promoter total", () => {
+    expect(parseShpPledge(f("NumberOfShares", "Indian_ContextI", "5"))).toBeNull();
   });
 });

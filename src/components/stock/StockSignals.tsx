@@ -32,7 +32,7 @@ export default function StockSignals({ symbol, price }: Props) {
             </span>
           ))}
           {pledged > 0 && (
-            <span title={`As of ${shortDate(pledge!.shp_date)} (NSE pledge disclosures)`}
+            <span title={`As of ${shortDate(pledge!.shp_date)} (shareholding pattern filed with NSE)`}
               className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold ${pledged >= 10 ? "border-destructive/40 bg-destructive/10 text-destructive" : "border-brand-orange/40 bg-brand-orange/10 text-brand-orange"}`}>
               <Lock className="w-3.5 h-3.5" aria-hidden="true" />
               Promoters pledged {pledged.toFixed(1)}% of their shares

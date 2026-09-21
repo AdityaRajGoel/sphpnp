@@ -74,10 +74,13 @@ describe("daily prices", () => {
 });
 
 describe("parsePledges", () => {
-  it("reads promoter holding and the share of it pledged", () => {
-    const row = parsePledges(json("pledge.json")).find((r) => r.company === "20 Microns Limited")!;
-    expect(row).toMatchObject({ shp_date: "2026-06-30", promoter_pct: 45.04, pledged_shares: 1600437, pledged_pct_of_total: 4.54 });
-    expect(row.pledged_pct_of_promoter).toBeCloseTo((1600437 / 15893364) * 100, 5);
+  it("reads the promoters' own pledge, not every share pledged in the depositories", () => {
+    const rows = parsePledges(json("pledge.json"));
+    expect(rows.find((r) => r.company === "Adani Enterprises Limited")).toMatchObject({
+      shp_date: "2026-06-30", pledged_shares: 7700000, promoter_shares: 974234554, pledged_pct_of_promoter: 0.79, pledged_pct_of_total: 0.59,
+    });
+    // 1.6M shares sit pledged in the depositories, none of them by its promoters.
+    expect(rows.find((r) => r.company === "20 Microns Limited")).toMatchObject({ promoter_pct: 45.04, pledged_shares: 0, pledged_pct_of_promoter: 0 });
   });
 });
 

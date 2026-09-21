@@ -12,6 +12,15 @@ const row = (over: Partial<IncomeRow> = {}): IncomeRow => ({
 });
 
 describe("selectBasis", () => {
+  it("shows each quarter once, the NSE filing over a Yahoo copy", () => {
+    const r = selectBasis([
+      row({ period_end: "2026-03-31", is_consolidated: true, revenue: 1418, source: "yahoo" } as Partial<IncomeRow>),
+      row({ period_end: "2026-03-31", is_consolidated: true, revenue: 2986, source: "nse_xbrl" } as Partial<IncomeRow>),
+      row({ period_end: "2025-12-31", is_consolidated: true, revenue: 2700, source: "yahoo" } as Partial<IncomeRow>),
+    ]);
+    expect(r.rows.map((x) => x.revenue)).toEqual([2986, 2700]);
+  });
+
   it("prefers consolidated when both bases exist", () => {
     const r = selectBasis([
       row({ period_end: "2024-12-31", is_consolidated: true, revenue: 100 }),
