@@ -71,7 +71,9 @@ export default function StockPage() {
   const st = useStockStatements(symbol);
   const disclosures = useStockDisclosures(symbol);
   const analytics = useStockAnalytics(symbol);
-  // Query-heavy interactive panels render for visitors, not into static HTML (see lib/prerender).
+  // Charts, signals, checklist, F&O, deals and legal watch render for visitors
+  // only; the text panels (results, red flags, profile, peers, news) are baked
+  // into the static HTML for search engines (see lib/prerender).
   const interactive = !isPrerender();
   const [askingAI, setAskingAI] = useState(false);
 
@@ -258,11 +260,11 @@ export default function StockPage() {
               <StockPriceChart symbol={s.header.symbol} name={s.header.name} />
             )}
 
-            {s.header && interactive && <LatestResults symbol={s.header.symbol} />}
-            {s.header && interactive && <RedFlagsCard symbol={s.header.symbol} />}
-            {s.header && interactive && <StockResearchProfile symbol={s.header.symbol} />}
+            {s.header && <LatestResults symbol={s.header.symbol} />}
+            {s.header && <RedFlagsCard symbol={s.header.symbol} />}
+            {s.header && <StockResearchProfile symbol={s.header.symbol} />}
             {s.header && interactive && <StockChecklist symbol={s.header.symbol} />}
-            {s.header && interactive && <PeerComparison symbol={s.header.symbol} />}
+            {s.header && <PeerComparison symbol={s.header.symbol} />}
 
             {s.header && interactive && (
               <Suspense fallback={null}>
@@ -271,7 +273,7 @@ export default function StockPage() {
               </Suspense>
             )}
 
-            {s.header && interactive && <StockNews symbol={s.header.symbol} name={s.header.name} />}
+            {s.header && <StockNews symbol={s.header.symbol} name={s.header.name} />}
 
             {/* Tracked but unreached by the sync cursor. Ordinary, not broken -
                 the backfill covers ~2 symbols an hour. */}

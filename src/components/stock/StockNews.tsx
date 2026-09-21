@@ -1,28 +1,24 @@
-import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { motion } from "motion/react";
 import { ExternalLink, Newspaper } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { revealItem, revealSection } from "@/lib/motion";
+import { isPrerender } from "@/lib/prerender";
 import { loadStockNews, relativeTime, safeHref, type StockNews as News } from "@/lib/stock-news";
 
 type Props = { symbol: string; name: string };
 
 /** Recent coverage of this stock from Google News, newest first, each linking to the publisher's story. */
 export default function StockNews({ symbol, name }: Props) {
-  const [news, setNews] = useState<News | null>(null);
-  const [failed, setFailed] = useState(false);
-
-  useEffect(() => {
-    let cancelled = false;
-    setNews(null);
-    setFailed(false);
-    const headless = typeof navigator !== "undefined" && navigator.webdriver === true;
-    loadStockNews(symbol, !headless)
-      .then((n) => { if (!cancelled) setNews(n); })
-      .catch(() => { if (!cancelled) setFailed(true); });
-    return () => { cancelled = true; };
-  }, [symbol]);
+  // The static capture and headless browsers read the stored headlines only;
+  // a visitor's browser may refresh stale ones through the edge function.
+  const allowFetch = !isPrerender() && !(typeof navigator !== "undefined" && navigator.webdriver === true);
+  const { data: news = null, isError: failed } = useQuery({
+    queryKey: ["stock-news", symbol, allowFetch],
+    queryFn: () => loadStockNews(symbol, allowFetch),
+    staleTime: 30 * 60_000,
+  });
 
   if (failed || (news && news.items.length === 0)) return null;
 

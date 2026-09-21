@@ -48,3 +48,53 @@ export async function fetchStockRoutes() {
     .filter(Boolean)
     .map((s) => `/stock/${encodeURIComponent(s)}`);
 }
+
+// Only the financial tables render a <td> on a stock page - the NSE income
+// table, or the IndianAPI statements, shareholding and moving averages - so a
+// table cell holding a signed number ("₹1,28,260.00 Cr", "3,09,468", "50.48%")
+// is a real financial figure. The peer comparison also renders number cells,
+// so its section is cut out first - it must not vouch for an empty income table.
+const PEER_SECTION = /<section[^>]*aria-labelledby="peers-heading"[\s\S]*?<\/section>/;
+const withoutPeers = (html) => html.replace(PEER_SECTION, '');
+const FINANCIAL_FIGURE = /<td[^>]*>\s*-?(?:₹\s*)?\d/;
+
+/**
+ * The catch around page.goto swallows a timeout and proceeds, so without this a
+ * slow response silently ships a loading skeleton to crawlers. Measured: at high
+ * concurrency this produced 126 well-formed skeleton files with timeouts=0 and
+ * nothing in the log to distinguish it from a clean run.
+ *
+ * The state attribute alone is not enough. An RLS regression on
+ * fundamentals_income returns an empty array with no error object - PostgREST
+ * resolves rather than throwing, so the hook's .error checks never fire - and
+ * every page would render "Financials not yet synced" and pass. So a page that
+ * claims `ready` has to show a figure, and a page that claims `unsynced` has to
+ * say so in words. Unsynced is legitimate while the backfill is mid-flight.
+ */
+export function assertStockPageCaptured(route, html) {
+  const ready = html.includes('data-stock-state="ready"');
+  const unsynced = html.includes('data-stock-state="unsynced"');
+
+  if (ready === unsynced) {
+    throw new Error(
+      ready
+        ? `Prerender captured both states for ${route} - the state marker is ambiguous.`
+        : `Prerender captured no data for ${route} - got a loading or error state. ` +
+          `Refusing to ship a skeleton page.`,
+    );
+  }
+
+  if (ready && !FINANCIAL_FIGURE.test(withoutPeers(html))) {
+    throw new Error(
+      `Prerender captured ${route} as ready but its income table holds no figures. ` +
+      `Refusing to ship an empty financials table.`,
+    );
+  }
+
+  if (unsynced && !html.includes('Financials not yet synced')) {
+    throw new Error(
+      `Prerender captured ${route} as unsynced but the page does not say so. ` +
+      `Refusing to ship a page whose state marker does not match its content.`,
+    );
+  }
+}

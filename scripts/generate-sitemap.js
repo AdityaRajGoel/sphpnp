@@ -3,6 +3,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { fetchStockRoutes } from './lib/stock-routes.mjs';
 import { fetchIpoRoutes } from './lib/ipo-routes.mjs';
+import { fetchMarketListRoutes } from './lib/market-list-routes.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const today = new Date().toISOString().split('T')[0];
@@ -33,6 +34,8 @@ const stockRoutes = await fetchStockRoutes();
 // Every IPO page in the catalogue - they were all answering crawlers with the
 // 404 page before the prerender learned about them.
 const ipoRoutes = await fetchIpoRoutes();
+// Index constituent and sector lists, plus their /indices hub.
+const listRoutes = await fetchMarketListRoutes();
 
 const urls = [
   { loc: '/',                    changefreq: 'daily',   priority: '1.0',  lastmod: today },
@@ -47,6 +50,7 @@ const urls = [
   { loc: '/ipo',                 changefreq: 'daily',   priority: '0.85', lastmod: today },
   { loc: '/ipo-pipeline',        changefreq: 'daily',   priority: '0.8',  lastmod: today },
   ...ipoRoutes.map(route => ({ loc: route, changefreq: 'daily', priority: '0.6', lastmod: today })),
+  ...listRoutes.map(route => ({ loc: route, changefreq: 'daily', priority: route === '/indices' ? '0.8' : '0.75', lastmod: today })),
   // Per-symbol stock pages (the screener's children)
   ...stockRoutes.map(route => ({ loc: route, changefreq: 'weekly', priority: '0.6', lastmod: today })),
   { loc: '/learn',               changefreq: 'weekly',  priority: '0.8',  lastmod: today },

@@ -2,7 +2,7 @@ import { describe, it, expect, vi, afterEach } from "vitest";
 // Build scripts, not app code - but they gate the sitemap and the 159
 // prerendered stock pages, so they are on the deploy critical path and belong
 // under the same vitest run as everything else.
-import { fetchStockRoutes } from "../../scripts/lib/stock-routes.mjs";
+import { fetchStockRoutes, assertStockPageCaptured } from "../../scripts/lib/stock-routes.mjs";
 import { routeToFilePath } from "../../scripts/lib/route-paths.mjs";
 
 const respondWith = (rows: unknown) =>
@@ -76,5 +76,19 @@ describe("routeToFilePath", () => {
 
   it("refuses invalid percent-encoding rather than guessing", () => {
     expect(() => routeToFilePath("/stock/%E0%A4")).toThrow(/invalid percent-encoding/);
+  });
+});
+
+describe("assertStockPageCaptured", () => {
+  const peers = '<section aria-labelledby="peers-heading"><table><tr><td>₹1,200 Cr</td></tr></table></section>';
+
+  it("rejects a ready page whose only figures are in the peer table", () => {
+    const html = `<div data-stock-state="ready"><table><tr><td>-</td></tr></table>${peers}</div>`;
+    expect(() => assertStockPageCaptured("/stock/X", html)).toThrow(/holds no figures/);
+  });
+
+  it("accepts a ready page with a figure in its own financials", () => {
+    const html = `<div data-stock-state="ready"><table><tr><td>₹1,28,260.00 Cr</td></tr></table>${peers}</div>`;
+    expect(() => assertStockPageCaptured("/stock/X", html)).not.toThrow();
   });
 });

@@ -10,6 +10,7 @@ import type { ReactNode } from "react";
 import { usePageTracking } from "@/hooks/usePageTracking";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { LanguageProvider } from "@/i18n/LanguageContext";
+import { isPrerender } from "@/lib/prerender";
 import { MotionPreferenceProvider, useMotionPreference } from "@/contexts/MotionPreferenceContext";
 import { toMotionConfigValue } from "@/lib/motion-preference";
 import { AnimatePresence, motion, MotionConfig } from "motion/react";
@@ -70,6 +71,8 @@ const StockPage = lazy(() => import("./pages/StockPage"));
 const IpoPage = lazy(() => import("./pages/IpoPage"));
 const IpoDetailPage = lazy(() => import("./pages/IpoDetailPage"));
 const IpoPipelinePage = lazy(() => import("./pages/IpoPipelinePage"));
+const MarketListPage = lazy(() => import("./pages/MarketListPage"));
+const MarketListsHubPage = lazy(() => import("./pages/MarketListsHubPage"));
 const HelpPage = lazy(() => import("./pages/HelpPage"));
 const WatchlistPage = lazy(() => import("./pages/WatchlistPage"));
 const PortfolioPage = lazy(() => import("./pages/PortfolioPage"));
@@ -210,6 +213,9 @@ const AnimatedRoutes = () => {
         <Route path="/ipo" element={<IpoPage />} />
         <Route path="/ipo/:slug" element={<IpoDetailPage />} />
         <Route path="/ipo-pipeline" element={<IpoPipelinePage />} />
+        <Route path="/indices" element={<MarketListsHubPage />} />
+        <Route path="/indices/:slug" element={<MarketListPage kind="index" />} />
+        <Route path="/sectors/:slug" element={<MarketListPage kind="sector" />} />
         <Route path="/sip-calculator" element={<SIPCalculatorPage />} />
         <Route path="/help" element={<HelpPage />} />
         <Route path="/watchlist" element={<WatchlistPage />} />
@@ -222,6 +228,13 @@ const AnimatedRoutes = () => {
 };
 
 const queryClient = new QueryClient();
+
+// scripts/prerender.js waits on this until no query is in flight, so a panel
+// that loads after the page's own data is captured with its content, never
+// its skeleton.
+if (isPrerender()) {
+  (window as Window & { __PRERENDER_QC__?: QueryClient }).__PRERENDER_QC__ = queryClient;
+}
 
 /**
  * Bridges the stored motion preference into Motion itself.

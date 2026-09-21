@@ -2,8 +2,9 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import express from 'express';
-import { fetchStockRoutes } from './lib/stock-routes.mjs';
+import { fetchStockRoutes, assertStockPageCaptured } from './lib/stock-routes.mjs';
 import { fetchIpoRoutes, assertIpoPageCaptured } from './lib/ipo-routes.mjs';
+import { fetchMarketListRoutes, assertListPageCaptured } from './lib/market-list-routes.mjs';
 import { routeToFilePath } from './lib/route-paths.mjs';
 import { assertHeadCaptured, cleanCapturedHtml, expectedCanonical } from './lib/prerender-html.mjs';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -76,53 +77,6 @@ const routes = [
 // Router catch-all, so it renders NotFound -> SEOHead noindex and the file
 // ships noindex,nofollow even if the status code ever regresses to 200.
 const ERROR_ROUTE = '/404';
-
-// Only the financial tables render a <td> on a stock page - the NSE income
-// table, or the IndianAPI statements, shareholding and moving averages - so a
-// table cell holding a signed number ("₹1,28,260.00 Cr", "3,09,468", "50.48%")
-// is a real financial figure and nothing else on the page can forge one.
-const FINANCIAL_FIGURE = /<td[^>]*>\s*-?(?:₹\s*)?\d/;
-
-/**
- * The catch around page.goto swallows a timeout and proceeds, so without this a
- * slow response silently ships a loading skeleton to crawlers. Measured: at high
- * concurrency this produced 126 well-formed skeleton files with timeouts=0 and
- * nothing in the log to distinguish it from a clean run.
- *
- * The state attribute alone is not enough. An RLS regression on
- * fundamentals_income returns an empty array with no error object - PostgREST
- * resolves rather than throwing, so the hook's .error checks never fire - and
- * every page would render "Financials not yet synced" and pass. So a page that
- * claims `ready` has to show a figure, and a page that claims `unsynced` has to
- * say so in words. Unsynced is legitimate while the backfill is mid-flight.
- */
-function assertStockPageCaptured(route, html) {
-  const ready = html.includes('data-stock-state="ready"');
-  const unsynced = html.includes('data-stock-state="unsynced"');
-
-  if (ready === unsynced) {
-    throw new Error(
-      ready
-        ? `Prerender captured both states for ${route} - the state marker is ambiguous.`
-        : `Prerender captured no data for ${route} - got a loading or error state. ` +
-          `Refusing to ship a skeleton page.`,
-    );
-  }
-
-  if (ready && !FINANCIAL_FIGURE.test(html)) {
-    throw new Error(
-      `Prerender captured ${route} as ready but its income table holds no figures. ` +
-      `Refusing to ship an empty financials table.`,
-    );
-  }
-
-  if (unsynced && !html.includes('Financials not yet synced')) {
-    throw new Error(
-      `Prerender captured ${route} as unsynced but the page does not say so. ` +
-      `Refusing to ship a page whose state marker does not match its content.`,
-    );
-  }
-}
 
 // Bounded on purpose. Two flakes in four back-to-back 169-route runs - a
 // capture in neither state on ABB, a `ProtocolError: Runtime.callFunctionOn
@@ -223,6 +177,19 @@ async function captureOnce(browser, port, route) {
         .catch(() => {});
     }
 
+    if (route === '/indices' || route.startsWith('/indices/') || route.startsWith('/sectors/')) {
+      await page.waitForSelector('[data-list-state="ready"]', { timeout: 25000 }).catch(() => {});
+    }
+    // Panels below the page's own data (results, red flags, peers, news) load
+    // on their own queries. Wait until none is in flight so each is captured
+    // with its content, not its skeleton. Swallowed like the waits above: a
+    // panel that never loads simply renders nothing, which is safe to ship.
+    await page
+      .waitForFunction(() => {
+        const qc = window.__PRERENDER_QC__;
+        return !qc || (qc.isFetching() === 0 && qc.isMutating() === 0);
+      }, { timeout: 20000, polling: 250 })
+      .catch(() => {});
     // Helmet writes <head> a frame after the body settles. Wait until the head
     // names THIS page: its own canonical URL and a title other than the shell's.
     // A page that never gets there fails the assertion below and is retried.
@@ -250,6 +217,9 @@ async function captureOnce(browser, port, route) {
     }
     if (route === '/ipo' || route === '/ipo-pipeline' || route.startsWith('/ipo/')) {
       assertIpoPageCaptured(route, html);
+    }
+    if (route === '/indices' || route.startsWith('/indices/') || route.startsWith('/sectors/')) {
+      assertListPageCaptured(route, html);
     }
     return html;
   } finally {
@@ -331,6 +301,8 @@ async function prerender() {
       console.log(`Derived ${stockRoutes.length} stock routes from screener_stocks.`);
       const ipoRoutes = await fetchIpoRoutes();
       console.log(`Derived ${ipoRoutes.length} IPO routes from ipos.`);
+      const listRoutes = await fetchMarketListRoutes();
+      console.log(`Derived ${listRoutes.length} index and sector list routes.`);
 
       // New IPOs arrive several times a day, but pages are only prerendered on
       // deploy. vercel.json rewrites any /ipo/:slug without a file to this shell,
@@ -349,7 +321,7 @@ async function prerender() {
       // above 4 parallel pages capture completeness was measured to collapse, and
       // every page still passes the same state assertions and bounded retries,
       // so a page that is not ready fails the build rather than shipping.
-      const queue = [...routes, ...stockRoutes, ...ipoRoutes, ERROR_ROUTE];
+      const queue = [...routes, ...listRoutes, ...stockRoutes, ...ipoRoutes, ERROR_ROUTE];
       const total = queue.length;
       let next = 0;
       let done = 0;
