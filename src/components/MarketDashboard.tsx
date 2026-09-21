@@ -8,6 +8,8 @@ import {
   Calendar, Percent, IndianRupee, Coins, AlertTriangle
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
+import { useQuery } from "@tanstack/react-query";
+import { latestNiftyPcr } from "@/lib/market-data";
 import { useT } from "@/i18n/LanguageContext";
 import { useLiveMarket } from "@/hooks/useLiveMarket";
 import { useMarketFlows } from "@/hooks/useMarketFeed";
@@ -205,7 +207,11 @@ const PutCallRatio = memo(() => {
   const hasBreadth = marketOverview != null;
   const advances = marketOverview?.advances ?? 0;
   const declines = marketOverview?.declines ?? 0;
-  const pcr = hasBreadth && advances > 0 && declines > 0 ? parseFloat((declines / advances * 1.1).toFixed(2)) : null;
+  // The real put-call ratio: NIFTY's nearest expiry from the last F&O close. This
+  // used to be declines / advances x 1.1 - a breadth figure labelled as a PCR.
+  const { data: nifty } = useQuery({ queryKey: ["nifty-pcr"], queryFn: latestNiftyPcr, staleTime: 10 * 60_000 });
+  const pcr = nifty ? Number(nifty.pcr.toFixed(2)) : null;
+  const mood = !hasBreadth ? null : advances > declines * 1.1 ? "Bullish" : declines > advances * 1.1 ? "Bearish" : "Mixed";
   const pcrColor = pcr == null ? "text-muted-foreground" : pcr > 1 ? "text-secondary" : pcr > 0.7 ? "text-brand-gold" : "text-destructive";
   const sentiment = pcr == null ? "" : pcr > 1.2 ? "Bullish" : pcr > 0.8 ? "Neutral" : "Bearish";
   const vixPrice = vix?.price || "—";
@@ -225,7 +231,7 @@ const PutCallRatio = memo(() => {
           <div className="bg-muted/30 rounded-lg p-3 text-center">
             <div className="text-[10px] text-muted-foreground mb-1">NIFTY PCR</div>
             <div className={`text-2xl font-bold ${pcrColor}`}>{pcr ?? "—"}</div>
-            <div className={`text-[10px] font-semibold ${pcrColor}`}>{sentiment}</div>
+            <div className={`text-[10px] font-semibold ${pcrColor}`}>{sentiment}{nifty ? ` · ${new Date(nifty.trade_date).toLocaleDateString("en-IN", { day: "numeric", month: "short" })} close` : ""}</div>
           </div>
           <div className="bg-muted/30 rounded-lg p-3 text-center">
             <div className="text-[10px] text-muted-foreground mb-1">India VIX</div>
@@ -242,9 +248,7 @@ const PutCallRatio = memo(() => {
           </div>
         </div>
         <div className="mt-3 flex items-center justify-between text-[10px] text-muted-foreground">
-          <span>Market Mood: {hasBreadth
-            ? <b className={advances > declines ? "text-secondary" : "text-destructive"}>{advances > declines ? "Bullish" : "Bearish"}</b>
-            : <b>—</b>}</span>
+          <span>Market Mood: <b className={mood === "Bullish" ? "text-secondary" : mood === "Bearish" ? "text-destructive" : ""}>{mood ?? "—"}</b></span>
           <span className="flex items-center gap-1 text-brand-orange font-semibold"><Zap className="w-3 h-3" /> Live</span>
         </div>
       </CardContent>

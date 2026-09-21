@@ -141,7 +141,7 @@ const InvestmentProducts = () => {
 
                   <div className="relative z-10 flex flex-col h-full">
                     {p.art && (
-                      <div className="-mx-4 -mt-4 mb-3 overflow-hidden border-b border-border/50 bg-white md:-mx-5 md:-mt-5" aria-hidden="true">
+                      <div className="-mx-4 -mt-4 mb-3 overflow-hidden border-b border-border/50 bg-white max-md:hidden md:-mx-5 md:-mt-5" aria-hidden="true">
                         <Illustration
                           slug={p.art}
                           alt={`${p.title} illustration`}

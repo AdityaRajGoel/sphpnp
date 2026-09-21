@@ -104,7 +104,7 @@ const WhyChooseUs = () => {
         </motion.div>
 
         <motion.div
-          className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5"
+          className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5"
           variants={containerVariants}
           initial="hidden"
           whileInView="visible"
@@ -117,7 +117,7 @@ const WhyChooseUs = () => {
                 key={usp.title}
                 variants={itemVariants}
                 whileHover={{ y: -6, scale: 1.02 }}
-                className="group relative bg-card border border-border/50 rounded-2xl p-5 hover:border-secondary/40 hover:shadow-xl transition-[color,background-color,border-color,box-shadow] duration-base overflow-hidden"
+                className="group relative bg-card border border-border/50 rounded-2xl p-4 sm:p-5 hover:border-secondary/40 hover:shadow-xl transition-[color,background-color,border-color,box-shadow] duration-base overflow-hidden"
               >
                 {/* Hover gradient overlay */}
                 <div className="absolute inset-0 bg-gradient-to-br from-secondary/5 to-brand-gold/5 opacity-0 group-hover:opacity-100 transition-opacity duration-slow" />
@@ -131,10 +131,10 @@ const WhyChooseUs = () => {
                     <Icon className="w-6 h-6 text-secondary" />
                   </motion.div>
 
-                  <h3 className="font-heading text-base font-bold text-foreground mb-1.5 group-hover:text-secondary transition-colors duration-base">
+                  <h3 className="font-heading text-sm sm:text-base font-bold text-foreground mb-1.5 group-hover:text-secondary transition-colors duration-base">
                     {usp.title}
                   </h3>
-                  <p className="text-muted-foreground text-sm leading-relaxed">
+                  <p className="text-muted-foreground text-xs sm:text-sm leading-relaxed">
                     {usp.description}
                   </p>
                 </div>

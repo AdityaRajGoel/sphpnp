@@ -98,7 +98,7 @@ const FloatingActions = () => {
   ];
 
   return (
-    <div className="fixed bottom-24 md:bottom-6 right-6 z-50 flex flex-col items-end gap-3 pb-[env(safe-area-inset-bottom)]">
+    <div className="fixed bottom-[calc(6rem+var(--consent-dock-height,0px))] md:bottom-[calc(1.5rem+var(--consent-dock-height,0px))] right-6 z-50 transition-[bottom] duration-base flex flex-col items-end gap-3 pb-[env(safe-area-inset-bottom)]">
       {/* Back to top button */}
       <AnimatePresence>
         {showBackToTop && !expanded && (
@@ -108,7 +108,7 @@ const FloatingActions = () => {
             exit={{ opacity: 0, scale: 0.8, y: 10 }}
             onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
             aria-label="Scroll to top"
-            className="w-10 h-10 rounded-full bg-card/90 backdrop-blur-md border border-border/50 text-muted-foreground hover:text-foreground hover:bg-accent shadow-lg flex items-center justify-center transition-colors"
+            className="max-md:hidden w-10 h-10 rounded-full bg-card/90 backdrop-blur-md border border-border/50 text-muted-foreground hover:text-foreground hover:bg-accent shadow-lg flex items-center justify-center transition-colors"
           >
             <ArrowUp className="w-4 h-4" />
           </motion.button>

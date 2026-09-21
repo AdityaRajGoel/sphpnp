@@ -140,7 +140,7 @@ const SectionShortcuts = () => {
   return (
     <div
       ref={containerRef}
-      className="fixed bottom-24 left-4 z-40 flex flex-col items-start gap-2 md:bottom-6 md:left-6 pb-[env(safe-area-inset-bottom)] print:hidden"
+      className="fixed bottom-[calc(6rem+var(--consent-dock-height,0px))] left-4 z-40 max-md:hidden flex flex-col items-start gap-2 md:bottom-[calc(1.5rem+var(--consent-dock-height,0px))] transition-[bottom] duration-base md:left-6 pb-[env(safe-area-inset-bottom)] print:hidden"
     >
       <AnimatePresence>
         {isOpen && (

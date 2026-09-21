@@ -36,12 +36,12 @@ export default function FeatureStory({ id, eyebrow, heading, intro, items }: Pro
           {intro && <p className="mt-4 text-muted-foreground md:text-lg">{intro}</p>}
         </motion.div>
 
-        <div className="mt-12 space-y-16 md:mt-20 md:space-y-28">
+        <div className="mt-10 space-y-12 md:mt-20 md:space-y-28">
           {items.map((item, i) => {
             const flip = i % 2 === 1;
             return (
               <article key={item.title} className="grid items-center gap-7 md:grid-cols-12 md:gap-12">
-                <div className={`md:col-span-7 ${flip ? "md:order-2" : ""}`}>
+                <div className={`md:col-span-7 ${flip ? "md:order-2" : ""} ${i > 0 ? "max-md:hidden" : ""}`}>
                   <IllustrationFrame
                     slug={item.slug}
                     tone="light"

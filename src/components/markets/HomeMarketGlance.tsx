@@ -12,12 +12,11 @@ import { useScreenerUniverse } from "@/hooks/useScreenerUniverse";
 import { computeBreadth } from "@/lib/market-breadth";
 import { getWorldBoard } from "@/lib/world-markets";
 import { isPrerender } from "@/lib/prerender";
-import FiiDiiCashCard from "./FiiDiiCashCard";
 import { HeatStrip } from "./WorldMarketsSection";
 
 /**
- * The home page's window onto the terminal: how broad the day's move is, where
- * institutions put money, and how the world closed - each figure linking on to
+ * The home page's window onto the terminal: how broad the day's move is and how the
+ * world closed (institutional flows sit in MarketDashboard just above) - each figure linking on to
  * the page that explains it. Every block renders only once its data exists.
  */
 export default function HomeMarketGlance() {
@@ -41,7 +40,7 @@ export default function HomeMarketGlance() {
       <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
         <div>
           <span className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-secondary"><Activity className="h-4 w-4" aria-hidden="true" />Market at a glance</span>
-          <h2 id="home-glance" className="mt-2 font-heading text-3xl md:text-4xl font-bold">How broad, who is buying, what the world did</h2>
+          <h2 id="home-glance" className="mt-2 font-heading text-3xl md:text-4xl font-bold">How broad the move is, and what the world did</h2>
         </div>
         <Link to="/market-pulse" className="group inline-flex items-center gap-1.5 rounded-lg border border-border px-4 py-2 text-sm font-semibold hover:border-secondary/50 hover:text-secondary transition-colors">
           Open Market Pulse <ArrowRight className="h-4 w-4 transition-transform duration-fast group-hover:translate-x-0.5" aria-hidden="true" />
@@ -62,8 +61,7 @@ export default function HomeMarketGlance() {
             ))}
       </div>
 
-      <div className="mt-4 grid gap-4 lg:grid-cols-2">
-        <FiiDiiCashCard />
+      <div className="mt-4">
         {board.data && (
           <Card className="p-5">
             <div className="flex flex-wrap items-baseline justify-between gap-2 mb-3">

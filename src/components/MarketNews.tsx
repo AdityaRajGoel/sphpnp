@@ -279,7 +279,7 @@ const MarketNews = () => {
               </button>
             ))}
           </div>
-          <Button variant="ghost" size="icon" onClick={fetchNews} disabled={loading} className="ml-1" aria-label="Refresh news">
+          <Button variant="ghost" size="icon" onClick={fetchNews} disabled={loading} className="ml-1 shrink-0" aria-label="Refresh news">
             <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
           </Button>
         </div>
@@ -352,7 +352,7 @@ const MarketNews = () => {
             ) : (
               <>
                 {featured && <div className="mb-4"><FeaturedCard item={featured} /></div>}
-                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className={`grid md:grid-cols-2 lg:grid-cols-3 gap-4 ${showAll ? "" : "max-md:[&>*:nth-child(n+4)]:hidden"}`}>
                   {visibleRest.map((item, i) => (
                     <NewsCard key={`${activeTab}-${item.title}-${i}`} item={item} index={i} />
                   ))}

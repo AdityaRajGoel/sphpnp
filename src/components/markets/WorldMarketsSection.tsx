@@ -34,6 +34,11 @@ function Spark({ values }: { values: number[] }) {
 export function HeatStrip({ rows }: { rows: BoardRow[] }) {
   const sorted = [...rows].filter((r) => r.day !== null).sort((a, b) => b.day! - a.day!);
   const scale = Math.max(1, ...sorted.map((r) => Math.abs(r.day!)));
+  // A bare country code is ambiguous once a country has two indices ("IN +0.6", "IN +0.2").
+  const perCountry = new Map<string, number>();
+  for (const r of sorted) if (r.country) perCountry.set(r.country, (perCountry.get(r.country) ?? 0) + 1);
+  const label = (r: BoardRow) =>
+    r.country && perCountry.get(r.country) === 1 ? r.country : r.name.replace(/^BSE /, "").split(" ")[0];
   return (
     <div className="flex flex-wrap gap-1" role="list" aria-label="Day's change by market">
       {sorted.map((r) => {
@@ -46,7 +51,7 @@ export function HeatStrip({ rows }: { rows: BoardRow[] }) {
             className="rounded px-1.5 py-1 text-[11px] font-semibold tabular-nums text-foreground"
             style={{ background: `hsl(var(${r.day! >= 0 ? "--secondary" : "--destructive"}) / ${alpha})` }}
           >
-            {r.country ?? r.name.split(" ")[0]} {r.day! >= 0 ? "+" : ""}{r.day!.toFixed(1)}
+            {label(r)} {r.day! >= 0 ? "+" : ""}{r.day!.toFixed(1)}
           </span>
         );
       })}
@@ -115,7 +120,7 @@ export default function WorldMarketsSection() {
                   <th scope="col" className="px-3 py-2.5 text-right font-medium">Last</th>
                   {(["day", "week", "month", "quarter"] as SortKey[]).map((k) => (
                     <th key={k} scope="col" aria-sort={sort === k ? "descending" : undefined} className="px-3 py-2.5 text-right font-medium">
-                      <button type="button" onClick={() => setSort(k)} className={`hover:text-foreground ${sort === k ? "text-foreground" : ""}`}>{{ day: "1D", week: "1W", month: "1M", quarter: "3M" }[k]}</button>
+                      <button type="button" onClick={() => setSort(k)} className={`-my-2 inline-flex min-h-8 min-w-8 items-center justify-end hover:text-foreground ${sort === k ? "text-foreground" : ""}`}>{{ day: "1D", week: "1W", month: "1M", quarter: "3M" }[k]}</button>
                     </th>
                   ))}
                   {tab === "etfs" && <th scope="col" className="px-3 py-2.5 text-right font-medium" title="Estimated from traded value and direction">Est. flow</th>}

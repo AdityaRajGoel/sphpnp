@@ -531,7 +531,7 @@ const TelegramChannel = ({ limit = 10, showViewAll = false, showFilters = false 
           </AnimatePresence>
         ) : (
           <AnimatePresence mode="popLayout">
-            <div className="grid md:grid-cols-2 gap-4">
+            <div className={`grid md:grid-cols-2 gap-4 ${showViewAll ? "max-md:[&>*:nth-child(n+3)]:hidden" : ""}`}>
               {visible.map((msg, i) => (
                 <MessageCard key={msg.id} message={msg} index={i} />
               ))}

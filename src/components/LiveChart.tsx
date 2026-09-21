@@ -470,7 +470,7 @@ const LiveChart = () => {
                     <button
                       onClick={() => setShowIndicators(!showIndicators)}
                       aria-label={showIndicators ? "Hide chart indicators" : "Show chart indicators"}
-                      className={`flex items-center gap-1 px-2 py-1 text-[10px] font-medium rounded-md transition-colors whitespace-nowrap ${showIndicators ? "bg-brand-orange/10 text-brand-orange border border-brand-orange/30" : "text-muted-foreground hover:bg-muted/80"}`}
+                      className={`flex min-h-8 min-w-8 items-center justify-center gap-1 px-2 py-1 text-[10px] font-medium rounded-md transition-colors whitespace-nowrap ${showIndicators ? "bg-brand-orange/10 text-brand-orange border border-brand-orange/30" : "text-muted-foreground hover:bg-muted/80"}`}
                     >
                       <LineChart className="w-3 h-3" />
                       <span className="hidden sm:inline">Indicators</span>
@@ -479,7 +479,7 @@ const LiveChart = () => {
                       onClick={() => setAdvancedOpen(true)}
                       disabled={chartError || chartData.length < 2}
                       aria-label={`Open the advanced chart for ${activeIndexKey}`}
-                      className="flex items-center gap-1 px-2 py-1 text-[10px] font-medium rounded-md transition-colors whitespace-nowrap text-muted-foreground hover:bg-muted/80 hover:text-foreground disabled:opacity-40 disabled:hover:bg-transparent"
+                      className="flex min-h-8 min-w-8 items-center justify-center gap-1 px-2 py-1 text-[10px] font-medium rounded-md transition-colors whitespace-nowrap text-muted-foreground hover:bg-muted/80 hover:text-foreground disabled:opacity-40 disabled:hover:bg-transparent"
                     >
                       <Maximize2 className="w-3 h-3" />
                       <span className="hidden sm:inline">Advanced</span>
@@ -487,7 +487,7 @@ const LiveChart = () => {
                     <div className="flex gap-1">
                       {TIMEFRAMES.map((tf) => (
                         <button key={tf} onClick={() => setActiveTimeframe(tf)}
-                          className={`px-2 sm:px-2.5 py-1 text-xs font-medium rounded-md transition-colors whitespace-nowrap ${activeTimeframe === tf ? "bg-brand-orange/10 text-brand-orange border border-brand-orange/30" : "text-muted-foreground hover:bg-muted/80 hover:text-foreground"}`}>{tf}</button>
+                          className={`min-h-8 px-2 sm:px-2.5 py-1 text-xs font-medium rounded-md transition-colors whitespace-nowrap ${activeTimeframe === tf ? "bg-brand-orange/10 text-brand-orange border border-brand-orange/30" : "text-muted-foreground hover:bg-muted/80 hover:text-foreground"}`}>{tf}</button>
                       ))}
                     </div>
                   </div>

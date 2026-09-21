@@ -206,7 +206,7 @@ const IPOTracker = () => {
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
-              className="grid md:grid-cols-2 lg:grid-cols-3 gap-4"
+              className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 max-md:[&>*:nth-child(n+4)]:hidden"
             >
               {filtered.length > 0 ? filtered.map((ipo, i) => (
                 <IPOCard key={ipo.id} ipo={ipo} index={i} />
