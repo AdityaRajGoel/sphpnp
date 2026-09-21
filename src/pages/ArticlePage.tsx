@@ -80,6 +80,16 @@ const ArticlePage = () => {
             <h1 className="font-heading text-3xl md:text-4xl font-bold text-foreground leading-tight">
               {article.title}
             </h1>
+            <p className="mt-3 text-xs text-muted-foreground">
+              Updated{" "}
+              <time dateTime={article.updated}>
+                {new Date(`${article.updated}T00:00:00Z`).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" })}
+              </time>{" "}
+              · Parasram India research desk
+            </p>
+            {/* The answer comes first, before any preamble: readers and answer
+                engines both lift the opening lines of a page. */}
+            <p className="mt-5 text-lg leading-relaxed text-foreground">{article.answer}</p>
           </motion.header>
 
           {/* Key takeaways box */}

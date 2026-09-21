@@ -11,6 +11,8 @@ export type LearnArticle = {
   difficulty: "Beginner" | "Intermediate" | "Advanced";
   readTime: number;            // minutes
   updated: string;             // ISO date
+  /** Two or three sentences that answer the title outright, shown under the H1. Answer engines quote this. */
+  answer: string;
   keyTakeaways: string[];
   related: string[];           // slugs
   content: string;             // markdown
@@ -26,6 +28,8 @@ export const LEARN_ARTICLES: Record<string, LearnArticle> = {
     difficulty: "Beginner",
     readTime: 6,
     updated: "2026-07-01",
+    answer:
+      "A Demat account holds your shares, bonds, mutual funds and ETFs in electronic form, so there are no paper certificates. It works alongside a trading account: the trading account places orders and the Demat account stores what you buy. In India it is held with CDSL or NSDL through a SEBI-registered broker, and you can open one online with PAN, Aadhaar, a bank proof and a photo.",
     keyTakeaways: [
       "A Demat account holds your shares and securities in electronic form - no paper certificates.",
       "It works alongside a trading account: the trading account places orders, the Demat account stores what you buy.",
@@ -92,6 +96,8 @@ Without a Demat account you simply cannot buy or hold shares, apply for IPOs, or
     difficulty: "Beginner",
     readTime: 7,
     updated: "2026-07-01",
+    answer:
+      "The P/E ratio is a share's price divided by its earnings per share, so it tells you how many rupees you pay for ₹1 of annual profit. A stock is cheap or expensive only relative to its own past P/E and to its sector peers, never in isolation. P/E does not work for loss-making companies and can be distorted by one-off profits.",
     keyTakeaways: [
       "P/E ratio = Share Price ÷ Earnings Per Share (EPS). It shows how much you pay for ₹1 of profit.",
       "A high P/E can mean an expensive stock or high growth expectations; a low P/E can mean value or hidden problems.",
@@ -157,6 +163,8 @@ The P/E ratio is a brilliant *first filter*, not a *final verdict*. Use it to sh
     difficulty: "Beginner",
     readTime: 8,
     updated: "2026-07-01",
+    answer:
+      "For most Indian investors building wealth from a monthly income, a SIP wins on consistency: it invests a fixed amount at regular intervals and averages out the price you pay. A lumpsum invests everything at once and can do better when markets are near a bottom, but it needs a large idle sum and the nerve to invest it in one go.",
     keyTakeaways: [
       "A SIP invests a fixed amount at regular intervals; a lumpsum invests the whole amount at once.",
       "SIPs use rupee-cost averaging to reduce the risk of bad timing - ideal for salaried investors.",
@@ -213,6 +221,8 @@ The most important factor isn't SIP vs lumpsum - it's **staying invested for the
     difficulty: "Beginner",
     readTime: 5,
     updated: "2026-07-01",
+    answer:
+      "Compounding means your returns start earning returns of their own, so growth speeds up the longer money stays invested. Time matters more than the amount: starting ten years earlier can double your final corpus. The Rule of 72 gives a quick estimate of how long money takes to double: divide 72 by the annual return in percent.",
     keyTakeaways: [
       "Compounding means your returns start earning their own returns - growth accelerates over time.",
       "Time in the market matters more than the amount: starting 10 years earlier can double your final corpus.",
@@ -278,6 +288,8 @@ At a 12% return, ₹1 lakh becomes ₹2 lakh in 6 years, ₹4 lakh in 12 years, 
     difficulty: "Beginner",
     readTime: 8,
     updated: "2026-07-01",
+    answer:
+      "A mutual fund pools money from many investors, and a professional manager invests it in stocks, bonds or both. The main types are equity funds for growth, debt funds for stability, hybrid funds for a mix and index funds for low-cost passive investing. NAV is the price per unit and the expense ratio is the annual fee; direct plans cost less than regular plans because they skip the distributor's commission.",
     keyTakeaways: [
       "A mutual fund pools money from many investors and a professional manager invests it in stocks, bonds or both.",
       "Main types: equity (growth), debt (stability), hybrid (mix) and index funds (low-cost, passive).",
@@ -341,6 +353,8 @@ The Securities and Exchange Board of India (**SEBI**) strictly regulates every m
     difficulty: "Beginner",
     readTime: 9,
     updated: "2026-07-01",
+    answer:
+      "An IPO is when a private company sells its shares to the public for the first time and lists them on the NSE or BSE. You apply in lots through your bank's ASBA or UPI, and the money is only blocked, not debited, until shares are allotted. When an IPO is oversubscribed, allotment is by lottery, so you may get fewer shares than you applied for, or none.",
     keyTakeaways: [
       "An IPO is when a private company sells shares to the public and lists on the NSE/BSE for the first time.",
       "You apply through your bank's ASBA/UPI - money is only blocked, not debited, until shares are allotted.",
@@ -395,6 +409,8 @@ No. A listing "pop" is never guaranteed - many IPOs list flat or below their iss
     difficulty: "Beginner",
     readTime: 7,
     updated: "2026-07-10",
+    answer:
+      "Pick a discount broker if you trade actively on your own and want the lowest flat fees; pick a full-service broker if you want research, a dealer desk, branch support and personal guidance. Busy professionals and first-time investors usually get more value from full service. Many investors use both: a discount account for self-directed trades and a full-service relationship for advice.",
     keyTakeaways: [
       "Discount brokers offer flat, low fees but little or no human support, research, or guidance.",
       "Full-service brokers charge percentage brokerage but include research, a dealer desk, branch support and personalised service.",
@@ -456,6 +472,8 @@ For occasional investors, the fee gap is small in absolute terms - what matters 
     difficulty: "Intermediate",
     readTime: 8,
     updated: "2026-07-10",
+    answer:
+      "Listed shares sold within 12 months are taxed at 20% as short-term capital gains. Shares held longer are taxed at 12.5%, but only on long-term gains above ₹1.25 lakh a year. F&O profits are non-speculative business income and intraday equity profits are speculative business income, both taxed at your slab rate; dividends are also taxed at your slab rate.",
     keyTakeaways: [
       "Listed shares sold within 12 months attract 20% short-term capital gains tax (STCG u/s 111A).",
       "Long-term gains (held over 12 months) are taxed at 12.5% - but only on gains above ₹1.25 lakh per year.",
@@ -522,6 +540,8 @@ Securities Transaction Tax is deducted automatically on every trade:
     difficulty: "Intermediate",
     readTime: 7,
     updated: "2026-07-10",
+    answer:
+      "You buy unlisted shares off-market through a dealer or broker, and they are delivered to your Demat account by ISIN. Prices are negotiated rather than set on an exchange, so compare quotes and buy through a SEBI-registered intermediary. Pre-IPO shares are locked in for 6 months after listing, and gains on shares held over 24 months are taxed as LTCG at 12.5%.",
     keyTakeaways: [
       "Unlisted shares are bought off-market through dealers/brokers and delivered directly to your Demat account via ISIN.",
       "Prices are negotiated, not exchange-discovered - always compare quotes and buy through a SEBI-registered intermediary.",
@@ -579,6 +599,8 @@ The unlisted market has no SEBI order-matching protections - your counterparty *
     difficulty: "Intermediate",
     readTime: 10,
     updated: "2026-08-09",
+    answer:
+      "Futures oblige you to buy or sell at a set price on expiry, while options give you the right to do so without the obligation. Both trade in fixed lots, so positions are large by design. Buying an option risks only the premium you pay, but selling options and trading futures carry potentially unlimited risk, and SEBI found that 9 in 10 individual F&O traders lose money.",
     keyTakeaways: [
       "Futures obligate you to buy/sell at a set price on expiry; options give you the right without the obligation.",
       "F&O trades happen in fixed lots (e.g. NIFTY = 75 units), so position sizes are large by design.",
@@ -663,6 +685,8 @@ F&O income is **non-speculative business income** - see our [tax guide](/learn/t
     difficulty: "Intermediate",
     readTime: 6,
     updated: "2026-07-10",
+    answer:
+      "MTF, the Margin Trading Facility, lets you buy delivery shares by paying only part of their value while your broker funds the rest and charges interest. The funded shares are pledged as collateral, and you still receive benefits such as dividends. Only exchange-approved stocks qualify, and if prices fall you must add margin or the broker squares off your position.",
     keyTakeaways: [
       "MTF (Margin Trading Facility) lets you buy delivery shares by paying only part of the value; the broker funds the balance against interest.",
       "Funded shares are pledged as collateral; you keep ownership benefits like dividends.",
@@ -720,6 +744,8 @@ Sensible: high-conviction large-cap positions where you expect the move to outpa
     difficulty: "Intermediate",
     readTime: 12,
     updated: "2026-08-09",
+    answer:
+      "From 3 August 2026, stocks that have F&O contracts get their closing price from a 20-minute Closing Auction Session, from 3:15 p.m. to 3:35 p.m., instead of the VWAP of the last 30 minutes. Every trade in the auction fills at one equilibrium price, orders must sit within 3% of a reference price, and stop loss and iceberg orders are not allowed. Stocks without derivative contracts still close on the old 30-minute VWAP.",
     keyTakeaways: [
       "From 3 August 2026, the closing price of stocks that have F&O contracts is discovered in a 20-minute Closing Auction Session running 3:15 p.m. to 3:35 p.m., not the old last-30-minutes VWAP.",
       "Every stock without derivative contracts is unchanged - it still closes on the VWAP of the last 30 minutes of continuous trading.",
@@ -875,6 +901,8 @@ As in CAS, **market orders get execution priority over limit orders**, and **ice
     difficulty: "Intermediate",
     readTime: 9,
     updated: "2026-08-09",
+    answer:
+      "From 7 September 2026 the pre-open session still runs from 9:00 a.m. to 9:15 a.m., but it is split into four sub-sessions. Market orders are allowed only from 9:00 to 9:05, after which it is limit orders only, and order entry closes at a random moment between 9:08 and 9:10. Stop loss and iceberg orders are not permitted, and everyone fills at one common equilibrium price.",
     keyTakeaways: [
       "From 7 September 2026 the pre-open session is still 9:00 a.m. to 9:15 a.m., but it is split into four sub-sessions with different rules inside each one.",
       "Market orders can only be entered between 9:00 and 9:05; after that it is limit orders only, and market orders already placed cannot be modified or cancelled.",
