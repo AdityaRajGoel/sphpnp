@@ -3,6 +3,7 @@
 // cached row is stale; a fresh row is returned as is, so concurrent visitors
 // cost one rebuild, not one each.
 
+import { resultsSummary, type IncomeRow } from "../_shared/results-summary.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { rssItems } from "../_shared/google-news.ts";
 import { istDate } from "../_shared/ipo-status.ts";
@@ -88,6 +89,24 @@ Deno.serve(async (req) => {
     }
   }
 
+  // Quarterly results filed in the last three days, one line each (results-summary.ts).
+  const results: TickerItem[] = [];
+  const { data: freshFilings } = await supabase.from("fundamentals_filings").select("symbol").gte("filing_date", addDays(today, -3)).limit(200);
+  const freshSymbols = [...new Set((freshFilings ?? []).map((f) => f.symbol as string))].slice(0, 40);
+  if (freshSymbols.length > 0) {
+    const { data: income } = await supabase.from("fundamentals_income")
+      .select("symbol,period_end,is_consolidated,source,revenue,profit_after_tax")
+      .in("symbol", freshSymbols).gte("period_end", addDays(today, -500)).limit(2000);
+    for (const symbol of freshSymbols) {
+      const s = resultsSummary(((income ?? []) as (IncomeRow & { symbol: string })[]).filter((r) => r.symbol === symbol));
+      if (!s) continue;
+      results.push({
+        kind: "results", tag: "RESULTS", text: `${symbol} ${s.text}`, href: `/stock/${encodeURIComponent(symbol)}`,
+        tone: s.profit_yoy === null ? "neutral" : s.profit_yoy >= 0 ? "up" : "down", external: false,
+      });
+    }
+  }
+
   const stocks = (stockRes.data ?? []).map((s) => ({ ...s, price: Number(s.price) || 0, change_pct: Number(s.change_pct) || 0, market_cap: Number(s.market_cap) || 0 }));
   const symbolOf = symbolResolver(stocks);
   const items = interleave([
@@ -96,6 +115,7 @@ Deno.serve(async (req) => {
     moverItems(stocks),
     exDateItems(actionRes.data ?? [], symbolOf, today),
     announcementItems(annRes.data ?? [], symbolOf),
+    results.slice(0, 6),
     globals,
   ]);
 

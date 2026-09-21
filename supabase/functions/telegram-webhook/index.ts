@@ -22,6 +22,49 @@ const unauthorized = () =>
     headers: { ...corsHeaders, 'Content-Type': 'application/json' },
   });
 
+const HELP = [
+  'Parasram watchlist alerts.',
+  'Open your watchlist on www.sphpnp.com and tap "Alert me on Telegram" to link it here.',
+  '/list - the stocks you get alerts for',
+  '/stop - stop all alerts',
+].join('\n');
+
+async function sendTelegram(chatId: number, text: string): Promise<boolean> {
+  const res = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ chat_id: chatId, text, disable_web_page_preview: true }),
+  });
+  if (!res.ok) console.error('Telegram sendMessage failed:', res.status, await res.text().catch(() => ''));
+  return res.ok;
+}
+
+/** /start <token> links a watchlist; /list and /stop manage it. Private chats only. */
+async function handleBotMessage(message: { chat: { id: number }; text?: string }) {
+  const chatId = message.chat.id;
+  const [command, arg] = (message.text ?? '').trim().split(/\s+/, 2);
+  const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
+  if (command === '/start' && arg && /^[a-f0-9]{32}$/.test(arg)) {
+    const weekAgo = new Date(Date.now() - 7 * 86_400_000).toISOString();
+    const { data: link } = await supabase.from('telegram_link_tokens').select('symbols').eq('token', arg).gte('created_at', weekAgo).maybeSingle();
+    if (!link) return sendTelegram(chatId, 'That link has expired or was already used. Make a new one from your watchlist.');
+    const rows = (link.symbols as string[]).map((symbol) => ({ chat_id: chatId, symbol }));
+    await supabase.from('telegram_subscriptions').upsert(rows, { onConflict: 'chat_id,symbol' });
+    await supabase.from('telegram_link_tokens').delete().eq('token', arg);
+    return sendTelegram(chatId, `Done. You will get alerts for ${rows.length} stock${rows.length === 1 ? '' : 's'}: ${link.symbols.join(', ')}.\n\nAlerts cover promoter selling, pledges, exchange surveillance, material filings and new quarterly results. /stop to turn them off.`);
+  }
+  if (command === '/list') {
+    const { data } = await supabase.from('telegram_subscriptions').select('symbol').eq('chat_id', chatId).order('symbol');
+    return sendTelegram(chatId, data?.length ? `Alerts on: ${data.map((r) => r.symbol).join(', ')}` : 'No stocks linked yet.\n\n' + HELP);
+  }
+  if (command === '/stop') {
+    await supabase.from('telegram_subscriptions').delete().eq('chat_id', chatId);
+    return sendTelegram(chatId, 'Alerts stopped. Link your watchlist again any time.');
+  }
+  return sendTelegram(chatId, HELP);
+}
+
 Deno.serve(async (req) => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
@@ -57,7 +100,7 @@ Deno.serve(async (req) => {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             url: webhookUrl,
-            allowed_updates: ['channel_post'],
+            allowed_updates: ['channel_post', 'message'],
             // Telegram will send this back on every delivery so the POST
             // handler below can verify the caller really is Telegram.
             secret_token: TELEGRAM_WEBHOOK_SECRET,
@@ -127,7 +170,13 @@ Deno.serve(async (req) => {
     try {
       const update = await req.json();
 
-      // We only care about channel_post updates
+      // A visitor talking to the bot: watchlist alert commands (see handleBotMessage).
+      if (update.message?.chat?.type === 'private') {
+        await handleBotMessage(update.message);
+        return new Response(JSON.stringify({ ok: true }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+
+      // Otherwise only channel_post updates matter
       const post = update.channel_post;
       if (!post) {
         return new Response(JSON.stringify({ ok: true, skipped: 'not a channel_post' }), {

@@ -253,6 +253,8 @@ export const AIAnalysisModal = ({ isOpen, onClose, stock }: AIAnalysisModalProps
       bearish_signals: string[];
       action_verdict: string;
       insights: { quality: number; valuation: number; growth: number };
+      /** Against the previous cached report; null on a stock's first report. */
+      changes?: { since: string; items: string[] } | null;
       key_indicators?: Record<string, string>;
       sector_comparison?: {
         pe_avg: number;
@@ -936,6 +938,16 @@ export const AIAnalysisModal = ({ isOpen, onClose, stock }: AIAnalysisModalProps
                     {/* New Infographics Section */}
                     {geminiVerdict?.structured && (
                       <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
+                        {geminiVerdict.structured.changes && (
+                          <section aria-label="What changed since the last report" className="rounded-xl border border-secondary/30 bg-secondary/5 p-4">
+                            <h4 className="text-xs font-bold uppercase tracking-wide text-secondary">
+                              What changed since {new Date(geminiVerdict.structured.changes.since).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
+                            </h4>
+                            <ul className="mt-2 space-y-1 text-sm">
+                              {geminiVerdict.structured.changes.items.map((item) => <li key={item}>• {item}</li>)}
+                            </ul>
+                          </section>
+                        )}
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                           {/* Sentiment Meter */}
                           <div className="bg-card border rounded-xl p-4 flex flex-col items-center justify-center text-center">

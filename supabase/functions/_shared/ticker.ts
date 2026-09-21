@@ -9,7 +9,7 @@ import { deriveIpoStatus, istDate } from "./ipo-status.ts";
 import { ipoMatchKey, type IpoStatus } from "./ipo-parse.ts";
 import type { NewsItem } from "./google-news.ts";
 
-export type TickerKind = "ipo" | "gainer" | "loser" | "news" | "ex_date" | "announcement" | "global";
+export type TickerKind = "ipo" | "gainer" | "loser" | "news" | "ex_date" | "announcement" | "global" | "results";
 export type TickerItem = {
   kind: TickerKind;
   /** Short label shown as a chip: "IPO OPEN", "NEWS · Mint". */

@@ -52,6 +52,8 @@ import StockChecklist from "@/components/stock/StockChecklist";
 import PeerComparison from "@/components/stock/PeerComparison";
 import EfficiencyDays from "@/components/stock/EfficiencyDays";
 import LegalWatch from "@/components/stock/LegalWatch";
+import RedFlagsCard from "@/components/stock/RedFlagsCard";
+import LatestResults from "@/components/stock/LatestResults";
 import WatchlistButton from "@/components/WatchlistButton";
 import { isPrerender } from "@/lib/prerender";
 
@@ -256,6 +258,8 @@ export default function StockPage() {
               <StockPriceChart symbol={s.header.symbol} name={s.header.name} />
             )}
 
+            {s.header && interactive && <LatestResults symbol={s.header.symbol} />}
+            {s.header && interactive && <RedFlagsCard symbol={s.header.symbol} />}
             {s.header && interactive && <StockResearchProfile symbol={s.header.symbol} />}
             {s.header && interactive && <StockChecklist symbol={s.header.symbol} />}
             {s.header && interactive && <PeerComparison symbol={s.header.symbol} />}

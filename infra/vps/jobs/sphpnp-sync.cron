@@ -31,7 +31,11 @@ J=/opt/sphpnp/jobs/sync.sh
 0  8  * * *     deploy flock -n /tmp/sync-unlisted.lock $J once sync-unlisted-quotes '{}' 180
 
 # Free sources pass (02:00 IST): each until its pass wraps, then BSE announcements.
-0  2  * * *     deploy flock -n /tmp/sync-free-sources.lock bash -c '$J loop sync-nse-disclosures 40; $J loop sync-screener-in 40; $J loop sync-tickertape 40; $J loop sync-bse-announcements 40'
+0  2  * * *     deploy flock -n /tmp/sync-free-sources.lock bash -c '$J loop sync-nse-disclosures 60; $J loop sync-screener-in 40; $J loop sync-tickertape 40; $J loop sync-bse-announcements 40'
+
+# --- Telegram watchlist alerts: after the morning filings, midday, and the evening results ---
+5  8,13 * * *    deploy flock -n /tmp/telegram-alerts.lock $J once telegram-alerts '{}' 170
+35 20 * * *     deploy flock -n /tmp/telegram-alerts.lock $J once telegram-alerts '{}' 170
 
 # --- IPOs ---
 45 8,13,18 * * 1-6 deploy flock -n /tmp/sync-ipos.lock $J once sync-ipos '{}' 90
@@ -49,6 +53,9 @@ J=/opt/sphpnp/jobs/sync.sh
 20 0  * * *     deploy flock -n /tmp/logs-archive.lock /opt/sphpnp/jobs/logs-archive.sh
 40 0  * * *     deploy flock -n /tmp/traffic-report.lock /opt/sphpnp/jobs/traffic-report.sh
 */10 * * * *    deploy flock -n /tmp/admin-reports.lock /opt/sphpnp/jobs/admin-reports.sh
+
+# --- Data freshness watchdog (hourly): alerts when a dataset stops moving, whatever its job reports ---
+55 *  * * *     deploy flock -n /tmp/freshness.lock /opt/sphpnp/jobs/freshness.sh
 
 # --- Website rebuild (04:30 IST): fresh sitemap, new IPO pages, current data ---
 30 4  * * *     deploy flock -n /tmp/build-site.lock /opt/sphpnp/jobs/build-site.sh

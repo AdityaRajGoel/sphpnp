@@ -8,6 +8,7 @@ import {
   type Deal, type Mover,
 } from "@/lib/market-data";
 import { SectionHeading, EmptyState } from "./chart-kit";
+import { insiderBoard, recentInsiderTrades, type InsiderNet } from "@/lib/insider-board";
 
 function SymbolLink({ symbol, tracked }: { symbol: string; tracked: Set<string> | undefined }) {
   return tracked?.has(symbol)
@@ -39,6 +40,40 @@ function MoverList({ title, note, movers, tracked, mode }: { title: string; note
           ))}
         </tbody>
       </table>
+    </Card>
+  );
+}
+
+const crore = (rupees: number) => `₹${(Math.abs(rupees) / 1e7).toLocaleString("en-IN", { maximumFractionDigits: Math.abs(rupees) >= 1e9 ? 0 : 1 })} Cr`;
+
+function InsiderList({ title, rows, tracked, tone }: { title: string; rows: InsiderNet[]; tracked?: Set<string>; tone: "buy" | "sell" }) {
+  const max = Math.max(1, ...rows.map((r) => Math.abs(r.net)));
+  return (
+    <Card className="min-w-0 p-0 overflow-hidden">
+      <h3 className="p-4 pb-2 font-semibold">{title}</h3>
+      {rows.length === 0 ? <EmptyState text="No open-market insider trades on this side in the last 30 days." /> : (
+        <table className="w-full text-sm">
+          <caption className="sr-only">{title}</caption>
+          <tbody>
+            {rows.map((r) => (
+              <tr key={r.symbol} className="border-t">
+                <td className="px-4 py-2">
+                  <SymbolLink symbol={r.symbol} tracked={tracked} />
+                  <div className="text-xs text-muted-foreground">{r.trades} trade{r.trades === 1 ? "" : "s"}{r.promoterNet ? ` · promoters ${r.promoterNet > 0 ? "bought" : "sold"} ${crore(r.promoterNet)}` : ""}</div>
+                </td>
+                <td className="w-2/5 px-4 py-2">
+                  <div className="flex items-center justify-end gap-2">
+                    <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted" aria-hidden="true">
+                      <div className={`ml-auto h-full rounded-full ${tone === "buy" ? "bg-secondary" : "bg-destructive"}`} style={{ width: `${(Math.abs(r.net) / max) * 100}%` }} />
+                    </div>
+                    <span className={`w-20 text-right font-semibold tabular-nums ${tone === "buy" ? "text-secondary" : "text-destructive"}`}>{crore(r.net)}</span>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
     </Card>
   );
 }
@@ -102,6 +137,8 @@ export default function ActivitySection() {
   const deals = useQuery({ queryKey: ["recent-deals"], queryFn: () => recentDeals(300), staleTime: 10 * 60_000 });
   const flags = useQuery({ queryKey: ["surveillance"], queryFn: surveillanceFlags, staleTime: 30 * 60_000 });
   const events = useQuery({ queryKey: ["calendar", today], queryFn: () => upcomingEvents(today, 30), staleTime: 30 * 60_000 });
+  const insiders = useQuery({ queryKey: ["insider-trades", 30], queryFn: () => recentInsiderTrades(30), staleTime: 30 * 60_000 });
+  const board = useMemo(() => insiderBoard(insiders.data ?? []), [insiders.data]);
 
   const byKind = (kind: string) => snaps.data?.find((s) => s.kind === kind);
   const ban = (flags.data ?? []).filter((f) => f.flag === "fo_ban");
@@ -110,7 +147,7 @@ export default function ActivitySection() {
 
   return (
     <section id="activity" aria-labelledby="activity-heading" className="scroll-mt-28 space-y-4">
-      <SectionHeading id="activity-heading" title="Today's activity" subtitle="Where the money traded, the deals behind it, and the stocks under exchange surveillance." />
+      <SectionHeading id="activity-heading" title="Today's activity" subtitle="Where the money traded, the deals behind it, what insiders did, and the stocks under exchange surveillance." />
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         {snaps.isLoading ? <><Skeleton className="h-72" /><Skeleton className="h-72" /></> : (
@@ -122,6 +159,19 @@ export default function ActivitySection() {
       </div>
 
       {deals.isLoading ? <Skeleton className="h-72" /> : <DealsTable deals={deals.data ?? []} tracked={tracked.data} />}
+
+      <div>
+        <h3 className="font-semibold">Insider buying and selling, last 30 days</h3>
+        <p className="mb-3 text-xs text-muted-foreground">Net open-market trades by promoters, directors and employees, from SEBI insider-trading filings to NSE. Option exercises, gifts and transfers are left out.</p>
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          {insiders.isLoading ? <><Skeleton className="h-72" /><Skeleton className="h-72" /></> : (
+            <>
+              <InsiderList title="Net buying" rows={board.buying} tracked={tracked.data} tone="buy" />
+              <InsiderList title="Net selling" rows={board.selling} tracked={tracked.data} tone="sell" />
+            </>
+          )}
+        </div>
+      </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <Card className="min-w-0 p-4">

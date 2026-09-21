@@ -1,7 +1,7 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { AnimatePresence, motion } from "motion/react";
-import { Download, Star, Trash2 } from "lucide-react";
+import { Briefcase, Download, Send, Star, Trash2 } from "lucide-react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import SEOHead from "@/components/SEOHead";
@@ -12,6 +12,7 @@ import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DURATION, EASE_OUT, revealSection } from "@/lib/motion";
 import { useWatchlist } from "@/hooks/useWatchlist";
+import { supabase } from "@/integrations/supabase/client";
 import { useScreenerUniverse } from "@/hooks/useScreenerUniverse";
 import { displayMetric, METRIC_BY_ID, metricTone, type MetricRow } from "@/lib/screener-metrics";
 import { buildChecklist, tally } from "@/lib/stock-checklist";
@@ -56,6 +57,19 @@ export default function WatchlistPage() {
     };
   }, [rows]);
 
+  const [telegram, setTelegram] = useState<{ busy: boolean; error: string | null }>({ busy: false, error: null });
+  const linkTelegram = async () => {
+    setTelegram({ busy: true, error: null });
+    const { data, error } = await supabase.functions.invoke("telegram-link", { body: { symbols: watchlist.map((w) => w.symbol) } });
+    if (error || !data?.url) {
+      const message = (await (error as { context?: Response })?.context?.json?.().catch(() => null))?.error;
+      setTelegram({ busy: false, error: message ?? "Could not create the Telegram link. Try again in a moment." });
+      return;
+    }
+    setTelegram({ busy: false, error: null });
+    window.open(data.url, "_blank", "noopener");
+  };
+
   const exportCsv = () => {
     const header = ["Symbol", "Name", ...metrics.map((m) => m.label)].map(csvCell).join(",");
     const body = rows.map(({ item, row }) => [csvCell(item.symbol), csvCell(item.name), ...metrics.map((m) => csvCell(row ? m.get(row as MetricRow) : null))].join(","));
@@ -89,7 +103,16 @@ export default function WatchlistPage() {
               <Download className="mr-1.5 h-4 w-4" aria-hidden="true" /> Download CSV
             </Button>
           )}
+          {watchlist.length > 0 && (
+            <Button variant="outline" size="sm" onClick={linkTelegram} disabled={telegram.busy} className="h-9 border-white/20 bg-white/10 text-white hover:bg-white/20 hover:text-white">
+              <Send className="mr-1.5 h-4 w-4" aria-hidden="true" /> {telegram.busy ? "Creating link…" : "Alert me on Telegram"}
+            </Button>
+          )}
+          <Button asChild variant="outline" size="sm" className="h-9 border-white/20 bg-white/10 text-white hover:bg-white/20 hover:text-white">
+            <Link to="/portfolio"><Briefcase className="mr-1.5 h-4 w-4" aria-hidden="true" /> Check my portfolio</Link>
+          </Button>
         </ImageBanner>
+        {telegram.error && <p role="alert" className="mt-3 rounded-lg border border-destructive/40 bg-destructive/5 px-4 py-2 text-sm text-destructive">{telegram.error}</p>}
 
         {watchlist.length === 0 ? (
           <motion.div {...revealSection}>

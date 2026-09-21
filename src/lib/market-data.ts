@@ -85,6 +85,12 @@ export async function latestOptionChains(): Promise<OptionChainEod[]> {
   return all.filter((c) => c.trade_date === latest).sort((a, b) => a.symbol.localeCompare(b.symbol) || a.expiry.localeCompare(b.expiry));
 }
 
+/** NIFTY's nearest-expiry put-call ratio from the last F&O close, without strikes. */
+export async function latestNiftyPcr(): Promise<{ trade_date: string; pcr: number } | null> {
+  const [row] = await rows<{ trade_date: string; pcr: number | null }>(table("option_chain_eod").select("trade_date,pcr").eq("symbol", "NIFTY").not("pcr", "is", null).order("trade_date", { ascending: false }).order("expiry").limit(1));
+  return row?.pcr != null ? { trade_date: row.trade_date, pcr: Number(row.pcr) } : null;
+}
+
 const SNAPSHOT_COLUMNS = "trade_date,symbol,expiry,spot,pcr,max_pain,call_wall,put_wall,total_call_oi,total_put_oi,fut_close,fut_prev_close,fut_oi,fut_oi_change,build_up,lot_size";
 
 /** Every F&O underlying's latest close from the F&O bhavcopy, without strikes (about 220 rows). */
@@ -174,7 +180,9 @@ export type StockMarketData = {
 export async function loadStockMarketData(symbol: string, today: string): Promise<StockMarketData> {
   const [flags, pledges, indices, lots, w52, events, deals, eod] = await Promise.all([
     rows<SurveillanceFlag>(table("surveillance_flags").select("*").eq("symbol", symbol)),
-    rows<Pledge>(table("pledge_snapshots").select("shp_date,promoter_pct,pledged_pct_of_promoter,pledged_pct_of_total,broadcast_at").eq("symbol", symbol).order("shp_date", { ascending: false }).limit(1)),
+    // The company's own shareholding filing: NSE's aggregate pledge feed mixed in
+    // every depository pledge, and went empty in September 2026.
+    rows<{ quarter_end: string; promoter_pct: number | null; promoter_pledged_pct: number | null; filed_at: string | null }>(table("nse_shareholding_filings").select("quarter_end,promoter_pct,promoter_pledged_pct,filed_at").eq("symbol", symbol).not("promoter_pledged_pct", "is", null).order("quarter_end", { ascending: false }).limit(1)),
     rows<{ index_name: string }>(table("index_constituents").select("index_name").eq("symbol", symbol)),
     rows<{ lot_size: number }>(table("fo_lot_sizes").select("lot_size").eq("symbol", symbol).limit(1)),
     rows<Week52>(table("week52_levels").select("adj_high,high_date,adj_low,low_date,as_of").eq("symbol", symbol).eq("series", "EQ").limit(1)),
@@ -184,7 +192,7 @@ export async function loadStockMarketData(symbol: string, today: string): Promis
   ]);
   return {
     flags,
-    pledge: pledges[0] ?? null,
+    pledge: pledges[0] ? { shp_date: pledges[0].quarter_end, promoter_pct: pledges[0].promoter_pct, pledged_pct_of_promoter: pledges[0].promoter_pledged_pct, pledged_pct_of_total: null, broadcast_at: pledges[0].filed_at } : null,
     indices: indices.map((i) => i.index_name).sort(indexOrder),
     lotSize: lots[0]?.lot_size ?? null,
     week52: w52[0] ?? null,

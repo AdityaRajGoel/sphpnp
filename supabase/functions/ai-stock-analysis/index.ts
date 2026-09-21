@@ -1,6 +1,8 @@
 /// <reference lib="deno.ns" />
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { fetchCompanyRecord, formatCompanyRecord } from "../_shared/company-record.ts";
+import { reportChanges } from "../_shared/report-diff.ts";
 import { ROLES, buildRolePrompt, buildSynthesisPrompt, hasQuorum, type RoleOutput } from "../_shared/analysis-roles.ts";
 import { shouldServeCachedReport } from "../_shared/report-cache.ts";
 
@@ -1435,6 +1437,8 @@ ${s.newsItems.map((n: NewsHeadline) => `- ${n.ageDays != null ? `${n.ageDays}d a
 
 Factor these headlines into your Executive Summary, Risk Factors and Verdict reasoning. If any headline signals a material event (quarterly result, regulatory/SEBI action, management change, rating downgrade/upgrade, large order win/loss, M&A, fraud/probe), call it out explicitly and let it shape your conviction and the risk section. A materially negative event MUST appear as a key risk and should temper conviction; a strong positive catalyst should be noted as support. Do NOT let a single headline override the QUANT ENGINE score below, but your narrative verdict must acknowledge the news backdrop.` : "## 📰 Recent News\nNo recent headlines retrieved - base the verdict on price action, technicals and fundamentals."}
 
+${s.companyRecord || ""}
+
 ## ⚙️ QUANT ENGINE OUTPUT - AUTHORITATIVE (computed deterministically from the real data above)
 - **Composite Score: ${s.quant.composite}/100** - Technical ${s.quant.tech} · Fundamental ${s.quant.fundAvail ? s.quant.fund : "N/A"} · Analyst ${s.quant.analyst ?? "N/A"}
 - **Rating: ${s.quant.rating_label}** → Verdict: **${s.quant.verdictUI}** · Confidence ${s.quant.confidence}%
@@ -1460,7 +1464,7 @@ ${s.nearestSupport === null
 function buildChatPrompt(s: any, context: string, chatHistory: any[], chatMessage: string): string {
   let prompt = `## Stock Context
 ${context}
-
+${s.companyRecord ? `\n${s.companyRecord}\n` : ""}
 `;
 
   // Include the AI report context if available
@@ -1548,13 +1552,16 @@ serve(async (req) => {
     // ── Serve today's cached report if one already exists. One report per
     //    symbol per IST trading day - chat mode is never served from this
     //    cache (shouldServeCachedReport enforces both rules). ──
+    // Kept past the cache check: a fresh report is compared against it (report-diff.ts).
+    let previousReport: { report: any; price: number | null; created_at: string } | null = null;
     if (!is_chat && stockData.symbol) {
       try {
         const { data: cached } = await sb
           .from("ai_stock_reports")
-          .select("report, model, created_at")
+          .select("report, model, created_at, price")
           .eq("symbol", cacheKey)
           .maybeSingle();
+        previousReport = cached ?? null;
         if (shouldServeCachedReport({ isChat: !!is_chat, cachedCreatedAt: cached?.created_at })) {
           console.log(`✓ Cache hit ${stockData.symbol} (today's report, generated ${cached!.created_at})`);
           return new Response(
@@ -1568,7 +1575,13 @@ serve(async (req) => {
     }
 
     // Enrich stock data with REAL historical indicators from Yahoo Finance
-    const enriched = await enrichStockData(stockData, { withFundamentals: !is_chat, withNews: !is_chat });
+    const [enrichedBase, companyRecord] = await Promise.all([
+      enrichStockData(stockData, { withFundamentals: !is_chat, withNews: !is_chat }),
+      stockData.symbol
+        ? fetchCompanyRecord(sb, String(stockData.symbol).toUpperCase()).then(formatCompanyRecord)
+        : Promise.resolve(""),
+    ]);
+    const enriched = { ...enrichedBase, companyRecord };
     let finalPrompt = "";
 
     if (is_chat) {
@@ -1866,6 +1879,10 @@ serve(async (req) => {
         };
       }
       sd.data_source = enriched.dataSource;
+      sd.changes = reportChanges(
+        previousReport ? { sd: previousReport.report?.structured_data, price: previousReport.price, createdAt: previousReport.created_at } : null,
+        { sd, price: enriched.price ?? null },
+      );
       sd.detected_patterns = enriched.patterns || [];
       sd.news_headlines = (enriched.newsItems || []).map((n: NewsHeadline) => ({
         title: n.title, publisher: n.publisher, ageDays: n.ageDays, link: n.link,

@@ -72,6 +72,7 @@ const IpoDetailPage = lazy(() => import("./pages/IpoDetailPage"));
 const IpoPipelinePage = lazy(() => import("./pages/IpoPipelinePage"));
 const HelpPage = lazy(() => import("./pages/HelpPage"));
 const WatchlistPage = lazy(() => import("./pages/WatchlistPage"));
+const PortfolioPage = lazy(() => import("./pages/PortfolioPage"));
 
 // --- Professional branded loading screen ---
 const candleVariants = {
@@ -212,6 +213,7 @@ const AnimatedRoutes = () => {
         <Route path="/sip-calculator" element={<SIPCalculatorPage />} />
         <Route path="/help" element={<HelpPage />} />
         <Route path="/watchlist" element={<WatchlistPage />} />
+        <Route path="/portfolio" element={<PortfolioPage />} />
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
         <Route path="*" element={<NotFound />} />
       </Routes>

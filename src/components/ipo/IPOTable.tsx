@@ -1,4 +1,5 @@
 import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
+import GmpSparkline from "./GmpSparkline";
 import { Link } from "react-router-dom";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -80,7 +81,10 @@ export default function IPOTable({ ipos, sortKey, sortDir, onSort, compareSlugs,
                 <TableCell className="text-right tabular-nums whitespace-nowrap">{formatDate(ipo.close_date)}</TableCell>
                 <TableCell className="text-right tabular-nums whitespace-nowrap">{formatDate(ipo.listing_date)}</TableCell>
                 <TableCell className={`text-right tabular-nums font-semibold ${ipo.gmp === null ? "text-muted-foreground" : ipo.gmp >= 0 ? "text-secondary" : "text-destructive"}`}>
-                  {formatGmp(ipo.gmp)}
+                  <span className="inline-flex items-center justify-end gap-2">
+                    <GmpSparkline history={ipo.gmp_history ?? []} />
+                    {formatGmp(ipo.gmp)}
+                  </span>
                 </TableCell>
                 <TableCell className={`text-right tabular-nums whitespace-nowrap ${gmpPercent(ipo) === null ? "text-muted-foreground" : gmpPercent(ipo)! >= 0 ? "text-secondary" : "text-destructive"}`}>
                   {formatGmpPercent(gmpPercent(ipo)) ?? "—"}
