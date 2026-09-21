@@ -22,7 +22,10 @@ install -m 644 "$SRC/docker-compose.yml" "$DIR/docker-compose.yml"
 install -m 644 "$SRC/gatus.yaml" "$DIR/gatus.yaml"
 install -m 644 "$SRC/authelia/configuration.yml" "$DIR/authelia/configuration.yml"
 # Homepage reads every file in this directory; it holds no secrets, only the board.
-install -d -m 755 "$DIR/homepage"
+# The Homepage container runs as root and a past sudo run left this folder root-owned,
+# which made the plain install below fail; take it back before installing.
+sudo install -d -o "$(id -u)" -g "$(id -g)" -m 755 "$DIR/homepage"
+sudo chown "$(id -u):$(id -g)" "$DIR"/homepage/*.yaml 2>/dev/null || true
 install -m 644 "$SRC"/homepage/*.yaml "$DIR/homepage/"
 
 cd "$DIR"

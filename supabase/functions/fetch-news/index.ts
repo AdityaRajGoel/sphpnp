@@ -1,4 +1,5 @@
 import { hasFeedItems, parseFeedDate } from "../_shared/rss.ts";
+import { FINNHUB_NEWS_URL, parseFinnhubNews } from "../_shared/finnhub.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -147,6 +148,37 @@ async function fetchRss(url: string, sourceName: string, defaultCategory: string
   }
 }
 
+/**
+ * Finnhub's general market news. This function runs on every page view, and
+ * Finnhub's free plan allows 60 calls a minute, so one instance asks at most
+ * every five minutes and serves the last good answer in between (and after a
+ * failure). Missing key = the source is simply left out, not failed.
+ */
+const FINNHUB_TTL_MS = 5 * 60_000;
+let finnhubCache: { at: number; items: NewsItem[] } | null = null;
+
+async function fetchFinnhub(): Promise<RssFetchResult | null> {
+  const key = Deno.env.get("FINHUB_API_KEY") ?? Deno.env.get("FINNHUB_API_KEY");
+  if (!key) return null;
+  const name = "Finnhub";
+  if (finnhubCache && Date.now() - finnhubCache.at < FINNHUB_TTL_MS) return { ok: true, items: finnhubCache.items, name };
+  try {
+    const res = await fetch(FINNHUB_NEWS_URL, { headers: { "X-Finnhub-Token": key }, signal: AbortSignal.timeout(10_000) });
+    if (!res.ok) {
+      await res.body?.cancel();
+      throw new Error(`HTTP ${res.status}`);
+    }
+    const items = parseFinnhubNews(await res.json());
+    if (items.length === 0) throw new Error("200 but no stories");
+    finnhubCache = { at: Date.now(), items };
+    return { ok: true, items, name };
+  } catch (e) {
+    const reason = e instanceof Error ? e.message.slice(0, 80) : "network error";
+    console.error("Finnhub news failed:", reason);
+    return finnhubCache ? { ok: true, items: finnhubCache.items, name, reason: `served cached after ${reason}` } : { ok: false, items: [], name, reason };
+  }
+}
+
 /** Per-instance memory of each theme's last good stories; see the theme loop in getLiveNews. */
 const lastThemeItems = new Map<string, RssFetchResult["items"]>();
 
@@ -214,7 +246,8 @@ async function getLiveNews() {
     // query2.finance.yahoo.com/... now answers 429 (rate-limited) - swapped for
     // Yahoo's own front-end RSS index, which isn't gated the same way.
     fetchRss("https://finance.yahoo.com/news/rssindex", "Yahoo Finance", "Markets"),
-  ]);
+    fetchFinnhub(),
+  ]).then((all) => all.filter((r): r is RssFetchResult => r !== null));
   // India themes: Google News searches, keyless, one per desk a terminal user
   // watches. Fetched ONE AT A TIME after the publishers: fired in the same
   // burst, Google answered all seven with HTTP 503 from Supabase's egress,
@@ -246,7 +279,7 @@ async function getLiveNews() {
     "Economic Times", "Business Standard", "LiveMint",
     "BusinessLine", "NDTV Profit", "Business Today",
   ];
-  const WORLD_SOURCES = ["CNBC", "Yahoo Finance"];
+  const WORLD_SOURCES = ["CNBC", "Yahoo Finance", "Finnhub"];
 
   // Deep enough that the client's featured story + 9-card grid still leaves
   // stories behind the "Show more" button.

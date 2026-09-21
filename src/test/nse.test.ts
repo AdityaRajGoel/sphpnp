@@ -298,7 +298,9 @@ describe("fetchFilingRegistry", () => {
   it("marks isAudited true only when the metadata field is exactly Audited", async () => {
     const rows = [
       baseFilingRow({ audited: "Audited" }),
-      baseFilingRow({ audited: "Un-Audited" }),
+      // A different quarter: two rows for one quarter are now collapsed to the
+      // latest revision (latestRevisions), which is not what this test is about.
+      baseFilingRow({ audited: "Un-Audited", fromDate: "01-Jul-2024", toDate: "30-Sep-2024" }),
     ];
     vi.stubGlobal("fetch", vi.fn().mockResolvedValueOnce(okJsonResponse(rows)));
 

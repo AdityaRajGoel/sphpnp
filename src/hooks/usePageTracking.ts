@@ -12,12 +12,46 @@ const getSessionId = () => {
   return sid;
 };
 
+/**
+ * The nightly prerender loads every page in headless Chrome, and each load was
+ * recorded as a visit: most of page_analytics was the build itself (2,525 "views"
+ * at 04:00 IST in one week against ~25 an hour otherwise). Automated browsers are
+ * not visitors.
+ */
+const isAutomated = () =>
+  typeof window === "undefined" ||
+  (window as unknown as { __PRERENDER__?: boolean }).__PRERENDER__ === true ||
+  navigator.webdriver === true;
+
+/**
+ * Where the visit came from, sent once per session with its first page view:
+ * the referring host (not the full URL) and any utm_* tags. Without it every
+ * visit read as "direct" and no channel could be measured.
+ */
+const firstTouch = (): Record<string, string> => {
+  if (sessionStorage.getItem("analytics_src")) return {};
+  sessionStorage.setItem("analytics_src", "1");
+  const out: Record<string, string> = {};
+  try {
+    const ref = document.referrer ? new URL(document.referrer).hostname.replace(/^www\./, "") : "";
+    if (ref && ref !== window.location.hostname.replace(/^www\./, "")) out.referrer = ref;
+  } catch { /* unparsable referrer: leave it out */ }
+  const params = new URLSearchParams(window.location.search);
+  for (const k of ["utm_source", "utm_medium", "utm_campaign"]) {
+    const v = params.get(k);
+    if (v) out[k] = v.slice(0, 80);
+  }
+  return out;
+};
+
 const trackEvent = async (
   pagePath: string,
   eventType: string = "page_view",
   metadata: Record<string, unknown> = {}
 ) => {
+  if (isAutomated()) return;
   try {
+    if (eventType === "page_view") metadata = { ...firstTouch(), ...metadata };
     await (supabase.from("page_analytics" as never) as ReturnType<typeof supabase.from>).insert({
       page_path: pagePath,
       event_type: eventType,

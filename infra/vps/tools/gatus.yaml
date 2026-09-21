@@ -93,15 +93,6 @@ endpoints:
     alerts:
       - type: ntfy
 
-  - name: Staging
-    group: website
-    url: https://staging.sphpnp.com/
-    client:
-      timeout: 20s
-    interval: 30m
-    conditions:
-      - "[STATUS] == 200"
-      - "[CERTIFICATE_EXPIRATION] > 336h"
 
   - name: API gateway
     group: backend

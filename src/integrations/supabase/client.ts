@@ -11,9 +11,9 @@ import type { Database } from './types';
 // with `undefined` config. createClient() then threw during module init and the
 // app never mounted — users saw a blank page. Env vars still take precedence,
 // so other environments can point at a different project.
-const FALLBACK_SUPABASE_URL = 'https://zbkjbbujsdlpujotgltm.supabase.co';
+const FALLBACK_SUPABASE_URL = 'https://api.sphpnp.com';
 const FALLBACK_SUPABASE_PUBLISHABLE_KEY =
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpia2piYnVqc2RscHVqb3RnbHRtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjE1NTUsImV4cCI6MjA4ODc5NzU1NX0.lcuURVZZ4aMm_wBK1ry5dlo_cxYUMvjaKPcE_9LMpeA';
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzg5NDgxMjg3LCJleHAiOjE5NDcxNjEyODd9.7rNxMImECQ31zqs-f-vtr4ARiat_fbG0EUaCcnBhwVo';
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || FALLBACK_SUPABASE_URL;
 const SUPABASE_PUBLISHABLE_KEY =

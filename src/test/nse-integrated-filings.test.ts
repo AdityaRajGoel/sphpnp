@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
-import { parseIntegratedFilings } from "../../supabase/functions/_shared/nse";
+import { latestRevisions, parseIntegratedFilings } from "../../supabase/functions/_shared/nse";
 
 /*
  * NSE's corporates-financial-results endpoint stops at the December 2024 quarter
@@ -32,5 +32,28 @@ describe("parseIntegratedFilings", () => {
   it("returns nothing for an empty or malformed payload", () => {
     expect(parseIntegratedFilings("X", { data: [] })).toEqual([]);
     expect(parseIntegratedFilings("X", null)).toEqual([]);
+  });
+});
+
+describe("latestRevisions", () => {
+  const f = (xbrlUrl: string, filingDate: string, isConsolidated = true) => ({
+    symbol: "ADANIGREEN", period: "Quarterly", fromDate: "2026-01-01", toDate: "2026-03-31",
+    isConsolidated, isAudited: true, xbrlUrl, filingDate,
+  });
+
+  it("keeps only the latest revision of a quarter per basis", () => {
+    // Three revisions of one quarter as NSE lists them; the older links 404.
+    const rows = latestRevisions([
+      f("a.xml", "2026-04-24T04:16:57.000Z"),
+      f("c.xml", "2026-04-24T04:33:39.000Z"),
+      f("b.xml", "2026-04-24T04:25:07.000Z"),
+      f("s.xml", "2026-04-24T04:10:00.000Z", false),
+    ]);
+    expect(rows.map((r) => r.xbrlUrl).sort()).toEqual(["c.xml", "s.xml"]);
+  });
+
+  it("prefers a dated filing over an undated one", () => {
+    expect(latestRevisions([f("dated.xml", "2026-04-24T04:16:57.000Z"), f("undated.xml", "")]).map((r) => r.xbrlUrl)).toEqual(["dated.xml"]);
+    expect(latestRevisions([f("undated.xml", ""), f("dated.xml", "2026-04-24T04:16:57.000Z")]).map((r) => r.xbrlUrl)).toEqual(["dated.xml"]);
   });
 });

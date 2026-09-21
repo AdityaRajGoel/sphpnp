@@ -28,6 +28,7 @@ import {
   type CashflowRow,
 } from "../_shared/yahoo.ts";
 import { alignPeriods } from "../_shared/period.ts";
+import { oneReportingBasis } from "../_shared/fundamental-scores.ts";
 import { computeRatios } from "../_shared/ratios.ts";
 import { SyncObservation } from "../_shared/observation.ts";
 
@@ -55,6 +56,7 @@ const TIMESERIES_YEARS_BACK = 10;
 type IncomeBasisRow = {
   period_end: string;
   is_consolidated: boolean;
+  source: string | null;
   profit_after_tax: number | null;
   profit_before_tax: number | null;
 };
@@ -87,11 +89,13 @@ type IncomeBasisRow = {
 function selectIncomeBasis(
   rows: IncomeBasisRow[],
 ): { basis: "consolidated" | "standalone" | "none"; rows: IncomeBasisRow[] } {
-  const consolidated = rows.filter((r) => r.is_consolidated);
-  if (consolidated.length > 0) return { basis: "consolidated", rows: consolidated };
-  const standalone = rows.filter((r) => !r.is_consolidated);
-  if (standalone.length > 0) return { basis: "standalone", rows: standalone };
-  return { basis: "none", rows: [] };
+  // One row per period: fundamentals_income also keys on `source`, so a quarter
+  // can hold both the NSE filing and Yahoo's copy. Passing both made the derived
+  // upsert fail ("cannot affect row a second time") and double-counted quarters
+  // in the trailing-four-quarter profit. oneReportingBasis keeps the filing.
+  const picked = oneReportingBasis(rows);
+  if (picked.length === 0) return { basis: "none", rows: [] };
+  return { basis: picked[0].is_consolidated ? "consolidated" : "standalone", rows: picked };
 }
 
 Deno.serve(async (req) => {
@@ -362,7 +366,7 @@ Deno.serve(async (req) => {
     // rather than assumed, since that sync runs on its own schedule.
     const { data: incomeRows, error: incErr } = await supabase
       .from("fundamentals_income")
-      .select("period_end, is_consolidated, profit_after_tax, profit_before_tax")
+      .select("period_end, is_consolidated, source, profit_after_tax, profit_before_tax")
       .eq("symbol", symbol);
 
     if (incErr) {

@@ -24,13 +24,13 @@ export default defineConfig(({ mode }) => ({
   plugins: [
     react(),
 
-    // index.html preconnects to the hosted Supabase project. A build pointed at
-    // another backend (the self-hosted VPS stack) preconnects to that instead.
+    // index.html preconnects to api.sphpnp.com. A build pointed at another
+    // backend preconnects to that instead.
     {
       name: "supabase-preconnect",
       transformIndexHtml(html: string) {
         const url = process.env.VITE_SUPABASE_URL;
-        return url ? html.replace("https://zbkjbbujsdlpujotgltm.supabase.co", new URL(url).origin) : html;
+        return url ? html.replace("https://api.sphpnp.com", new URL(url).origin) : html;
       },
     },
 
@@ -111,52 +111,26 @@ export default defineConfig(({ mode }) => ({
     },
   },
   build: {
-    rollupOptions: {
+    rolldownOptions: {
       output: {
-        manualChunks(id) {
-          if (id.includes('node_modules')) {
-            // Match motion before the generic 'react' check - its dist paths
-            // contain 'react' and would otherwise split across two chunks.
-            if (id.includes('node_modules/motion') || id.includes('node_modules/framer-motion')) {
-              return 'animation-vendor';
-            }
-            // These must be matched BEFORE the react-core rule below. A bare
-            // id.includes('react') also matches @radix-ui/react-*, lucide-react
-            // and @tanstack/react-query, which made those rules unreachable and
-            // collapsed everything into one 166KB react-vendor chunk —
-            // query-vendor was never even emitted.
-            if (id.includes('@radix-ui') || id.includes('lucide-react')) {
-              return 'ui-vendor';
-            }
-            if (id.includes('@tanstack/react-query')) {
-              return 'query-vendor';
-            }
-            // React core only. Anchored to node_modules/<pkg>/ so sibling
-            // packages whose names merely contain "react" do not get pulled in.
-            if (
-              id.includes('node_modules/react/') ||
-              id.includes('node_modules/react-dom/') ||
-              id.includes('node_modules/react-router/') ||
-              id.includes('node_modules/react-router-dom/') ||
-              id.includes('node_modules/scheduler/')
-            ) {
-              return 'react-vendor';
-            }
-            // Tiny utils shared by the app AND recharts (clsx etc.) — pin them
-            // to react-vendor or rollup buries them inside chart-vendor, which
-            // forces the 104KB chart chunk to load eagerly on every page.
-            if (id.includes('/clsx') || id.includes('tailwind-merge') || id.includes('class-variance-authority')) {
-              return 'react-vendor';
-            }
-            if (id.includes('recharts') || id.includes('d3')) {
-              return 'chart-vendor';
-            }
-            if (id.includes('@supabase/supabase-js')) {
-              return 'supabase-vendor';
-            }
-          }
-        }
-      }
-    }
+        // Rolldown ignores the old manualChunks priority: a group also captures
+        // its dependencies, so recharts pulled clsx into chart-vendor and every
+        // page preloaded the 89 KB chart chunk just to reach clsx. Groups with an
+        // explicit priority win that tie. Higher priority is matched first.
+        codeSplitting: {
+          groups: [
+            // React core (anchored, so react-* siblings stay out) plus the tiny
+            // utils the app shares with recharts, which must not follow recharts
+            // into chart-vendor.
+            { name: 'react-vendor', priority: 60, test: /node_modules[\\/](react|react-dom|react-router|react-router-dom|scheduler|clsx|tailwind-merge|class-variance-authority)[\\/]/ },
+            { name: 'animation-vendor', priority: 50, test: /node_modules[\\/](motion|framer-motion)[\\/]/ },
+            { name: 'ui-vendor', priority: 40, test: /node_modules[\\/](@radix-ui|lucide-react)[\\/]/ },
+            { name: 'query-vendor', priority: 40, test: /node_modules[\\/]@tanstack[\\/]react-query[\\/]/ },
+            { name: 'chart-vendor', priority: 20, test: /node_modules[\\/](recharts|d3-[^\\/]+|victory-vendor)[\\/]/ },
+            { name: 'supabase-vendor', priority: 20, test: /node_modules[\\/]@supabase[\\/]/ },
+          ],
+        },
+      },
+    },
   }
 }));

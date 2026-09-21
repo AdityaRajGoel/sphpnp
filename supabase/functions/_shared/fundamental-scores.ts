@@ -76,16 +76,17 @@ export function oneReportingBasis<T extends { period_end: string; is_consolidate
   // Yahoo labels standalone figures as consolidated for about 1 quarter in 6
   // (129 of 742 checked in September 2026), and date order alone left the pick
   // between them to chance.
+  // Best row per period, kept at the position that period first appeared. (A sort
+  // that compared rank only between same-date rows was not a consistent ordering,
+  // so whether the filing won depended on the sort's internals.)
   const rank = (row: T) => SOURCE_RANK[row.source ?? "nse_xbrl"] ?? 9;
-  const ordered = chosen.map((row, i) => ({ row, i }))
-    .sort((a, b) => (a.row.period_end === b.row.period_end ? rank(a.row) - rank(b.row) || a.i - b.i : a.i - b.i))
-    .map((x) => x.row);
-  const seen = new Set<string>();
-  return ordered.filter((row) => {
-    if (seen.has(row.period_end)) return false;
-    seen.add(row.period_end);
-    return true;
+  const best = new Map<string, { row: T; i: number }>();
+  chosen.forEach((row, i) => {
+    const cur = best.get(row.period_end);
+    if (!cur) best.set(row.period_end, { row, i });
+    else if (rank(row) < rank(cur.row)) best.set(row.period_end, { row, i: cur.i });
   });
+  return [...best.values()].sort((a, b) => a.i - b.i).map((x) => x.row);
 }
 
 /**

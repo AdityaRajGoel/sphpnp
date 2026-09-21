@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
-import { DAILY_BUDGET, GLOBAL_TICKERS, eodUrl, parseEodhdEod, parseYahooBars, yahooChartUrl } from "../../supabase/functions/_shared/eodhd";
+import { DAILY_BUDGET, GLOBAL_TICKERS, eodUrl, fredUrl, parseEodhdEod, parseFredObservations, parseYahooBars, yahooChartUrl } from "../../supabase/functions/_shared/eodhd";
 
 /* EODHD end-of-day responses on the free plan, captured 2026-09-11. */
 
@@ -23,7 +23,8 @@ describe("parseEodhdEod", () => {
 
 describe("the free-plan budget", () => {
   it("fits the daily ticker list under the budget, which stays under the plan's 20 calls", () => {
-    expect(GLOBAL_TICKERS.length).toBeLessThanOrEqual(DAILY_BUDGET);
+    // FRED tickers never fall back to EODHD, so only the rest can spend its budget.
+    expect(GLOBAL_TICKERS.filter((t) => !t.fred).length).toBeLessThanOrEqual(DAILY_BUDGET);
     expect(DAILY_BUDGET).toBeLessThan(20);
     expect(new Set(GLOBAL_TICKERS.map((t) => t.ticker)).size).toBe(GLOBAL_TICKERS.length);
   });
@@ -40,6 +41,34 @@ describe("the US 10-year yield", () => {
     const tnx = GLOBAL_TICKERS.find((t) => t.ticker === "US10Y.YIELD")!;
     expect(tnx.yahoo).toBe("^TNX");
     expect(tnx.unit).toBe("percent");
+  });
+});
+
+describe("US rates from FRED", () => {
+  it("carries the 2-year and the Fed funds rate as percent, with no Yahoo symbol", () => {
+    for (const [ticker, series] of [["US2Y.YIELD", "DGS2"], ["FEDFUNDS.RATE", "DFF"]]) {
+      const t = GLOBAL_TICKERS.find((x) => x.ticker === ticker)!;
+      expect(t).toMatchObject({ fred: series, unit: "percent", group: "Rates" });
+      expect(t.yahoo).toBeUndefined();
+    }
+  });
+
+  it("reads observations, dropping FRED's '.' for a day with no value", () => {
+    const raw = { observations: [
+      { date: "2026-09-02", value: "3.61" },
+      { date: "2026-09-01", value: "." },
+      { date: "2026-08-29", value: "3.59" },
+      { date: "bad", value: "1" },
+    ] };
+    expect(parseFredObservations(raw, "US2Y.YIELD")).toEqual([
+      { ticker: "US2Y.YIELD", trade_date: "2026-08-29", open: null, high: null, low: null, close: 3.59, volume: null },
+      { ticker: "US2Y.YIELD", trade_date: "2026-09-02", open: null, high: null, low: null, close: 3.61, volume: null },
+    ]);
+    expect(parseFredObservations({ error_code: 400, error_message: "Bad Request." }, "X")).toEqual([]);
+  });
+
+  it("asks for JSON from a start date", () => {
+    expect(fredUrl("DGS2", "k", "2026-09-01")).toBe("https://api.stlouisfed.org/fred/series/observations?series_id=DGS2&api_key=k&file_type=json&observation_start=2026-09-01");
   });
 });
 

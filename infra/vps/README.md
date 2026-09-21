@@ -1,8 +1,7 @@
 # sphpnp VPS
 
-Self-hosted backend (and later the website) for sphpnp.com on a single Contabo VPS.
-Runs **in parallel** with the current Supabase project until every feature is verified,
-then the site switches over and Supabase is retired.
+Self-hosted backend and website for sphpnp.com on a single Contabo VPS. The hosted
+Supabase project and Vercel are retired; the app and its build use api.sphpnp.com.
 
 | | |
 |---|---|
@@ -13,10 +12,10 @@ then the site switches over and Supabase is retired.
 ## What runs
 
 ```
-Visitors ──► nginx + Let's Encrypt (ufw: 22, 80, 443; certbot.timer renews)
+Visitors ──► nginx + Let's Encrypt (ufw: 22, 80, 443, 8443-8450; certbot.timer renews)
    www.sphpnp.com     ── production prerendered build  (/var/www/sphpnp/current)
    sphpnp.com         ── 301 to www
-   staging.sphpnp.com ── staging build, noindex         (/var/www/staging/current)
+   staging.sphpnp.com ── 301 to www.sphpnp.com (retired site; its cert covers api)
    api.sphpnp.com     ── /rest /auth /storage /functions /graphql only
                            │
    Supabase Docker Compose in /opt/supabase (every port bound to 127.0.0.1)
@@ -64,8 +63,22 @@ every text file and nginx serves them with `brotli_static` / `gzip_static` (brot
 `libnginx-mod-http-brotli-static`, `libnginx-mod-http-brotli-filter`). HTML is cached for 5
 minutes with background revalidation, images and video for a week, and hashed `/assets`
 for a year. Visitors are mostly in India and the server is in Europe; a free Cloudflare
-proxy in front of `www` would cut handshake and first-byte time there (keep `api` DNS-only
-and use Full (strict) TLS) - not enabled.
+proxy in front of `www` cuts handshake and first-byte time there. The server side is ready:
+`nginx/cloudflare-realip.conf` (in `/etc/nginx/conf.d/`) restores the visitor IP from
+`CF-Connecting-IP` for Cloudflare ranges only, so rate limits and logs keep working. To
+switch on:
+
+1. Add `sphpnp.com` to a free Cloudflare account; check every imported DNS record.
+2. Proxied (orange): `sphpnp.com` and `www` only. DNS-only (grey): `api` (the prerender
+   and cron call it by name, and its limits are sized per real IP), `admin` (ports
+   8444-8450 are not ports Cloudflare proxies) and every mail record.
+3. SSL/TLS mode **Full (strict)** - the origin already has Let's Encrypt certificates.
+4. Change the nameservers at the registrar (currently `ns1/ns2.indiapride.net.in`).
+5. Optional: a Cache Rule for `www` set to "Eligible for cache" with edge TTL "use
+   origin cache-control", so HTML (max-age 300) is also served from Indian edges.
+
+fail2ban bans still land in iptables by visitor IP, which does nothing for proxied
+traffic; nginx's own limits and Cloudflare's filtering cover it.
 
 ## Ops tools and admin panel
 
@@ -179,9 +192,18 @@ findings raise an ntfy alert.
 
 ## Firewall and rate limits
 
-- ufw: 22 (rate-limited), 80, 443 and 8443-8449 (admin tools behind the Authelia sign-in; 8446
+- ufw: 22 (rate-limited), 80, 443 and 8443-8450 (admin tools behind the Authelia sign-in; 8446
   is ntfy's push endpoint, the only one open). Docker
-  ports are all on 127.0.0.1, which ufw cannot see, so nothing else is reachable.
+  ports are all on 127.0.0.1, which ufw cannot see, so nothing else is reachable. The
+  host-network tools bind loopback too: Homepage via `HOSTNAME: 127.0.0.1` (Next.js
+  otherwise takes 0.0.0.0:3010) and Glances with `--disable-autodiscover` (it opened mDNS
+  on udp 5353). Check with `sudo ss -tulpn | grep -v 127.0.0` - only sshd and nginx.
+- Contabo Firewall (free, Customer Panel → Network Services → Firewall) filters before
+  traffic reaches the VPS. It blocks everything once assigned, so add the rules first:
+  TCP 22, 80, 443, 8443-8450 from any IPv4/IPv6. ufw stays as the on-server layer.
+- BBR congestion control (`/etc/sysctl.d/61-sphpnp-bbr.conf`, `tcp_bbr` in
+  `/etc/modules-load.d/bbr.conf`): most visitors are in India and the server is in Europe,
+  where cubic backs off hard on packet loss.
 - fail2ban (`security/fail2ban-nginx.local`): `sshd`, `recidive`, `nginx-botsearch`
   (vulnerability scanners) and `nginx-limit-req`. Wrong admin passwords are handled by
   Authelia's own lockout.
@@ -213,6 +235,8 @@ database (`pg_dump -Fc`, verified with `pg_restore --list`), roles, uploaded fil
 config and secrets (`.env`, `functions.env`, nginx, cron), with SHA256SUMS. Seven days are
 kept. To copy backups off the server, create an encrypted rclone remote named `offsite`
 (crypt over Backblaze B2); the script picks it up automatically and keeps 30 days there.
+Until then every copy is on the same disk. Contabo's Auto Backup add-on (paid, daily,
+10 days, stored off the host) is the no-setup alternative for whole-server restores.
 
 Restore: `pg_restore -U postgres -d postgres --clean --if-exists postgres.dump` inside
 `supabase-db`, then untar `storage.tar.gz` into `/opt/supabase/volumes`.

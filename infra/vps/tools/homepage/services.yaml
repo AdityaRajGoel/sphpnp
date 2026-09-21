@@ -15,10 +15,6 @@
         icon: si-vercel
         href: https://admin.sphpnp.com/#deployments
         description: Releases, rollback and rebuild (admin dashboard)
-    - Staging:
-        icon: si-testcafe
-        href: https://staging.sphpnp.com/
-        description: staging.sphpnp.com
         # No siteMonitor here or on the production tile: Gatus already checks both of
         # those exact URLs (its widget is on this board), and the duplicate check only
         # produced "getaddrinfo EAI_AGAIN" noise in the container's log.

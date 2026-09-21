@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Publish a finished build (/opt/sphpnp/app/dist) as the live site.
-#   deploy-site.sh [sphpnp|staging]     default: sphpnp (www.sphpnp.com)
+#   deploy-site.sh [sphpnp]     default: sphpnp (www.sphpnp.com)
 # Copies dist/ to /var/www/<site>/releases/<stamp>, refuses a build that is
 # missing pages, then swaps the `current` symlink atomically. The last five
 # releases stay for rollback:  ln -sfn <older release> /var/www/<site>/current

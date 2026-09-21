@@ -176,6 +176,21 @@ describe("cagr", () => {
 });
 
 describe("oneReportingBasis", () => {
+  it("keeps the filing over Yahoo's copy even when another quarter sits between them", () => {
+    // The order the database hands back without ORDER BY: the two March rows are
+    // not adjacent, which the old sort-based pick did not reliably handle.
+    const rows = [
+      { period_end: "2026-03-31", is_consolidated: true, source: "yahoo", v: 1 },
+      { period_end: "2025-12-31", is_consolidated: true, source: "nse_xbrl", v: 2 },
+      { period_end: "2026-03-31", is_consolidated: true, source: "nse_xbrl", v: 3 },
+      { period_end: "2025-12-31", is_consolidated: true, source: "yahoo", v: 4 },
+    ];
+    expect(oneReportingBasis(rows).map((r) => [r.period_end, r.source, r.v])).toEqual([
+      ["2026-03-31", "nse_xbrl", 3],
+      ["2025-12-31", "nse_xbrl", 2],
+    ]);
+  });
+
   it("keeps the NSE filing over a Yahoo copy of the same quarter, whatever the row order", () => {
     const rows = [
       { period_end: "2026-03-31", is_consolidated: true, source: "yahoo", profit_after_tax: 74 },

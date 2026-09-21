@@ -118,8 +118,28 @@ export async function fetchFilingRegistry(symbol: string): Promise<FilingRecord[
       return [] as FilingRecord[];
     }),
   ]);
-  const seen = new Set(integrated.map((f) => `${f.toDate}|${f.isConsolidated}`));
-  return [...integrated, ...legacy.filter((f) => !seen.has(`${f.toDate}|${f.isConsolidated}`))];
+  const current = latestRevisions(integrated);
+  const seen = new Set(current.map((f) => `${f.toDate}|${f.isConsolidated}`));
+  return [...current, ...latestRevisions(legacy).filter((f) => !seen.has(`${f.toDate}|${f.isConsolidated}`))];
+}
+
+/**
+ * One filing per quarter and basis: the latest by filing date. NSE lists every
+ * revision of a quarter, each with its own XBRL link, and retires the older
+ * links - they 404. fundamentals_filings keeps one row per quarter and basis, so
+ * every run re-fetched the superseded links (the repeated "xbrl failed ... NSE
+ * 404" lines), and one that still answered could overwrite the revised figures.
+ */
+export function latestRevisions(filings: FilingRecord[]): FilingRecord[] {
+  const byKey = new Map<string, FilingRecord>();
+  for (const f of filings) {
+    const key = `${f.toDate}|${f.isConsolidated}`;
+    const cur = byKey.get(key);
+    const at = (x: FilingRecord) => (x.filingDate ? Date.parse(x.filingDate) : NaN);
+    // A dated filing beats an undated one; between two dated, the later wins.
+    if (!cur || (Number.isFinite(at(f)) && !(at(cur) >= at(f)))) byKey.set(key, f);
+  }
+  return [...byKey.values()];
 }
 
 async function fetchLegacyFilingRegistry(symbol: string): Promise<FilingRecord[]> {

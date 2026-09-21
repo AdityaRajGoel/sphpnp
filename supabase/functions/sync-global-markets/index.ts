@@ -1,5 +1,5 @@
 // Daily bars for world indices, currencies, metals, oil and bitcoin from
-// EODHD's free plan (see _shared/eodhd.ts). One call per ticker; every call is
+// EODHD's free plan (see _shared/eodhd.ts), US rates from FRED. One call per ticker; every call is
 // counted in provider_usage before it is made, and the run stops at
 // DAILY_BUDGET, so a repeated or manual run can never exceed the plan.
 //
@@ -7,7 +7,8 @@
 // morning IST (after the US close). Protected by SYNC_SECRET.
 
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { DAILY_BUDGET, GLOBAL_TICKERS, eodUrl, parseEodhdEod, parseYahooBars, yahooChartUrl, type GlobalBar } from "../_shared/eodhd.ts";
+import { parseTwelveDataSeries, twelveDataUrl } from "../_shared/twelve-data.ts";
+import { DAILY_BUDGET, GLOBAL_TICKERS, eodUrl, fredUrl, parseEodhdEod, parseFredObservations, parseYahooBars, yahooChartUrl, type GlobalBar } from "../_shared/eodhd.ts";
 
 // Yahoo refuses requests without a browser User-Agent, like every other feed here.
 const YAHOO_UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126 Safari/537.36";
@@ -49,8 +50,32 @@ Deno.serve(async (req) => {
   const yearAgo = new Date(Date.now() - 370 * 86_400_000).toISOString().slice(0, 10);
   const fortnight = new Date(Date.now() - 14 * 86_400_000).toISOString().slice(0, 10);
 
+  const fredKey = Deno.env.get("FRED_API_KEY");
+  const twelveKey = Deno.env.get("TWELVEDATA_API_KEY");
+  const tenYears = new Date(Date.now() - 3660 * 86_400_000).toISOString().slice(0, 10);
+
   const results: Record<string, number | string> = {};
   for (const t of GLOBAL_TICKERS) {
+    if (t.fred) {
+      // FRED allows 120 requests a minute and has no daily cap, so a short
+      // history gets ten years in the one call. No EODHD fallback: it has no rates.
+      if (!fredKey) { results[t.ticker] = "fred: FRED_API_KEY is not set"; continue; }
+      try {
+        const from = backfill || (stored.get(t.ticker) ?? 0) < 150 ? tenYears : fortnight;
+        const res = await fetch(fredUrl(t.fred, fredKey, from), { signal: AbortSignal.timeout(20_000) });
+        // FRED answers a bad series or key with a 4xx and {error_code, error_message}.
+        if (!res.ok) { results[t.ticker] = `fred: HTTP ${res.status} ${(await res.text()).slice(0, 120)}`; continue; }
+        const bars = parseFredObservations(await res.json(), t.ticker);
+        if (bars.length > 0) {
+          const { error } = await sb.from("global_markets_daily").upsert(bars, { onConflict: "ticker,trade_date" });
+          if (error) throw new Error(error.message);
+        }
+        results[t.ticker] = bars.length;
+      } catch (e) {
+        results[t.ticker] = `fred: ${(e as Error).message}`;
+      }
+      continue;
+    }
     if (t.yahoo) {
       // Keyless and outside the EODHD plan, so it spends no budget. A Yahoo
       // failure falls through to EODHD below rather than losing the day.
@@ -71,6 +96,24 @@ Deno.serve(async (req) => {
         results[t.ticker] = `yahoo: ${(e as Error).message}`;
       }
       if (bars.length > 0) continue;
+      // Twelve Data before EODHD: its 800 daily credits dwarf EODHD's 20, and
+      // only exact equivalents are mapped (see _shared/twelve-data.ts).
+      if (t.twelve && twelveKey) {
+        try {
+          const res = await fetch(twelveDataUrl(t.twelve, twelveKey, (stored.get(t.ticker) ?? 0) < 150 ? 400 : 20), { signal: AbortSignal.timeout(20_000) });
+          const got = res.ok ? parseTwelveDataSeries(await res.json(), t.ticker) : [];
+          if (!res.ok) await res.body?.cancel();
+          if (got.length > 0) {
+            const { error } = await sb.from("global_markets_daily").upsert(got, { onConflict: "ticker,trade_date" });
+            if (error) throw new Error(error.message);
+            results[t.ticker] = `${results[t.ticker] ?? "yahoo: no bars"}; twelve: ${got.length}`;
+            continue;
+          }
+          results[t.ticker] = `${results[t.ticker] ?? "yahoo: no bars"}; twelve: ${res.ok ? "no bars" : `HTTP ${res.status}`}`;
+        } catch (e) {
+          results[t.ticker] = `${results[t.ticker] ?? "yahoo: no bars"}; twelve: ${(e as Error).message}`;
+        }
+      }
       if (calls >= DAILY_BUDGET) { results[t.ticker] = `${results[t.ticker] ?? "yahoo: no bars"}; EODHD skipped: daily budget used`; continue; }
     }
     if (calls >= DAILY_BUDGET) { results[t.ticker] = "skipped: daily budget used"; continue; }

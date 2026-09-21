@@ -20,6 +20,10 @@ export type GlobalTicker = {
   unit: "points" | "rupees" | "dollars" | "percent";
   /** Fetched from Yahoo's keyless chart instead of EODHD (stored under `ticker`). */
   yahoo?: string;
+  /** The same series on Twelve Data's free plan, tried when Yahoo fails and before EODHD's budget is spent. */
+  twelve?: string;
+  /** A FRED series id; fetched with FRED_API_KEY and never falls back to EODHD, which has no rates. */
+  fred?: string;
 };
 
 export const GLOBAL_TICKERS: GlobalTicker[] = [
@@ -37,16 +41,23 @@ export const GLOBAL_TICKERS: GlobalTicker[] = [
   { ticker: "N225.INDX", name: "Nikkei 225", group: "Asia", unit: "points", yahoo: "^N225" },
   { ticker: "HSI.INDX", name: "Hang Seng", group: "Asia", unit: "points", yahoo: "^HSI" },
   { ticker: "SSEC.INDX", name: "Shanghai Composite", group: "Asia", unit: "points", yahoo: "000001.SS" },
-  { ticker: "USDINR.FOREX", name: "USD / INR", group: "Currency", unit: "rupees", yahoo: "INR=X" },
+  { ticker: "USDINR.FOREX", name: "USD / INR", group: "Currency", unit: "rupees", yahoo: "INR=X", twelve: "USD/INR" },
   { ticker: "DXY.INDX", name: "US Dollar Index", group: "Currency", unit: "points", yahoo: "DX-Y.NYB" },
   { ticker: "XAUUSD.FOREX", name: "Gold (per oz)", group: "Commodity", unit: "dollars" },
   { ticker: "XAGUSD.FOREX", name: "Silver (per oz)", group: "Commodity", unit: "dollars" },
-  { ticker: "BNO.US", name: "Brent crude (BNO ETF)", group: "Commodity", unit: "dollars", yahoo: "BNO" },
-  { ticker: "BTC-USD.CC", name: "Bitcoin", group: "Crypto", unit: "dollars", yahoo: "BTC-USD" },
+  { ticker: "BNO.US", name: "Brent crude (BNO ETF)", group: "Commodity", unit: "dollars", yahoo: "BNO", twelve: "BNO" },
+  { ticker: "BTC-USD.CC", name: "Bitcoin", group: "Crypto", unit: "dollars", yahoo: "BTC-USD", twelve: "BTC/USD" },
   // The global rate cue an Indian desk watches before the open. Keyless, and
   // EODHD's free plan has no bond yields at all, so this exists only because the
   // board no longer depends on that plan.
   { ticker: "US10Y.YIELD", name: "US 10-year Treasury yield", group: "Rates", unit: "percent", yahoo: "^TNX" },
+  // From FRED (St. Louis Fed). Both are Federal Reserve H.15 series, public
+  // domain, so they can be shown on the site; FRED also carries third-party
+  // series (ICE, S&P) that cannot, so check the series' notes before adding one.
+  // The 2-year against the 10-year is the curve slope; the funds rate is the
+  // policy anchor the RBI's own moves are read against.
+  { ticker: "US2Y.YIELD", name: "US 2-year Treasury yield", group: "Rates", unit: "percent", fred: "DGS2" },
+  { ticker: "FEDFUNDS.RATE", name: "US Fed funds rate", group: "Rates", unit: "percent", fred: "DFF" },
 ];
 
 export type GlobalBar = { ticker: string; trade_date: string; open: number | null; high: number | null; low: number | null; close: number; volume: number | null };
@@ -87,6 +98,28 @@ export function parseYahooBars(raw: unknown, ticker: string): GlobalBar[] {
     out.set(trade_date, { ticker, trade_date, open: num(quote.open?.[i]), high: num(quote.high?.[i]), low: num(quote.low?.[i]), close, volume: num(quote.volume?.[i]) });
   });
   return [...out.values()].sort((a, b) => a.trade_date.localeCompare(b.trade_date));
+}
+
+/**
+ * Daily values from FRED's series/observations as close-only bars. FRED marks a
+ * day with no value (a US holiday) as "." - dropped rather than stored as 0.
+ */
+export function parseFredObservations(raw: unknown, ticker: string): GlobalBar[] {
+  const obs = (raw as { observations?: unknown })?.observations;
+  if (!Array.isArray(obs)) return [];
+  const out = new Map<string, GlobalBar>();
+  for (const o of obs) {
+    const { date, value } = (o ?? {}) as { date?: unknown; value?: unknown };
+    if (typeof date !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(date) || typeof value !== "string" || value.trim() === "") continue;
+    const close = Number(value);
+    if (!Number.isFinite(close)) continue;
+    out.set(date, { ticker, trade_date: date, open: null, high: null, low: null, close, volume: null });
+  }
+  return [...out.values()].sort((a, b) => a.trade_date.localeCompare(b.trade_date));
+}
+
+export function fredUrl(series: string, key: string, from: string): string {
+  return `https://api.stlouisfed.org/fred/series/observations?series_id=${encodeURIComponent(series)}&api_key=${encodeURIComponent(key)}&file_type=json&observation_start=${from}`;
 }
 
 /**

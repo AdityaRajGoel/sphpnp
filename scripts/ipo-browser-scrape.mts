@@ -30,7 +30,7 @@ import {
 } from "../supabase/functions/_shared/ipo-parse.ts";
 
 // Overridable so the same scrape can feed the self-hosted stack (infra/vps/jobs/ipo-browser.sh).
-const SYNC_URL = process.env.SYNC_URL ?? "https://zbkjbbujsdlpujotgltm.supabase.co/functions/v1/sync-ipos";
+const SYNC_URL = process.env.SYNC_URL ?? "https://api.sphpnp.com/functions/v1/sync-ipos";
 
 // A real desktop Chrome fingerprint with a descriptive suffix identifying the
 // crawler and a contact URL. Verified live (2026-09-10): this exact string

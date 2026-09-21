@@ -5,7 +5,6 @@ set -euo pipefail
 cd /opt/supabase
 
 API_DOMAIN="api.sphpnp.com"
-SITE_DOMAIN="staging.sphpnp.com"
 
 [ -f .env ] || cp .env.example .env
 chmod 600 .env
@@ -29,7 +28,7 @@ setenv COMPOSE_FILE "docker-compose.yml:docker-compose.override.yml"
 setenv SUPABASE_PUBLIC_URL "https://$API_DOMAIN"
 setenv API_EXTERNAL_URL "https://$API_DOMAIN/auth/v1"
 setenv SITE_URL "https://www.sphpnp.com"
-setenv ADDITIONAL_REDIRECT_URLS "https://www.sphpnp.com/**,https://sphpnp.com/**,https://$SITE_DOMAIN/**"
+setenv ADDITIONAL_REDIRECT_URLS "https://www.sphpnp.com/**,https://sphpnp.com/**"
 setenv PGRST_DB_SCHEMAS "public,graphql_public"
 # The site only signs in by email. Phone signup was on with auto-confirm, so anyone
 # could create a signed-in account without any verification.
@@ -45,5 +44,5 @@ MAIN=volumes/functions/main/index.ts
 sed -i -E 's|const workerTimeoutMs = .*|const workerTimeoutMs = 5 * 60 * 1000|; s|const memoryLimitMb = .*|const memoryLimitMb = 256|' "$MAIN"
 grep -E 'const (workerTimeoutMs|memoryLimitMb) =' "$MAIN"
 
-echo "configured: public URL https://$API_DOMAIN, site https://$SITE_DOMAIN"
+echo "configured: public URL https://$API_DOMAIN, site https://www.sphpnp.com"
 grep -E '^(COMPOSE_FILE|SUPABASE_PUBLIC_URL|API_EXTERNAL_URL|SITE_URL)=' .env
