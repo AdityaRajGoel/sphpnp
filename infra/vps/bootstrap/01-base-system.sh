@@ -46,9 +46,28 @@ fs.protected_hardlinks = 1
 fs.protected_symlinks = 1
 # Many connections and file watchers for the container stack.
 net.core.somaxconn = 4096
+# BBR copes with the long, lossy India-to-Europe path better than cubic.
+net.core.default_qdisc = fq
+net.ipv4.tcp_congestion_control = bbr
+# Keep the congestion window on reused keep-alive connections after an idle pause.
+net.ipv4.tcp_slow_start_after_idle = 0
 fs.inotify.max_user_watches = 524288
 EOF
 sysctl --system >/dev/null
+
+# Bigger first flight: ~42 KB (30 segments) instead of ~14 KB, so the home page HTML
+# reaches India in one round trip. netplan resets routes, so re-apply whenever eth0 is up.
+cat > /etc/networkd-dispatcher/routable.d/50-sphpnp-initcwnd <<'EOF'
+#!/bin/sh
+[ "${IFACE:-eth0}" = eth0 ] || exit 0
+for v in -4 -6; do
+  r=$(ip $v route show default dev eth0 | head -1 | sed 's/ init[cr]wnd [0-9]*//g; s/ onlink//')
+  [ -n "$r" ] && ip $v route change $r dev eth0 onlink initcwnd 30 initrwnd 30
+done
+exit 0
+EOF
+chmod 755 /etc/networkd-dispatcher/routable.d/50-sphpnp-initcwnd
+/etc/networkd-dispatcher/routable.d/50-sphpnp-initcwnd
 
 mkdir -p /etc/systemd/journald.conf.d
 cat > /etc/systemd/journald.conf.d/60-sphpnp.conf <<'EOF'
