@@ -216,9 +216,9 @@ const Services = () => {
                       <ArrowUpRight className="w-5 h-5 text-secondary" />
                     </motion.div>
                   </div>
-                  <h3 className="font-heading text-xl font-semibold text-foreground mb-2 group-hover:text-secondary transition-colors duration-base">
+                  <h2 className="font-heading text-xl font-semibold text-foreground mb-2 group-hover:text-secondary transition-colors duration-base">
                     {service.title}
-                  </h3>
+                  </h2>
                   <p className="text-muted-foreground mb-4">
                     {service.description}
                   </p>

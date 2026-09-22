@@ -174,7 +174,7 @@ const About = ({ headingLevel = "h1" }: { headingLevel?: "h1" | "h2" } = {}) => 
               whileHover={{ scale: 1.02 }}
               transition={{ type: "spring", stiffness: 300 }}
             >
-              <h3 className="font-heading text-2xl font-bold mb-6">Why Choose Our Panipat Branch?</h3>
+              <h2 className="font-heading text-2xl font-bold mb-6">Why Choose Our Panipat Branch?</h2>
               <ul className="space-y-4">
                 {[
                   { num: 1, title: "Local Expertise", desc: "Team that understands local market dynamics" },

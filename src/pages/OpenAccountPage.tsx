@@ -270,7 +270,7 @@ const OpenAccountPage = () => {
             {benefits.map((b, i) => (
               <motion.div key={b.title} className="flex items-start gap-3 bg-card border border-border/50 rounded-xl p-4" {...revealItem(i)}>
                 <div className="w-10 h-10 rounded-lg bg-brand-orange/10 flex items-center justify-center shrink-0"><b.icon className="w-5 h-5 text-brand-orange" /></div>
-                <div><h3 className="text-sm font-bold text-foreground">{b.title}</h3><p className="text-xs text-muted-foreground mt-0.5">{b.desc}</p></div>
+                <div><p className="text-sm font-bold text-foreground">{b.title}</p><p className="text-xs text-muted-foreground mt-0.5">{b.desc}</p></div>
               </motion.div>
             ))}
           </div>

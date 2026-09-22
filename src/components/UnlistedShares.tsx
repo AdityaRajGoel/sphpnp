@@ -305,7 +305,7 @@ const UnlistedShares = () => {
                           <div className={`w-14 h-14 bg-gradient-to-br ${stock.color} rounded-xl flex items-center justify-center text-xs font-bold text-white shrink-0 shadow-lg`}>{stock.short}</div>
                         )}
                         <div className="flex-1 min-w-0">
-                          <h4 className="font-heading font-semibold text-foreground text-sm leading-tight group-hover:text-secondary transition-colors line-clamp-2">{stock.name}</h4>
+                          <h3 className="font-heading font-semibold text-foreground text-sm leading-tight group-hover:text-secondary transition-colors line-clamp-2">{stock.name}</h3>
                           {(stock.buyPrice || stock.sellPrice) ? (
                             <div className="flex items-center gap-3 mt-2">
                               {stock.buyPrice && <div className="text-xs"><span className="text-muted-foreground">Buy:</span> <span className="font-bold text-secondary">{stock.buyPrice}</span></div>}
