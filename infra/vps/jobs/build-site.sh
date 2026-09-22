@@ -13,6 +13,22 @@ mkdir -p "$LOGS"
 
 note() { printf '%s build-site %s\n' "$(date '+%F %T')" "$*" >> "$SYNC_LOG"; }
 
+# A build runs headless Chrome over ~460 pages on the 4 vCPUs the database and the
+# edge functions use, so it stays out of market hours (Mon-Fri 09:00-15:45 IST;
+# equity F&O closes 15:40). A build started then is deferred: the flag below makes
+# the 15:50 cron run (--if-pending) publish it right after the close, and the 04:30
+# nightly build clears it too. FORCE_BUILD=1 builds now regardless.
+PENDING=/var/lib/sphpnp/build-site.pending
+mkdir -p "$(dirname "$PENDING")"
+if [ "${1:-}" = "--if-pending" ] && [ ! -f "$PENDING" ]; then exit 0; fi
+dow=$(date +%u); hm=$(date +%H%M)
+if [ "${FORCE_BUILD:-}" != "1" ] && [ "$dow" -le 5 ] && [ "$hm" -ge 0900 ] && [ "$hm" -lt 1545 ]; then
+  touch "$PENDING"
+  note "deferred - market hours; publishes at 15:50 (FORCE_BUILD=1 to build now)"
+  exit 0
+fi
+rm -f "$PENDING"
+
 cd "$APP"
 ANON=$(grep '^ANON_KEY=' /opt/supabase/.env | cut -d= -f2-)
 

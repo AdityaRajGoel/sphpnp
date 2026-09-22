@@ -59,6 +59,13 @@ J=/opt/sphpnp/jobs/sync.sh
 
 # --- Website rebuild (04:30 IST): fresh sitemap, new IPO pages, current data ---
 30 4  * * *     deploy flock -n /tmp/build-site.lock /opt/sphpnp/jobs/build-site.sh
+# A deploy started in market hours is deferred (build-site.sh); publish it after the close.
+50 15 * * 1-5   deploy flock -n /tmp/build-site.lock /opt/sphpnp/jobs/build-site.sh --if-pending
+
+# --- Kernel reboots (Sunday 06:30 IST, no market open): only when an update needs one.
+# Security updates install nightly at 02:30 (apt-daily-upgrade, 01-base-system.sh) but
+# never reboot on their own; containers come back by their unless-stopped policy.
+30 6  * * 0     root [ -f /var/run/reboot-required ] && /sbin/shutdown -r +1 "weekly maintenance reboot"
 
 # --- Feeds the edge runtime cannot reach, fetched from this host (jobs/host-fetch.sh) ---
 # NSDL publishes the day's FPI flows in the evening; the results calendar moves slowly.

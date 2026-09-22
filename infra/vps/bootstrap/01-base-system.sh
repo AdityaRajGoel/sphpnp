@@ -88,6 +88,14 @@ Unattended-Upgrade::Remove-Unused-Dependencies "true";
 Unattended-Upgrade::Automatic-Reboot "false";
 EOF
 
+# Package lists refresh at 01:30 and security updates install at 02:30 IST. Ubuntu's
+# defaults (06:00/18:00 plus up to 12h of random delay) could land in market hours, and
+# an update to docker, containerd or nginx restarts them.
+mkdir -p /etc/systemd/system/apt-daily.timer.d /etc/systemd/system/apt-daily-upgrade.timer.d
+printf '[Timer]\nOnCalendar=\nOnCalendar=*-*-* 01:30\nRandomizedDelaySec=30m\n' > /etc/systemd/system/apt-daily.timer.d/sphpnp.conf
+printf '[Timer]\nOnCalendar=\nOnCalendar=*-*-* 02:30\nRandomizedDelaySec=30m\n' > /etc/systemd/system/apt-daily-upgrade.timer.d/sphpnp.conf
+systemctl daemon-reload
+
 systemctl enable --now chrony auditd sysstat unattended-upgrades
 
 # Resolve our own hostnames locally. Every name here is served by this machine, yet
