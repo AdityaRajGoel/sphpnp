@@ -89,8 +89,9 @@ const GoogleReviews = () => {
           >
             Google Reviews
           </motion.span>
+          {/* Worded for the search people make: "shri parasram holdings pvt ltd panipat reviews". */}
           <h2 className="font-heading text-3xl md:text-4xl lg:text-5xl font-bold text-foreground mb-6">
-            What People Say on Google
+            Shri Parasram Holdings Panipat reviews
           </h2>
           <motion.div
             className="w-20 h-1 bg-gradient-to-r from-brand-gold to-secondary mx-auto rounded-full mb-6"

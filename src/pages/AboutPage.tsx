@@ -5,6 +5,7 @@ import About from "@/components/About";
 import HowItWorks from "@/components/HowItWorks";
 import CompanyTimeline from "@/components/CompanyTimeline";
 import GoogleReviews from "@/components/GoogleReviews";
+import { GOOGLE_REVIEWS_SNAPSHOT } from "@/data/googleReviewsSnapshot";
 import ClientMarquee from "@/components/ClientMarquee";
 import WhatsAppButton from "@/components/WhatsAppButton";
 import ScrollProgress from "@/components/ScrollProgress";
@@ -26,8 +27,8 @@ const AboutPage = () => {
     <PageTransition>
       <div className="min-h-screen bg-background">
       <SEOHead
-        title="About Parasram India Panipat | 50+ Years Legacy Stock Broker"
-        description="Parasram India: a SEBI-registered stock broker serving investors since 1970, with a Panipat branch since 1997. NSE, BSE and MCX member."
+        title="About Shri Parasram Holdings Panipat: History and Reviews"
+        description={`Shri Parasram Holdings, Panipat: a SEBI-registered stock broker since 1970, NSE, BSE and MCX member, rated ${GOOGLE_REVIEWS_SNAPSHOT.rating.toFixed(1)} on Google from ${GOOGLE_REVIEWS_SNAPSHOT.totalReviews} reviews.`}
         breadcrumbs={[
           { name: "Home", url: "/" },
           { name: "About Us" },
