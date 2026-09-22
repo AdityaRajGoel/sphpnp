@@ -10,6 +10,11 @@
  *    asked the browser to fetch scripts from localhost - blocked by the CSP and
  *    logged as console errors on every page (Lighthouse, Sept 2026).
  *
+ *  - Helmet writes <head> on (shimmed) animation frames, and a capture can
+ *    land with a stale JSON-LD block from an earlier render still in place:
+ *    stock and IPO pages shipped two BreadcrumbLists, the loading-state one
+ *    ("TCS share price and financials") beside the real one.
+ *
  *  - index.html preloads the homepage hero image, and every route is captured
  *    from that same shell. Only "/" renders the hero, so on every other page the
  *    preload was a wasted high-priority download (and a console warning).
@@ -27,8 +32,25 @@ export function dropHeroPreload(html, route) {
   return html.replace(/<link\b[^>]*\brel="preload"[^>]*href="\/hero-bg\.webp"[^>]*>/g, "");
 }
 
+const LD_JSON = /<script type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/g;
+
+/** Keeps only the last JSON-LD block of each @type: Helmet appends the current one after any stale copy. */
+export function dedupeJsonLd(html) {
+  const lastIndexByType = new Map();
+  for (const m of html.matchAll(LD_JSON)) {
+    let type;
+    try { type = JSON.stringify(JSON.parse(m[1])['@type']); } catch { continue; }
+    lastIndexByType.set(type, m.index);
+  }
+  return html.replace(LD_JSON, (block, body, index) => {
+    let type;
+    try { type = JSON.stringify(JSON.parse(body)['@type']); } catch { return block; }
+    return lastIndexByType.get(type) === index ? block : '';
+  });
+}
+
 export function cleanCapturedHtml(html, port, route) {
-  return dropHeroPreload(stripCaptureOrigin(html, port), route);
+  return dedupeJsonLd(dropHeroPreload(stripCaptureOrigin(html, port), route));
 }
 
 export const SITE_ORIGIN = "https://www.sphpnp.com";

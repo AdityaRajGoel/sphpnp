@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { cleanCapturedHtml, dropHeroPreload, stripCaptureOrigin } from "../../scripts/lib/prerender-html.mjs";
+import { cleanCapturedHtml, dedupeJsonLd, dropHeroPreload, stripCaptureOrigin } from "../../scripts/lib/prerender-html.mjs";
 
 describe("stripCaptureOrigin", () => {
   it("makes capture-server URLs root-relative and leaves real origins alone", () => {
@@ -28,5 +28,22 @@ describe("cleanCapturedHtml", () => {
   it("applies both fixes", () => {
     const html = '<link rel="modulepreload" href="http://localhost:9/assets/a.js"><link rel="preload" href="/hero-bg.webp" as="image">';
     expect(cleanCapturedHtml(html, 9, "/ipo")).toBe('<link rel="modulepreload" href="/assets/a.js">');
+  });
+});
+
+describe("dedupeJsonLd", () => {
+  const ld = (o: object) => `<script type="application/ld+json" data-rh="true">${JSON.stringify(o)}</script>`;
+
+  it("keeps only the last block of each type", () => {
+    const stale = ld({ "@type": "BreadcrumbList", n: "TCS share price and financials" });
+    const org = ld({ "@type": ["FinancialService", "LocalBusiness"] });
+    const fresh = ld({ "@type": "BreadcrumbList", n: "Tata Consultancy Services (TCS)" });
+    const faq = ld({ "@type": "FAQPage" });
+    expect(dedupeJsonLd(`<head>${org}${stale}${fresh}${faq}</head>`)).toBe(`<head>${org}${fresh}${faq}</head>`);
+  });
+
+  it("leaves unparsable blocks alone", () => {
+    const html = '<script type="application/ld+json">{broken</script>';
+    expect(dedupeJsonLd(html)).toBe(html);
   });
 });

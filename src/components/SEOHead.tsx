@@ -68,6 +68,8 @@ const SEOHead = ({
     "alternateName": ["Parasram", "Parasram Holdings", "Parasram India", "Parasram Science of Investment", "SPHPL", "Shri Parasram Holdings Pvt Ltd Panipat"],
     "slogan": "Science of Investment",
     "image": "https://www.sphpnp.com/logo.png",
+    // The logo Google shows for the organisation in results (512x512, over the 112px minimum).
+    "logo": "https://www.sphpnp.com/logo.png",
     "url": BASE_URL,
     "telephone": "+919416400314",
     "address": {
@@ -178,9 +180,12 @@ const SEOHead = ({
       "image": finalOgImage,
       "datePublished": datePublished || new Date().toISOString(),
       "dateModified": dateModified || datePublished || new Date().toISOString(),
+      // The byline is the firm, not a person: Google's Article guidance asks for
+      // the matching type and a URL that identifies the author.
       "author": {
-        "@type": "Person",
-        "name": author || "Parasram India"
+        "@type": "Organization",
+        "name": author || "Parasram India",
+        "url": BASE_URL
       },
       "publisher": {
         "@type": "Organization",
