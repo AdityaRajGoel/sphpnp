@@ -1,21 +1,18 @@
 import { useSearchParams } from "react-router-dom";
 import Header from "@/components/Header";
-import ImageBanner from "@/components/ImageBanner";
 import Footer from "@/components/Footer";
 import SEOHead from "@/components/SEOHead";
+import SpanCalculator from "@/components/margin/SpanCalculator";
 import VisibleBreadcrumbs from "@/components/VisibleBreadcrumbs";
 import WhatsAppButton from "@/components/WhatsAppButton";
 import ScrollProgress from "@/components/ScrollProgress";
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useMemo } from "react";
 import { motion } from "motion/react";
-import { DURATION, EASE_OUT, REVEAL_Y } from "@/lib/motion";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Calculator, TrendingUp, IndianRupee, Info } from "lucide-react";
 import PageTransition from "@/components/PageTransition";
 import { useQuery } from "@tanstack/react-query";
 import { getFoContracts, type FoContract } from "@/lib/fo-contracts";
@@ -65,56 +62,23 @@ const EQUITY_SEGMENTS = [
 ];
 
 const MarginCalculatorPage = () => {
-  const [segment, setSegment] = useState("futures");
-  const [symbol, setSymbol] = useState("NIFTY");
-  const [price, setPrice] = useState("22000");
-  const [lots, setLots] = useState("1");
   const [equityPrice, setEquityPrice] = useState("1500");
   const [equityQty, setEquityQty] = useState("100");
   const [equitySegment, setEquitySegment] = useState("delivery");
 
   const contractsQuery = useQuery({ queryKey: ["fo-contracts"], queryFn: getFoContracts, staleTime: 60 * 60_000 });
   const contracts = contractsQuery.data?.length ? contractsQuery.data : FALLBACK_CONTRACTS;
-  const contract = contracts.find((c) => c.symbol === symbol) ?? contracts[0];
-  const [contractSearch, setContractSearch] = useState("");
   const [lotFilter, setLotFilter] = useState("");
-  const listed = contracts.filter((c) => !contractSearch || `${c.symbol} ${c.underlying}`.toLowerCase().includes(contractSearch.toLowerCase())).slice(0, 80);
 
-  /** Choosing a contract also fills in its last end-of-day spot, when there is one. */
-  const chooseContract = (next: string) => {
-    setSymbol(next);
-    const found = contracts.find((c) => c.symbol === next);
-    if (found?.spot) setPrice(String(Math.round(found.spot * 100) / 100));
-  };
-
-  // Stock pages link here as /margin-calculator?symbol=TCS. The canonical URL
-  // drops the query, so these links add no duplicate pages.
+  // Stock pages link here as /margin-calculator?symbol=TCS (the canonical drops the
+  // query), and a click in the margin list below does the same: both seed the
+  // SPAN calculator's contract search.
   const [params] = useSearchParams();
-  const wanted = params.get("symbol")?.toUpperCase() ?? null;
-
-  // The default NIFTY price is a placeholder until the snapshot arrives; replace it once,
-  // with the linked contract when the URL names one.
-  const spotApplied = useRef(false);
-  useEffect(() => {
-    if (spotApplied.current || !contractsQuery.data?.length) return;
-    spotApplied.current = true;
-    const initial = (wanted && contractsQuery.data.find((c) => c.symbol === wanted)) || contractsQuery.data.find((c) => c.symbol === "NIFTY");
-    if (!initial) return;
-    setSymbol(initial.symbol);
-    if (initial.spot) setPrice(String(Math.round(initial.spot * 100) / 100));
-  }, [contractsQuery.data, wanted]);
-
-  const futuresMargin = useMemo(() => {
-    const p = parseFloat(price) || 0;
-    const l = parseInt(lots) || 1;
-    const rate = rateFor(symbol);
-    const lotSize = contract.lot_size;
-    const contractValue = p * lotSize * l;
-    const spanMargin = (contractValue * rate.span) / 100;
-    const exposureMargin = (contractValue * rate.exposure) / 100;
-    const totalMargin = spanMargin + exposureMargin;
-    return { contractValue, spanMargin, exposureMargin, totalMargin, lotSize, leverage: totalMargin > 0 ? contractValue / totalMargin : 0 };
-  }, [price, lots, symbol, contract.lot_size]);
+  const [seed, setSeed] = useState<string | undefined>(params.get("symbol")?.toUpperCase() || undefined);
+  const openInCalculator = (symbol: string) => {
+    setSeed(symbol);
+    document.getElementById("span-add")?.scrollIntoView({ behavior: "smooth", block: "center" });
+  };
 
   const equityMargin = useMemo(() => {
     const p = parseFloat(equityPrice) || 0;
@@ -141,7 +105,7 @@ const MarginCalculatorPage = () => {
         jsonLd={{
           "@type": "WebApplication",
           "name": "F&O Margin Calculator - Parasram India",
-          "description": "Free online margin calculator for Futures & Options and equity trades. Calculate SPAN margin, exposure margin, leverage and required capital for NIFTY, BANKNIFTY, FINNIFTY trades.",
+          "description": "Free F&O margin calculator: exact SPAN and exposure margin for any mix of NSE futures and options positions, from the exchanges' SPAN files, plus the NSE F&O margin list and equity margin.",
           "applicationCategory": "FinanceApplication",
           "operatingSystem": "Web Browser",
           "url": "https://www.sphpnp.com/margin-calculator",
@@ -156,124 +120,44 @@ const MarginCalculatorPage = () => {
             "url": "https://www.sphpnp.com"
           },
           "featureList": [
-            "NIFTY futures margin calculation",
-            "BANKNIFTY margin calculation",
-            "Equity delivery and intraday margin",
-            "Leverage calculation",
-            "SPAN and exposure margin breakdown"
+            "Exact SPAN and exposure margin from the exchanges' SPAN files",
+            "Multi-leg strategies: futures and options, buy and sell, with hedge and spread offsets",
+            "Net option premium and total amount required",
+            "NSE F&O margin list with lot sizes for every contract",
+            "Equity delivery and intraday margin"
           ]
         }}
       />
       <ScrollProgress />
       <Header />
       <VisibleBreadcrumbs items={[{ name: "Home", url: "/" }, { name: "F&O Margin Calculator" }]} />
-      <main className="container mx-auto px-4 py-8 max-w-4xl">
-        <ImageBanner
-          slug="steps-light"
-          className="mb-8"
-          focus={{ mobile: "50% 50%", desktop: "50% 50%" }}
-          eyebrow={<><Calculator className="h-3.5 w-3.5" aria-hidden="true" /> Calculator</>}
-          title="F&O Margin Calculator"
-          description="Calculate required margin and leverage for F&O and equity trades, with current lot sizes for every contract."
-        />
+      <main>
+        {/* Header in the style of the group's webtrade calculator (see SpanCalculator). */}
+        <section className="bg-[#F4F7FB] px-4 pb-12 pt-10 text-center font-['Roboto',sans-serif] text-[#445A64]">
+          <h1 className="text-3xl font-light md:text-[36px]">F&amp;O Margin Calculator</h1>
+          <div className="mx-auto mt-5 h-[3px] w-[100px] bg-[#E9671D]" aria-hidden="true" />
+          <div className="mx-auto mt-6 max-w-[830px] space-y-4 text-sm leading-6">
+            <p>
+              Calculate the SPAN margin and exposure margin the exchange requires for futures and option writing, with the
+              premium for options you buy. Add every leg of your strategy: the margin is worked out for the whole portfolio,
+              so hedges and spreads get their offset, as they do at the exchange.
+            </p>
+            <p>
+              Margins come from the exchanges&apos; SPAN files, which Parasram&apos;s trading platform loads several times a day.
+              Covers NSE F&amp;O and currency contracts; buying an option needs only its premium.
+            </p>
+          </div>
+        </section>
 
-        <Tabs defaultValue="futures" onValueChange={setSegment}>
-          <TabsList className="mb-6">
-            <TabsTrigger value="futures">Futures</TabsTrigger>
-            <TabsTrigger value="equity">Equity</TabsTrigger>
-          </TabsList>
+        <SpanCalculator seed={seed} />
 
-          <TabsContent value="futures">
-            <motion.div
-              key="futures"
-              className="grid md:grid-cols-2 gap-6"
-              initial={{ opacity: 0, y: REVEAL_Y.item }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: DURATION.base, ease: EASE_OUT }}
-            >
+        <div className="container mx-auto max-w-4xl px-4 py-10">
+        <section aria-labelledby="equity-margin">
+          <h2 id="equity-margin" className="text-2xl font-heading font-bold">Equity delivery and intraday margin</h2>
+          <p className="mt-1 mb-4 text-sm text-muted-foreground">Cash-market trades: delivery needs the full value; intraday needs a fraction set by the exchange&apos;s peak-margin rules.</p>
+            <div className="grid md:grid-cols-2 gap-6">
               <Card className="p-6 space-y-4">
-                <h2 className="font-semibold text-lg text-foreground">Trade Details</h2>
-                <div className="space-y-3">
-                  <div>
-                    <Label htmlFor="fo-contract">Contract</Label>
-                    <Select value={symbol} onValueChange={chooseContract}>
-                      <SelectTrigger id="fo-contract" aria-label="F&O contract"><SelectValue /></SelectTrigger>
-                      <SelectContent className="max-h-80">
-                        <div className="p-2">
-                          <Input
-                            placeholder={`Search ${contracts.length} contracts`}
-                            value={contractSearch}
-                            onChange={(e) => setContractSearch(e.target.value)}
-                            onKeyDown={(e) => e.stopPropagation()}
-                            className="h-8 text-sm"
-                            aria-label="Search contracts"
-                          />
-                        </div>
-                        {(listed.some((c) => c.symbol === symbol) ? listed : [contract, ...listed]).map((c) => (
-                          <SelectItem key={c.symbol} value={c.symbol}>
-                            {c.symbol}{c.isIndex ? " · index" : ""} <span className="text-muted-foreground">({c.lot_size})</span>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label htmlFor="fo-price">Price (₹)</Label>
-                    <Input id="fo-price" type="number" inputMode="decimal" min="0" step="0.05" value={price} onChange={e => setPrice(e.target.value)} />
-                  </div>
-                  <div>
-                    <Label htmlFor="fo-lots">Number of Lots</Label>
-                    <Input id="fo-lots" type="number" inputMode="numeric" min="1" step="1" value={lots} onChange={e => setLots(e.target.value)} />
-                  </div>
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/50 p-2 rounded">
-                    <Info className="w-3.5 h-3.5 shrink-0" />
-                    <span>
-                      {contract.underlying}: lot size {contract.lot_size.toLocaleString("en-IN")} units
-                      {contract.spot ? ` · last close ₹${contract.spot.toLocaleString("en-IN")} (${contract.spot_date})` : ""}
-                      {contractsQuery.data?.length ? " · NSE lot sizes" : " · offline fallback sizes"}
-                    </span>
-                  </div>
-                </div>
-              </Card>
-
-              <Card className="p-6 space-y-4">
-                <h2 className="font-semibold text-lg text-foreground">Margin Breakdown</h2>
-                <div className="space-y-3">
-                  <div className="flex justify-between py-2 border-b border-border/50">
-                    <span className="text-sm text-muted-foreground">Contract Value</span>
-                    <span className="font-mono font-semibold">{fmt(futuresMargin.contractValue)}</span>
-                  </div>
-                  <div className="flex justify-between py-2 border-b border-border/50">
-                    <span className="text-sm text-muted-foreground">SPAN Margin (~{rateFor(symbol).span}%)</span>
-                    <span className="font-mono font-semibold text-brand-orange">{fmt(futuresMargin.spanMargin)}</span>
-                  </div>
-                  <div className="flex justify-between py-2 border-b border-border/50">
-                    <span className="text-sm text-muted-foreground">Exposure Margin (~{rateFor(symbol).exposure}%)</span>
-                    <span className="font-mono font-semibold text-brand-orange">{fmt(futuresMargin.exposureMargin)}</span>
-                  </div>
-                  <div className="flex justify-between py-3 bg-primary/5 rounded-lg px-3">
-                    <span className="font-semibold text-foreground">Total Margin Required</span>
-                    <span className="font-mono font-bold text-lg text-primary">{fmt(futuresMargin.totalMargin)}</span>
-                  </div>
-                  <div className="flex justify-between py-2">
-                    <span className="text-sm text-muted-foreground">Leverage</span>
-                    <Badge variant="secondary">{futuresMargin.leverage.toFixed(1)}x</Badge>
-                  </div>
-                </div>
-              </Card>
-            </motion.div>
-          </TabsContent>
-
-          <TabsContent value="equity">
-            <motion.div
-              key="equity"
-              className="grid md:grid-cols-2 gap-6"
-              initial={{ opacity: 0, y: REVEAL_Y.item }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: DURATION.base, ease: EASE_OUT }}
-            >
-              <Card className="p-6 space-y-4">
-                <h2 className="font-semibold text-lg text-foreground">Trade Details</h2>
+                <h3 className="font-semibold text-lg text-foreground">Trade details</h3>
                 <div className="space-y-3">
                   <div>
                     <Label htmlFor="eq-segment">Segment</Label>
@@ -298,7 +182,7 @@ const MarginCalculatorPage = () => {
               </Card>
 
               <Card className="p-6 space-y-4">
-                <h2 className="font-semibold text-lg text-foreground">Margin Summary</h2>
+                <h3 className="font-semibold text-lg text-foreground">Margin summary</h3>
                 <div className="space-y-3">
                   <div className="flex justify-between py-2 border-b border-border/50">
                     <span className="text-sm text-muted-foreground">Trade Value</span>
@@ -314,14 +198,13 @@ const MarginCalculatorPage = () => {
                   </div>
                 </div>
               </Card>
-            </motion.div>
-          </TabsContent>
-        </Tabs>
+            </div>
+        </section>
 
         <section aria-labelledby="lot-sizes" className="mt-10">
           <h2 id="lot-sizes" className="text-2xl font-heading font-bold">NSE F&amp;O margin list: lot sizes and margin per lot</h2>
           <p className="mt-1 mb-3 text-sm text-muted-foreground">
-            Current lot size for every F&amp;O contract, with the last closing price, the value of one lot and the approximate margin to hold it (SPAN + exposure, at the rates this calculator uses). Click a row to calculate its margin.
+            Current lot size for every F&amp;O contract, with the last closing price, the value of one lot and the approximate margin to hold it (SPAN + exposure, at the rates this calculator uses). Click a row to find its contracts in the SPAN calculator above for the exact figure.
           </p>
           <Input
             aria-label="Filter lot sizes"
@@ -347,7 +230,7 @@ const MarginCalculatorPage = () => {
                 {contracts
                   .filter((c) => !lotFilter || `${c.symbol} ${c.underlying}`.toLowerCase().includes(lotFilter.toLowerCase()))
                   .map((c) => (
-                    <tr key={c.symbol} className={`border-t cursor-pointer hover:bg-muted/30 ${c.symbol === symbol ? "bg-primary/5" : ""}`} onClick={() => { chooseContract(c.symbol); window.scrollTo({ top: 0, behavior: "smooth" }); }}>
+                    <tr key={c.symbol} className="border-t cursor-pointer hover:bg-muted/30" onClick={() => openInCalculator(c.symbol)}>
                       <td className="px-4 py-2 font-semibold">{c.symbol}{c.isIndex && <span className="ml-1.5 text-[10px] font-normal text-muted-foreground">index</span>}</td>
                       <td className="px-3 py-2 text-xs text-muted-foreground">{c.underlying}</td>
                       <td className="px-3 py-2 text-right tabular-nums">{c.lot_size.toLocaleString("en-IN")}</td>
@@ -379,9 +262,10 @@ const MarginCalculatorPage = () => {
         {/* Disclaimer */}
         <Card className="mt-8 p-4 bg-muted/30 border-muted">
           <p className="text-xs text-muted-foreground">
-            <strong>Disclaimer:</strong> Lot sizes are NSE's current sizes; SPAN and exposure percentages are approximations (index-specific for indices, a typical {STOCK_RATE.span}% + {STOCK_RATE.exposure}% for stock futures). Margin requirements are approximate and may vary based on exchange regulations, volatility, and broker policies. Actual margins may differ. Please check with your broker for exact margin requirements.
+            <strong>Disclaimer:</strong> The SPAN calculator above uses the exchanges' SPAN files through Parasram's trading platform; your broker may collect more than the exchange minimum. The margin list's per-lot figures are quick approximations at typical SPAN and exposure rates ({STOCK_RATE.span}% + {STOCK_RATE.exposure}% for stock futures, index-specific for indices); use the calculator for the exact figure. Lot sizes are NSE's current sizes. Not investment advice.
           </p>
         </Card>
+        </div>
       </main>
       <Footer />
       <WhatsAppButton />
