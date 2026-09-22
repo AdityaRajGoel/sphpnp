@@ -471,11 +471,11 @@ For occasional investors, the fee gap is small in absolute terms - what matters 
     category: "investing",
     difficulty: "Intermediate",
     readTime: 8,
-    updated: "2026-07-10",
+    updated: "2026-09-22",
     answer:
       "Listed shares sold within 12 months are taxed at 20% as short-term capital gains. Shares held longer are taxed at 12.5%, but only on long-term gains above ₹1.25 lakh a year. F&O profits are non-speculative business income and intraday equity profits are speculative business income, both taxed at your slab rate; dividends are also taxed at your slab rate.",
     keyTakeaways: [
-      "Listed shares sold within 12 months attract 20% short-term capital gains tax (STCG u/s 111A).",
+      "Listed shares sold within 12 months attract 20% short-term capital gains tax (STCG).",
       "Long-term gains (held over 12 months) are taxed at 12.5% - but only on gains above ₹1.25 lakh per year.",
       "F&O profits are non-speculative business income taxed at your slab rate; intraday equity is speculative business income.",
       "Dividends are added to your income and taxed at slab; STT applies on most transactions automatically.",
@@ -483,14 +483,14 @@ For occasional investors, the fee gap is small in absolute terms - what matters 
     related: ["fno-basics", "pe-ratio", "full-service-vs-discount-broker"],
     content: `## The four tax buckets for market income
 
-Indian tax law treats market income differently depending on **what** you traded and **how long** you held it. (Rates below are for FY 2025-26; always confirm with a tax professional.)
+Indian tax law treats market income differently depending on **what** you traded and **how long** you held it. (Rates below are for tax year 2026-27. The Income-tax Act, 2025 replaced the 1961 Act from 1 April 2026; the capital gains rates and the ₹1.25 lakh exemption carried over unchanged. Always confirm with a tax professional.)
 
 ### 1. Delivery equity - capital gains
 
 | Holding period | Tax | Notes |
 |---|---|---|
-| ≤ 12 months (STCG) | **20%** | Section 111A, flat rate |
-| > 12 months (LTCG) | **12.5%** | Section 112A - first **₹1.25 lakh of LTCG per year is exempt** |
+| ≤ 12 months (STCG) | **20%** | Flat rate |
+| > 12 months (LTCG) | **12.5%** | First **₹1.25 lakh of LTCG per year is exempt** |
 
 Example: you bought shares for ₹4,00,000 and sold after 14 months for ₹6,00,000. Gain = ₹2,00,000. Taxable LTCG = ₹2,00,000 − ₹1,25,000 = ₹75,000. Tax = ₹9,375 (plus cess).
 
@@ -510,6 +510,8 @@ Futures and options profits are **non-speculative business income** - also slab 
 
 Dividends are added to your income and taxed at your slab. Companies deduct **10% TDS** if your dividend from them exceeds ₹10,000 in a year.
 
+From 1 April 2026, money you receive when a company **buys back** your shares is taxed as a capital gain instead of as a dividend. For shareholders who are not promoters, that means the same 20% or 12.5% rates above; promoters pay a higher effective rate.
+
 ## STT - the tax you pay without noticing
 
 Securities Transaction Tax is deducted automatically on every trade:
@@ -518,8 +520,8 @@ Securities Transaction Tax is deducted automatically on every trade:
 |---|---|
 | Equity delivery (buy & sell) | 0.1% each side |
 | Equity intraday (sell side) | 0.025% |
-| Futures (sell side) | 0.02% |
-| Options (sell side, on premium) | 0.1% |
+| Futures (sell side) | 0.05% (was 0.02% until 31 March 2026) |
+| Options (sell side, on premium) | 0.15% (was 0.1% until 31 March 2026) |
 
 ## Practical compliance checklist
 
