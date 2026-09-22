@@ -2,8 +2,10 @@
 
 export const MAX_LEGS = 20;
 export const MAX_RESULTS = 40;
-// The group platform's exchange segments this calculator offers: NSE F&O and NSE currency.
-export const SEGMENTS: Record<number, string> = { 2: "NSEFO", 3: "NSECD" };
+// The group platform's exchange segments this calculator offers: NSE F&O, NSE currency
+// and MCX commodities. BSE F&O is listed by the platform but its SPAN call returns
+// zeros for buys and rejects sells, so it is left out.
+export const SEGMENTS: Record<number, string> = { 2: "NSEFO", 3: "NSECD", 51: "MCXFO" };
 
 export type Contract = {
   ExchangeSegment: number; ExchangeInstrumentID: number; Name: string; DisplayName: string;

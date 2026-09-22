@@ -144,7 +144,7 @@ const MarginCalculatorPage = () => {
             </p>
             <p>
               Margins come from the exchanges&apos; SPAN files, which Parasram&apos;s trading platform loads several times a day.
-              Covers NSE F&amp;O and currency contracts; buying an option needs only its premium.
+              Covers NSE F&amp;O, NSE currency and MCX commodity contracts; buying an option needs only its premium.
             </p>
           </div>
         </section>

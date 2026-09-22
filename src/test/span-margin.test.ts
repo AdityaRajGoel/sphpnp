@@ -13,7 +13,7 @@ describe("span-margin contract search", () => {
     c({ ExchangeInstrumentID: 3, DisplayName: "RELIANCE 23NOV2026", ContractExpiration: "2026-11-23T14:30:00" }),
     c({ ExchangeInstrumentID: 2, DisplayName: "RELIANCE 29SEP27OCT SPD" }),
     c({ ExchangeInstrumentID: 1 }),
-    c({ ExchangeInstrumentID: 9, ExchangeSegment: 51, DisplayName: "RELIANCE MCX" }),
+    c({ ExchangeInstrumentID: 9, ExchangeSegment: 12, DisplayName: "RELIANCE BSE" }),
   ];
 
   it("puts the underlying's nearest future first and drops spreads and other segments", () => {
@@ -35,13 +35,17 @@ describe("span-margin contract search", () => {
 });
 
 describe("span-margin positions", () => {
+  it("accepts MCX commodities", () => {
+    expect(validPositions([{ exchange: "MCXFO", id: 584307, quantity: 1 }])).toEqual([{ exchange: "MCXFO", id: 584307, quantity: 1 }]);
+  });
+
   it("accepts buys and sells on NSE F&O and currency", () => {
     expect(validPositions([{ exchange: "NSEFO", id: 48987, quantity: 500 }, { exchange: "NSECD", id: "7", quantity: -1000 }]))
       .toEqual([{ exchange: "NSEFO", id: 48987, quantity: 500 }, { exchange: "NSECD", id: 7, quantity: -1000 }]);
   });
 
   it("refuses anything that is not a nonzero whole position on an offered segment", () => {
-    for (const bad of [[], [{ exchange: "MCXFO", id: 1, quantity: 1 }], [{ exchange: "NSEFO", id: 0, quantity: 1 }], [{ exchange: "NSEFO", id: 1, quantity: 0 }], [{ exchange: "NSEFO", id: 1, quantity: 1.5 }], "x"]) {
+    for (const bad of [[], [{ exchange: "BSEFO", id: 1, quantity: 1 }], [{ exchange: "NSEFO", id: 0, quantity: 1 }], [{ exchange: "NSEFO", id: 1, quantity: 0 }], [{ exchange: "NSEFO", id: 1, quantity: 1.5 }], "x"]) {
       expect(validPositions(bad)).toBeNull();
     }
     expect(validPositions(Array.from({ length: MAX_LEGS + 1 }, () => ({ exchange: "NSEFO", id: 1, quantity: 1 })))).toBeNull();

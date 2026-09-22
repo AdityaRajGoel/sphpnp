@@ -100,7 +100,7 @@ export default function SpanCalculator({ seed }: { seed?: string }) {
                   aria-controls={listId}
                   aria-autocomplete="list"
                   autoComplete="off"
-                  placeholder="e.g. NIFTY 27OCT, RELIANCE CE 1300"
+                  placeholder="e.g. NIFTY 27OCT, RELIANCE CE 1300, GOLD"
                   className={`${FIELD} pl-9`}
                   value={query}
                   onChange={(e) => { setQuery(e.target.value); setPicked(null); setOpen(true); }}

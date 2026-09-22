@@ -4,7 +4,7 @@
 // headers for this site, so the browser cannot call it: this function forwards
 // the two calls the calculator needs, after validating them.
 //
-//   { action: "search", query: "RELIANCE 27OCT" } -> matching contracts
+//   { action: "search", query: "RELIANCE 27OCT" } -> matching contracts (NSE F&O, currency, MCX)
 //   { action: "calculate", positions: [{ exchange, id, quantity }] }
 //       -> span, exposure, netPremium, total (quantity < 0 is a sell)
 
