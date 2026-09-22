@@ -359,7 +359,7 @@ const Footer = () => {
                 Investments in securities market are subject to market risks. Read all related documents carefully before investing.
               </p>
               <p className="mt-2">
-                © {new Date().getFullYear()} Shri Parasram Holdings Pvt. Ltd. All rights reserved. | Panipat Branch
+                © {new Date().getFullYear()} Shri Parasram Holdings Pvt. Ltd. (SPHPL). All rights reserved. | Panipat Branch
               </p>
             </div>
             <button

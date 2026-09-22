@@ -1,3 +1,4 @@
+import { useSearchParams } from "react-router-dom";
 import Header from "@/components/Header";
 import ImageBanner from "@/components/ImageBanner";
 import Footer from "@/components/Footer";
@@ -86,14 +87,22 @@ const MarginCalculatorPage = () => {
     if (found?.spot) setPrice(String(Math.round(found.spot * 100) / 100));
   };
 
-  // The default NIFTY price is a placeholder until the snapshot arrives; replace it once.
+  // Stock pages link here as /margin-calculator?symbol=TCS. The canonical URL
+  // drops the query, so these links add no duplicate pages.
+  const [params] = useSearchParams();
+  const wanted = params.get("symbol")?.toUpperCase() ?? null;
+
+  // The default NIFTY price is a placeholder until the snapshot arrives; replace it once,
+  // with the linked contract when the URL names one.
   const spotApplied = useRef(false);
   useEffect(() => {
     if (spotApplied.current || !contractsQuery.data?.length) return;
     spotApplied.current = true;
-    const initial = contractsQuery.data.find((c) => c.symbol === "NIFTY");
-    if (initial?.spot) setPrice(String(Math.round(initial.spot * 100) / 100));
-  }, [contractsQuery.data]);
+    const initial = (wanted && contractsQuery.data.find((c) => c.symbol === wanted)) || contractsQuery.data.find((c) => c.symbol === "NIFTY");
+    if (!initial) return;
+    setSymbol(initial.symbol);
+    if (initial.spot) setPrice(String(Math.round(initial.spot * 100) / 100));
+  }, [contractsQuery.data, wanted]);
 
   const futuresMargin = useMemo(() => {
     const p = parseFloat(price) || 0;

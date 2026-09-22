@@ -54,6 +54,7 @@ import EfficiencyDays from "@/components/stock/EfficiencyDays";
 import LegalWatch from "@/components/stock/LegalWatch";
 import RedFlagsCard from "@/components/stock/RedFlagsCard";
 import LatestResults from "@/components/stock/LatestResults";
+import StockIndexLinks from "@/components/stock/StockIndexLinks";
 import WatchlistButton from "@/components/WatchlistButton";
 import { isPrerender, prerenderedHeight } from "@/lib/prerender";
 
@@ -263,6 +264,7 @@ export default function StockPage() {
 
             {s.header && <LatestResults symbol={s.header.symbol} />}
             {s.header && <RedFlagsCard symbol={s.header.symbol} />}
+            {s.header && <StockIndexLinks symbol={s.header.symbol} />}
             {s.header && <StockResearchProfile symbol={s.header.symbol} />}
             {s.header && interactive && <StockChecklist symbol={s.header.symbol} />}
             {s.header && <PeerComparison symbol={s.header.symbol} />}
