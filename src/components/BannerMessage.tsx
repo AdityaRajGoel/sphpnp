@@ -53,6 +53,15 @@ const bannerStyles: Record<BannerType, { bg: string; icon: typeof Info; iconColo
  */
 const AUTO_DISMISS_MS = 60_000;
 
+/*
+ * Not on arrival. A dialog covering the page the moment someone lands from a
+ * search result is what Google's page-experience guidance calls an intrusive
+ * interstitial. It opens once the visitor has engaged - scrolled half a screen -
+ * or has stayed ENGAGED_AFTER_MS, whichever comes first.
+ */
+const ENGAGED_AFTER_MS = 15_000;
+const ENGAGED_SCROLL_SCREENS = 0.5;
+
 const getThemeStyles = (theme: string, type: BannerType) => {
   const baseTypeStyle = bannerStyles[type] || bannerStyles.info;
   
@@ -116,6 +125,7 @@ const BannerMessage = () => {
   useEffect(() => {
     if (!consentAnswered) return;
     let openTimer: number | undefined;
+    let onScroll: (() => void) | undefined;
 
     const fetchBanners = async () => {
       try {
@@ -132,8 +142,16 @@ const BannerMessage = () => {
           // Check if the FIRST UN-DISMISSED banner exists
           const activeBanner = fetchedBanners.find((banner) => !dismissedIdsRef.current.has(banner.id));
           if (activeBanner) {
-            // Slight delay so the UI does not jerk instantly on mount
-            openTimer = window.setTimeout(() => setIsOpen(true), 500);
+            const open = () => {
+              window.removeEventListener("scroll", onScroll);
+              if (openTimer !== undefined) window.clearTimeout(openTimer);
+              setIsOpen(true);
+            };
+            onScroll = () => {
+              if (window.scrollY > window.innerHeight * ENGAGED_SCROLL_SCREENS) open();
+            };
+            window.addEventListener("scroll", onScroll, { passive: true });
+            openTimer = window.setTimeout(open, ENGAGED_AFTER_MS);
           }
         }
       } catch {
@@ -144,6 +162,7 @@ const BannerMessage = () => {
     fetchBanners();
     return () => {
       if (openTimer !== undefined) window.clearTimeout(openTimer);
+      if (onScroll) window.removeEventListener("scroll", onScroll);
     };
   }, [consentAnswered]);
 

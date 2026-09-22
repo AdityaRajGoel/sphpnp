@@ -86,18 +86,40 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-/** The component opens on a 500ms timer after its fetch resolves. */
+/** The component opens once the visitor engages: 15 s on the page, or half a screen of scrolling. */
 const renderAndOpen = async () => {
   const { default: BannerMessage } = await import("@/components/BannerMessage");
   render(<BannerMessage />);
   await act(async () => {
     await Promise.resolve();
-    vi.advanceTimersByTime(600);
+    vi.advanceTimersByTime(15_100);
   });
   return screen.findByRole("dialog");
 };
 
 describe("BannerMessage dismissal", () => {
+  it("does not cover the page on arrival", async () => {
+    const { default: BannerMessage } = await import("@/components/BannerMessage");
+    render(<BannerMessage />);
+    await act(async () => {
+      await Promise.resolve();
+      vi.advanceTimersByTime(600);
+    });
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("opens once the visitor scrolls half a screen", async () => {
+    const { default: BannerMessage } = await import("@/components/BannerMessage");
+    render(<BannerMessage />);
+    await act(async () => {
+      await Promise.resolve();
+      Object.defineProperty(window, "scrollY", { value: window.innerHeight, configurable: true });
+      window.dispatchEvent(new Event("scroll"));
+    });
+    expect(await screen.findByRole("dialog")).toBeTruthy();
+    Object.defineProperty(window, "scrollY", { value: 0, configurable: true });
+  });
+
   it("opens when an undismissed banner is published", async () => {
     await renderAndOpen();
     expect(screen.getByText("Test Banner")).toBeTruthy();
@@ -150,7 +172,7 @@ describe("BannerMessage dismissal", () => {
     render(<BannerMessage />);
     await act(async () => {
       await Promise.resolve();
-      vi.advanceTimersByTime(600);
+      vi.advanceTimersByTime(15_100);
     });
 
     expect(
