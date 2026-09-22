@@ -18,6 +18,16 @@ const StickyMobileCTA = () => {
 
   // Not useful on the account-opening flow itself, or on admin/auth screens.
   const hidden = /^\/(open-account|auth|admin|reset-password|banner-manager)/.test(pathname);
+
+  // The WhatsApp button sits in the same bottom-right corner and covered the
+  // end of this bar ("Open Free Demat Accou..."). While the bar is up, its
+  // height is published for the button to clear (phones only, in its class).
+  const visible = show && !hidden;
+  useEffect(() => {
+    document.documentElement.style.setProperty("--sticky-cta-height", visible ? "4.25rem" : "0px");
+    return () => document.documentElement.style.setProperty("--sticky-cta-height", "0px");
+  }, [visible]);
+
   if (hidden) return null;
 
   return (

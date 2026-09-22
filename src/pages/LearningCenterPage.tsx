@@ -532,7 +532,7 @@ const LearningCenterPage = () => {
             <motion.div key="articles" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
               {/* Filters row */}
               <div className="flex flex-col sm:flex-row gap-3 mb-6 flex-wrap">
-                <div className="relative flex-1 min-w-0 max-w-md">
+                <div className="relative w-full flex-1 min-w-0 max-w-md">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <Input placeholder="Search articles..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
                 </div>
@@ -543,9 +543,9 @@ const LearningCenterPage = () => {
                     ))}
                   </TabsList>
                 </Tabs>
-                <div className="flex gap-1.5">
+                <div className="flex flex-wrap gap-1.5">
                   {["all", "Beginner", "Intermediate", "Advanced"].map(d => (
-                    <button key={d} onClick={() => setDifficulty(d)}
+                    <button key={d} type="button" aria-pressed={difficulty === d} onClick={() => setDifficulty(d)}
                       className={`text-xs px-3 py-2.5 md:py-1.5 rounded-full border transition-colors font-medium whitespace-nowrap ${
                         difficulty === d
                           ? d === "Beginner" ? "bg-secondary text-secondary-foreground border-secondary"

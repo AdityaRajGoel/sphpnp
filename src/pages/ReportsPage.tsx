@@ -211,7 +211,7 @@ const ReportsPage = () => {
               </div>
               <p className="text-sm text-muted-foreground mb-5 md:pl-12">{section.subtitle}</p>
 
-              <div className="grid sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-[minmax(0,1fr)] sm:grid-cols-2 gap-4">
                 {section.items.map((item) => {
                   const ItemIcon = iconFor(item.label);
                   const inner = (
