@@ -7,6 +7,11 @@
 # them stops the "Video isn't on a watch page" report in Search Console and saves
 # crawlers fetching assets they can never index (desktop and mobile renditions,
 # each as WebM with an MP4 fallback).
+#
+# /admin, /auth, /reset-password and /banner-manager are NOT disallowed here on
+# purpose: nginx sends them with X-Robots-Tag: noindex, and Google can only see
+# that header on a page it is allowed to crawl. Blocking them here would leave
+# a linked URL indexable as a bare address.
 
 User-agent: Googlebot
 User-agent: Bingbot
@@ -39,10 +44,6 @@ Disallow: /hero-360.mp4
 Disallow: /hero-360.webm
 Disallow: /hero-540.mp4
 Disallow: /hero-540.webm
-Disallow: /admin
-Disallow: /auth
-Disallow: /reset-password
-Disallow: /banner-manager
 Disallow: /api/
 
 Sitemap: https://www.sphpnp.com/sitemap.xml
