@@ -11,6 +11,7 @@ import { installClientErrorReporting } from "@/lib/client-errors";
 import { installChunkReload } from "@/lib/chunk-reload";
 import { installDomMutationGuard } from "@/lib/dom-mutation-guard";
 import { installAnalyticsConsent } from "@/lib/analytics-consent";
+import { rememberPrerenderedHeight } from "@/lib/prerender";
 
 // Uncaught browser errors are logged on the VPS itself (src/lib/client-errors.ts):
 // live site only, never the prerender, local dev or staging.
@@ -39,6 +40,9 @@ try {
 } catch {
   /* restoration stays browser-managed; useScrollToHash still resets on its own */
 }
+
+// Read before React replaces the static HTML (see lib/prerender).
+rememberPrerenderedHeight("[data-stock-state]");
 
 createRoot(document.getElementById("root")!).render(<App />);
 

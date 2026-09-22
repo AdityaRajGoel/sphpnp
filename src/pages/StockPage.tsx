@@ -2,7 +2,7 @@ import { lazy, Suspense, useState } from "react";
 import { stockPageTitle } from "@/lib/seo-title";
 import { stockDataset, stockFaqItems } from "@/lib/stock-structured-data";
 import FAQ from "@/components/FAQ";
-import { useParams } from "react-router-dom";
+import { useLocation, useParams } from "react-router-dom";
 import { motion } from "motion/react";
 import { Bot } from "lucide-react";
 import Header from "@/components/Header";
@@ -55,7 +55,7 @@ import LegalWatch from "@/components/stock/LegalWatch";
 import RedFlagsCard from "@/components/stock/RedFlagsCard";
 import LatestResults from "@/components/stock/LatestResults";
 import WatchlistButton from "@/components/WatchlistButton";
-import { isPrerender } from "@/lib/prerender";
+import { isPrerender, prerenderedHeight } from "@/lib/prerender";
 
 // Same split the screener, comparison and search surfaces make: the modal drags
 // in recharts and react-markdown, which is more JS than this whole page ships.
@@ -67,6 +67,7 @@ const StockFnO = lazy(() => import("@/components/stock/StockFnO"));
 
 export default function StockPage() {
   const { symbol } = useParams<{ symbol: string }>();
+  const { pathname } = useLocation();
   const s = useStockFundamentals(symbol);
   const st = useStockStatements(symbol);
   const disclosures = useStockDisclosures(symbol);
@@ -175,7 +176,7 @@ export default function StockPage() {
         />
 
         {loading ? (
-          <div className="space-y-4" aria-busy="true" data-stock-state="loading">
+          <div className="space-y-4" aria-busy="true" data-stock-state="loading" style={{ minHeight: prerenderedHeight(pathname) }}>
             <Skeleton className="h-12 w-2/3" />
             <Skeleton className="h-64 w-full" />
           </div>
