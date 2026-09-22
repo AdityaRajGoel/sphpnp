@@ -7,8 +7,15 @@
 //   { action: "search", query: "RELIANCE 27OCT" } -> matching contracts (NSE F&O, currency, MCX)
 //   { action: "calculate", positions: [{ exchange, id, quantity }] }
 //       -> span, exposure, netPremium, total (quantity < 0 is a sell)
+//   Structured picker (NSE F&O):
+//   { action: "expiries", symbol: "NIFTY", kind: "FUT" | "CE" | "PE" } -> series, expiries
+//   { action: "strikes", symbol, series, expiry: "2026-10-27", kind: "CE" | "PE" } -> strikes
+//   { action: "contract", symbol, series, expiry, kind, strike? } -> contract
 
-import { MAX_LEGS, pickContracts, tradeable, validPositions, validQuery, type Contract, type Position } from "../_shared/span-margin.ts";
+import {
+  KINDS, MAX_LEGS, PICKER_SERIES, cleanExpiries, pickContracts, seriesFor, sortedStrikes, toOption, tradeable, upstreamDate,
+  validExpiry, validPositions, validQuery, validSymbol, type Contract, type Kind, type Position,
+} from "../_shared/span-margin.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -40,6 +47,42 @@ async function upstreamContracts(word: string): Promise<Contract[]> {
   return contracts;
 }
 
+const INSTRUMENTS = `${BASE}/instruments/instrument`;
+
+async function lookup(path: string): Promise<unknown> {
+  const res = await fetch(`${INSTRUMENTS}/${path}`, { signal: AbortSignal.timeout(10_000) });
+  if (!res.ok) throw new Error(`webtrade lookup answered HTTP ${res.status}`);
+  return ((await res.json()) as { result?: unknown }).result;
+}
+
+/** Index contracts are tried first (NIFTY, BANKNIFTY), then stock contracts. */
+async function expiries(symbol: string, kind: Kind) {
+  const today = new Date(Date.now() + 5.5 * 3600_000).toISOString().slice(0, 10);
+  for (const index of [true, false]) {
+    const series = seriesFor(kind, index);
+    // The platform answers a symbol it has no contracts for in this series with
+    // HTTP 400 for some series and an error body for others: either means "none".
+    const raw = await lookup(`expiryDate?exchangeSegment=2&series=${series}&symbol=${encodeURIComponent(symbol)}`).catch(() => null);
+    const list = cleanExpiries(raw, today);
+    if (list.length) return { success: true, series, expiries: list };
+  }
+  return { success: true, series: null, expiries: [] };
+}
+
+async function strikes(symbol: string, series: string, expiry: string, kind: Kind) {
+  const raw = await lookup(`strikePrice?exchangeSegment=2&series=${series}&symbol=${encodeURIComponent(symbol)}&expiryDate=${upstreamDate(expiry)}&optionType=${kind}`);
+  return { success: true, strikes: sortedStrikes(raw) };
+}
+
+async function contract(symbol: string, series: string, expiry: string, kind: Kind, strike: number | null) {
+  const base = `exchangeSegment=2&series=${series}&symbol=${encodeURIComponent(symbol)}&expiryDate=${upstreamDate(expiry)}`;
+  const raw = kind === "FUT"
+    ? await lookup(`futureSymbol?${base}`)
+    : await lookup(`optionSymbol?${base}&optionType=${kind}&strikePrice=${strike}`);
+  const found = Array.isArray(raw) ? (raw as Contract[]).find(tradeable) : undefined;
+  return found ? { success: true, contract: toOption(found) } : { success: false, error: "No such contract" };
+}
+
 async function calculate(positions: Position[]) {
   const res = await fetch(`${BASE}/instruments/calculator/span`, {
     method: "POST",
@@ -69,7 +112,20 @@ Deno.serve(async (req) => {
       if (!positions) return json({ success: false, error: `Send 1-${MAX_LEGS} positions, each a contract id and a nonzero whole quantity` }, 400);
       return json(await calculate(positions));
     }
-    return json({ success: false, error: "action must be search or calculate" }, 400);
+    if (body.action === "expiries" || body.action === "strikes" || body.action === "contract") {
+      const kind = body.kind as Kind;
+      if (!validSymbol(body.symbol) || !KINDS.includes(kind)) return json({ success: false, error: "symbol (e.g. NIFTY) and kind FUT, CE or PE are required" }, 400);
+      if (body.action === "expiries") return json(await expiries(body.symbol, kind));
+      if (!PICKER_SERIES.includes(body.series) || !validExpiry(body.expiry)) return json({ success: false, error: "series and expiry (YYYY-MM-DD) are required" }, 400);
+      if (body.action === "strikes") {
+        if (kind === "FUT") return json({ success: false, error: "Futures have no strikes" }, 400);
+        return json(await strikes(body.symbol, body.series, body.expiry, kind));
+      }
+      const strike = kind === "FUT" ? null : Number(body.strike);
+      if (strike !== null && !(Number.isFinite(strike) && strike > 0 && strike < 10_000_000)) return json({ success: false, error: "A positive strike is required for options" }, 400);
+      return json(await contract(body.symbol, body.series, body.expiry, kind, strike));
+    }
+    return json({ success: false, error: "action must be search, calculate, expiries, strikes or contract" }, 400);
   } catch (e) {
     return json({ success: false, error: (e as Error).message }, 502);
   }

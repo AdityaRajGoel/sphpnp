@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Loader2, Search, X } from "lucide-react";
 import { calculateMargin, searchContracts, type ContractOption, type SpanLeg } from "@/lib/span-margin";
 import { isPrerender } from "@/lib/prerender";
+import ContractPicker from "@/components/margin/ContractPicker";
 
 /*
  * Styled after the group's webtrade.parasramindia.com F&O margin calculator:
@@ -34,10 +35,12 @@ export default function SpanCalculator({ seed }: { seed?: string }) {
   const [lots, setLots] = useState("1");
   const [side, setSide] = useState<"buy" | "sell">("buy");
   const [legs, setLegs] = useState<SpanLeg[]>([]);
+  const [mode, setMode] = useState<"search" | "picker">("search");
 
   // A stock page link (?symbol=TCS) or a click in the margin list seeds the search.
   useEffect(() => {
     if (!seed) return;
+    setMode("search");
     setQuery(seed);
     setPicked(null);
     setOpen(true);
@@ -65,9 +68,13 @@ export default function SpanCalculator({ seed }: { seed?: string }) {
   const add = () => {
     if (!picked) return;
     setLegs((prev) => [...prev, { contract: picked, lots: lotCount, side }]);
-    setPicked(null);
-    setQuery("");
     setLots("1");
+    // Search starts over; the picker keeps its contract so the other side or
+    // another strike is one change away.
+    if (mode === "search") {
+      setPicked(null);
+      setQuery("");
+    }
   };
   const choose = (c: ContractOption) => {
     setPicked(c);
@@ -83,9 +90,20 @@ export default function SpanCalculator({ seed }: { seed?: string }) {
       {/* Add a position */}
       <section aria-labelledby="span-add" className="bg-white py-10">
         <div className="mx-auto max-w-[830px] px-4">
-          <h2 id="span-add" className="mb-4 text-base font-normal">Add Position</h2>
-          <div className="grid gap-4 md:grid-cols-[1fr_140px]">
-            <div className="relative">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <h2 id="span-add" className="text-base font-normal">Add Position</h2>
+            <div role="tablist" aria-label="How to find the contract" className="flex border border-[#EEEEEE] text-sm">
+              {([["search", "Search"], ["picker", "Expiry & strike"]] as const).map(([m, label]) => (
+                <button key={m} type="button" role="tab" aria-selected={mode === m} onClick={() => { setMode(m); setPicked(null); }} className={`px-4 py-2 transition-colors ${mode === m ? "bg-[#E9671D] text-white" : "bg-white hover:bg-[#F4F7FB]"}`}>
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+          {mode === "picker" && <ContractPicker seed={seed} onPick={setPicked} />}
+          <div className={mode === "picker" ? "mt-4 grid gap-4 md:grid-cols-[1fr_140px]" : "grid gap-4 md:grid-cols-[1fr_140px]"}>
+            <div className={mode === "picker" ? "hidden md:block" : "relative"}>
+              {mode === "search" && (<>
               <label htmlFor="span-symbol" className="mb-1 block text-sm">Contract</label>
               <div className="relative">
                 <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9AA9B0]" aria-hidden="true" />
@@ -120,8 +138,9 @@ export default function SpanCalculator({ seed }: { seed?: string }) {
                   ))}
                 </ul>
               )}
+              </>)}
             </div>
-            <div>
+            <div className={mode === "picker" ? "md:col-start-2" : undefined}>
               <label htmlFor="span-lots" className="mb-1 block text-sm">Lots</label>
               <input id="span-lots" type="number" inputMode="numeric" min={1} step={1} className={FIELD} value={lots} onChange={(e) => setLots(e.target.value)} />
             </div>

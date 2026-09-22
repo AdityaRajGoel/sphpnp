@@ -25,3 +25,22 @@ export async function calculateMargin(legs: SpanLeg[]): Promise<SpanResult> {
   if (!data?.success) throw new Error(data?.error ?? "Margin calculation failed");
   return { span: data.span, exposure: data.exposure, netPremium: data.netPremium, total: data.total };
 }
+
+export type Kind = "FUT" | "CE" | "PE";
+
+async function call<T>(body: Record<string, unknown>): Promise<T> {
+  const { data, error } = await supabase.functions.invoke("span-margin", { body });
+  if (error) throw new Error(error.message);
+  if (!data?.success) throw new Error(data?.error ?? "Request failed");
+  return data as T;
+}
+
+/** Upcoming expiries for a symbol, with the series (index or stock) they belong to. */
+export const getExpiries = (symbol: string, kind: Kind) =>
+  call<{ series: string | null; expiries: string[] }>({ action: "expiries", symbol, kind });
+
+export const getStrikes = (symbol: string, series: string, expiry: string, kind: Kind) =>
+  call<{ strikes: number[] }>({ action: "strikes", symbol, series, expiry, kind }).then((r) => r.strikes);
+
+export const getContract = (symbol: string, series: string, expiry: string, kind: Kind, strike: number | null) =>
+  call<{ contract: ContractOption }>({ action: "contract", symbol, series, expiry, kind, strike }).then((r) => r.contract);

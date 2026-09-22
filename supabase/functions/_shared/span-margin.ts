@@ -33,15 +33,7 @@ export function pickContracts(contracts: Contract[], query: string): ContractOpt
       (a.ContractExpiration ?? "").localeCompare(b.ContractExpiration ?? "") ||
       (a.StrikePrice ?? 0) - (b.StrikePrice ?? 0))
     .slice(0, MAX_RESULTS)
-    .map((c) => ({
-      exchange: SEGMENTS[c.ExchangeSegment],
-      id: c.ExchangeInstrumentID,
-      name: c.Name,
-      label: c.DisplayName,
-      series: c.Series,
-      lotSize: c.LotSize,
-      expiry: c.ContractExpiration?.slice(0, 10) ?? null,
-    }));
+    .map(toOption);
 }
 
 export type Position = { exchange: string; id: number; quantity: number };
@@ -64,3 +56,46 @@ export function validPositions(raw: unknown): Position[] | null {
 
 /** Contract names are letters, digits, spaces, '&' and '-' (M&M, BAJAJ-AUTO). */
 export const validQuery = (q: unknown): q is string => typeof q === "string" && /^[A-Za-z0-9&\- ]{2,40}$/.test(q.trim());
+
+// ---- Structured picker: symbol -> future / call / put -> expiry -> strike ----
+
+export type Kind = "FUT" | "CE" | "PE";
+export const KINDS: Kind[] = ["FUT", "CE", "PE"];
+/** NSE F&O series: index contracts first, then stock contracts. */
+export const seriesFor = (kind: Kind, index: boolean) => (kind === "FUT" ? (index ? "FUTIDX" : "FUTSTK") : index ? "OPTIDX" : "OPTSTK");
+export const PICKER_SERIES = ["FUTIDX", "FUTSTK", "OPTIDX", "OPTSTK"];
+
+export const validSymbol = (s: unknown): s is string => typeof s === "string" && /^[A-Z0-9&-]{1,20}$/.test(s);
+export const validExpiry = (s: unknown): s is string => typeof s === "string" && /^\d{4}-\d{2}-\d{2}$/.test(s) && !Number.isNaN(Date.parse(s));
+
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+/** "2026-10-27" -> "27Oct2026", the form the platform's lookups take. */
+export function upstreamDate(iso: string): string {
+  const [y, m, d] = iso.split("-");
+  return `${d}${MONTHS[Number(m) - 1]}${y}`;
+}
+
+/** The platform lists expiries unsorted, repeated and including today's: dedupe, keep today onward, sort. */
+export function cleanExpiries(raw: unknown, today: string): string[] {
+  if (!Array.isArray(raw)) return [];
+  return [...new Set(raw.filter((x): x is string => typeof x === "string").map((x) => x.slice(0, 10)))]
+    .filter((d) => d >= today)
+    .sort();
+}
+
+export function sortedStrikes(raw: unknown): number[] {
+  if (!Array.isArray(raw)) return [];
+  return [...new Set(raw.map(Number).filter((n) => Number.isFinite(n) && n > 0))].sort((a, b) => a - b);
+}
+
+export function toOption(c: Contract): ContractOption {
+  return {
+    exchange: SEGMENTS[c.ExchangeSegment],
+    id: c.ExchangeInstrumentID,
+    name: c.Name,
+    label: c.DisplayName,
+    series: c.Series,
+    lotSize: c.LotSize,
+    expiry: c.ContractExpiration?.slice(0, 10) ?? null,
+  };
+}
