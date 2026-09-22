@@ -127,7 +127,7 @@ const MarginCalculatorPage = () => {
         faqItems={MARGIN_FAQ}
         breadcrumbs={[
           { name: "Home", url: "/" },
-          { name: "Margin Calculator" },
+          { name: "F&O Margin Calculator" },
         ]}
         jsonLd={{
           "@type": "WebApplication",
@@ -157,14 +157,14 @@ const MarginCalculatorPage = () => {
       />
       <ScrollProgress />
       <Header />
-      <VisibleBreadcrumbs items={[{ name: "Home", url: "/" }, { name: "Margin Calculator" }]} />
+      <VisibleBreadcrumbs items={[{ name: "Home", url: "/" }, { name: "F&O Margin Calculator" }]} />
       <main className="container mx-auto px-4 py-8 max-w-4xl">
         <ImageBanner
           slug="steps-light"
           className="mb-8"
           focus={{ mobile: "50% 50%", desktop: "50% 50%" }}
           eyebrow={<><Calculator className="h-3.5 w-3.5" aria-hidden="true" /> Calculator</>}
-          title="Margin Calculator"
+          title="F&O Margin Calculator"
           description="Calculate required margin and leverage for F&O and equity trades, with current lot sizes for every contract."
         />
 
@@ -310,9 +310,9 @@ const MarginCalculatorPage = () => {
         </Tabs>
 
         <section aria-labelledby="lot-sizes" className="mt-10">
-          <h2 id="lot-sizes" className="text-2xl font-heading font-bold">NSE F&amp;O lot sizes</h2>
+          <h2 id="lot-sizes" className="text-2xl font-heading font-bold">NSE F&amp;O margin list: lot sizes and margin per lot</h2>
           <p className="mt-1 mb-3 text-sm text-muted-foreground">
-            Current lot size for every F&amp;O contract, with the last closing price and the value of one lot. Click a row to calculate its margin.
+            Current lot size for every F&amp;O contract, with the last closing price, the value of one lot and the approximate margin to hold it (SPAN + exposure, at the rates this calculator uses). Click a row to calculate its margin.
           </p>
           <Input
             aria-label="Filter lot sizes"
@@ -323,14 +323,15 @@ const MarginCalculatorPage = () => {
           />
           <Card className="max-h-[28rem] overflow-auto p-0">
             <table className="w-full text-sm">
-              <caption className="sr-only">NSE F&amp;O lot sizes</caption>
+              <caption className="sr-only">NSE F&amp;O margin list</caption>
               <thead className="sticky top-0 bg-card/95 backdrop-blur text-muted-foreground">
                 <tr>
                   <th scope="col" className="px-4 py-2 text-left font-medium">Symbol</th>
                   <th scope="col" className="px-3 py-2 text-left font-medium">Underlying</th>
                   <th scope="col" className="px-3 py-2 text-right font-medium">Lot size</th>
                   <th scope="col" className="px-3 py-2 text-right font-medium">Last close</th>
-                  <th scope="col" className="px-4 py-2 text-right font-medium">1 lot value</th>
+                  <th scope="col" className="px-3 py-2 text-right font-medium">1 lot value</th>
+                  <th scope="col" className="px-4 py-2 text-right font-medium" title="SPAN + exposure at the approximate rates above; your broker's figure will differ">Approx. margin / lot</th>
                 </tr>
               </thead>
               <tbody>
@@ -342,7 +343,8 @@ const MarginCalculatorPage = () => {
                       <td className="px-3 py-2 text-xs text-muted-foreground">{c.underlying}</td>
                       <td className="px-3 py-2 text-right tabular-nums">{c.lot_size.toLocaleString("en-IN")}</td>
                       <td className="px-3 py-2 text-right tabular-nums">{c.spot ? `₹${c.spot.toLocaleString("en-IN")}` : "—"}</td>
-                      <td className="px-4 py-2 text-right tabular-nums">{c.spot ? fmt(c.spot * c.lot_size) : "—"}</td>
+                      <td className="px-3 py-2 text-right tabular-nums">{c.spot ? fmt(c.spot * c.lot_size) : "—"}</td>
+                      <td className="px-4 py-2 text-right tabular-nums">{c.spot ? fmt((c.spot * c.lot_size * (rateFor(c.symbol).span + rateFor(c.symbol).exposure)) / 100) : "—"}</td>
                     </tr>
                   ))}
               </tbody>
