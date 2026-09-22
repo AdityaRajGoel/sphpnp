@@ -17,11 +17,18 @@ const getSessionId = () => {
  * recorded as a visit: most of page_analytics was the build itself (2,525 "views"
  * at 04:00 IST in one week against ~25 an hour otherwise). Automated browsers are
  * not visitors.
+ *
+ * Search engines render pages too, and their renderer does not set
+ * navigator.webdriver: Googlebot alone logged 16 "views" in three days of
+ * nginx logs. They announce themselves in the user agent instead.
  */
+const BOT_UA = /bot|crawl|spider|slurp|headless|lighthouse|mediapartners|facebookexternalhit|preview/i;
+
 const isAutomated = () =>
   typeof window === "undefined" ||
   (window as unknown as { __PRERENDER__?: boolean }).__PRERENDER__ === true ||
-  navigator.webdriver === true;
+  navigator.webdriver === true ||
+  BOT_UA.test(navigator.userAgent);
 
 /**
  * Where the visit came from, sent once per session with its first page view:
