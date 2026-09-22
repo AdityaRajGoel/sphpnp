@@ -18,3 +18,16 @@ export function stockPageTitle(name: string | null | undefined, symbol: string):
   const trimmed = name.length <= room ? name : `${name.slice(0, Math.max(1, room - 1)).trimEnd()}…`;
   return `${trimmed}${suffix}`;
 }
+
+const SITE_SUFFIX = " | Parasram India";
+
+/**
+ * Any page's <title>: the brand is appended only while the whole still fits.
+ * Appending it to every title under 60 pushed 11 of 105 audited pages to 66-83
+ * characters, clipped in results; Google shows the site name above the title
+ * link anyway, so a long title does better without it.
+ */
+export function pageTitle(title: string): string {
+  if (title.includes("Parasram")) return title;
+  return title.length + SITE_SUFFIX.length <= MAX ? `${title}${SITE_SUFFIX}` : title;
+}

@@ -62,3 +62,13 @@ describe("stockPageTitle", () => {
     expect(stockPageTitle(null, "TCS")).toBe("TCS share price and financials | Parasram");
   });
 });
+
+describe("pageTitle", () => {
+  it("adds the brand only while the title stays within 60 characters", async () => {
+    const { pageTitle } = await import("@/lib/seo-title");
+    expect(pageTitle("Pricing")).toBe("Pricing | Parasram India");
+    const long = "Nifty Financial Services Stocks List 2026: 20 Companies";
+    expect(pageTitle(long)).toBe(long);
+    expect(pageTitle("About Parasram")).toBe("About Parasram");
+  });
+});
