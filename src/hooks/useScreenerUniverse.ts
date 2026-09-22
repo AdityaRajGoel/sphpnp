@@ -38,6 +38,7 @@ async function loadUniverse(): Promise<Map<string, MetricRow>> {
   return buildMetricRows(quotes, fundamentals, risk, scores);
 }
 
-export function useScreenerUniverse() {
-  return useQuery({ queryKey: ["screener-universe"], queryFn: loadUniverse, staleTime: 10 * 60_000 });
+/** `enabled: false` defers the ~500 KB load, e.g. until a section scrolls near the screen. */
+export function useScreenerUniverse({ enabled = true }: { enabled?: boolean } = {}) {
+  return useQuery({ queryKey: ["screener-universe"], queryFn: loadUniverse, staleTime: 10 * 60_000, enabled });
 }

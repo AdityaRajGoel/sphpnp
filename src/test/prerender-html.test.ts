@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { cleanCapturedHtml, dedupeJsonLd, dropHeroPreload, stripCaptureOrigin } from "../../scripts/lib/prerender-html.mjs";
+import { cleanCapturedHtml, dedupeJsonLd, dropHeroPreload, dropRuntimePreloads, stripCaptureOrigin } from "../../scripts/lib/prerender-html.mjs";
 
 describe("stripCaptureOrigin", () => {
   it("makes capture-server URLs root-relative and leaves real origins alone", () => {
@@ -13,7 +13,7 @@ describe("stripCaptureOrigin", () => {
 });
 
 describe("dropHeroPreload", () => {
-  const preload = '<link rel="preload" href="/hero-bg.webp" as="image" type="image/webp" fetchpriority="high">';
+  const preload = '<link rel="preload" as="image" type="image/webp" imagesrcset="/hero-bg-640.webp 640w, /hero-bg-1280.webp 1280w, /hero-bg.webp 2940w" imagesizes="100vw" fetchpriority="high">';
 
   it("removes the hero image preload from pages that have no hero", () => {
     expect(dropHeroPreload(`<head>${preload}<link rel="icon" href="/favicon.ico"></head>`, "/about")).toBe('<head><link rel="icon" href="/favicon.ico"></head>');
@@ -26,7 +26,7 @@ describe("dropHeroPreload", () => {
 
 describe("cleanCapturedHtml", () => {
   it("applies both fixes", () => {
-    const html = '<link rel="modulepreload" href="http://localhost:9/assets/a.js"><link rel="preload" href="/hero-bg.webp" as="image">';
+    const html = '<link rel="modulepreload" href="http://localhost:9/assets/a.js"><link rel="preload" imagesrcset="/hero-bg-640.webp 640w" as="image">';
     expect(cleanCapturedHtml(html, 9, "/ipo")).toBe('<link rel="modulepreload" href="/assets/a.js">');
   });
 });
@@ -45,5 +45,13 @@ describe("dedupeJsonLd", () => {
   it("leaves unparsable blocks alone", () => {
     const html = '<script type="application/ld+json">{broken</script>';
     expect(dedupeJsonLd(html)).toBe(html);
+  });
+});
+
+describe("dropRuntimePreloads", () => {
+  it("drops the chunks the capture recorded and keeps the build's entry preloads", () => {
+    const entry = '<link rel="modulepreload" crossorigin="" href="/assets/react-vendor.js">';
+    const lazy = '<link rel="modulepreload" as="script" crossorigin="" href="/assets/AdvancedChartDialog.js">';
+    expect(dropRuntimePreloads(`${entry}${lazy}`)).toBe(entry);
   });
 });

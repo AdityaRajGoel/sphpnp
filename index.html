@@ -30,7 +30,7 @@
   <!-- Preload the hero poster for LCP. WebP only: preloading the JPG as well
        downloaded the same image twice on every visit, and the splash logo was
        competing with it at high priority. -->
-  <link rel="preload" href="/hero-bg.webp" as="image" type="image/webp" fetchpriority="high" />  <!-- hero-*.webm/mp4 load via the Hero component after mount; eager preload is not needed and hurts LCP -->
+  <link rel="preload" as="image" type="image/webp" imagesrcset="/hero-bg-640.webp 640w, /hero-bg-1280.webp 1280w, /hero-bg.webp 2940w" imagesizes="100vw" fetchpriority="high" />  <!-- hero-*.webm/mp4 load via the Hero component after mount; eager preload is not needed and hurts LCP -->
   <!-- Fonts are self-hosted (@fontsource-variable, imported in src/main.tsx). -->
   <!-- Critical inline CSS to avoid render-blocking -->
   <style>
@@ -127,7 +127,7 @@
        Inline + static so it paints on first frame; main.tsx fades it out. -->
   <div id="app-splash" aria-hidden="true">
     <div class="splash-inner">
-      <img src="/logo.png" alt="Parasram India" class="splash-logo" width="150" height="150" />
+      <img src="/splash-logo.webp" alt="Parasram India" class="splash-logo" width="150" height="150" />
       <div class="splash-bar"><span></span></div>
     </div>
   </div>

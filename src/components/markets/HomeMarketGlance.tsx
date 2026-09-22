@@ -1,6 +1,6 @@
-import { useMemo } from "react";
+import { useMemo, useRef } from "react";
 import { Link } from "react-router-dom";
-import { motion } from "motion/react";
+import { motion, useInView } from "motion/react";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowRight, Activity } from "lucide-react";
 import { Card } from "@/components/ui/card";
@@ -20,7 +20,13 @@ import { HeatStrip } from "./WorldMarketsSection";
  * the page that explains it. Every block renders only once its data exists.
  */
 export default function HomeMarketGlance() {
-  const universe = useScreenerUniverse();
+  // The breadth tiles need the whole universe (~500 KB of rows), and this
+  // section sits below the fold: on a phone that download competed with the
+  // hero and the first paint. Fetched once the section nears the screen; the
+  // prerender still loads it so the static HTML carries the figures.
+  const ref = useRef<HTMLElement>(null);
+  const near = useInView(ref, { once: true, margin: "600px 0px" });
+  const universe = useScreenerUniverse({ enabled: near || isPrerender() });
   // World index levels are live figures: fetched in the browser, never baked into
   // the prerendered HTML.
   const board = useQuery({ queryKey: ["world-board"], queryFn: getWorldBoard, staleTime: 15 * 60_000, retry: 1, enabled: !isPrerender() });
@@ -36,7 +42,7 @@ export default function HomeMarketGlance() {
     : [];
 
   return (
-    <motion.section {...revealSection} aria-labelledby="home-glance" className="container mx-auto px-4 py-12 md:py-16">
+    <motion.section ref={ref} {...revealSection} aria-labelledby="home-glance" className="container mx-auto px-4 py-12 md:py-16">
       <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
         <div>
           <span className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-secondary"><Activity className="h-4 w-4" aria-hidden="true" />Market at a glance</span>
@@ -48,7 +54,7 @@ export default function HomeMarketGlance() {
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        {universe.isLoading
+        {universe.isPending
           ? Array.from({ length: 4 }, (_, i) => <Skeleton key={i} className="h-24" />)
           : tiles.map((t, i) => (
               <motion.div key={t.label} {...revealItem(i)}>

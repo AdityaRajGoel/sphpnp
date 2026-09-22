@@ -15,6 +15,12 @@
  *    stock and IPO pages shipped two BreadcrumbLists, the loading-state one
  *    ("TCS share price and financials") beside the real one.
  *
+ *  - Every lazy chunk the page imported during capture was also recorded as a
+ *    <link rel="modulepreload" as="script">: 45 of them on "/", chart
+ *    libraries and dialogs included, all fetched at high priority before first
+ *    paint. On a throttled phone that held first paint at 5-7 s; without them
+ *    1.7 s. The build's own entry preloads (no `as` attribute) stay.
+ *
  *  - index.html preloads the homepage hero image, and every route is captured
  *    from that same shell. Only "/" renders the hero, so on every other page the
  *    preload was a wasted high-priority download (and a console warning).
@@ -29,7 +35,7 @@ export function stripCaptureOrigin(html, port) {
 /** Removes the hero image preload from routes that do not render the hero. */
 export function dropHeroPreload(html, route) {
   if (route === "/") return html;
-  return html.replace(/<link\b[^>]*\brel="preload"[^>]*href="\/hero-bg\.webp"[^>]*>/g, "");
+  return html.replace(/<link\b[^>]*\brel="preload"[^>]*\/hero-bg[^>]*>/g, "");
 }
 
 const LD_JSON = /<script type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/g;
@@ -49,8 +55,13 @@ export function dedupeJsonLd(html) {
   });
 }
 
+/** Removes the lazy-chunk preloads Vite's runtime injected while the page was captured. */
+export function dropRuntimePreloads(html) {
+  return html.replace(/<link\b[^>]*\brel="modulepreload"[^>]*\bas="script"[^>]*>/g, "");
+}
+
 export function cleanCapturedHtml(html, port, route) {
-  return dedupeJsonLd(dropHeroPreload(stripCaptureOrigin(html, port), route));
+  return dedupeJsonLd(dropRuntimePreloads(dropHeroPreload(stripCaptureOrigin(html, port), route)));
 }
 
 export const SITE_ORIGIN = "https://www.sphpnp.com";

@@ -30,6 +30,8 @@ const TIP_INTERVAL_MS = 6000;
  */
 type VideoTier = "sm" | "lg" | null;
 
+const HERO_SRCSET = "/hero-bg-640.webp 640w, /hero-bg-1280.webp 1280w, /hero-bg.webp 2940w";
+
 function pickVideoTier(): VideoTier {
   if (typeof window === "undefined") return null;
   // navigator.connection is Chromium-only; absence is treated as a fast link
@@ -197,7 +199,21 @@ const Hero = () => {
   // keeps the markup identical on server and client, which a width check read
   // during render would not.
   const [videoTier, setVideoTier] = useState<VideoTier>(null);
-  useEffect(() => setVideoTier(pickVideoTier()), []);
+  // Deferred past the load event and an idle moment: on a phone the 700 KB
+  // video otherwise downloads alongside the poster, fonts and page data.
+  useEffect(() => {
+    let idle: number | undefined;
+    const start = () => {
+      const ric = (window as Window & { requestIdleCallback?: (cb: () => void) => number }).requestIdleCallback;
+      idle = ric ? ric(() => setVideoTier(pickVideoTier())) : window.setTimeout(() => setVideoTier(pickVideoTier()), 1500);
+    };
+    if (document.readyState === "complete") start();
+    else window.addEventListener("load", start, { once: true });
+    return () => {
+      window.removeEventListener("load", start);
+      if (idle !== undefined) ((window as Window & { cancelIdleCallback?: (id: number) => void }).cancelIdleCallback ?? window.clearTimeout)(idle);
+    };
+  }, []);
   const { indices: liveIndices, commodities, marketOverview, loading: marketLoading } = useLiveMarket();
   const { t } = useT();
 
@@ -288,7 +304,9 @@ const Hero = () => {
       >
         {/* LCP: discoverable poster image with high fetch priority */}
         <picture>
-          <source srcSet="/hero-bg.webp" type="image/webp" />
+          {/* Sized per screen: a phone was downloading the 2940px original (147 KB)
+              under a dark overlay. Keep in step with the preload in index.html. */}
+          <source srcSet={HERO_SRCSET} sizes="100vw" type="image/webp" />
           <img
             src="/hero-bg.jpg"
             alt="Parasram India - Stock Trading Platform and Investment Background"
@@ -307,7 +325,7 @@ const Hero = () => {
             // Changing <source> children of a live <video> does nothing on its
             // own; the browser only re-selects a source on load().
             key={videoTier}
-            poster="/hero-bg.jpg"
+            poster="/hero-bg-640.webp"
             autoPlay
             loop
             muted
