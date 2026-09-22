@@ -85,13 +85,21 @@ test.describe("modal layering on the home page", () => {
     expect(open[0]).toMatch(/privacy|cookie/i);
   });
 
-  test("the promo banner appears only after consent is answered", async ({ page }) => {
+  // The banner no longer opens on arrival (an intrusive interstitial for a
+  // visitor landing from search): it waits for half a screen of scrolling or
+  // 15 seconds on the page. See BannerMessage.
+  const engage = (page: import("@playwright/test").Page) =>
+    page.evaluate(() => window.scrollTo(0, window.innerHeight));
+
+  test("the promo banner appears only after consent is answered and the visitor engages", async ({ page }) => {
     await page.goto("/");
     await page.waitForTimeout(2000);
 
     await page.getByRole("button", { name: /accept|allow|essential|reject/i }).first().click();
     await page.waitForTimeout(2000);
+    await expect(page.getByText("E2E Banner"), "must not cover the page on arrival").toHaveCount(0);
 
+    await engage(page);
     await expect(page.getByText("E2E Banner")).toBeVisible();
     expect(await openDialogTitles(page)).toHaveLength(1);
   });
@@ -100,7 +108,9 @@ test.describe("modal layering on the home page", () => {
     await page.goto("/");
     await page.waitForTimeout(2000);
     await page.getByRole("button", { name: /accept|allow|essential|reject/i }).first().click();
-    await page.waitForTimeout(2000);
+    await page.waitForTimeout(1000);
+    await engage(page);
+    await expect(page.getByText("E2E Banner")).toBeVisible();
 
     await page.getByRole("button", { name: /close/i }).first().click();
     await page.waitForTimeout(1200);
