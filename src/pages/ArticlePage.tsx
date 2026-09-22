@@ -117,6 +117,23 @@ const ArticlePage = () => {
             <Markdown remarkPlugins={[remarkGfm]}>{article.content}</Markdown>
           </article>
 
+          {/* Primary sources: readers and answer engines both weigh a claim by
+              where it comes from. */}
+          {article.sources.length > 0 && (
+            <section aria-labelledby="article-sources" className="mt-8">
+              <h2 id="article-sources" className="font-heading text-lg font-bold text-foreground">Sources</h2>
+              <ul className="mt-2 space-y-1.5 text-sm">
+                {article.sources.map((src) => (
+                  <li key={src.url}>
+                    <a href={src.url} target="_blank" rel="noopener noreferrer" className="text-secondary hover:underline underline-offset-4 break-words">
+                      {src.label}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+
           {/* Disclaimer */}
           <div className="mt-8 text-xs text-muted-foreground bg-muted/30 border border-border/50 rounded-xl p-4">
             <strong className="text-foreground">Disclaimer:</strong> This article is for educational purposes only and

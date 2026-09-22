@@ -14,6 +14,8 @@ export type LearnArticle = {
   /** Two or three sentences that answer the title outright, shown under the H1. Answer engines quote this. */
   answer: string;
   keyTakeaways: string[];
+  /** Primary sources for the facts in the article, listed under it. */
+  sources: { label: string; url: string }[];
   related: string[];           // slugs
   content: string;             // markdown
 };
@@ -35,6 +37,11 @@ export const LEARN_ARTICLES: Record<string, LearnArticle> = {
       "It works alongside a trading account: the trading account places orders, the Demat account stores what you buy.",
       "In India, Demat accounts are held with CDSL or NSDL through a SEBI-registered broker (Depository Participant).",
       "Opening is fully online with PAN, Aadhaar, a bank proof and a photo - and is free at Parasram India.",
+    ],
+    sources: [
+      { label: "SEBI investor education portal", url: "https://investor.sebi.gov.in/" },
+      { label: "CDSL (Central Depository Services)", url: "https://www.cdslindia.com/" },
+      { label: "NSDL (National Securities Depository)", url: "https://nsdl.co.in/" },
     ],
     related: ["full-service-vs-discount-broker", "mutual-funds-guide", "ipo-guide"],
     content: `## What is a Demat account?
@@ -104,6 +111,10 @@ Without a Demat account you simply cannot buy or hold shares, apply for IPOs, or
       "Always compare a company's P/E to its own history and to its sector peers - never in isolation.",
       "P/E is useless for loss-making companies and can be distorted by one-off profits.",
     ],
+    sources: [
+      { label: "NSE Indices: index P/E, P/B and dividend yield data", url: "https://www.niftyindices.com/" },
+      { label: "SEBI investor education portal", url: "https://investor.sebi.gov.in/" },
+    ],
     related: ["tax-on-share-market-income", "fno-basics", "mutual-funds-guide"],
     content: `## What is the P/E ratio?
 
@@ -171,6 +182,10 @@ The P/E ratio is a brilliant *first filter*, not a *final verdict*. Use it to sh
       "Lumpsum can outperform when markets are near a bottom, but requires a large idle corpus and strong nerves.",
       "For most Indian investors building wealth from monthly income, a disciplined SIP wins on consistency.",
     ],
+    sources: [
+      { label: "AMFI (Association of Mutual Funds in India)", url: "https://www.amfiindia.com/" },
+      { label: "SEBI investor education portal", url: "https://investor.sebi.gov.in/" },
+    ],
     related: ["mutual-funds-guide", "power-of-compounding", "tax-on-share-market-income"],
     content: `## Two ways to invest the same money
 
@@ -228,6 +243,10 @@ The most important factor isn't SIP vs lumpsum - it's **staying invested for the
       "Time in the market matters more than the amount: starting 10 years earlier can double your final corpus.",
       "The Rule of 72 estimates how long money takes to double: 72 ÷ annual return %.",
       "Small monthly SIPs, left untouched for decades, can grow into crores.",
+    ],
+    sources: [
+      { label: "AMFI (Association of Mutual Funds in India)", url: "https://www.amfiindia.com/" },
+      { label: "SEBI investor education portal", url: "https://investor.sebi.gov.in/" },
     ],
     related: ["sip-vs-lumpsum", "mutual-funds-guide", "full-service-vs-discount-broker"],
     content: `## What is compounding?
@@ -296,6 +315,10 @@ At a 12% return, ₹1 lakh becomes ₹2 lakh in 6 years, ₹4 lakh in 12 years, 
       "NAV is the per-unit price; expense ratio is the annual fee - lower is better for long-term returns.",
       "Direct plans have lower fees than regular plans because they skip distributor commission.",
     ],
+    sources: [
+      { label: "AMFI (Association of Mutual Funds in India)", url: "https://www.amfiindia.com/" },
+      { label: "SEBI investor education portal", url: "https://investor.sebi.gov.in/" },
+    ],
     related: ["sip-vs-lumpsum", "tax-on-share-market-income", "power-of-compounding"],
     content: `## What is a mutual fund?
 
@@ -361,6 +384,11 @@ The Securities and Exchange Board of India (**SEBI**) strictly regulates every m
       "Applications are in lots; oversubscribed IPOs allot via a lottery, so you may get partial or no allotment.",
       "Grey Market Premium (GMP) is an unofficial signal of demand - informative but never a guarantee.",
     ],
+    sources: [
+      { label: "NSE: current and upcoming IPOs", url: "https://www.nseindia.com/market-data/all-upcoming-issues-ipo" },
+      { label: "BSE India", url: "https://www.bseindia.com/" },
+      { label: "SEBI investor education portal", url: "https://investor.sebi.gov.in/" },
+    ],
     related: ["how-to-buy-unlisted-shares", "demat-account", "mutual-funds-guide"],
     content: `## What is an IPO?
 
@@ -416,6 +444,11 @@ No. A listing "pop" is never guaranteed - many IPOs list flat or below their iss
       "Full-service brokers charge percentage brokerage but include research, a dealer desk, branch support and personalised service.",
       "Active DIY traders often prefer discount brokers; busy professionals and first-time investors usually get more value from full-service.",
       "Many investors use both: a discount account for self-directed trades and a full-service relationship for advice and execution help.",
+    ],
+    sources: [
+      { label: "SEBI: registered intermediaries (check a broker is registered)", url: "https://www.sebi.gov.in/intermediaries.html" },
+      { label: "SEBI SCORES: investor complaints", url: "https://scores.sebi.gov.in/" },
+      { label: "SEBI investor education portal", url: "https://investor.sebi.gov.in/" },
     ],
     related: ["demat-account", "margin-trading-facility-mtf", "tax-on-share-market-income"],
     content: `## The two broker models in India
@@ -479,6 +512,11 @@ For occasional investors, the fee gap is small in absolute terms - what matters 
       "Long-term gains (held over 12 months) are taxed at 12.5% - but only on gains above ₹1.25 lakh per year.",
       "F&O profits are non-speculative business income taxed at your slab rate; intraday equity is speculative business income.",
       "Dividends are added to your income and taxed at slab; STT applies on most transactions automatically.",
+    ],
+    sources: [
+      { label: "Income Tax Department e-filing portal", url: "https://www.incometax.gov.in/iec/foportal/" },
+      { label: "Union Budget documents", url: "https://www.indiabudget.gov.in/" },
+      { label: "ClearTax: income tax changes from 1 April 2026 (STT rates)", url: "https://cleartax.in/s/income-tax-changes-from-april-2026" },
     ],
     related: ["fno-basics", "pe-ratio", "full-service-vs-discount-broker"],
     content: `## The four tax buckets for market income
@@ -550,6 +588,12 @@ Securities Transaction Tax is deducted automatically on every trade:
       "Pre-IPO shares carry a 6-month lock-in after the company lists.",
       "Held over 24 months, unlisted share gains are LTCG taxed at 12.5%; under 24 months they're taxed at your slab rate.",
     ],
+    sources: [
+      { label: "SEBI investor education portal", url: "https://investor.sebi.gov.in/" },
+      { label: "NSDL (National Securities Depository)", url: "https://nsdl.co.in/" },
+      { label: "CDSL (Central Depository Services)", url: "https://www.cdslindia.com/" },
+      { label: "Income Tax Department e-filing portal", url: "https://www.incometax.gov.in/iec/foportal/" },
+    ],
     related: ["demat-account", "ipo-guide", "tax-on-share-market-income"],
     content: `## What are unlisted shares?
 
@@ -609,6 +653,11 @@ The unlisted market has no SEBI order-matching protections - your counterparty *
       "Buying options risks only the premium; selling options and trading futures carry potentially unlimited risk.",
       "SEBI found 9 out of 10 individual F&O traders lose money - treat derivatives as risk-management tools first.",
       "Since 3 August 2026, expiry settlement prices come from the Closing Auction Session, and the equity derivatives segment trades until 3:40 p.m.",
+    ],
+    sources: [
+      { label: "SEBI study (Sept 2024): 93% of individual F&O traders lost money, FY22-FY24", url: "https://www.sebi.gov.in/media-and-notifications/press-releases/sep-2024/updated-sebi-study-reveals-93-of-individual-traders-incurred-losses-in-equity-fando-between-fy22-and-fy24-aggregate-losses-exceed-1-8-lakh-crores-over-three-years_86906.html" },
+      { label: "NSE: Closing Auction Session", url: "https://www.nseindia.com/static/products-services/closing-auction-session" },
+      { label: "SEBI investor education portal", url: "https://investor.sebi.gov.in/" },
     ],
     related: ["tax-on-share-market-income", "closing-auction-session-cas", "margin-trading-facility-mtf"],
     content: `## What are derivatives?
@@ -695,6 +744,10 @@ F&O income is **non-speculative business income** - see our [tax guide](/learn/t
       "Only exchange-approved (Group-1) stocks qualify, and SEBI sets minimum margin requirements.",
       "Falling prices trigger margin calls - top up or the broker squares off. Use MTF for conviction trades, not as default leverage.",
     ],
+    sources: [
+      { label: "SEBI investor education portal", url: "https://investor.sebi.gov.in/" },
+      { label: "SEBI: registered intermediaries (check a broker is registered)", url: "https://www.sebi.gov.in/intermediaries.html" },
+    ],
     related: ["fno-basics", "full-service-vs-discount-broker", "demat-account"],
     content: `## MTF in one line
 
@@ -755,6 +808,10 @@ Sensible: high-conviction large-cap positions where you expect the move to outpa
       "Orders in CAS must sit within +/- 3% of a reference price, which is the VWAP of trades between 3:00 p.m. and 3:15 p.m.",
       "Everyone who trades in the auction fills at one single equilibrium price, whatever their own limit price was.",
       "The pre-open session is being rebuilt on the same pattern from 7 September 2026.",
+    ],
+    sources: [
+      { label: "NSE: Closing Auction Session", url: "https://www.nseindia.com/static/products-services/closing-auction-session" },
+      { label: "Business Standard: NSE revises pre-open auction from 7 September 2026 (SEBI circular of 28 Aug 2026, NSE circular NCL/CMPT/76060)", url: "https://www.business-standard.com/markets/news/national-stock-exchange-to-revise-pre-open-auction-framework-from-sept-7-126090301609_1.html" },
     ],
     related: ["fno-basics", "pre-open-auction-session-2026", "margin-trading-facility-mtf"],
     content: `## The one-minute version
@@ -912,6 +969,10 @@ As in CAS, **market orders get execution priority over limit orders**, and **ice
       "Iceberg orders and stop loss orders are not permitted in the pre-open session - quantity must be disclosed in full.",
       "Market orders are executed ahead of limit orders, and everyone fills at one common equilibrium price.",
       "SEBI's stated reason is alignment: the morning auction is being rebuilt to work the same way as the Closing Auction Session that started on 3 August 2026.",
+    ],
+    sources: [
+      { label: "Business Standard: NSE revises pre-open auction from 7 September 2026 (SEBI circular of 28 Aug 2026, NSE circular NCL/CMPT/76060)", url: "https://www.business-standard.com/markets/news/national-stock-exchange-to-revise-pre-open-auction-framework-from-sept-7-126090301609_1.html" },
+      { label: "NSE: Closing Auction Session", url: "https://www.nseindia.com/static/products-services/closing-auction-session" },
     ],
     related: ["closing-auction-session-cas", "fno-basics", "margin-trading-facility-mtf"],
     content: `## The one-minute version
