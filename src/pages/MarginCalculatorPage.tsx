@@ -133,7 +133,7 @@ const MarginCalculatorPage = () => {
       <VisibleBreadcrumbs items={[{ name: "Home", url: "/" }, { name: "F&O Margin Calculator" }]} />
       <main>
         {/* Header in the style of the group's webtrade calculator (see SpanCalculator). */}
-        <section className="bg-[#F4F7FB] px-4 pb-12 pt-10 text-center font-['Roboto',sans-serif] text-[#445A64]">
+        <section className="bg-[#F4F7FB] px-4 pb-12 pt-10 text-center font-sans text-[#445A64]">
           <h1 className="text-3xl font-light md:text-[36px]">F&amp;O Margin Calculator</h1>
           <div className="mx-auto mt-5 h-[3px] w-[100px] bg-[#E9671D]" aria-hidden="true" />
           <div className="mx-auto mt-6 max-w-[830px] space-y-4 text-sm leading-6">

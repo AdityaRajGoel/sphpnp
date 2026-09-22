@@ -4,7 +4,7 @@ import App from "./App.tsx";
 // Self-hosted: no fonts.googleapis.com/gstatic.com lookups, and the files get hashed
 // names, so nginx caches them for a year like the rest of /assets.
 import "@fontsource-variable/montserrat";
-import "@fontsource-variable/open-sans";
+import "@fontsource-variable/roboto";
 import "./index.css";
 import { applyMotionPreference, readMotionPreference } from "@/lib/motion-preference";
 import { installClientErrorReporting } from "@/lib/client-errors";

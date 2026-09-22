@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { motion } from "motion/react";
 import { ArrowUp, ArrowDown, RefreshCw, Loader2, Flame, Snowflake, Gauge } from "lucide-react";
 import Header from "@/components/Header";
-import ImageBanner, { BannerStat } from "@/components/ImageBanner";
+import PageHeader, { HeaderStat } from "@/components/PageHeader";
 import Footer from "@/components/Footer";
 import VisibleBreadcrumbs from "@/components/VisibleBreadcrumbs";
 import SEOHead from "@/components/SEOHead";
@@ -143,19 +143,17 @@ const Week52TrackerPage = () => {
       <StockTicker />
       <VisibleBreadcrumbs items={[{ name: "Home", url: "/" }, { name: "52-Week Tracker" }]} />
       <main className="container mx-auto px-4 py-8">
-        <ImageBanner
-          slug="figure-line"
+        <PageHeader
           className="mb-6"
-          focus={{ mobile: "22% 60%", desktop: "30% 58%" }}
           eyebrow="Yearly extremes"
           title="52-Week High / Low Tracker"
           description="Which stocks sit at their yearly extremes, which sectors they cluster in, and what their trend, momentum and participation look like."
         >
-          {updatedAt && <BannerStat label="Updated" value={new Date(updatedAt).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })} />}
-          <Button variant="outline" size="sm" onClick={handleRefresh} disabled={refreshing} className="h-9 border-white/20 bg-white/10 text-white hover:bg-white/20 hover:text-white">
+          {updatedAt && <HeaderStat label="Updated" value={new Date(updatedAt).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })} />}
+          <Button variant="outline" size="sm" onClick={handleRefresh} disabled={refreshing} className="h-9">
             {refreshing ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}<span className="ml-1.5">Refresh</span>
           </Button>
-        </ImageBanner>
+        </PageHeader>
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
           {[

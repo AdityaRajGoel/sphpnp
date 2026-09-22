@@ -12,7 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import PipelineOverview from "@/components/ipo/PipelineOverview";
-import ImageBanner from "@/components/ImageBanner";
+import PageHeader from "@/components/PageHeader";
 import { istToday } from "@/lib/market-data";
 import {
   FILING_LABEL,
@@ -137,10 +137,8 @@ export default function IpoPipelinePage() {
       <Header />
       <main className="container mx-auto max-w-5xl px-4 py-8 md:py-12">
         <VisibleBreadcrumbs items={breadcrumbs} />
-        <ImageBanner
-          slug="steps-glow"
+        <PageHeader
           className="mt-6"
-          focus={{ mobile: "50% 55%", desktop: "50% 55%" }}
           eyebrow="From SEBI filings"
           title="IPO pipeline"
           description="Companies that have filed offer documents with SEBI - usually months before an issue opens. A draft (DRHP) is followed by SEBI's observations, often an updated draft, and then the red herring prospectus (RHP) days before the issue opens."

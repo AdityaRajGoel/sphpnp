@@ -1,10 +1,6 @@
 import { useEffect, useId, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Loader2, Search, X } from "lucide-react";
-// Roboto, as on the group's webtrade calculator; imported here so only this page loads it.
-import "@fontsource/roboto/latin-300.css";
-import "@fontsource/roboto/latin-400.css";
-import "@fontsource/roboto/latin-500.css";
 import { calculateMargin, searchContracts, type ContractOption, type SpanLeg } from "@/lib/span-margin";
 import { isPrerender } from "@/lib/prerender";
 
@@ -83,7 +79,7 @@ export default function SpanCalculator({ seed }: { seed?: string }) {
   const r = margin.data;
 
   return (
-    <div className={`font-['Roboto',sans-serif] ${INK}`}>
+    <div className={`font-sans ${INK}`}>
       {/* Add a position */}
       <section aria-labelledby="span-add" className="bg-white py-10">
         <div className="mx-auto max-w-[830px] px-4">

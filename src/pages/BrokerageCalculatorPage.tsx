@@ -1,5 +1,5 @@
 import Header from "@/components/Header";
-import ImageBanner from "@/components/ImageBanner";
+import PageHeader from "@/components/PageHeader";
 import Footer from "@/components/Footer";
 import VisibleBreadcrumbs from "@/components/VisibleBreadcrumbs";
 import SEOHead from "@/components/SEOHead";
@@ -258,13 +258,11 @@ const BrokerageCalculatorPage = () => {
 
       <main className="container mx-auto px-4 py-8 md:py-12 max-w-5xl">
         {/* ─── Hero ─── */}
-        <ImageBanner
-          slug="steps-stack"
+        <PageHeader
           className="mb-10"
-          focus={{ mobile: "50% 55%", desktop: "50% 55%" }}
           eyebrow={<><Calculator className="h-3.5 w-3.5" aria-hidden="true" /> Calculator</>}
           title="Brokerage Calculator"
-          description={<>Estimate total trading charges including Parasram's brokerage, STT, GST &amp; more - updated with <span className="font-semibold text-brand-gold">April 2026 STT rates</span>.</>}
+          description={<>Estimate total trading charges including Parasram's brokerage, STT, GST &amp; more - updated with <span className="font-semibold text-secondary">April 2026 STT rates</span>.</>}
         />
 
         {/* ─── Segment Selector (pill bar) ─── */}

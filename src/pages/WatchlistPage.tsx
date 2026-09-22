@@ -19,7 +19,7 @@ import { buildChecklist, tally } from "@/lib/stock-checklist";
 import { sectorPeers } from "@/lib/stock-peers";
 import { csvCell, downloadText } from "@/lib/statement-csv";
 import { IllustrationTile } from "@/components/ui/illustration";
-import ImageBanner, { BannerStat } from "@/components/ImageBanner";
+import PageHeader, { HeaderStat } from "@/components/PageHeader";
 
 const COLUMNS = ["price", "change_pct", "return_1m", "return_1y", "pe", "roe", "roce", "debt_to_equity", "rsi_14", "composite_score"];
 
@@ -83,35 +83,33 @@ export default function WatchlistPage() {
       <main className="container mx-auto max-w-6xl px-4 py-8">
         <VisibleBreadcrumbs items={[{ name: "Home", url: "/" }, { name: "Stock Screener", url: "/screener" }, { name: "My Watchlist" }]} />
 
-        <ImageBanner
-          slug="research-lens"
+        <PageHeader
           className="mt-2"
-          focus={{ mobile: "48% 55%", desktop: "48% 52%" }}
           eyebrow={<><Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" aria-hidden="true" /> Your stocks</>}
           title="My Watchlist"
           description={watchlist.length === 0 ? "Follow stocks to see them side by side here." : "Prices, returns, valuation and quality for every stock you follow."}
         >
-          <BannerStat label="Following" value={watchlist.length} />
+          <HeaderStat label="Following" value={watchlist.length} />
           {summary.avg !== null && (
             <>
-              <BannerStat label="Up / down today" value={`${summary.up} / ${summary.down}`} />
-              <BannerStat label="Average move" value={`${summary.avg >= 0 ? "+" : ""}${summary.avg.toFixed(2)}%`} />
+              <HeaderStat label="Up / down today" value={`${summary.up} / ${summary.down}`} />
+              <HeaderStat label="Average move" value={`${summary.avg >= 0 ? "+" : ""}${summary.avg.toFixed(2)}%`} />
             </>
           )}
           {watchlist.length > 0 && (
-            <Button variant="outline" size="sm" onClick={exportCsv} className="h-9 border-white/20 bg-white/10 text-white hover:bg-white/20 hover:text-white">
+            <Button variant="outline" size="sm" onClick={exportCsv} className="h-9">
               <Download className="mr-1.5 h-4 w-4" aria-hidden="true" /> Download CSV
             </Button>
           )}
           {watchlist.length > 0 && (
-            <Button variant="outline" size="sm" onClick={linkTelegram} disabled={telegram.busy} className="h-9 border-white/20 bg-white/10 text-white hover:bg-white/20 hover:text-white">
+            <Button variant="outline" size="sm" onClick={linkTelegram} disabled={telegram.busy} className="h-9">
               <Send className="mr-1.5 h-4 w-4" aria-hidden="true" /> {telegram.busy ? "Creating link…" : "Alert me on Telegram"}
             </Button>
           )}
-          <Button asChild variant="outline" size="sm" className="h-9 border-white/20 bg-white/10 text-white hover:bg-white/20 hover:text-white">
+          <Button asChild variant="outline" size="sm" className="h-9">
             <Link to="/portfolio"><Briefcase className="mr-1.5 h-4 w-4" aria-hidden="true" /> Check my portfolio</Link>
           </Button>
-        </ImageBanner>
+        </PageHeader>
         {telegram.error && <p role="alert" className="mt-3 rounded-lg border border-destructive/40 bg-destructive/5 px-4 py-2 text-sm text-destructive">{telegram.error}</p>}
 
         {watchlist.length === 0 ? (

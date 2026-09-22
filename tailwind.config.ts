@@ -23,7 +23,7 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ["Open Sans Variable", "Open Sans", "sans-serif"],
+        sans: ["Roboto Variable", "Roboto", "sans-serif"],
         heading: ["Montserrat Variable", "Montserrat", "sans-serif"],
       },
       colors: {

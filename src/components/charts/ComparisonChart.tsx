@@ -89,7 +89,7 @@ const ComparisonChart = ({ series, height = 300, smaPeriods }: ComparisonChartPr
       layout: {
         background: { color: "transparent" },
         textColor: text,
-        fontFamily: "'Open Sans Variable', 'Open Sans', system-ui, sans-serif",
+        fontFamily: "'Roboto Variable', 'Roboto', system-ui, sans-serif",
         attributionLogo: false,
       },
       grid: { vertLines: { color: grid }, horzLines: { color: grid } },

@@ -16,7 +16,7 @@ import { TrendingUp, TrendingDown, Activity, Target, BarChart3, RefreshCw, Loade
 import { supabase } from "@/integrations/supabase/client";
 import { downloadCsv, todayStamp } from "@/lib/exportData";
 import PageTransition from "@/components/PageTransition";
-import ImageBanner from "@/components/ImageBanner";
+import PageHeader from "@/components/PageHeader";
 import { EASE_IN_OUT } from "@/lib/motion";
 import DerivativesSection from "@/components/markets/DerivativesSection";
 
@@ -268,10 +268,8 @@ const FnODashboardPage = () => {
       <Header />
       <VisibleBreadcrumbs items={[{ name: "Home", url: "/" }, { name: "F&O Dashboard" }]} />
       <main className="container mx-auto px-4 py-8">
-        <ImageBanner
-          slug="horizon-figure"
+        <PageHeader
           className="mb-6"
-          focus={{ mobile: "62% 45%", desktop: "50% 45%" }}
           eyebrow="Futures & options"
           title={t("page.fno")}
           description="Live options chain, Put-Call Ratio and Max Pain, with open interest build-up by strike. Derivatives carry a high risk of loss."

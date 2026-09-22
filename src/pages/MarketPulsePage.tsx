@@ -12,7 +12,7 @@ import FlowsSection from "@/components/markets/FlowsSection";
 import ActivitySection from "@/components/markets/ActivitySection";
 import BreadthSection from "@/components/markets/BreadthSection";
 import StockTicker from "@/components/StockTicker";
-import ImageBanner from "@/components/ImageBanner";
+import PageHeader from "@/components/PageHeader";
 import MacroRegimeSection from "@/components/markets/MacroRegimeSection";
 import WorldMarketsSection from "@/components/markets/WorldMarketsSection";
 import FiiDiiCashCard from "@/components/markets/FiiDiiCashCard";
@@ -47,10 +47,8 @@ export default function MarketPulsePage() {
       <StockTicker />
       <main className="container mx-auto max-w-7xl px-4 py-8 md:py-10">
         <VisibleBreadcrumbs items={breadcrumbs} />
-        <ImageBanner
-          slug="orbit-lines"
+        <PageHeader
           className="mt-4 mb-6"
-          focus={{ mobile: "30% 50%", desktop: "20% 50%" }}
           eyebrow="The whole market, one page"
           title="Market Pulse"
           description="How expensive the indices are against their own history, how institutions are positioned in F&O, where foreign money is flowing, and what traded today. Collected daily from NSE, BSE, NSDL and MoSPI."

@@ -14,7 +14,7 @@ import { GitCompareArrows, Search, X, TrendingUp, TrendingDown, Star, Bot, Share
 import { supabase } from "@/integrations/supabase/client";
 import type { StockForAnalysis } from "@/components/AIAnalysisModal";
 import PageTransition from "@/components/PageTransition";
-import ImageBanner from "@/components/ImageBanner";
+import PageHeader from "@/components/PageHeader";
 import { EASE_OUT } from "@/lib/motion";
 import AdvancedChartDialog from "@/components/charts/AdvancedChartDialog";
 import type { ApiChartPoint } from "@/lib/chart-data";
@@ -271,10 +271,8 @@ const StockComparisonPage = () => {
       <StockTicker />
       <VisibleBreadcrumbs items={[{ name: "Home", url: "/" }, { name: "Compare Stocks" }]} />
       <main className="container mx-auto px-4 py-8">
-        <ImageBanner
-          slug="orbit-rings"
+        <PageHeader
           className="mb-8"
-          focus={{ mobile: "40% 35%", desktop: "30% 40%" }}
           eyebrow={<><GitCompareArrows className="h-3.5 w-3.5" aria-hidden="true" /> Side by side</>}
           title="Stock Comparison"
           description="Compare up to 3 stocks side-by-side with live data, visual stat bars, and AI analysis."

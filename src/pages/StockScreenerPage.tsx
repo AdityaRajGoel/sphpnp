@@ -25,9 +25,9 @@ import MetricTable from "@/components/screener/MetricTable";
 import ScannerLibrary from "@/components/screener/ScannerLibrary";
 import CustomFilterBuilder from "@/components/screener/CustomFilterBuilder";
 import WatchlistButton from "@/components/WatchlistButton";
-import ImageBanner, { BannerStat } from "@/components/ImageBanner";
+import PageHeader, { HeaderStat } from "@/components/PageHeader";
 
-const BANNER_BUTTON = "h-9 border-white/20 bg-white/10 text-white hover:bg-white/20 hover:text-white";
+const BANNER_BUTTON = "h-9";
 import { useRiskSummaries } from "@/hooks/useRiskSummaries";
 import { useScoreSummaries } from "@/hooks/useScoreSummaries";
 import { buildMetricRows, parseRules, passesRules, serializeRules, METRIC_BY_ID, type Metric, type Rule } from "@/lib/screener-metrics";
@@ -420,17 +420,15 @@ const StockScreenerPage = () => {
       <StockTicker />
       <VisibleBreadcrumbs items={[{ name: "Home", url: "/" }, { name: "Stock Screener" }]} />
       <main className="container mx-auto px-4 py-8">
-        <ImageBanner
-          slug="lens-bars"
+        <PageHeader
           className="mb-8"
-          focus={{ mobile: "50% 58%", desktop: "50% 52%" }}
           eyebrow="Research terminal"
           title={t("page.screener")}
           description={<>Live prices for {stocks.length}+ NSE stocks. Scan, filter and type your own queries across more than sixty metrics.</>}
         >
-          <BannerStat label="Stocks" value={stocks.length || "—"} />
-          <BannerStat label="Matching" value={filtered.length} />
-          {updatedAt && <BannerStat label="Updated" value={new Date(updatedAt).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })} />}
+          <HeaderStat label="Stocks" value={stocks.length || "—"} />
+          <HeaderStat label="Matching" value={filtered.length} />
+          {updatedAt && <HeaderStat label="Updated" value={new Date(updatedAt).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })} />}
           {activeFilterCount > 0 && (
             <Button variant="ghost" size="sm" onClick={clearAllFilters} className={BANNER_BUTTON}>
               <X className="w-3.5 h-3.5 mr-1" /> Clear filters ({activeFilterCount})
@@ -444,7 +442,7 @@ const StockScreenerPage = () => {
             {refreshing ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
             <span className="ml-1.5">Refresh</span>
           </Button>
-        </ImageBanner>
+        </PageHeader>
 
         {/* Exchange-style market snapshot */}
         <MarketSnapshot />

@@ -4,7 +4,7 @@ import { motion } from "motion/react";
 import { useQuery } from "@tanstack/react-query";
 import { CalendarDays, Clock, AlertCircle, PartyPopper, Timer, Landmark, CalendarClock } from "lucide-react";
 import Header from "@/components/Header";
-import ImageBanner from "@/components/ImageBanner";
+import PageHeader from "@/components/PageHeader";
 import Footer from "@/components/Footer";
 import SEOHead from "@/components/SEOHead";
 import VisibleBreadcrumbs from "@/components/VisibleBreadcrumbs";
@@ -94,10 +94,8 @@ const HolidayCalendarPage = () => {
       <StockTicker />
       <VisibleBreadcrumbs items={[{ name: "Home", url: "/" }, { name: "Market Calendar" }]} />
       <main className="container mx-auto px-4 py-8">
-        <ImageBanner
-          slug="orbit-arc"
+        <PageHeader
           className="mb-8"
-          focus={{ mobile: "50% 40%", desktop: "50% 45%" }}
           eyebrow={<><CalendarDays className="h-3.5 w-3.5" aria-hidden="true" /> Market calendar</>}
           title={`Market Calendar ${HOLIDAY_YEAR}`}
           description="Trading holidays, every F&O expiry with its holiday shift, session timings and the next three weeks of company results and board meetings, in one place."
