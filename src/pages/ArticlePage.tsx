@@ -85,7 +85,7 @@ const ArticlePage = () => {
               <time dateTime={article.updated}>
                 {new Date(`${article.updated}T00:00:00Z`).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" })}
               </time>{" "}
-              · Parasram India research desk
+              · Parasram India
             </p>
             {/* The answer comes first, before any preamble: readers and answer
                 engines both lift the opening lines of a page. */}

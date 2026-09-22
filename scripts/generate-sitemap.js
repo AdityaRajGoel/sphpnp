@@ -21,6 +21,16 @@ const learnArticleSlugs = [
   ),
 ];
 
+// Each article's own `updated` date, so its lastmod moves only when the article does.
+const learnUpdated = new Map(
+  Array.from(
+    fs
+      .readFileSync(path.resolve(__dirname, '../src/data/learnContent.ts'), 'utf-8')
+      .matchAll(/slug:\s*"([a-z0-9-]+)",[\s\S]*?updated:\s*"(\d{4}-\d{2}-\d{2})"/g),
+    (m) => [m[1], m[2]],
+  ),
+);
+
 if (learnArticleSlugs.length === 0) {
   console.error('No article slugs found in learnContent.ts - refusing to write an incomplete sitemap.');
   process.exit(1);
@@ -37,15 +47,20 @@ const ipoRoutes = await fetchIpoRoutes();
 // Index constituent and sector lists, plus their /indices hub.
 const listRoutes = await fetchMarketListRoutes();
 
+// Google uses <lastmod> only while it stays accurate, and ignores priority and
+// changefreq. So only pages whose content really changes daily (market data,
+// stock, IPO and list pages) carry today's date; articles carry their own
+// `updated`; pages with no reliable date leave lastmod out rather than claim
+// a change on every build.
 const urls = [
   { loc: '/',                    changefreq: 'daily',   priority: '1.0',  lastmod: today },
-  { loc: '/unlisted-space',      changefreq: 'weekly',  priority: '0.9',  lastmod: today },
-  { loc: '/open-account',        changefreq: 'monthly', priority: '0.9',  lastmod: today },
-  { loc: '/pricing',             changefreq: 'monthly', priority: '0.85', lastmod: today },
+  { loc: '/unlisted-space',      changefreq: 'weekly',  priority: '0.9',  lastmod: null },
+  { loc: '/open-account',        changefreq: 'monthly', priority: '0.9',  lastmod: null },
+  { loc: '/pricing',             changefreq: 'monthly', priority: '0.85', lastmod: null },
   { loc: '/fno',                 changefreq: 'daily',   priority: '0.9',  lastmod: today },
-  { loc: '/services',            changefreq: 'weekly',  priority: '0.85', lastmod: today },
-  { loc: '/depository-services', changefreq: 'weekly',  priority: '0.85', lastmod: today },
-  { loc: '/about',               changefreq: 'monthly', priority: '0.8',  lastmod: today },
+  { loc: '/services',            changefreq: 'weekly',  priority: '0.85', lastmod: null },
+  { loc: '/depository-services', changefreq: 'weekly',  priority: '0.85', lastmod: null },
+  { loc: '/about',               changefreq: 'monthly', priority: '0.8',  lastmod: null },
   { loc: '/screener',            changefreq: 'daily',   priority: '0.8',  lastmod: today },
   { loc: '/ipo',                 changefreq: 'daily',   priority: '0.85', lastmod: today },
   { loc: '/ipo-pipeline',        changefreq: 'daily',   priority: '0.8',  lastmod: today },
@@ -53,23 +68,23 @@ const urls = [
   ...listRoutes.map(route => ({ loc: route, changefreq: 'daily', priority: route === '/indices' ? '0.8' : '0.75', lastmod: today })),
   // Per-symbol stock pages (the screener's children)
   ...stockRoutes.map(route => ({ loc: route, changefreq: 'weekly', priority: '0.6', lastmod: today })),
-  { loc: '/learn',               changefreq: 'weekly',  priority: '0.8',  lastmod: today },
+  { loc: '/learn',               changefreq: 'weekly',  priority: '0.8',  lastmod: null },
   { loc: '/learn/recommendations', changefreq: 'daily', priority: '0.8',  lastmod: today },
   // Learning Center articles (original content)
-  ...learnArticleSlugs.map(slug => ({ loc: `/learn/${slug}`, changefreq: 'monthly', priority: '0.7', lastmod: today })),
+  ...learnArticleSlugs.map(slug => ({ loc: `/learn/${slug}`, changefreq: 'monthly', priority: '0.7', lastmod: learnUpdated.get(slug) ?? null })),
   { loc: '/52-week-tracker',     changefreq: 'daily',   priority: '0.8',  lastmod: today },
   { loc: '/market-pulse',        changefreq: 'daily',   priority: '0.9',  lastmod: today },
-  { loc: '/compare',             changefreq: 'weekly',  priority: '0.7',  lastmod: today },
-  { loc: '/products',            changefreq: 'monthly', priority: '0.7',  lastmod: today },
-  { loc: '/brokerage-calculator', changefreq: 'monthly', priority: '0.7', lastmod: today },
-  { loc: '/margin-calculator',   changefreq: 'monthly', priority: '0.7',  lastmod: today },
-  { loc: '/sip-calculator',      changefreq: 'monthly', priority: '0.7',  lastmod: today },
-  { loc: '/contact',             changefreq: 'monthly', priority: '0.7',  lastmod: today },
-  { loc: '/team',                changefreq: 'monthly', priority: '0.6',  lastmod: today },
+  { loc: '/compare',             changefreq: 'weekly',  priority: '0.7',  lastmod: null },
+  { loc: '/products',            changefreq: 'monthly', priority: '0.7',  lastmod: null },
+  { loc: '/brokerage-calculator', changefreq: 'monthly', priority: '0.7', lastmod: null },
+  { loc: '/margin-calculator',   changefreq: 'monthly', priority: '0.7',  lastmod: null },
+  { loc: '/sip-calculator',      changefreq: 'monthly', priority: '0.7',  lastmod: null },
+  { loc: '/contact',             changefreq: 'monthly', priority: '0.7',  lastmod: null },
+  { loc: '/team',                changefreq: 'monthly', priority: '0.6',  lastmod: null },
   { loc: '/holidays',            changefreq: 'monthly', priority: '0.6',  lastmod: today },
   { loc: '/reports',             changefreq: 'weekly',  priority: '0.7',  lastmod: today },
   { loc: '/help',                changefreq: 'monthly', priority: '0.6',  lastmod: '2026-09-15' },
-  { loc: '/careers',             changefreq: 'monthly', priority: '0.5',  lastmod: today },
+  { loc: '/careers',             changefreq: 'monthly', priority: '0.5',  lastmod: null },
   { loc: '/privacy-policy',      changefreq: 'yearly',  priority: '0.3',  lastmod: '2026-01-01' },
   { loc: '/cookie-policy',       changefreq: 'yearly',  priority: '0.3',  lastmod: '2026-01-01' },
   { loc: '/terms',               changefreq: 'yearly',  priority: '0.3',  lastmod: '2026-01-01' },
@@ -83,8 +98,7 @@ const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 ${urls.map(u => `  <url>
     <loc>${BASE}${u.loc}</loc>
-    <lastmod>${u.lastmod}</lastmod>
-    <changefreq>${u.changefreq}</changefreq>
+${u.lastmod ? `    <lastmod>${u.lastmod}</lastmod>\n` : ''}    <changefreq>${u.changefreq}</changefreq>
     <priority>${u.priority}</priority>
   </url>`).join('\n')}
 </urlset>
