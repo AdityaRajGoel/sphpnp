@@ -10,6 +10,7 @@ import { revealSection } from "@/lib/motion";
 import { CHART } from "@/components/markets/chart-kit";
 import { getFundHistory, getTrackedFunds, trailingCagr } from "@/lib/mutual-funds";
 import { rollingSipReturns, runSip } from "@/lib/sip-backtest";
+import { pressable } from "@/lib/pressable";
 
 const rupees = (v: number) => `₹${Math.round(v).toLocaleString("en-IN")}`;
 const pct = (v: number | null, digits = 1) => (v === null ? "—" : `${v >= 0 ? "+" : ""}${v.toFixed(digits)}%`);
@@ -141,7 +142,7 @@ export default function SipBacktest() {
               {funds.data.map((f) => {
                 const day = f.prev_nav ? (f.nav / f.prev_nav - 1) * 100 : null;
                 return (
-                  <tr key={f.scheme_code} className={`border-t cursor-pointer hover:bg-muted/30 ${f.scheme_code === scheme ? "bg-secondary/5" : ""}`} onClick={() => setCode(f.scheme_code)}>
+                  <tr key={f.scheme_code} className={`border-t cursor-pointer hover:bg-muted/30 ${f.scheme_code === scheme ? "bg-secondary/5" : ""}`} onClick={() => setCode(f.scheme_code)} aria-selected={f.scheme_code === scheme} {...pressable(() => setCode(f.scheme_code), { role: null })}>
                     <td className="px-4 py-2 font-medium">{f.scheme_name}</td>
                     <td className="px-3 py-2 text-right tabular-nums">₹{f.nav.toLocaleString("en-IN", { maximumFractionDigits: 2 })}</td>
                     <td className={`px-3 py-2 text-right tabular-nums ${day === null ? "text-muted-foreground" : day >= 0 ? "text-secondary" : "text-destructive"}`}>{pct(day, 2)}</td>

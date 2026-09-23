@@ -18,30 +18,30 @@ import qrMoneyIos from "@/assets/qr/money-ios.svg";
 import qrTradeAndroid from "@/assets/qr/trade-android.svg";
 import qrTradeIos from "@/assets/qr/trade-ios.svg";
 
-export type Screen = { src: string; alt: string };
+export type Screen = { src: string; alt: string; captionKey?: string };
 
 // Phone screenshots come from each app's App Store listing, 460 x 996.
 export const SCREEN_SIZE = { width: 460, height: 996 } as const;
 
-export const MONEY_HERO: Screen = { src: moneyWatchlist, alt: "Parasram Money app watchlist screen with Nifty 50 and Sensex prices and a Bank Nifty stock list" };
-export const MONEY_HERO_BACK: Screen = { src: moneyOptionChain, alt: "Parasram Money app option chain for Reliance showing calls and puts with open interest and implied volatility" };
+export const MONEY_HERO: Screen = { src: moneyWatchlist, alt: "Parasram Money app watchlist screen with Nifty 50 and Sensex prices and a Bank Nifty stock list", captionKey: "apps.screen.watchlist" };
+export const MONEY_HERO_BACK: Screen = { src: moneyOptionChain, alt: "Parasram Money app option chain for Reliance showing calls and puts with open interest and implied volatility", captionKey: "apps.screen.optionChain" };
 
 export const MONEY_SCREENS: Screen[] = [
   MONEY_HERO,
-  { src: moneyWatchlistDark, alt: "Parasram Money app watchlist in dark mode" },
-  { src: moneyStockDetails, alt: "Parasram Money app stock details screen with market depth and buy and sell buttons" },
+  { src: moneyWatchlistDark, alt: "Parasram Money app watchlist in dark mode", captionKey: "apps.screen.dark" },
+  { src: moneyStockDetails, alt: "Parasram Money app stock details screen with market depth and buy and sell buttons", captionKey: "apps.screen.depth" },
   MONEY_HERO_BACK,
-  { src: moneyTechnicals, alt: "Parasram Money app technicals tab with weekly to yearly price change and OHLC" },
-  { src: moneyDiscover, alt: "Parasram Money app Discover tab with top gainers, IPO and back office shortcuts" },
+  { src: moneyTechnicals, alt: "Parasram Money app technicals tab with weekly to yearly price change and OHLC", captionKey: "apps.screen.technicals" },
+  { src: moneyDiscover, alt: "Parasram Money app Discover tab with top gainers, IPO and back office shortcuts", captionKey: "apps.screen.discover" },
 ];
 
-export const TRADE_HERO: Screen = { src: tradeMarket, alt: "Parasram Trade (Symphony XTS) app market screen with Sensex, Nifty 50 and a sector performance heat map" };
+export const TRADE_HERO: Screen = { src: tradeMarket, alt: "Parasram Trade (Symphony XTS) app market screen with Sensex, Nifty 50 and a sector performance heat map", captionKey: "apps.screen.market" };
 
 export const TRADE_SCREENS: Screen[] = [
   TRADE_HERO,
-  { src: tradeMarketWatch, alt: "Parasram Trade app market watch list with stocks, futures and options" },
-  { src: tradeLadder, alt: "Parasram Trade app price ladder for placing one-tap buy and sell orders" },
-  { src: tradeStockDetails, alt: "Parasram Trade app scrip screen with buy, sell, market depth and OHLC" },
+  { src: tradeMarketWatch, alt: "Parasram Trade app market watch list with stocks, futures and options", captionKey: "apps.screen.marketWatch" },
+  { src: tradeLadder, alt: "Parasram Trade app price ladder for placing one-tap buy and sell orders", captionKey: "apps.screen.ladder" },
+  { src: tradeStockDetails, alt: "Parasram Trade app scrip screen with buy, sell, market depth and OHLC", captionKey: "apps.screen.scrip" },
 ];
 
 // Launch posters, 1280 x 960.

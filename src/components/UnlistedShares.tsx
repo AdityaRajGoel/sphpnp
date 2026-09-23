@@ -6,6 +6,7 @@ import { motion, Variants, AnimatePresence } from "motion/react";
 import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { EASE_OUT, revealFade, revealPop, revealSection } from "@/lib/motion";
+import { pressable } from "@/lib/pressable";
 
 type StockItem = {
   name: string; short: string; tag: string; tagColor: string; price: string;
@@ -296,7 +297,7 @@ const UnlistedShares = () => {
               {visibleStocks.map((stock, index) => (
                 <motion.div key={stock.name} variants={itemVariants}>
                   <Card className="group cursor-pointer transition-[color,background-color,border-color,box-shadow] duration-base border-border/50 hover:border-secondary/50 hover:shadow-xl hover:shadow-secondary/5"
-                    onClick={() => setSelectedStock(stock)}>
+                    onClick={() => setSelectedStock(stock)} {...pressable(() => setSelectedStock(stock))}>
                     <CardContent className="p-5">
                       <div className="flex items-start gap-4">
                         {stock.imageUrl ? (

@@ -18,6 +18,7 @@ import AdvancedChartDialog from "@/components/charts/AdvancedChartDialog";
 import type { ApiChartPoint } from "@/lib/chart-data";
 import { useCorporateActions, useMarketFlows, useMfNavs } from "@/hooks/useMarketFeed";
 import { revealBar, revealItemX, revealSection } from "@/lib/motion";
+import { pressable } from "@/lib/pressable";
 
 /**
  * `symbol` is the Yahoo ticker (e.g. "RELIANCE.NS") and is what makes a real
@@ -51,13 +52,13 @@ const RANGES = [
 
 // marketStats is now computed dynamically inside the component using live data
 // Mini sparkline for table rows
-const MiniSparkline = ({ up, onClick }: { up: boolean; onClick?: () => void }) => {
+const MiniSparkline = ({ up }: { up: boolean }) => {
   const points = up
     ? "0,20 5,18 10,15 15,17 20,12 25,14 30,8 35,10 40,5 45,3 50,2"
     : "0,2 5,5 10,8 15,6 20,12 25,10 30,15 35,13 40,18 45,19 50,20";
   const color = up ? "hsl(145 70% 40%)" : "hsl(0 84% 60%)";
   return (
-    <div className="relative group/spark cursor-pointer" onClick={onClick}>
+    <div className="relative group/spark">
       <svg viewBox="0 0 50 22" className="w-16 h-6" preserveAspectRatio="none">
         <defs>
           <linearGradient id={`spark-${up ? 'up' : 'down'}`} x1="0" x2="0" y1="0" y2="1">
@@ -81,6 +82,7 @@ const StockRow = ({ stock, index, onChartClick }: { stock: Stock; index: number;
     {...revealItemX("left")}
     whileHover={{ x: 4 }}
     onClick={() => onChartClick(stock)}
+    {...pressable(() => onChartClick(stock), { label: `View chart for ${stock.name}, ${stock.price}, ${stock.change}` })}
   >
     <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
       <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-bold shrink-0 ${stock.up ? "bg-secondary/10 text-secondary" : "bg-destructive/10 text-destructive"}`}>
@@ -93,7 +95,7 @@ const StockRow = ({ stock, index, onChartClick }: { stock: Stock; index: number;
     </div>
     <div className="flex items-center gap-2 sm:gap-4 shrink-0">
       <div className="hidden sm:block">
-        <MiniSparkline up={stock.up} onClick={() => onChartClick(stock)} />
+        <MiniSparkline up={stock.up} />
       </div>
       <div className="text-right">
         <span className="text-sm text-foreground font-medium block">{stock.price}</span>
@@ -322,7 +324,7 @@ const MarketOverview = () => {
         {/* Stats strip */}
         <motion.div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3 mb-12" {...revealSection}>
           {marketStats.map((stat, i) => (
-            <motion.div key={stat.label} className={`bg-card border border-border/50 rounded-xl p-3 text-center group cursor-pointer ${i >= 4 ? 'hidden sm:block' : ''}`} whileHover={{ scale: 1.05, y: -4 }} transition={{ type: "spring", stiffness: 300 }}>
+            <motion.div key={stat.label} className={`bg-card border border-border/50 rounded-xl p-3 text-center group ${i >= 4 ? 'hidden sm:block' : ''}`} whileHover={{ scale: 1.05, y: -4 }} transition={{ type: "spring", stiffness: 300 }}>
               <div className={`w-9 h-9 mx-auto mb-1.5 rounded-xl flex items-center justify-center ${stat.bgColor}`}>
                 <stat.icon className={`w-4 h-4 ${stat.color}`} />
               </div>

@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { BUILD_UP_LABEL, BUILD_UP_TONE, buildUpCounts, oiChangePct, pctChange, shortDate, type BuildUp, type FoSnapshot } from "@/lib/market-data";
+import { pressable } from "@/lib/pressable";
 
 const FILTERS: BuildUp[] = ["long_buildup", "short_covering", "short_buildup", "long_unwinding"];
 const TONE_CLASS = { up: "text-secondary", down: "text-destructive", flat: "text-muted-foreground" } as const;
@@ -92,7 +93,7 @@ export default function FoBuildUp({ snapshots, tracked, selected, onSelect }: Pr
           </thead>
           <tbody>
             {visible.map((s) => (
-              <tr key={s.symbol} onClick={() => onSelect(s.symbol)} aria-selected={s.symbol === selected}
+              <tr key={s.symbol} onClick={() => onSelect(s.symbol)} aria-selected={s.symbol === selected} {...pressable(() => onSelect(s.symbol), { role: null })}
                 className={`cursor-pointer border-b last:border-0 transition-colors hover:bg-muted/50 ${s.symbol === selected ? "bg-primary/5" : ""}`}>
                 <td className="py-1.5 px-2 font-semibold">
                   {tracked.has(s.symbol)

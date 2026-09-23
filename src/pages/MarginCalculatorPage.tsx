@@ -16,6 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import PageTransition from "@/components/PageTransition";
 import { useQuery } from "@tanstack/react-query";
 import { getFoContracts, type FoContract } from "@/lib/fo-contracts";
+import { pressable } from "@/lib/pressable";
 
 /** Approximate SPAN and exposure percentages. Indices carry their own; stock futures use a typical rate. */
 const MARGIN_RATES: Record<string, { span: number; exposure: number }> = {
@@ -230,7 +231,7 @@ const MarginCalculatorPage = () => {
                 {contracts
                   .filter((c) => !lotFilter || `${c.symbol} ${c.underlying}`.toLowerCase().includes(lotFilter.toLowerCase()))
                   .map((c) => (
-                    <tr key={c.symbol} className="border-t cursor-pointer hover:bg-muted/30" onClick={() => openInCalculator(c.symbol)}>
+                    <tr key={c.symbol} className="border-t cursor-pointer hover:bg-muted/30" onClick={() => openInCalculator(c.symbol)} {...pressable(() => openInCalculator(c.symbol), { role: null })}>
                       <td className="px-4 py-2 font-semibold">{c.symbol}{c.isIndex && <span className="ml-1.5 text-[10px] font-normal text-muted-foreground">index</span>}</td>
                       <td className="px-3 py-2 text-xs text-muted-foreground">{c.underlying}</td>
                       <td className="px-3 py-2 text-right tabular-nums">{c.lot_size.toLocaleString("en-IN")}</td>

@@ -41,6 +41,7 @@ import CircuitWatch from "@/components/CircuitWatch";
 import PageTransition from "@/components/PageTransition";
 import StockTicker from "@/components/StockTicker";
 import { EASE_IN_OUT, EASE_OUT } from "@/lib/motion";
+import { pressable } from "@/lib/pressable";
 const AIAnalysisModal = lazy(() => import("@/components/AIAnalysisModal"));
 const ChartCompare = lazy(() => import("@/components/ChartCompare"));
 
@@ -483,6 +484,8 @@ const StockScreenerPage = () => {
                   key={b.id} 
                   className={`p-4 flex flex-col cursor-pointer transition-transform ease-out hover:scale-[1.02] active:scale-[0.97] ${isActive ? "ring-2 ring-brand-orange bg-brand-orange/5 border-brand-orange/50" : "hover:border-primary/50"}`}
                   onClick={() => setActiveBasket(isActive ? null : b.id)}
+                  aria-pressed={isActive}
+                  {...pressable(() => setActiveBasket(isActive ? null : b.id))}
                 >
                   <Icon className={`w-6 h-6 mb-3 ${isActive ? "text-brand-orange" : "text-muted-foreground"}`} />
                   <h3 className="font-semibold text-sm mb-1 text-foreground">{b.name}</h3>
@@ -623,8 +626,10 @@ const StockScreenerPage = () => {
                   <thead className="sticky top-0 z-10 bg-card/95 backdrop-blur-sm">
                     <tr className="border-b border-border bg-muted/50">
                       {([["symbol", "Stock"], ["price", "Price"], ["change_pct", "Change"], ["market_cap", "Market Cap"], ["pe", "P/E"]] as [SortKey, string][]).map(([key, label]) => (
-                        <th key={key} className="text-left px-4 py-3 font-medium text-muted-foreground cursor-pointer hover:text-foreground transition-colors" onClick={() => toggleSort(key)}>
-                          <span className="inline-flex items-center gap-1">{label} <ArrowUpDown className="w-3 h-3" /></span>
+                        <th key={key} className="text-left px-4 py-3 font-medium text-muted-foreground">
+                          <button type="button" onClick={() => toggleSort(key)} className="inline-flex items-center gap-1 rounded-sm transition-colors hover:text-foreground">
+                            {label} <ArrowUpDown className="w-3 h-3" aria-hidden />
+                          </button>
                         </th>
                       ))}
                       <th className="text-left px-4 py-3 font-medium text-muted-foreground">52W Range</th>

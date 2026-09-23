@@ -82,12 +82,14 @@ const FooterColumn = ({
     {...revealSection}
     transition={{ duration: 0.5, delay }}
   >
-    <h4
-      className="font-heading font-semibold mb-4 flex justify-between items-center cursor-pointer md:cursor-default"
-      onClick={onToggle}
-    >
-      {title}
-      <ChevronDown className={`w-4 h-4 md:hidden transition-transform ${open ? "rotate-180" : ""}`} />
+    {/* Phones collapse the column, so the heading is a real button there; md+
+        always shows it open and a button would be a tab stop that does nothing. */}
+    <h4 className="font-heading font-semibold mb-4">
+      <button type="button" onClick={onToggle} aria-expanded={open} className="flex w-full items-center justify-between text-left md:hidden">
+        {title}
+        <ChevronDown className={`w-4 h-4 transition-transform ${open ? "rotate-180" : ""}`} aria-hidden />
+      </button>
+      <span className="hidden md:inline">{title}</span>
     </h4>
     <div className={open ? "block" : "hidden md:block"}>{children}</div>
   </motion.div>

@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
-import { ExternalLink } from "lucide-react";
+import { ExternalLink, Smartphone } from "lucide-react";
+import { Link } from "react-router-dom";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -40,6 +41,13 @@ export default function WebTradeMenu({ children, align = "end" }: Props) {
             </a>
           </DropdownMenuItem>
         ))}
+        <DropdownMenuSeparator />
+        <DropdownMenuItem asChild>
+          <Link to="/apps" className="flex cursor-pointer items-center gap-2 py-2 text-sm font-medium">
+            <Smartphone className="h-4 w-4 text-secondary" aria-hidden />
+            {t("apps.menu.getApps")}
+          </Link>
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );

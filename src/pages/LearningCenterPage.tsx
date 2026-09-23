@@ -18,6 +18,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BookOpen, Search, Clock, ChevronRight, TrendingUp, GraduationCap, BarChart3, Shield, ExternalLink, Newspaper, Radio, RefreshCw, Globe, IndianRupee, AlertTriangle, Star, CheckCircle2, Play } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { classifyArticleUrl } from "@/lib/urls";
+import { pressable } from "@/lib/pressable";
 
 type Article = {
   id: string;
@@ -596,7 +597,7 @@ const LearningCenterPage = () => {
                                 basics: "border-t-primary", trading: "border-t-brand-orange",
                                 analysis: "border-t-secondary", investing: "border-t-brand-gold",
                               }[article.category] || "border-t-border"} ${isRead ? "opacity-75" : ""}`}
-                                onClick={() => openArticle(article)}>
+                                onClick={() => openArticle(article)} {...pressable(() => openArticle(article))}>
                                 <div className="flex items-center justify-between mb-3">
                                   <div className="flex items-center gap-2">
                                     <Badge className={`text-xs ${CATEGORY_COLORS[article.category] || ""}`} variant="outline">
@@ -650,7 +651,7 @@ const LearningCenterPage = () => {
                             <motion.div key={article.id} initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }}
                               transition={{ delay: i * 0.04 }} whileHover={{ y: -3 }}>
                               <Card className={`p-5 h-full flex flex-col cursor-pointer group overflow-hidden ${isRead ? "opacity-70" : "hover:shadow-md"} transition-[opacity,box-shadow]`}
-                                onClick={() => openArticle(article)}>
+                                onClick={() => openArticle(article)} {...pressable(() => openArticle(article))}>
                                 <div className="flex items-center justify-between mb-2.5">
                                   <div className="flex items-center gap-1.5">
                                     <Badge className={`text-xs ${CATEGORY_COLORS[article.category] || ""}`} variant="outline">

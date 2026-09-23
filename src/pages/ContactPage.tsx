@@ -194,17 +194,21 @@ const ContactPage = () => {
             className="rounded-2xl overflow-hidden border border-border/50 shadow-lg"
             {...revealSection}
           >
-            <iframe
-              src="https://maps.google.com/maps?q=29.394309972550538,76.96980579867602&t=m&z=17&output=embed&iwloc=near"
-              width="100%"
-              height="350"
-              style={{ border: 0 }}
-              allowFullScreen
-              loading="lazy"
-              referrerPolicy="no-referrer-when-downgrade"
-              title="Parasram Panipat Office Location"
-              className="w-full"
-            />
+            {/* An iframe never matches :focus-visible (focus moves into its document),
+                so the ring goes on a wrapper that sees it through :focus-within. */}
+            <div className="rounded-sm focus-within:outline focus-within:outline-2 focus-within:-outline-offset-2 focus-within:outline-secondary">
+              <iframe
+                src="https://maps.google.com/maps?q=29.394309972550538,76.96980579867602&t=m&z=17&output=embed&iwloc=near"
+                width="100%"
+                height="350"
+                style={{ border: 0 }}
+                allowFullScreen
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+                title="Parasram Panipat Office Location"
+                className="w-full"
+              />
+            </div>
             <div className="bg-card p-4 flex flex-col sm:flex-row items-center justify-between gap-3">
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <MapPin className="w-4 h-4 text-secondary" />

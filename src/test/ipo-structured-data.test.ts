@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { ipoDataset, ipoFaqItems } from "@/lib/ipo-structured-data";
+import { ipoDataset, ipoFaqItems, ipoMetaDescription } from "@/lib/ipo-structured-data";
 import type { Ipo } from "@/lib/ipo";
 
 const ipo = {
@@ -39,5 +39,27 @@ describe("ipoDataset", () => {
     expect(ds.temporalCoverage).toBe("2026-09-18/2026-09-22");
     expect(ds.variableMeasured).toContain("Subscription by category");
     expect(ds.variableMeasured).not.toContain("Listing price and listing gain");
+  });
+});
+
+describe("ipoMetaDescription", () => {
+  it("states the band, lot and dates of an open issue", () => {
+    const d = ipoMetaDescription(ipo);
+    expect(d).toContain("Acme Ltd mainboard IPO: price band ₹100 to ₹105, lot of 140 shares, bidding 18 Sept to 22 Sept.".replace(/Sept/g, new Date("2026-09-18").toLocaleDateString("en-IN", { month: "short" })));
+    expect(d.length).toBeGreaterThanOrEqual(110);
+    expect(d.length).toBeLessThanOrEqual(160);
+  });
+
+  it("reports the listing gain once listed", () => {
+    const d = ipoMetaDescription({ ...ipo, status: "listed", listing_gain_pct: 20 } as Ipo);
+    expect(d).toMatch(/listed 25 \w+ at \+20\.0% vs issue/);
+  });
+
+  it("stays in range for a very long name and for an issue with no figures", () => {
+    const long = ipoMetaDescription({ ...ipo, name: "Very Long Name Engineering And Infrastructure Projects (India) Private Limited" } as Ipo);
+    expect(long.length).toBeLessThanOrEqual(160);
+    const bare = ipoMetaDescription({ ...ipo, name: "XY", board: "sme", price_band_min: null, price_band_max: null, lot_size: null, open_date: null, close_date: null } as Ipo);
+    expect(bare.length).toBeGreaterThanOrEqual(110);
+    expect(bare.length).toBeLessThanOrEqual(160);
   });
 });

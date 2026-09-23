@@ -99,3 +99,35 @@ export function ipoDataset(ipo: Ipo | null): Record<string, unknown> | null {
     license: "https://www.sphpnp.com/terms",
   };
 }
+
+const DESC_MIN = 110;
+const DESC_MAX = 160;
+const shortDate = (d: string | null) =>
+  d ? new Date(`${d}T00:00:00+05:30`).toLocaleDateString("en-IN", { day: "numeric", month: "short", timeZone: "Asia/Kolkata" }) : null;
+
+/**
+ * The page's meta description, built from the issue's own facts - band, lot,
+ * dates or listing - rather than one sentence shared by every IPO page, which
+ * ran 102-109 characters and said nothing a searcher could not guess. Kept in
+ * the 110-160 window search results show in full.
+ */
+export function ipoMetaDescription(ipo: Ipo): string {
+  const head = `${ipo.name} ${ipo.board === "sme" ? "SME" : "mainboard"} IPO`;
+  const b = band(ipo);
+  const lot = ipo.lot_size ? `lot of ${ipo.lot_size.toLocaleString("en-IN")} shares` : null;
+  const open = shortDate(ipo.open_date);
+  const close = shortDate(ipo.close_date);
+  const listedOn = ipo.status === "listed" ? shortDate(ipo.listing_date) : null;
+  const gain = ipo.listing_gain_pct;
+  const timing = listedOn
+    ? `listed ${listedOn}${gain !== null ? ` at ${gain >= 0 ? "+" : ""}${gain.toFixed(1)}% vs issue` : ""}`
+    : open && close ? `bidding ${open} to ${close}` : null;
+  const facts = [b && `price band ${b}`, lot, timing].filter(Boolean);
+
+  let s = facts.length ? `${head}: ${facts.join(", ")}.` : `${head}: dates, price band and lot size.`;
+  for (const tail of ["GMP history, subscription and allotment details.", "Information only, not advice.", "Tracked by Parasram India."]) {
+    if (s.length >= DESC_MIN && tail !== "Information only, not advice.") continue;
+    if (`${s} ${tail}`.length <= DESC_MAX) s = `${s} ${tail}`;
+  }
+  return s.length > DESC_MAX ? `${s.slice(0, DESC_MAX - 1).replace(/[\s,;:]+\S*$/, "")}…` : s;
+}

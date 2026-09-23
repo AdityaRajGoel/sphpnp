@@ -1,7 +1,8 @@
+import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "motion/react";
 import {
-  ArrowRight, Bot, Check, Download, Globe, Layers, LineChart, Monitor, Moon, Rocket, ShieldCheck, Sparkles, Zap,
+  ArrowRight, Bell, Bot, Check, Download, Globe, Keyboard, Layers, LayoutGrid, LineChart, Monitor, Moon, Rocket, Sparkles, Zap,
 } from "lucide-react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -9,15 +10,16 @@ import VisibleBreadcrumbs from "@/components/VisibleBreadcrumbs";
 import SEOHead from "@/components/SEOHead";
 import PageTransition from "@/components/PageTransition";
 import WhatsAppButton from "@/components/WhatsAppButton";
+import FAQ from "@/components/FAQ";
 import StoreButtons from "@/components/apps/StoreButtons";
 import StoreStats from "@/components/apps/StoreStats";
 import AppStatsBand from "@/components/apps/AppStatsBand";
 import AppQrCodes from "@/components/apps/AppQrCodes";
 import ScreenshotStrip from "@/components/apps/ScreenshotStrip";
 import VideoPlayer from "@/components/apps/VideoPlayer";
+import CompareTable from "@/components/apps/CompareTable";
 import {
-  DESKTOP_SHOT, DESKTOP_VIDEO, MONEY_FEATURES, MONEY_HERO, MONEY_HERO_BACK, MONEY_SCREENS,
-  SCREEN_SIZE, TRADE_HERO, TRADE_SCREENS,
+  DESKTOP_SHOT, DESKTOP_VIDEO, MONEY_FEATURES, MONEY_HERO, MONEY_SCREENS, SCREEN_SIZE, TRADE_HERO, TRADE_SCREENS,
 } from "@/components/apps/appMedia";
 import { appById, MONEYMAKER_DOWNLOAD_URL, type TradingApp } from "@/lib/trading-apps";
 import { HIGH_FETCH_PRIORITY } from "@/lib/fetch-priority";
@@ -37,9 +39,28 @@ const MONEY_CAPABILITIES = [
   { icon: Rocket, key: "apps.cap.ipo" },
   { icon: Moon, key: "apps.cap.dark" },
 ];
-const DESKTOP_POINTS = [1, 2, 3, 4, 5].map((n) => `apps.desktop.point${n}`);
+const FEATURE_BULLETS: Record<string, string[]> = {
+  tradetron: ["apps.feature.tradetron.b1", "apps.feature.tradetron.b2", "apps.feature.tradetron.b3"],
+  "margin-pledge": ["apps.feature.pledge.b1", "apps.feature.pledge.b2", "apps.feature.pledge.b3"],
+};
+const FEATURE_ICON: Record<string, typeof Bot> = { tradetron: Bot, "margin-pledge": Zap };
+const DESKTOP_POINTS = [
+  { icon: LayoutGrid, key: "apps.desktop.point1" },
+  { icon: Layers, key: "apps.desktop.point2" },
+  { icon: Bell, key: "apps.desktop.point3" },
+  { icon: LineChart, key: "apps.desktop.point4" },
+  { icon: Keyboard, key: "apps.desktop.point5" },
+];
 const TRADE_POINTS = [1, 2, 3, 4].map((n) => `apps.trade.point${n}`);
 const FAQ_KEYS = [1, 2, 3, 4].map((n) => ({ q: `apps.faq.q${n}`, a: `apps.faq.a${n}` }));
+const SECTIONS = [
+  { id: "whats-new", key: "apps.nav.new" },
+  { id: "screens", key: "apps.nav.screens" },
+  { id: "desktop", key: "apps.nav.desktop" },
+  { id: "trade", key: "cta.parasramTrade" },
+  { id: "compare", key: "apps.nav.compare" },
+  { id: "faq", key: "apps.nav.faq" },
+];
 
 // Search data stays English: it describes the prerendered (English) page.
 const en = translations.en;
@@ -79,23 +100,14 @@ const SCHEMA = {
   ],
 };
 
-const PhoneShot = ({ src, alt, className = "", eager = false }: { src: string; alt: string; className?: string; eager?: boolean }) => (
-  <img
-    src={src}
-    alt={alt}
-    width={SCREEN_SIZE.width}
-    height={SCREEN_SIZE.height}
-    loading={eager ? "eager" : "lazy"}
-    {...(eager ? HIGH_FETCH_PRIORITY : {})}
-    decoding="async"
-    className={`h-auto rounded-[2rem] border-[6px] border-foreground/90 bg-foreground shadow-2xl ${className}`}
-  />
+const Eyebrow = ({ children }: { children: ReactNode }) => (
+  <p className="text-xs font-bold uppercase tracking-[0.14em] text-secondary">{children}</p>
 );
 
 const WebLink = ({ href, className }: { href: string; className: string }) => {
   const { t } = useT();
   return (
-    <a href={href} target="_blank" rel="noopener noreferrer" className={`mt-4 inline-flex items-center gap-1.5 text-sm font-medium underline-offset-4 hover:text-secondary hover:underline ${className}`}>
+    <a href={href} target="_blank" rel="noopener noreferrer" className={`inline-flex items-center gap-1.5 text-sm font-medium underline-offset-4 hover:text-secondary hover:underline ${className}`}>
       <Globe className="h-4 w-4" aria-hidden /> {t("store.openInBrowser")}
     </a>
   );
@@ -104,234 +116,275 @@ const WebLink = ({ href, className }: { href: string; className: string }) => {
 const AppsPage = () => {
   const { t } = useT();
   return (
-  <PageTransition>
-    <div className="min-h-screen bg-background">
-      <SEOHead
-        title="Parasram Money & Parasram Trade Apps | Parasram India"
-        description="Get Parasram Money, our new app with Tradetron algo trading and instant margin pledge, on Android and iPhone. Plus Parasram Trade and MoneyMaker desktop."
-        ogImage={`${SITE}/og-apps-2026.jpg`}
-        breadcrumbs={[{ name: "Home", url: "/" }, { name: "Apps" }]}
-        faqItems={FAQ_SCHEMA}
-        jsonLd={SCHEMA}
-      />
-      <Header />
-      <VisibleBreadcrumbs items={[{ name: "Home", url: "/" }, { name: t("nav.apps") }]} />
+    <PageTransition>
+      <div className="min-h-screen bg-background">
+        <SEOHead
+          title="Parasram Money & Parasram Trade Apps | Parasram India"
+          description="Get Parasram Money, our new app with Tradetron algo trading and instant margin pledge, on Android and iPhone. Plus Parasram Trade and MoneyMaker desktop."
+          ogImage={`${SITE}/og-apps-2026.jpg`}
+          breadcrumbs={[{ name: "Home", url: "/" }, { name: "Apps" }]}
+          faqItems={FAQ_SCHEMA}
+          jsonLd={SCHEMA}
+        />
+        <Header />
+        <VisibleBreadcrumbs items={[{ name: "Home", url: "/" }, { name: t("nav.apps") }]} />
 
-      <main>
-        {/* ── Parasram Money: the lead ─────────────────────────────── */}
-        <section id="money" aria-labelledby="money-heading" className="relative overflow-hidden bg-hero text-primary-foreground scroll-mt-24">
-          <div className="pointer-events-none absolute -right-40 top-10 h-[28rem] w-[28rem] rounded-full bg-secondary/25 blur-3xl" />
-          <div className="pointer-events-none absolute -left-32 bottom-0 h-80 w-80 rounded-full bg-brand-gold/10 blur-3xl" />
+        <main>
+          {/* ── Hero: Parasram Money ─────────────────────────────────────── */}
+          <section id="money" aria-labelledby="money-heading" className="relative overflow-hidden bg-hero text-primary-foreground scroll-mt-28">
+            <div className="pointer-events-none absolute -right-32 top-0 h-[32rem] w-[32rem] rounded-full bg-secondary/25 blur-3xl" />
+            <div className="container relative mx-auto grid items-center gap-12 px-4 pb-16 pt-12 md:pb-20 md:pt-16 lg:grid-cols-[1.15fr_0.85fr]">
+              <motion.div {...revealItemX("left")}>
+                <span className="inline-flex items-center gap-2 rounded-full bg-secondary px-3 py-1 text-xs font-bold uppercase tracking-wider text-secondary-foreground">
+                  <Sparkles className="h-3.5 w-3.5" aria-hidden /> {t("apps.newApp")}
+                </span>
+                <h1 id="money-heading" className="mt-5 font-heading text-5xl font-bold leading-[1.02] tracking-tight md:text-7xl">{t(money.nameKey)}</h1>
+                <p className="mt-4 text-2xl font-semibold text-primary-foreground/90 md:text-3xl">{t("apps.hero.tagline")}</p>
+                <p className="mt-5 max-w-xl text-lg leading-relaxed text-primary-foreground/75">{t("apps.hero.body")}</p>
 
-          <div className="container relative mx-auto grid items-center gap-12 px-4 py-14 md:py-20 lg:grid-cols-[1.1fr_0.9fr]">
-            <motion.div {...revealItemX("left")}>
-              <span className="inline-flex items-center gap-2 rounded-full border border-secondary/40 bg-secondary/20 px-3 py-1 text-xs font-semibold uppercase tracking-wider">
-                <Sparkles className="h-3.5 w-3.5 text-secondary" aria-hidden /> {t("apps.newApp")}
-              </span>
-              <h1 id="money-heading" className="mt-5 font-heading text-4xl font-bold leading-[1.05] md:text-6xl">
-                {t(money.nameKey)}
-                <span className="mt-3 block text-2xl font-semibold text-primary-foreground/85 md:text-3xl">{t("apps.hero.tagline")}</span>
-              </h1>
-              <p className="mt-6 max-w-xl text-lg text-primary-foreground/80">{t("apps.hero.body")}</p>
-
-              <ul className="mt-8 grid max-w-xl gap-x-6 gap-y-3 sm:grid-cols-2">
-                {MONEY_CAPABILITIES.map(({ icon: Icon, key }) => (
-                  <li key={key} className="flex items-center gap-3 text-sm font-medium">
-                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-secondary/20">
-                      <Icon className="h-4 w-4 text-secondary" aria-hidden />
-                    </span>
-                    {t(key)}
-                  </li>
-                ))}
-              </ul>
-
-              <div className="mt-10 flex flex-wrap items-end gap-8">
-                <div>
-                  <StoreButtons app={money} />
-                  <StoreStats app={money} className="mt-3 text-primary-foreground" />
-                  <WebLink href={money.webHref} className="text-primary-foreground/80" />
-                </div>
-                <AppQrCodes app={money} className="text-primary-foreground" />
-              </div>
-            </motion.div>
-
-            {/* Two phones, overlapped for depth: watchlist in front, option chain behind. */}
-            <motion.div {...revealItemX("right")} className="relative mx-auto flex w-full max-w-md justify-center py-6">
-              <PhoneShot {...MONEY_HERO_BACK} className="absolute right-0 top-0 w-48 rotate-6 opacity-90 sm:w-56" />
-              <PhoneShot {...MONEY_HERO} eager className="relative -ml-24 w-56 -rotate-3 sm:w-64" />
-            </motion.div>
-          </div>
-        </section>
-
-        <AppStatsBand />
-
-        {/* ── What's new ──────────────────────────────────────────── */}
-        <section aria-labelledby="new-heading" className="py-16 md:py-24">
-          <div className="container mx-auto px-4">
-            <motion.div {...revealSection} className="mb-10 max-w-2xl">
-              <p className="text-sm font-semibold uppercase tracking-wider text-secondary">{t("apps.new.eyebrow")}</p>
-              <h2 id="new-heading" className="mt-2 font-heading text-3xl font-bold text-foreground md:text-4xl">{t("apps.new.heading")}</h2>
-            </motion.div>
-            <div className="grid gap-8 lg:grid-cols-2">
-              {MONEY_FEATURES.map((f, i) => (
-                <motion.article
-                  key={f.id}
-                  id={f.id}
-                  {...revealItem(i)}
-                  className="group overflow-hidden rounded-3xl border border-border bg-card shadow-sm transition-shadow duration-base hover:shadow-xl scroll-mt-24"
-                >
-                  <figure className="overflow-hidden">
-                    <img
-                      src={f.image.src}
-                      alt={f.image.alt}
-                      width={1280}
-                      height={960}
-                      loading="lazy"
-                      decoding="async"
-                      className="h-auto w-full transition-transform duration-slow ease-out group-hover:scale-[1.02]"
-                    />
-                  </figure>
-                  <div className="p-6 md:p-8">
-                    <h3 className="font-heading text-2xl font-bold text-foreground">{t(f.titleKey)}</h3>
-                    <p className="mt-2 text-muted-foreground">{t(f.bodyKey)}</p>
-                  </div>
-                </motion.article>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* ── Inside the app ─────────────────────────────────────── */}
-        <section aria-labelledby="screens-heading" className="bg-muted/40 py-16 md:py-20">
-          <div className="container mx-auto px-4">
-            <motion.div {...revealSection} className="mb-8 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-              <div className="max-w-xl">
-                <h2 id="screens-heading" className="font-heading text-3xl font-bold text-foreground">{t("apps.screens.heading")}</h2>
-                <p className="mt-2 text-muted-foreground">{t("apps.screens.body")}</p>
-              </div>
-              <StoreButtons app={money} tone="onLight" size="sm" />
-            </motion.div>
-            <ScreenshotStrip screens={MONEY_SCREENS} label={t("apps.screens.heading")} />
-          </div>
-        </section>
-
-        {/* ── MoneyMaker desktop ─────────────────────────────────── */}
-        <section id="desktop" aria-labelledby="desktop-heading" className="relative overflow-hidden bg-hero py-16 text-primary-foreground md:py-24 scroll-mt-24">
-          <div className="container relative mx-auto px-4">
-            <motion.div {...revealSection} className="mx-auto mb-10 max-w-3xl text-center">
-              <span className="inline-flex items-center gap-2 rounded-full bg-primary-foreground/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider">
-                <Monitor className="h-3.5 w-3.5 text-secondary" aria-hidden /> {t("apps.desktop.eyebrow")}
-              </span>
-              <h2 id="desktop-heading" className="mt-4 font-heading text-3xl font-bold md:text-5xl">{t("apps.desktop.heading")}</h2>
-              <p id="desktop-summary" className="mt-4 text-lg text-primary-foreground/80">{t("apps.desktop.body")}</p>
-            </motion.div>
-
-            <motion.div {...revealSection} className="mx-auto max-w-5xl">
-              <VideoPlayer
-                eyebrow={t("apps.video.eyebrow")}
-                title={t("apps.video.title")}
-                describedBy="desktop-summary"
-                hdSrc={DESKTOP_VIDEO.hd}
-                sdSrc={DESKTOP_VIDEO.sd}
-                poster={DESKTOP_VIDEO.poster}
-                posterAlt="MoneyMaker desktop terminal showing the NSE F&O futures price view with live buy and sell quotes"
-                width={DESKTOP_VIDEO.width}
-                height={DESKTOP_VIDEO.height}
-              />
-            </motion.div>
-
-            <div className="mx-auto mt-14 grid max-w-6xl items-center gap-10 lg:grid-cols-[1.4fr_1fr]">
-              <motion.figure {...revealItemX("left")}>
-                <img
-                  src={DESKTOP_SHOT.src}
-                  alt="MoneyMaker desktop trading terminal with the NSE F&O price view, Best-5 market depth window, top gainers and live market alerts"
-                  width={DESKTOP_SHOT.width}
-                  height={DESKTOP_SHOT.height}
-                  loading="lazy"
-                  decoding="async"
-                  className="h-auto w-full rounded-xl shadow-2xl ring-1 ring-white/10"
-                />
-              </motion.figure>
-              <motion.div {...revealItemX("right")}>
-                <h3 className="font-heading text-2xl font-bold">{t("apps.desktop.builtFor")}</h3>
-                <ul className="mt-5 space-y-3">
-                  {DESKTOP_POINTS.map((k) => (
-                    <li key={k} className="flex gap-3 text-primary-foreground/85">
-                      <Check className="mt-0.5 h-5 w-5 shrink-0 text-secondary" aria-hidden />
-                      {t(k)}
+                <ul className="mt-8 grid max-w-xl grid-cols-1 gap-x-6 gap-y-2.5 sm:grid-cols-2">
+                  {MONEY_CAPABILITIES.map(({ icon: Icon, key }) => (
+                    <li key={key} className="flex items-center gap-2.5 text-sm font-medium">
+                      <Icon className="h-4 w-4 shrink-0 text-secondary" aria-hidden />
+                      {t(key)}
                     </li>
                   ))}
                 </ul>
-                <a
-                  href={MONEYMAKER_DOWNLOAD_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="mt-8 inline-flex items-center gap-2 rounded-xl bg-secondary px-5 py-3 font-semibold text-secondary-foreground shadow-lg transition-[background-color,transform] duration-fast ease-out hover:-translate-y-0.5 hover:bg-secondary/90"
-                >
-                  <Download className="h-4 w-4" aria-hidden /> {t("apps.desktop.download")}
-                </a>
-                <p className="mt-2 text-xs text-primary-foreground/60">{t("apps.desktop.downloadNote")}</p>
-                <Link to="/contact#contact-form" className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-primary-foreground/85 hover:text-secondary">
-                  {t("apps.desktop.help")} <ArrowRight className="h-4 w-4" aria-hidden />
-                </Link>
+
+                <div className="mt-9 flex flex-wrap items-center gap-x-8 gap-y-5">
+                  <div className="space-y-3">
+                    <StoreButtons app={money} />
+                    <StoreStats app={money} className="text-primary-foreground" />
+                    <WebLink href={money.webHref} className="text-primary-foreground/75" />
+                  </div>
+                  <div className="hidden rounded-2xl border border-white/15 bg-white/[0.06] p-4 backdrop-blur-sm md:block">
+                    <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-primary-foreground/70">{t("apps.hero.scan")}</p>
+                    <AppQrCodes app={money} className="text-primary-foreground" />
+                  </div>
+                </div>
+              </motion.div>
+
+              {/* One phone, with the two new features pinned beside it. */}
+              <motion.div {...revealItemX("right")} className="relative mx-auto w-full max-w-sm py-6">
+                <img
+                  src={MONEY_HERO.src}
+                  alt={MONEY_HERO.alt}
+                  width={SCREEN_SIZE.width}
+                  height={SCREEN_SIZE.height}
+                  loading="eager"
+                  {...HIGH_FETCH_PRIORITY}
+                  decoding="async"
+                  className="relative mx-auto w-64 rounded-[2.2rem] border-[7px] border-foreground/90 bg-foreground shadow-[0_40px_80px_-20px_rgb(0_0_0/0.6)] sm:w-72"
+                />
+                {[
+                  { icon: Bot, key: "apps.feature.tradetron.title", pos: "left-0 top-0 sm:-left-16" },
+                  { icon: Zap, key: "apps.feature.pledge.title", pos: "bottom-0 right-0 sm:-right-12" },
+                ].map(({ icon: Icon, key, pos }) => (
+                  <span key={key} className={`absolute ${pos} flex items-center gap-2 rounded-xl bg-card px-3.5 py-2.5 text-sm font-semibold text-foreground shadow-xl ring-1 ring-black/5`}>
+                    <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-secondary/15 text-secondary"><Icon className="h-4 w-4" aria-hidden /></span>
+                    {t(key)}
+                  </span>
+                ))}
               </motion.div>
             </div>
-          </div>
-        </section>
+          </section>
 
-        {/* ── Parasram Trade ─────────────────────────────────────── */}
-        <section id="trade" aria-labelledby="trade-heading" className="py-16 md:py-24 scroll-mt-24">
-          <div className="container mx-auto grid items-center gap-12 px-4 lg:grid-cols-[0.8fr_1.2fr]">
-            <motion.div {...revealItemX("left")} className="flex justify-center">
-              <PhoneShot {...TRADE_HERO} className="w-60 sm:w-64" />
-            </motion.div>
-            <motion.div {...revealItemX("right")}>
-              <p className="text-sm font-semibold uppercase tracking-wider text-secondary">Symphony XTS</p>
-              <h2 id="trade-heading" className="mt-2 font-heading text-3xl font-bold text-foreground md:text-4xl">{t(trade.nameKey)}</h2>
-              <p className="mt-4 max-w-xl text-muted-foreground">{t("apps.trade.body")}</p>
-              <ul className="mt-6 grid gap-3 sm:grid-cols-2">
-                {TRADE_POINTS.map((k) => (
-                  <li key={k} className="flex gap-2.5 text-sm text-foreground">
-                    <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-secondary" aria-hidden />
-                    {t(k)}
-                  </li>
-                ))}
-              </ul>
-              <div className="mt-8 flex flex-wrap items-end gap-8">
-                <div>
-                  <StoreButtons app={trade} tone="onLight" />
-                  <StoreStats app={trade} className="mt-3 text-foreground" />
-                  <WebLink href={trade.webHref} className="text-muted-foreground" />
-                </div>
-                <AppQrCodes app={trade} className="text-foreground" />
-              </div>
-            </motion.div>
-          </div>
-          <div className="container mx-auto mt-12 px-4">
-            <ScreenshotStrip screens={TRADE_SCREENS.slice(1)} label={t(trade.nameKey)} />
-          </div>
-        </section>
+          <AppStatsBand />
 
-        {/* ── FAQ ────────────────────────────────────────────────── */}
-        <section aria-labelledby="apps-faq-heading" className="border-t border-border bg-muted/30 py-16">
-          <div className="container mx-auto max-w-3xl px-4">
-            <h2 id="apps-faq-heading" className="font-heading text-2xl font-bold text-foreground">{t("apps.faq.heading")}</h2>
-            <dl className="mt-6 divide-y divide-border">
-              {FAQ_KEYS.map(({ q, a }) => (
-                <div key={q} className="py-5">
-                  <dt className="font-semibold text-foreground">{t(q)}</dt>
-                  <dd className="mt-1.5 text-muted-foreground">{t(a)}</dd>
-                </div>
+          {/* ── In-page navigation ───────────────────────────────────────── */}
+          <nav aria-label={t("apps.nav.label")} className="border-b border-border bg-background">
+            <ul className="container mx-auto flex gap-1 overflow-x-auto px-4 py-2 [scrollbar-width:none]">
+              {SECTIONS.map((s) => (
+                <li key={s.id} className="shrink-0">
+                  <a href={`#${s.id}`} className="inline-flex min-h-[40px] items-center rounded-full px-4 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
+                    {t(s.key)}
+                  </a>
+                </li>
               ))}
-            </dl>
-          </div>
-        </section>
-      </main>
+            </ul>
+          </nav>
 
-      <Footer />
-      <WhatsAppButton />
-    </div>
-  </PageTransition>
+          {/* ── What's new: two feature rows ─────────────────────────────── */}
+          <section id="whats-new" aria-labelledby="new-heading" className="py-16 md:py-24 scroll-mt-28">
+            <div className="container mx-auto px-4">
+              <motion.div {...revealSection} className="mb-12 max-w-2xl">
+                <Eyebrow>{t("apps.new.eyebrow")}</Eyebrow>
+                <h2 id="new-heading" className="mt-2 font-heading text-3xl font-bold text-foreground md:text-5xl">{t("apps.new.heading")}</h2>
+              </motion.div>
+              <div className="space-y-16 md:space-y-24">
+                {MONEY_FEATURES.map((f, i) => {
+                  const Icon = FEATURE_ICON[f.id];
+                  return (
+                    <motion.article key={f.id} id={f.id} {...revealItem(i)} className="grid items-center gap-8 scroll-mt-28 lg:grid-cols-2 lg:gap-14">
+                      <figure className={i % 2 ? "lg:order-2" : ""}>
+                        <img
+                          src={f.image.src}
+                          alt={f.image.alt}
+                          width={1280}
+                          height={960}
+                          loading="lazy"
+                          decoding="async"
+                          className="h-auto w-full rounded-3xl shadow-2xl ring-1 ring-black/5"
+                        />
+                      </figure>
+                      <div>
+                        <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-secondary/15 text-secondary"><Icon className="h-6 w-6" aria-hidden /></span>
+                        <h3 className="mt-5 font-heading text-2xl font-bold text-foreground md:text-4xl">{t(f.titleKey)}</h3>
+                        <p className="mt-3 text-lg text-muted-foreground">{t(f.bodyKey)}</p>
+                        <ul className="mt-6 space-y-3">
+                          {FEATURE_BULLETS[f.id].map((k) => (
+                            <li key={k} className="flex gap-3 text-foreground">
+                              <Check className="mt-0.5 h-5 w-5 shrink-0 text-secondary" aria-hidden />
+                              {t(k)}
+                            </li>
+                          ))}
+                        </ul>
+                        <StoreButtons app={money} tone="onLight" size="sm" className="mt-7" />
+                      </div>
+                    </motion.article>
+                  );
+                })}
+              </div>
+            </div>
+          </section>
+
+          {/* ── Screens ──────────────────────────────────────────────────── */}
+          <section id="screens" aria-labelledby="screens-heading" className="border-y border-border bg-muted/40 py-16 md:py-20 scroll-mt-28">
+            <div className="container mx-auto px-4">
+              <motion.div {...revealSection} className="mb-10 max-w-xl">
+                <Eyebrow>{t(money.nameKey)}</Eyebrow>
+                <h2 id="screens-heading" className="mt-2 font-heading text-3xl font-bold text-foreground md:text-4xl">{t("apps.screens.heading")}</h2>
+                <p className="mt-3 text-muted-foreground">{t("apps.screens.body")}</p>
+              </motion.div>
+              <ScreenshotStrip screens={MONEY_SCREENS} label={t("apps.screens.heading")} />
+            </div>
+          </section>
+
+          {/* ── MoneyMaker desktop ───────────────────────────────────────── */}
+          <section id="desktop" aria-labelledby="desktop-heading" className="relative overflow-hidden bg-hero py-16 text-primary-foreground md:py-24 scroll-mt-28">
+            <div className="container relative mx-auto px-4">
+              <motion.div {...revealSection} className="mx-auto mb-10 max-w-3xl text-center">
+                <span className="inline-flex items-center gap-2 rounded-full bg-primary-foreground/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider">
+                  <Monitor className="h-3.5 w-3.5 text-secondary" aria-hidden /> {t("apps.desktop.eyebrow")}
+                </span>
+                <h2 id="desktop-heading" className="mt-4 font-heading text-3xl font-bold md:text-5xl">{t("apps.desktop.heading")}</h2>
+                <p id="desktop-summary" className="mt-4 text-lg text-primary-foreground/80">{t("apps.desktop.body")}</p>
+              </motion.div>
+
+              <motion.div {...revealSection} className="mx-auto max-w-5xl">
+                <VideoPlayer
+                  eyebrow={t("apps.video.eyebrow")}
+                  title={t("apps.video.title")}
+                  describedBy="desktop-summary"
+                  hdSrc={DESKTOP_VIDEO.hd}
+                  sdSrc={DESKTOP_VIDEO.sd}
+                  poster={DESKTOP_VIDEO.poster}
+                  posterAlt="MoneyMaker desktop terminal showing the NSE F&O futures price view with live buy and sell quotes"
+                  width={DESKTOP_VIDEO.width}
+                  height={DESKTOP_VIDEO.height}
+                />
+              </motion.div>
+
+              <ul className="mx-auto mt-12 grid max-w-5xl gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {DESKTOP_POINTS.map(({ icon: Icon, key }, i) => (
+                  <motion.li key={key} {...revealItem(i)} className="flex gap-3 rounded-2xl border border-white/10 bg-white/[0.05] p-4">
+                    <Icon className="mt-0.5 h-5 w-5 shrink-0 text-secondary" aria-hidden />
+                    <span className="text-sm text-primary-foreground/85">{t(key)}</span>
+                  </motion.li>
+                ))}
+                <motion.li {...revealItem(DESKTOP_POINTS.length)} className="flex flex-col justify-center rounded-2xl bg-secondary p-4 text-secondary-foreground">
+                  <a href={MONEYMAKER_DOWNLOAD_URL} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 font-semibold hover:underline">
+                    <Download className="h-5 w-5" aria-hidden /> {t("apps.desktop.download")}
+                  </a>
+                  <span className="mt-1 text-xs opacity-80">{t("apps.desktop.downloadNote")}</span>
+                </motion.li>
+              </ul>
+
+              <div className="mx-auto mt-12 grid max-w-5xl items-center gap-8 lg:grid-cols-[1.5fr_1fr]">
+                <motion.figure {...revealItemX("left")}>
+                  <img
+                    src={DESKTOP_SHOT.src}
+                    alt="MoneyMaker desktop trading terminal with the NSE F&O price view, Best-5 market depth window, top gainers and live market alerts"
+                    width={DESKTOP_SHOT.width}
+                    height={DESKTOP_SHOT.height}
+                    loading="lazy"
+                    decoding="async"
+                    className="h-auto w-full rounded-xl shadow-2xl ring-1 ring-white/10"
+                  />
+                </motion.figure>
+                <motion.div {...revealItemX("right")}>
+                  <h3 className="font-heading text-2xl font-bold">{t("apps.desktop.builtFor")}</h3>
+                  <p className="mt-3 text-primary-foreground/75">{t("apps.desktop.body")}</p>
+                  <Link to="/contact#contact-form" className="mt-5 inline-flex items-center gap-1.5 text-sm font-semibold text-secondary hover:underline">
+                    {t("apps.desktop.help")} <ArrowRight className="h-4 w-4" aria-hidden />
+                  </Link>
+                </motion.div>
+              </div>
+            </div>
+          </section>
+
+          {/* ── Parasram Trade ───────────────────────────────────────────── */}
+          <section id="trade" aria-labelledby="trade-heading" className="py-16 md:py-24 scroll-mt-28">
+            <div className="container mx-auto px-4">
+              <div className="grid items-center gap-10 rounded-3xl border border-border bg-card p-6 shadow-sm md:p-10 lg:grid-cols-[auto_1fr]">
+                <motion.img
+                  {...revealItemX("left")}
+                  src={TRADE_HERO.src}
+                  alt={TRADE_HERO.alt}
+                  width={SCREEN_SIZE.width}
+                  height={SCREEN_SIZE.height}
+                  loading="lazy"
+                  decoding="async"
+                  className="mx-auto w-52 rounded-[1.8rem] border-[6px] border-foreground/90 shadow-2xl sm:w-56"
+                />
+                <motion.div {...revealItemX("right")}>
+                  <Eyebrow>Symphony XTS</Eyebrow>
+                  <h2 id="trade-heading" className="mt-2 font-heading text-3xl font-bold text-foreground md:text-4xl">{t(trade.nameKey)}</h2>
+                  <p className="mt-3 max-w-xl text-muted-foreground">{t("apps.trade.body")}</p>
+                  <ul className="mt-6 grid gap-3 sm:grid-cols-2">
+                    {TRADE_POINTS.map((k) => (
+                      <li key={k} className="flex gap-2.5 text-sm text-foreground">
+                        <Check className="mt-0.5 h-4 w-4 shrink-0 text-secondary" aria-hidden />
+                        {t(k)}
+                      </li>
+                    ))}
+                  </ul>
+                  <div className="mt-7 flex flex-wrap items-end gap-x-8 gap-y-5">
+                    <div className="space-y-3">
+                      <StoreButtons app={trade} tone="onLight" />
+                      <StoreStats app={trade} className="text-foreground" />
+                      <WebLink href={trade.webHref} className="text-muted-foreground" />
+                    </div>
+                    <AppQrCodes app={trade} className="text-foreground" />
+                  </div>
+                </motion.div>
+              </div>
+              <div className="mt-10">
+                <ScreenshotStrip screens={TRADE_SCREENS.slice(1)} label={t(trade.nameKey)} />
+              </div>
+            </div>
+          </section>
+
+          {/* ── Compare ──────────────────────────────────────────────────── */}
+          <section id="compare" aria-labelledby="compare-heading" className="border-t border-border bg-muted/30 py-16 md:py-20 scroll-mt-28">
+            <div className="container mx-auto max-w-4xl px-4">
+              <motion.div {...revealSection} className="mb-8 text-center">
+                <h2 id="compare-heading" className="font-heading text-3xl font-bold text-foreground md:text-4xl">{t("apps.compare.heading")}</h2>
+                <p className="mt-3 text-muted-foreground">{t("apps.compare.body")}</p>
+              </motion.div>
+              <CompareTable />
+            </div>
+          </section>
+
+          <div id="faq" className="scroll-mt-28">
+            <FAQ title={t("apps.faq.heading")} items={FAQ_KEYS.map(({ q, a }) => ({ q: t(q), a: t(a) }))} />
+          </div>
+        </main>
+
+        <Footer />
+        <WhatsAppButton />
+      </div>
+    </PageTransition>
   );
 };
 
