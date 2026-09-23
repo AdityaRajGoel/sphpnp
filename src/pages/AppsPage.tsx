@@ -239,6 +239,11 @@ const AppsPage = () => {
                             </li>
                           ))}
                         </ul>
+                        {/* SEBI's algo circular bars brokers from any association with return
+                            claims (Parasram was fined over Tradetron in March 2026); say so plainly. */}
+                        {f.id === "tradetron" && (
+                          <p className="mt-5 border-l-2 border-brand-gold/60 pl-3 text-xs leading-relaxed text-muted-foreground">{t("apps.feature.tradetron.risk")}</p>
+                        )}
                         <StoreButtons app={money} tone="onLight" size="sm" className="mt-7" />
                       </div>
                     </motion.article>
