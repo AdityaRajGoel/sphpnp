@@ -96,7 +96,7 @@ const TickerRow = ({ items, direction = "left", bgClass = "bg-brand-charcoal", t
             className="relative inline-flex items-center gap-1 md:gap-1.5 text-xs md:text-sm cursor-pointer select-none px-1 md:px-1.5 py-2.5 -my-2 rounded-md hover:bg-white/10 transition-colors group"
             onClick={() => navigate("/screener")}
           >
-            <span className={`font-bold tracking-wide transition-colors ${item.up ? "text-[#00c853] dark:text-[#00e676]" : "text-[#d50000] dark:text-[#ff1744]"}`}>{item.name}</span>
+            <span className={`font-bold tracking-wide transition-colors ${item.up ? "text-[#00e676]" : "text-[#ff6b6b]"}`}>{item.name}</span>
             {item.unit ? <span className="opacity-50 text-[10px] md:text-xs">{item.unit}</span> : null}
             <PriceCell item={item} />
             <span className={`flex items-center gap-0.5 font-bold text-[11px] md:text-xs px-1.5 py-0.5 rounded-full ${item.up ? "bg-brand-gold/15 text-brand-gold" : "bg-brand-orange/15 text-brand-orange"}`}>
@@ -192,7 +192,7 @@ const TickerSkeleton = ({ rows = 2 }: { rows?: number }) => {
     <div aria-live="polite" aria-busy="true" className="flex h-full flex-col bg-[#1a1f2e] dark:bg-brand-charcoal text-white">
       {Array.from({ length: rows }).map((_, r) => (
         <div key={r} className={`flex flex-1 items-center gap-4 md:gap-6 px-4 overflow-hidden ${r > 0 ? "border-t border-white/5" : ""}`}>
-          <span className="text-[10px] text-white/40 font-medium shrink-0 flex items-center gap-1.5">
+          <span className="text-[10px] text-white/70 font-medium shrink-0 flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 rounded-full bg-brand-gold animate-pulse" /> Loading live prices…
           </span>
           {pills.map((_, i) => (
@@ -218,7 +218,7 @@ const StockTicker = () => {
   // page on the site dropped by 13-23px the moment live prices arrived. Both
   // states now fill the same box.
   return (
-    <div className="border-b border-[#1a1f2e]/20 dark:border-brand-orange/20 bg-[#1a1f2e] dark:bg-brand-charcoal relative h-9 md:h-[78px] overflow-hidden">
+    <div className="on-dark border-b border-[#1a1f2e]/20 dark:border-brand-orange/20 bg-[#1a1f2e] dark:bg-brand-charcoal relative h-9 md:h-[78px] overflow-hidden">
       {loading ? (
         <TickerSkeleton rows={isMobile ? 1 : 2} />
       ) : (

@@ -6,6 +6,7 @@ import PageTransition from "@/components/PageTransition";
 import ScrollProgress from "@/components/ScrollProgress";
 import WhatsAppButton from "@/components/WhatsAppButton";
 import { ShieldCheck, Printer } from "lucide-react";
+import { PRIMARY_EMAIL } from "@/lib/contact";
 
 const PrivacyPolicyPage = () => {
   return (
@@ -79,7 +80,7 @@ const PrivacyPolicyPage = () => {
 
                 <h3 className="text-xl font-bold text-foreground mt-8 mb-4">6. Contact Us</h3>
                 <p className="text-muted-foreground leading-relaxed">
-                  If you have any questions or grievances regarding this Privacy Policy, please contact our local Panipat support team at <a href="mailto:parasrampnp@gmail.com" className="text-secondary hover:underline">parasrampnp@gmail.com</a>.
+                  If you have any questions or grievances regarding this Privacy Policy, please contact our local Panipat support team at <a href={`mailto:${PRIMARY_EMAIL}`} className="text-secondary hover:underline">{PRIMARY_EMAIL}</a>.
                 </p>
               </div>
             </div>

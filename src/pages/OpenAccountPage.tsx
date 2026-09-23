@@ -25,6 +25,7 @@ import { revealItem, revealItemX } from "@/lib/motion";
 import { validateAll, validateEmail, validateName, validatePhone, type FieldCheck } from "@/lib/form-validation";
 import { FieldMessage, fieldStateClass } from "@/components/ui/form-field";
 import { IllustrationFrame } from "@/components/ui/illustration";
+import { BRANCH_EMAILS } from "@/lib/contact";
 
 const LEAD_CHECKS: Partial<Record<"name" | "phone" | "email" | "city" | "message", FieldCheck>> = {
   name: validateName,
@@ -359,7 +360,7 @@ const OpenAccountPage = () => {
                   </div>
                   <div className="flex items-start gap-3">
                     <div className="w-9 h-9 rounded-lg bg-white/10 flex items-center justify-center shrink-0"><Mail className="w-4 h-4 text-brand-orange" /></div>
-                    <div><div className="text-sm font-semibold">Email</div><a href="mailto:parasrampnp@gmail.com" className="text-xs text-primary-foreground/70 hover:text-secondary transition-colors">parasrampnp@gmail.com</a></div>
+                    <div><div className="text-sm font-semibold">Email</div>{BRANCH_EMAILS.map((e) => <a key={e} href={`mailto:${e}`} className="block text-xs text-primary-foreground/70 hover:text-secondary transition-colors">{e}</a>)}</div>
                   </div>
                   <div className="flex items-start gap-3">
                     <div className="w-9 h-9 rounded-lg bg-white/10 flex items-center justify-center shrink-0"><Clock className="w-4 h-4 text-secondary" /></div>

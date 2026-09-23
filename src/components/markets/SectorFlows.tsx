@@ -8,14 +8,14 @@ const signedCr = (v: number | null) => (v === null ? "—" : `${v >= 0 ? "+" : "
 const short = (iso: string) => shortDate(iso).replace(/ \d{4}$/, "");
 
 /** A cell's fill: green for buying, red for selling, stronger with size relative to the biggest move shown. */
+// Cells keep the page's text colour, and the fill stops at 0.5 so that text
+// passes 4.5:1 in both themes (white text and stronger fills measured 2.0-4.2:1).
 const heat = (v: number | null, max: number) => {
   if (v === null || max === 0 || Math.abs(v) < 1) return "transparent";
-  const alpha = 0.12 + 0.68 * Math.min(1, Math.abs(v) / max);
+  const alpha = 0.1 + 0.4 * Math.min(1, Math.abs(v) / max);
   return `hsl(var(${v > 0 ? "--secondary" : "--destructive"}) / ${alpha.toFixed(2)})`;
 };
 
-/** Strong fills carry white text; pale ones the page's own. */
-const heatText = (v: number | null, max: number) => (v !== null && max > 0 && Math.abs(v) / max > 0.45 ? "#ffffff" : undefined);
 
 /**
  * NSDL's fortnightly sector-wise FPI report: which sectors foreign investors
@@ -116,7 +116,7 @@ export default function SectorFlows({ rows }: { rows: FpiSector[] }) {
                     <td className="py-1 pr-2 whitespace-nowrap">{name}</td>
                     {recent.map((f) => {
                       const v = grid.byKey.get(`${name}|${f}`) ?? null;
-                      return <td key={f} className="py-1 px-1 text-right tabular-nums" style={{ background: heat(v, grid.max), color: heatText(v, grid.max) }}>{v === null ? "—" : Math.round(v).toLocaleString("en-IN")}</td>;
+                      return <td key={f} className="py-1 px-1 text-right tabular-nums" style={{ background: heat(v, grid.max) }}>{v === null ? "—" : Math.round(v).toLocaleString("en-IN")}</td>;
                     })}
                   </tr>
                 ))}

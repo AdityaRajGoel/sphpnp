@@ -361,7 +361,7 @@ const GlobalStockSearch = ({ className }: Props) => {
                        <Button
                         variant="default"
                         size="sm"
-                        className="bg-brand-orange hover:bg-brand-orange/90 text-white text-[10px] font-bold h-7 px-4 shadow-lg shadow-brand-orange/20"
+                        className="bg-brand-orange hover:bg-brand-orange/90 text-white dark:text-brand-charcoal text-[10px] font-bold h-7 px-4 shadow-lg shadow-brand-orange/20"
                         onClick={() => setAnalyzingStock(selected)}
                       >
                         <Bot className="w-3.5 h-3.5 mr-1.5" /> AI ANALYSIS

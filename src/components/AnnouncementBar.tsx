@@ -87,7 +87,6 @@ function TickerLine({ item, hidden }: { item: TickerItem; hidden: boolean }) {
  * - the lines sit in a row the reader can scroll sideways.
  */
 const AnnouncementBar = () => {
-  const [hidden, setHidden] = useState(false); // mobile scroll-hide
   const [dismissed, setDismissed] = useState(false);
   const [stopped, setStopped] = useState(false);
   const prefersReducedMotion = usePrefersReducedMotion();
@@ -115,20 +114,6 @@ const AnnouncementBar = () => {
     } catch { /* storage blocked: the bar simply shows */ }
   }, []);
 
-  // Auto-hide on mobile when scrolling down past 50px
-  useEffect(() => {
-    let lastScrollY = window.scrollY;
-    const handleScroll = () => {
-      if (window.innerWidth < 768) {
-        if (window.scrollY > 50 && window.scrollY > lastScrollY) setHidden(true);
-        else if (window.scrollY < 50) setHidden(false);
-      }
-      lastScrollY = window.scrollY;
-    };
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
-
   const dismiss = () => {
     setDismissed(true);
     try { sessionStorage.setItem(DISMISS_KEY, "1"); } catch { /* ignore */ }
@@ -143,9 +128,9 @@ const AnnouncementBar = () => {
     <div
       role="region"
       aria-label="Live market updates"
-      className={`relative overflow-hidden border-b border-white/5 transition-[height,opacity] duration-base ${
-        hidden ? "h-0 border-transparent opacity-0" : "h-8 md:h-10 opacity-100"
-      }`}
+      // Not collapsed on scroll: the bar is not sticky and scrolls away by itself,
+      // and collapsing it pulled the page 32px up under the reader's finger.
+      className="relative h-8 overflow-hidden border-b border-white/5 md:h-10"
       style={{ background: "linear-gradient(90deg, hsl(213 80% 10%) 0%, hsl(213 80% 15%) 50%, hsl(145 70% 12%) 100%)" }}
     >
       <div className="flex items-center h-8 md:h-10">

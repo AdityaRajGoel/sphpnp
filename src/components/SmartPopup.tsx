@@ -4,6 +4,7 @@ import { X, Mail, ArrowRight } from 'lucide-react';
 import { useEngagement } from '@/hooks/useEngagement';
 import { Button } from '@/components/ui/button';
 import { useLocation, Link } from 'react-router-dom';
+import { BRANCH_EMAILS, PRIMARY_EMAIL } from "@/lib/contact";
 
 const SmartPopup = () => {
   const { timeOnPage, scrollDepth } = useEngagement();
@@ -127,7 +128,7 @@ const SmartPopup = () => {
                   <Link to="/open-account" onClick={handleClose}>Open Account <ArrowRight className="w-4 h-4 ml-2" /></Link>
                 </Button>
                 <Button asChild variant="outline" className="w-full text-base py-6 border-primary/20 text-primary hover:bg-primary/5 rounded-xl">
-                  <a href="mailto:parasrampnp@gmail.com" onClick={handleClose}>Contact an Advisor</a>
+                  <a href={`mailto:${PRIMARY_EMAIL}`} onClick={handleClose}>Contact an Advisor</a>
                 </Button>
               </div>
             </div>

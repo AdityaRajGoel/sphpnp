@@ -179,13 +179,13 @@ const IPOTracker = () => {
                 onClick={() => setActiveTab(tab.key)}
                 className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold transition-colors ${
                   activeTab === tab.key
-                    ? "bg-brand-orange text-white shadow-lg shadow-brand-orange/30"
+                    ? "bg-brand-orange text-white dark:text-brand-charcoal shadow-lg shadow-brand-orange/30"
                     : "bg-card border border-border/50 text-muted-foreground hover:text-foreground hover:bg-muted"
                 }`}
               >
                 <Icon className="w-3.5 h-3.5" />
                 {tab.label}
-                <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${activeTab === tab.key ? "bg-white/20" : "bg-muted"}`}>
+                <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${activeTab === tab.key ? "bg-black/25 dark:bg-white/30" : "bg-muted"}`}>
                   {tabCounts[tab.key]}
                 </span>
               </button>
@@ -238,7 +238,7 @@ const IPOTracker = () => {
               className="relative bg-card border border-border/50 rounded-xl p-4 hover:border-brand-orange/40 hover:shadow-md transition-[color,background-color,border-color,box-shadow]"
               variants={{ hidden: { opacity: 0, y: 16 }, visible: { opacity: 1, y: 0, transition: { duration: 0.4 } } }}
             >
-              <span className="absolute -top-2.5 left-4 text-[10px] font-bold bg-brand-orange text-white px-2 py-0.5 rounded-full">
+              <span className="absolute -top-2.5 left-4 text-[10px] font-bold bg-brand-orange text-white dark:text-brand-charcoal px-2 py-0.5 rounded-full">
                 Step {s.num}
               </span>
               <h4 className="font-heading text-sm font-bold text-foreground mt-2 mb-1">{s.title}</h4>

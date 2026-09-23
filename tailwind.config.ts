@@ -23,8 +23,8 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ["Roboto Variable", "Roboto", "sans-serif"],
-        heading: ["Montserrat Variable", "Montserrat", "sans-serif"],
+        sans: ["Roboto Variable", "Roboto", "Roboto Fallback", "sans-serif"],
+        heading: ["Montserrat Variable", "Montserrat", "Montserrat Fallback", "sans-serif"],
       },
       colors: {
         border: "hsl(var(--border))",

@@ -59,6 +59,10 @@ type FnOData = {
 };
 
 /** Professional F&O loading animation */
+// Loading bars: a fixed pattern animated with scaleY. Heights drawn from
+// Math.random() in render re-rolled - and re-animated layout - on every render.
+const SKELETON_BARS = [0.45, 0.8, 0.3, 0.95, 0.6, 0.25, 0.7, 0.5, 0.85, 0.35];
+
 const FnOLoadingAnimation = () => {
   const columns = Array.from({ length: 20 });
   return (
@@ -69,9 +73,9 @@ const FnOLoadingAnimation = () => {
           {columns.slice(0, 10).map((_, i) => (
             <motion.div
               key={`call-${i}`}
-              className="w-2.5 bg-destructive/60 rounded-t-sm"
-              initial={{ height: 0 }}
-              animate={{ height: 15 + Math.random() * 50 }}
+              className="h-16 w-2.5 origin-bottom bg-destructive/60 rounded-t-sm"
+              initial={{ scaleY: 0 }}
+              animate={{ scaleY: SKELETON_BARS[(i + 0) % SKELETON_BARS.length] }}
               transition={{ duration: 0.5, delay: i * 0.06, repeat: Infinity, repeatType: "reverse", repeatDelay: 1 }}
             />
           ))}
@@ -81,9 +85,9 @@ const FnOLoadingAnimation = () => {
           {columns.slice(10).map((_, i) => (
             <motion.div
               key={`put-${i}`}
-              className="w-2.5 bg-secondary/60 rounded-t-sm"
-              initial={{ height: 0 }}
-              animate={{ height: 15 + Math.random() * 50 }}
+              className="h-16 w-2.5 origin-bottom bg-secondary/60 rounded-t-sm"
+              initial={{ scaleY: 0 }}
+              animate={{ scaleY: SKELETON_BARS[(i + 3) % SKELETON_BARS.length] }}
               transition={{ duration: 0.5, delay: i * 0.06, repeat: Infinity, repeatType: "reverse", repeatDelay: 1 }}
             />
           ))}

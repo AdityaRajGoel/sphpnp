@@ -7,6 +7,7 @@ import ScrollProgress from "@/components/ScrollProgress";
 import WhatsAppButton from "@/components/WhatsAppButton";
 import { Link } from "react-router-dom";
 import { FileText, Printer } from "lucide-react";
+import { PRIMARY_EMAIL } from "@/lib/contact";
 
 const TermsOfUsePage = () => {
   return (
@@ -179,7 +180,7 @@ const TermsOfUsePage = () => {
                 <h3 className="text-xl font-bold text-foreground mt-8 mb-4">17. Contact</h3>
                 <p className="text-muted-foreground leading-relaxed">
                   For questions about these Terms of Use, contact the Panipat branch at{" "}
-                  <a href="mailto:parasrampnp@gmail.com" className="text-secondary hover:underline">parasrampnp@gmail.com</a>{" "}
+                  <a href={`mailto:${PRIMARY_EMAIL}`} className="text-secondary hover:underline">{PRIMARY_EMAIL}</a>{" "}
                   or see our <Link to="/contact" className="text-secondary hover:underline">Contact page</Link>.
                 </p>
               </div>

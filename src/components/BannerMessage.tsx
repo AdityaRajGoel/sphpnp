@@ -213,7 +213,7 @@ const BannerMessage = () => {
             <button
             type="button"
             onClick={dismiss}
-            className="flex items-center gap-2 px-4 py-2 rounded-full bg-black/40 hover:bg-black/60 text-white backdrop-blur-md border border-white/20 transition-colors duration-fast"
+            className="flex items-center gap-2 px-4 py-2 rounded-full bg-black/65 hover:bg-black/80 text-white backdrop-blur-md border border-white/20 transition-colors duration-fast"
             >
               <span className="text-xs font-bold uppercase tracking-wider">Close</span>
               <X className="w-4 h-4" />

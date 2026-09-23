@@ -596,7 +596,7 @@ const LearningCenterPage = () => {
                               <Card className={`p-6 h-full flex flex-col cursor-pointer group overflow-hidden border-t-4 ${{
                                 basics: "border-t-primary", trading: "border-t-brand-orange",
                                 analysis: "border-t-secondary", investing: "border-t-brand-gold",
-                              }[article.category] || "border-t-border"} ${isRead ? "opacity-75" : ""}`}
+                              }[article.category] || "border-t-border"} ${isRead ? "bg-muted/40" : ""}`}
                                 onClick={() => openArticle(article)} {...pressable(() => openArticle(article))}>
                                 <div className="flex items-center justify-between mb-3">
                                   <div className="flex items-center gap-2">
@@ -650,7 +650,7 @@ const LearningCenterPage = () => {
                           return (
                             <motion.div key={article.id} initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }}
                               transition={{ delay: i * 0.04 }} whileHover={{ y: -3 }}>
-                              <Card className={`p-5 h-full flex flex-col cursor-pointer group overflow-hidden ${isRead ? "opacity-70" : "hover:shadow-md"} transition-[opacity,box-shadow]`}
+                              <Card className={`p-5 h-full flex flex-col cursor-pointer group overflow-hidden ${isRead ? "bg-muted/40" : "hover:shadow-md"} transition-[opacity,box-shadow]`}
                                 onClick={() => openArticle(article)} {...pressable(() => openArticle(article))}>
                                 <div className="flex items-center justify-between mb-2.5">
                                   <div className="flex items-center gap-1.5">

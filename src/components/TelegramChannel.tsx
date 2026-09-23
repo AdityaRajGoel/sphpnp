@@ -384,7 +384,7 @@ const TelegramChannel = ({ limit = 10, showViewAll = false, showFilters = false 
           {...revealSection}
         >
           <motion.span
-            className="inline-flex items-center gap-2 text-[#229ED9] font-semibold text-sm uppercase tracking-wider mb-3"
+            className="inline-flex items-center gap-2 text-[#156f9a] dark:text-[#229ED9] font-semibold text-sm uppercase tracking-wider mb-3"
             {...revealTracking}
           >
             <Send className="w-4 h-4" />
@@ -545,7 +545,7 @@ const TelegramChannel = ({ limit = 10, showViewAll = false, showFilters = false 
             {...revealItem()}
             transition={{ delay: 0.3 }}
           >
-            <Button asChild variant="outline" className="gap-2 text-[#229ED9] border-[#229ED9]/30 hover:bg-[#229ED9]/10">
+            <Button asChild variant="outline" className="gap-2 text-[#156f9a] dark:text-[#229ED9] border-[#229ED9]/30 hover:bg-[#229ED9]/10">
               <Link to="/learn/recommendations">
                 View All Recommendations
                 <ArrowUpRight className="w-4 h-4" />
@@ -557,7 +557,7 @@ const TelegramChannel = ({ limit = 10, showViewAll = false, showFilters = false 
         {/* Auto-refresh indicator */}
         {messages.length > 0 && (
           <motion.p
-            className="text-center text-xs text-muted-foreground/50 mt-6"
+            className="text-center text-xs text-muted-foreground mt-6"
             {...revealFade}
             transition={{ delay: 0.5 }}
           >
@@ -582,7 +582,7 @@ const TelegramChannel = ({ limit = 10, showViewAll = false, showFilters = false 
                   <Shield className="w-4 h-4" />
                   Important Disclaimer – Investment Risk Warning
                 </h4>
-                <p className="text-amber-700/90 dark:text-amber-400/80 text-xs leading-relaxed">
+                <p className="text-amber-800 dark:text-amber-400/90 text-xs leading-relaxed">
                   <strong>Investments in securities market are subject to market risks. Read all related documents carefully before investing.</strong>{" "}
                   The stock recommendations displayed above are for educational and informational purposes only and should not be construed as investment advice.
                   Past performance is not indicative of future results. Shri Parasram Holdings Pvt. Ltd. (SEBI Reg: INZ000220838) does not guarantee any assured returns.

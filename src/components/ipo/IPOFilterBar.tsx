@@ -58,7 +58,7 @@ export default function IPOFilterBar({ filters, onChange, counts }: Props) {
           >
             {option.label}
             {option.id !== "all" && counts[option.id] !== undefined && (
-              <span className="ml-1.5 text-[10px] opacity-70">{counts[option.id]}</span>
+              <span className="ml-1.5 text-[10px]">{counts[option.id]}</span>
             )}
           </button>
         ))}

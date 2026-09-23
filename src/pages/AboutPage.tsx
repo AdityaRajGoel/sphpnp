@@ -12,6 +12,7 @@ import ScrollProgress from "@/components/ScrollProgress";
 import FAQ from "@/components/FAQ";
 import SEOHead from "@/components/SEOHead";
 import PageTransition from "@/components/PageTransition";
+import { BRANCH_EMAILS, PRIMARY_EMAIL } from "@/lib/contact";
 
 const aboutFAQs = [
   { q: "How long has Parasram India been in business?", a: "Parasram has been serving investors since 1970, giving us over 50 years of experience in the financial markets. The business was incorporated as Shri Parasram Holdings Pvt. Ltd. in 1994 (CIN: U67120DL1994PTC060726). Our Panipat branch has been serving clients since 1997." },
@@ -48,7 +49,7 @@ const AboutPage = () => {
             "url": "https://www.sphpnp.com",
             "logo": "https://www.sphpnp.com/logo.png",
             "telephone": "+919416400314",
-            "email": "parasrampnp@gmail.com",
+            "email": PRIMARY_EMAIL,
             "address": {
               "@type": "PostalAddress",
               "streetAddress": "Shakuntala Complex, Palika Bazaar",

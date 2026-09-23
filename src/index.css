@@ -1,6 +1,27 @@
 /* Fonts are loaded via <link> tags in index.html for maximum performance */
 
 @tailwind base;
+
+/* Stand-ins while the web fonts load, scaled to their metrics (Arial adjusted
+   to Roboto / Montserrat). Without them the swap at ~3s on slow 4G reflowed the
+   home hero: CLS 0.319 on a throttled phone, 0.087 with them. Preloading the
+   fonts instead cost ~0.4s of LCP there, competing with the hero image. */
+@font-face {
+  font-family: "Roboto Fallback";
+  src: local("Arial"), local("Helvetica Neue"), local("Helvetica");
+  ascent-override: 92.77%;
+  descent-override: 24.41%;
+  line-gap-override: 0%;
+  size-adjust: 100.3%;
+}
+@font-face {
+  font-family: "Montserrat Fallback";
+  src: local("Arial"), local("Helvetica Neue"), local("Helvetica");
+  ascent-override: 85.79%;
+  descent-override: 22.25%;
+  line-gap-override: 0%;
+  size-adjust: 112.83%;
+}
 @tailwind components;
 @tailwind utilities;
 /* Paras Ram India - Panipat Branch Design System */
@@ -19,7 +40,7 @@
     --primary: 210 100% 20%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 150 60% 32%;
+    --secondary: 150 60% 29%; /* 29% (was 32%): 4.5:1 as text on its own tints, 5.4:1 under white */
     --secondary-foreground: 0 0% 100%;
 
     --muted: 210 30% 95%;
@@ -99,7 +120,7 @@
 
     /* Custom brand colors */
     --brand-navy: 210 100% 20%;
-    --brand-green: 150 50% 40%;
+    --brand-green: 150 50% 33%; /* 33% (was 40%): white on it and it on white both pass 4.5:1 */
     --brand-light-blue: 210 60% 96%;
     /* Darkened for WCAG: gold/orange are used as accent text on light
        surfaces - these lightness values keep the hue but lift contrast
@@ -137,11 +158,11 @@
     --popover: 220 55% 10%;
     --popover-foreground: 210 40% 96%;
 
-    --primary: 150 50% 40%;
+    --primary: 150 55% 34%; /* 34% (was 40%): white on it passes 4.5:1; text-primary is lightened below */
     --primary-foreground: 0 0% 100%;
 
     --secondary: 150 65% 55%;
-    --secondary-foreground: 0 0% 100%;
+    --secondary-foreground: 220 50% 8%; /* navy on the bright dark-theme green: white was 1.85:1 */
 
     --muted: 220 50% 14%;
     --muted-foreground: 215 25% 65%;
@@ -149,7 +170,7 @@
     --accent: 220 55% 18%;
     --accent-foreground: 210 40% 96%;
 
-    --destructive: 0 80% 60%;
+    --destructive: 0 85% 66%; /* 66% (was 60%): 4.5:1 as text on its own dark tint */
     --destructive-foreground: 210 40% 98%;
 
     --border: 220 50% 16%;
@@ -204,11 +225,11 @@
 
   body {
     @apply bg-background text-foreground font-sans;
-    font-family: 'Roboto Variable', 'Roboto', system-ui, -apple-system, sans-serif;
+    font-family: 'Roboto Variable', 'Roboto', 'Roboto Fallback', system-ui, -apple-system, sans-serif;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Montserrat Variable', 'Montserrat', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-family: 'Montserrat Variable', 'Montserrat', 'Montserrat Fallback', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     font-display: swap;
   }
 
@@ -221,6 +242,23 @@
 }
 
 @layer utilities {
+  /* Gold, orange and brand green are fill colours first. Used as text on the
+     light theme they measured 2.9-4.2:1 (axe, Sep 2026); these deeper shades of
+     the same hues pass 4.5:1 on white and the page tints. Fills are unchanged. */
+  /* Dark surfaces inside the light theme (navy hero bands, the ticker) keep
+     the bright shades - the deep ones measured 2.5:1 there. `.on-dark` also
+     switches the brand tones to their dark-theme values. */
+  .on-dark { --brand-gold: 42 96% 58%; --brand-orange: 24 95% 58%; }
+  /* Green as TEXT on dark backgrounds needs the lighter end of the hue; the
+     fills stay deep enough for white labels. Covers the dark theme and the navy
+     bands (hero, footer, ticker) of the light theme. */
+  .dark .text-brand-green,
+  .dark .text-primary,
+  :root:not(.dark) :is(.bg-hero, .on-dark) .text-secondary,
+  :root:not(.dark) :is(.bg-hero, .on-dark) .hover\:text-secondary:hover { color: hsl(150 60% 55%); }
+  :root:not(.dark) .text-brand-gold:not(:is(.bg-hero, .on-dark) *) { color: hsl(38 96% 29%); }
+  :root:not(.dark) .text-brand-orange:not(:is(.bg-hero, .on-dark) *) { color: hsl(22 95% 35%); }
+
   .text-gradient {
     @apply bg-clip-text text-transparent;
     background-image: var(--gradient-accent);

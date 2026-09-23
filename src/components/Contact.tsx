@@ -5,6 +5,7 @@ import { motion, useScroll, useTransform } from "motion/react";
 import { useRef } from "react";
 import brandImage from "@/assets/parasram-brand.jpeg";
 import { EASE_OUT, revealFade, revealItem, revealItemX, revealPop, revealSection } from "@/lib/motion";
+import { BRANCH_EMAILS, PRIMARY_EMAIL } from "@/lib/contact";
 
 const contactItems = [
   {
@@ -33,9 +34,11 @@ const contactItems = [
     icon: Mail,
     title: "Email",
     content: (
-      <a href="mailto:parasrampnp@gmail.com" className="hover:text-secondary transition-colors">
-        parasrampnp@gmail.com
-      </a>
+      <span className="flex flex-col">
+        {BRANCH_EMAILS.map((e) => (
+          <a key={e} href={`mailto:${e}`} className="hover:text-secondary transition-colors">{e}</a>
+        ))}
+      </span>
     ),
   },
   {

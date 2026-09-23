@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import WhatsAppButton from "@/components/WhatsAppButton";
 import ScrollProgress from "@/components/ScrollProgress";
 import SplitHero from "@/components/SplitHero";
+import { BRANCH_EMAILS, PRIMARY_EMAIL } from "@/lib/contact";
 
 
 
@@ -60,7 +61,7 @@ const CareersPage = () => {
           "industry": "Financial Services",
           "applicationContact": {
             "@type": "ContactPoint",
-            "email": "parasrampnp@gmail.com",
+            "email": PRIMARY_EMAIL,
             "contactType": "hiring"
           }
         }}
@@ -116,7 +117,7 @@ const CareersPage = () => {
               <h4 className="text-2xl font-bold text-foreground mb-3">Looking for Opportunities?</h4>
               <p className="text-muted-foreground text-lg mb-8 max-w-2xl mx-auto">While we don't currently have any immediate openings, we are always on the lookout for driven talent. Send us your resume, and we'll reach out when a position opens up!</p>
               <Button asChild className="bg-brand-gold hover:bg-brand-gold/90 text-primary-foreground font-semibold px-8 py-6 text-lg rounded-full">
-                <a href="mailto:parasrampnp@gmail.com?subject=General Application">Submit Your Resume</a>
+                <a href={`mailto:${PRIMARY_EMAIL}?subject=General Application`}>Submit Your Resume</a>
               </Button>
             </div>
           </div>

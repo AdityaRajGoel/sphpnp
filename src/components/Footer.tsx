@@ -10,35 +10,41 @@ import { APP_QR } from "@/components/apps/appMedia";
 
 import { revealFade, revealItem, revealSection } from "@/lib/motion";
 import { openConsentSettings } from "@/lib/consent";
+import { BRANCH_EMAILS, PRIMARY_EMAIL } from "@/lib/contact";
 type FooterLink = { label: string; href: string; external?: boolean; title?: string };
 
-const companyLinks: FooterLink[] = [
-  { label: "About Us", href: "/about" },
-  { label: "Services", href: "/services" },
-  { label: "Unlisted Shares", href: "/unlisted-space" },
-  { label: "Products & FDs", href: "/products" },
-  { label: "Depository Services", href: "/depository-services" },
-  { label: "Mobile & Desktop Apps", href: "/apps" },
-  { label: "Our Team", href: "/team" },
-  { label: "Careers", href: "/careers" },
-  { label: "Contact Us", href: "/contact" },
+// Grouped as the header groups them, so a page sits in the same place in both.
+const investLinks: FooterLink[] = [
+  { label: "Our Services", href: "/services" },
   { label: "Open Account", href: "/open-account" },
   { label: "Pricing & Charges", href: "/pricing" },
+  { label: "IPO Tracker", href: "/ipo" },
+  { label: "Unlisted Shares", href: "/unlisted-space" },
+  { label: "FDs & Bonds", href: "/products" },
+  { label: "Depository Services", href: "/depository-services" },
+  { label: "Mobile & Desktop Apps", href: "/apps" },
 ];
 
 const toolLinks: FooterLink[] = [
   { label: "Market Pulse", href: "/market-pulse" },
+  { label: "Indices", href: "/indices" },
   { label: "Stock Screener", href: "/screener" },
-  { label: "IPO Tracker", href: "/ipo" },
-  { label: "52-Week Tracker", href: "/52-week-tracker" },
   { label: "F&O Dashboard", href: "/fno" },
-  { label: "Stock Comparison", href: "/compare" },
-  { label: "Learning Center", href: "/learn" },
-  { label: "Stock Recommendations", href: "/learn/recommendations" },
-  { label: "Margin Calculator", href: "/margin-calculator" },
+  { label: "52-Week Tracker", href: "/52-week-tracker" },
   { label: "Brokerage Calculator", href: "/brokerage-calculator" },
+  { label: "Margin Calculator", href: "/margin-calculator" },
+  { label: "SIP Calculator", href: "/sip-calculator" },
   { label: "Holiday Calendar", href: "/holidays" },
   { label: "Reports & Downloads", href: "/reports" },
+];
+
+const companyLinks: FooterLink[] = [
+  { label: "About Us", href: "/about" },
+  { label: "Our Team", href: "/team" },
+  { label: "Careers", href: "/careers" },
+  { label: "Contact Us", href: "/contact" },
+  { label: "Learning Center", href: "/learn" },
+  { label: "Stock Recommendations", href: "/learn/recommendations" },
   { label: "Help & Docs", href: "/help" },
 ];
 
@@ -54,6 +60,17 @@ const importantLinks: FooterLink[] = [
   { label: "Useful Downloads", href: "https://www.parasramindia.com/software-setups/", external: true },
 ];
 
+const LEGAL_LINKS: FooterLink[] = [
+  { label: "Privacy Policy", href: "/privacy-policy" },
+  { label: "Cookie Policy", href: "/cookie-policy" },
+  { label: "Cookie Settings", href: "#cookies" },
+  { label: "Terms of Use", href: "/terms" },
+  { label: "Disclaimer", href: "/disclaimer" },
+  { label: "Investor Corner", href: "/investor-corner" },
+  { label: "Sitemap", href: "/sitemap.xml", external: true },
+  { label: "Investor Charter", href: "https://www.parasramindia.com/investor-charter/", external: true },
+];
+
 const regBadges = [
   "SEBI INZ000220838",
   "NSE · BSE Member",
@@ -66,7 +83,7 @@ const regBadges = [
 const socialLinks = [
   { href: "https://www.instagram.com/parasrampanipat/", icon: Instagram, label: "Instagram" },
   { href: "tel:+919416400314", icon: Phone, label: "Phone" },
-  { href: "mailto:parasrampnp@gmail.com", icon: Mail, label: "Email" },
+  { href: `mailto:${PRIMARY_EMAIL}`, icon: Mail, label: "Email" },
   { href: "https://www.facebook.com/share/18B5W5rZaT/", icon: Facebook, label: "Facebook" },
   { href: "https://x.com/ParasramPanipat", icon: Twitter, label: "X" },
   // Source for this site. Not a social profile, but it shares the icon row
@@ -133,11 +150,15 @@ const Footer = () => {
 
   return (
     <footer className="bg-hero text-primary-foreground relative overflow-hidden">
-      {/* Animated top border */}
-      <div
-        className="h-1 bg-gradient-to-r from-secondary via-brand-gold to-secondary"
-        style={{ backgroundSize: "200% 100%", animation: "ticker-left 6s linear infinite alternate" }}
-      />
+      {/* Animated top border: a double-width strip of two identical gradients
+          slides by half its width, so the loop is seamless and the bar is always
+          full. It used to translate the bar itself, leaving part of it empty. */}
+      <div className="h-1 overflow-hidden" aria-hidden>
+        <div
+          className="h-full w-[200%] bg-[linear-gradient(90deg,hsl(var(--secondary)),hsl(var(--brand-gold)),hsl(var(--secondary)),hsl(var(--brand-gold)),hsl(var(--secondary)))]"
+          style={{ animation: "ticker-left 12s linear infinite" }}
+        />
+      </div>
 
       {/* CTA band - the footer's conversion anchor */}
       <div className="border-b border-primary-foreground/10">
@@ -173,26 +194,35 @@ const Footer = () => {
       </div>
 
       <div className="container mx-auto px-4 py-8 md:py-12">
-        {/* Main 5-column grid */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-5 gap-4 md:gap-6 mb-6 md:mb-10">
-          {/* Column 1 - Brand */}
-          <motion.div
-            {...revealSection}
-          >
-            <motion.img
+        <div className="mb-8 grid gap-6 md:grid-cols-2 lg:grid-cols-6 md:gap-8">
+          {/* Brand and branch */}
+          <motion.div {...revealSection} className="lg:col-span-2 lg:pr-6">
+            <img
               src={logo80}
               srcSet={`${logo80} 80w, ${logo160} 160w`}
               sizes="48px"
               alt="Parasram India - Stock Broker Since 1970"
               width={80}
               height={80}
-              className="h-12 w-auto mb-4 brightness-0 invert"
-              whileHover={{ scale: 1.05 }}
+              loading="lazy"
+              className="mb-4 h-12 w-auto brightness-0 invert"
             />
-            <p className="text-primary-foreground/70 text-sm mb-4">
-              Science of Investment - Your trusted partner for wealth creation since 1970.
+            <p className="mb-5 max-w-xs text-sm text-primary-foreground/70">
+              Science of Investment - your trusted partner for wealth creation since 1970.
             </p>
-            <div className="flex flex-wrap items-center gap-3">
+            <h4 className="mb-2 font-heading text-sm font-semibold">{t("footer.col.branch")}</h4>
+            <address className="text-sm not-italic text-primary-foreground/70">
+              Shri Parasram Holdings, Shakuntala Complex,<br />Palika Bazaar, Panipat - 132103
+            </address>
+            <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-sm">
+              <a href="tel:+919416400314" className="inline-flex min-h-[32px] items-center transition-colors hover:text-secondary">+91 9416400314</a>
+              <a href="tel:+919999790011" className="inline-flex min-h-[32px] items-center transition-colors hover:text-secondary">+91 9999790011</a>
+              <a href="tel:+919416400277" className="inline-flex min-h-[32px] items-center transition-colors hover:text-secondary">+91 9416400277</a>
+              {BRANCH_EMAILS.map((e) => (
+                <a key={e} href={`mailto:${e}`} className="inline-flex min-h-[32px] items-center transition-colors hover:text-secondary">{e}</a>
+              ))}
+            </div>
+            <div className="mt-5 flex flex-wrap items-center gap-2.5">
               {socialLinks.map((item) => (
                 <a
                   key={item.label}
@@ -200,79 +230,64 @@ const Footer = () => {
                   target={item.href.startsWith("http") ? "_blank" : undefined}
                   rel={item.href.startsWith("http") ? "noopener noreferrer" : undefined}
                   aria-label={item.label}
-                  className="w-9 h-9 bg-primary-foreground/10 rounded-full flex items-center justify-center hover:bg-secondary hover:scale-110 hover:-translate-y-1 transition-[color,background-color,border-color,transform] ease-out"
+                  className="flex h-9 w-9 items-center justify-center rounded-full bg-primary-foreground/10 transition-[background-color,transform] duration-fast ease-out hover:-translate-y-0.5 hover:bg-secondary"
                 >
-                  <item.icon className="w-4 h-4" />
+                  <item.icon className="h-4 w-4" aria-hidden />
                 </a>
               ))}
             </div>
           </motion.div>
 
-          <FooterColumn title={t("footer.col.company")} open={!!openSections.company} onToggle={() => toggleSection("company")} delay={0.1}>
-            <FooterLinks links={companyLinks} />
+          <FooterColumn title={t("footer.col.invest")} open={!!openSections.invest} onToggle={() => toggleSection("invest")} delay={0.05}>
+            <FooterLinks links={investLinks} />
           </FooterColumn>
-
-          <FooterColumn title={t("footer.col.tools")} open={!!openSections.tools} onToggle={() => toggleSection("tools")} delay={0.15}>
+          <FooterColumn title={t("footer.col.tools")} open={!!openSections.tools} onToggle={() => toggleSection("tools")} delay={0.1}>
             <FooterLinks links={toolLinks} />
           </FooterColumn>
-
+          <FooterColumn title={t("footer.col.company")} open={!!openSections.company} onToggle={() => toggleSection("company")} delay={0.15}>
+            <FooterLinks links={companyLinks} />
+          </FooterColumn>
           <FooterColumn title={t("footer.col.important")} open={!!openSections.important} onToggle={() => toggleSection("important")} delay={0.2}>
             <FooterLinks links={importantLinks} />
           </FooterColumn>
-
-          <FooterColumn title={t("footer.col.branch")} open={!!openSections.branch} onToggle={() => toggleSection("branch")} delay={0.25}>
-            <div className="text-sm">
-              <p className="text-primary-foreground/70 mb-3">
-                Shri Parasram Holdings<br />
-                Shakuntala Complex, Palika Bazaar<br />
-                Panipat - 132103
-              </p>
-              <div className="flex flex-col gap-1 mb-3">
-                <a href="tel:+919416400314" className="hover:text-secondary transition-colors py-1 inline-flex items-center min-h-[36px]">+91 9416400314</a>
-                <a href="tel:+919999790011" className="hover:text-secondary transition-colors py-1 inline-flex items-center min-h-[36px]">+91 9999790011</a>
-                <a href="tel:+919416400277" className="hover:text-secondary transition-colors py-1 inline-flex items-center min-h-[36px]">+91 9416400277</a>
-              </div>
-              <p className="text-primary-foreground/70 mb-4">
-                <a href="mailto:parasrampnp@gmail.com" className="hover:text-secondary transition-colors">parasrampnp@gmail.com</a>
-              </p>
-
-              {/* App downloads: a Google Play QR per app (most of our clients are on
-                  Android) with both store links beside it. /apps has the iPhone codes. */}
-              <div className="flex flex-col gap-3">
-                {TRADING_APPS.map((app) => (
-                  <div key={app.id} className="flex items-center gap-3">
-                    <a
-                      href={app.playHref}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      aria-label={`Scan or tap to get ${app.name} on Google Play`}
-                      className="shrink-0 bg-white rounded-lg p-1 hover:scale-105 transition-transform shadow-md"
-                    >
-                      <img src={APP_QR[app.id].android} alt={`QR code to download ${app.name} on Google Play`} width={56} height={56} className="w-14 h-14" loading="lazy" />
-                    </a>
-                    <div className="flex flex-col gap-1.5">
-                      <span className="text-[11px] font-semibold text-primary-foreground/80">
-                        {app.name}
-                        {app.isNew && <span className="ml-1.5 rounded-full bg-secondary px-1.5 py-px text-[9px] font-bold uppercase text-secondary-foreground">New</span>}
-                      </span>
-                      <div className="flex gap-1.5 flex-wrap">
-                        <a href={app.playHref} target="_blank" rel="noopener noreferrer" aria-label={`Get ${app.name} on Google Play`} className="inline-flex items-center bg-primary-foreground/10 hover:bg-secondary/30 rounded-md px-2.5 py-1.5 text-[11px] font-medium transition-[color,background-color,border-color,transform] ease-out hover:scale-105">
-                          Google Play
-                        </a>
-                        <a href={app.iosHref} target="_blank" rel="noopener noreferrer" aria-label={`Get ${app.name} on the App Store`} className="inline-flex items-center bg-primary-foreground/10 hover:bg-secondary/30 rounded-md px-2.5 py-1.5 text-[11px] font-medium transition-[color,background-color,border-color,transform] ease-out hover:scale-105">
-                          App Store
-                        </a>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-                <Link to="/apps" className="text-[11px] font-medium text-primary-foreground/70 hover:text-secondary transition-colors">
-                  All apps and MoneyMaker desktop &rarr;
-                </Link>
-              </div>
-            </div>
-          </FooterColumn>
         </div>
+
+        {/* Apps band: a Google Play QR per app (most clients are on Android) with
+            both store links; /apps has the iPhone codes and the desktop apps. */}
+        <motion.div {...revealSection} className="mb-8 flex flex-col gap-5 rounded-2xl border border-primary-foreground/10 bg-primary-foreground/5 p-5 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex flex-wrap gap-x-10 gap-y-5">
+            {TRADING_APPS.map((app) => (
+              <div key={app.id} className="flex items-center gap-3">
+                <a
+                  href={app.playHref}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={`Scan or tap to get ${app.name} on Google Play`}
+                  className="shrink-0 rounded-lg bg-white p-1 shadow-md transition-transform hover:scale-105"
+                >
+                  <img src={APP_QR[app.id].android} alt={`QR code to download ${app.name} on Google Play`} width={56} height={56} className="h-14 w-14" loading="lazy" />
+                </a>
+                <div className="flex flex-col gap-1.5">
+                  <span className="text-sm font-semibold">
+                    {app.name}
+                    {app.isNew && <span className="ml-1.5 rounded-full bg-secondary px-1.5 py-px text-[9px] font-bold uppercase text-secondary-foreground">New</span>}
+                  </span>
+                  <div className="flex flex-wrap gap-1.5">
+                    <a href={app.playHref} target="_blank" rel="noopener noreferrer" aria-label={`Get ${app.name} on Google Play`} className="inline-flex min-h-[32px] items-center rounded-md bg-primary-foreground/10 px-2.5 text-xs font-medium transition-colors hover:bg-secondary/30">
+                      Google Play
+                    </a>
+                    <a href={app.iosHref} target="_blank" rel="noopener noreferrer" aria-label={`Get ${app.name} on the App Store`} className="inline-flex min-h-[32px] items-center rounded-md bg-primary-foreground/10 px-2.5 text-xs font-medium transition-colors hover:bg-secondary/30">
+                      App Store
+                    </a>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+          <Link to="/apps" className="inline-flex items-center gap-1.5 text-sm font-semibold text-secondary hover:underline">
+            All apps, MoneyMaker desktop and TradeX API <ArrowRight className="h-4 w-4" aria-hidden />
+          </Link>
+        </motion.div>
 
         {/* Compliance & Grievance */}
         <motion.div
@@ -343,23 +358,21 @@ const Footer = () => {
               <ExternalLink className="w-4 h-4" />
             </a>
             <div className="text-center text-xs text-primary-foreground/50 max-w-3xl">
-              <p className="mb-2 text-primary-foreground/70">
-                <Link to="/privacy-policy" className="tap-area hover:text-secondary hover:underline transition-colors">Privacy Policy</Link>
-                <span className="mx-2">|</span>
-                <Link to="/cookie-policy" className="tap-area hover:text-secondary hover:underline transition-colors">Cookie Policy</Link>
-                <span className="mx-2">|</span>
-                <button type="button" onClick={openConsentSettings} className="tap-area hover:text-secondary hover:underline transition-colors">Cookie Settings</button>
-                <span className="mx-2">|</span>
-                <Link to="/terms" className="tap-area hover:text-secondary hover:underline transition-colors">Terms of Use</Link>
-                <span className="mx-2">|</span>
-                <Link to="/disclaimer" className="tap-area hover:text-secondary hover:underline transition-colors">Disclaimer</Link>
-                <span className="mx-2">|</span>
-                <Link to="/investor-corner" className="hover:text-secondary hover:underline transition-colors">Investor Corner</Link>
-                <span className="mx-2">|</span>
-                <a href="/sitemap.xml" target="_blank" rel="noopener noreferrer" className="hover:text-secondary hover:underline transition-colors">Sitemap</a>
-                <span className="mx-2">|</span>
-                <a href="https://www.parasramindia.com/investor-charter/" target="_blank" rel="noopener noreferrer" className="hover:text-secondary hover:underline transition-colors">Investor Charter</a>
-              </p>
+              <nav aria-label="Legal">
+                <ul className="mb-2 flex flex-wrap justify-center gap-x-1 text-primary-foreground/70 [&>li+li]:before:mx-2 [&>li+li]:before:text-primary-foreground/30 [&>li+li]:before:content-['·']">
+                  {LEGAL_LINKS.map((l) => (
+                    <li key={l.label}>
+                      {l.href === "#cookies" ? (
+                        <button type="button" onClick={openConsentSettings} className="tap-area transition-colors hover:text-secondary hover:underline">{l.label}</button>
+                      ) : l.external ? (
+                        <a href={l.href} target="_blank" rel="noopener noreferrer" className="tap-area transition-colors hover:text-secondary hover:underline">{l.label}</a>
+                      ) : (
+                        <Link to={l.href} className="tap-area transition-colors hover:text-secondary hover:underline">{l.label}</Link>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </nav>
               <p className="text-primary-foreground/40">
                 Investments in securities market are subject to market risks. Read all related documents carefully before investing.
               </p>

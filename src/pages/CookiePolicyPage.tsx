@@ -6,6 +6,7 @@ import PageTransition from "@/components/PageTransition";
 import ScrollProgress from "@/components/ScrollProgress";
 import WhatsAppButton from "@/components/WhatsAppButton";
 import { ShieldCheck, Printer } from "lucide-react";
+import { PRIMARY_EMAIL } from "@/lib/contact";
 
 const CookiePolicyPage = () => {
   return (
@@ -71,7 +72,7 @@ const CookiePolicyPage = () => {
 
                 <h3 className="text-xl font-bold text-foreground mt-8 mb-4">5. Contact Us</h3>
                 <p className="text-muted-foreground leading-relaxed">
-                  For any questions regarding our use of cookies or this policy, please email us at <a href="mailto:parasrampnp@gmail.com" className="text-secondary hover:underline">parasrampnp@gmail.com</a>.
+                  For any questions regarding our use of cookies or this policy, please email us at <a href={`mailto:${PRIMARY_EMAIL}`} className="text-secondary hover:underline">{PRIMARY_EMAIL}</a>.
                 </p>
               </div>
             </div>

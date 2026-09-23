@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "motion/react";
 import {
-  ArrowRight, Bell, Bot, Check, Download, Globe, Keyboard, Layers, LayoutGrid, LineChart, Monitor, Moon, Rocket, Sparkles, Zap,
+  ArrowRight, Bell, Bot, Check, Code2, Download, ExternalLink, Globe, Keyboard, Layers, LayoutGrid, LineChart, Monitor, Moon, Rocket, ShieldAlert, Sparkles, Zap,
 } from "lucide-react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -17,11 +17,11 @@ import AppStatsBand from "@/components/apps/AppStatsBand";
 import AppQrCodes from "@/components/apps/AppQrCodes";
 import ScreenshotStrip from "@/components/apps/ScreenshotStrip";
 import VideoPlayer from "@/components/apps/VideoPlayer";
-import CompareTable from "@/components/apps/CompareTable";
+import PlatformLineup from "@/components/apps/PlatformLineup";
 import {
   DESKTOP_SHOT, DESKTOP_VIDEO, MONEY_FEATURES, MONEY_HERO, MONEY_SCREENS, SCREEN_SIZE, TRADE_HERO, TRADE_SCREENS,
 } from "@/components/apps/appMedia";
-import { appById, MONEYMAKER_DOWNLOAD_URL, type TradingApp } from "@/lib/trading-apps";
+import { appById, MONEYMAKER_DOWNLOAD_URL, TRADEX_DOCS_URL, XTS_DESKTOP, type TradingApp } from "@/lib/trading-apps";
 import { HIGH_FETCH_PRIORITY } from "@/lib/fetch-priority";
 import { revealItem, revealItemX, revealSection } from "@/lib/motion";
 import { useT } from "@/i18n/LanguageContext";
@@ -52,13 +52,18 @@ const DESKTOP_POINTS = [
   { icon: Keyboard, key: "apps.desktop.point5" },
 ];
 const TRADE_POINTS = [1, 2, 3, 4].map((n) => `apps.trade.point${n}`);
-const FAQ_KEYS = [1, 2, 3, 4].map((n) => ({ q: `apps.faq.q${n}`, a: `apps.faq.a${n}` }));
+// From Saral's TradeX reference (read 2026-09-23): login fields, algol_id
+// (broker-issued, 1001-2099 for algo orders), strategy_id, WebSocket packets,
+// key IP/domain and exchange/product locks. "tradetron" is a named login source.
+const API_POINTS = [1, 2, 3, 4, 5, 6, 7, 8].map((n) => `apps.api.p${n}`);
+const FAQ_KEYS = [1, 2, 3, 4, 5].map((n) => ({ q: `apps.faq.q${n}`, a: `apps.faq.a${n}` }));
 const SECTIONS = [
   { id: "whats-new", key: "apps.nav.new" },
   { id: "screens", key: "apps.nav.screens" },
   { id: "desktop", key: "apps.nav.desktop" },
+  { id: "api", key: "apps.nav.api" },
   { id: "trade", key: "cta.parasramTrade" },
-  { id: "compare", key: "apps.nav.compare" },
+  { id: "platforms", key: "apps.nav.platforms" },
   { id: "faq", key: "apps.nav.faq" },
 ];
 
@@ -301,7 +306,7 @@ const AppsPage = () => {
                   <a href={MONEYMAKER_DOWNLOAD_URL} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 font-semibold hover:underline">
                     <Download className="h-5 w-5" aria-hidden /> {t("apps.desktop.download")}
                   </a>
-                  <span className="mt-1 text-xs opacity-80">{t("apps.desktop.downloadNote")}</span>
+                  <span className="mt-1 text-xs">{t("apps.desktop.downloadNote")}</span>
                 </motion.li>
               </ul>
 
@@ -325,6 +330,54 @@ const AppsPage = () => {
                   </Link>
                 </motion.div>
               </div>
+            </div>
+          </section>
+
+          {/* ── TradeX API (Parasram Money) ──────────────────────────────── */}
+          <section id="api" aria-labelledby="api-heading" className="py-16 md:py-24 scroll-mt-28">
+            <div className="container mx-auto grid items-start gap-10 px-4 lg:grid-cols-[1fr_1.1fr]">
+              <motion.div {...revealItemX("left")}>
+                <Eyebrow>{t("apps.api.eyebrow")}</Eyebrow>
+                <h2 id="api-heading" className="mt-2 font-heading text-3xl font-bold text-foreground md:text-4xl">{t("apps.api.heading")}</h2>
+                <p className="mt-4 text-lg text-muted-foreground">{t("apps.api.body")}</p>
+                <div className="mt-7 flex flex-wrap gap-3">
+                  <a href={TRADEX_DOCS_URL} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-3 font-semibold text-primary-foreground shadow-md transition-colors hover:bg-primary/90">
+                    <Code2 className="h-4 w-4" aria-hidden /> {t("apps.api.docs")} <ExternalLink className="h-3.5 w-3.5 opacity-70" aria-hidden />
+                  </a>
+                  <Link to="/contact#contact-form" className="inline-flex items-center gap-2 rounded-xl border border-border px-5 py-3 font-semibold text-foreground transition-colors hover:border-secondary hover:text-secondary">
+                    {t("apps.api.request")} <ArrowRight className="h-4 w-4" aria-hidden />
+                  </Link>
+                </div>
+                <p className="mt-6 flex gap-2 text-xs leading-relaxed text-muted-foreground">
+                  <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-brand-gold" aria-hidden /> {t("apps.api.note")}
+                </p>
+              </motion.div>
+              <motion.div {...revealItemX("right")} className="overflow-hidden rounded-2xl border border-border bg-[#0b1220] shadow-xl">
+                <div className="flex items-center gap-1.5 border-b border-white/10 px-4 py-2.5" aria-hidden>
+                  <span className="h-2.5 w-2.5 rounded-full bg-white/20" /><span className="h-2.5 w-2.5 rounded-full bg-white/20" /><span className="h-2.5 w-2.5 rounded-full bg-white/20" />
+                  <span className="ml-2 text-xs text-white/50">TradeX API · v1</span>
+                </div>
+                {/* The login call from the published TradeX reference; placeholders, never real keys. */}
+                <pre className="overflow-x-auto p-5 text-[13px] leading-relaxed text-slate-200" tabIndex={0} aria-label="Example TradeX login request"><code>{`POST /TradeXApi/v1/Login
+Content-Type: application/json
+
+{
+  "user_id": "YOUR_CLIENT_ID",
+  "app_key": "YOUR_APP_KEY",
+  "secret_key": "YOUR_SECRET_KEY",
+  "source": "web"
+}
+
+→ 200  { "data": { "token": "…" } }
+   Authorization: Bearer <token>`}</code></pre>
+                <ul className="space-y-2.5 border-t border-white/10 p-5">
+                  {API_POINTS.map((k) => (
+                    <li key={k} className="flex gap-2.5 text-sm text-slate-300">
+                      <Check className="mt-0.5 h-4 w-4 shrink-0 text-secondary" aria-hidden /> {t(k)}
+                    </li>
+                  ))}
+                </ul>
+              </motion.div>
             </div>
           </section>
 
@@ -359,6 +412,9 @@ const AppsPage = () => {
                       <StoreButtons app={trade} tone="onLight" />
                       <StoreStats app={trade} className="text-foreground" />
                       <WebLink href={trade.webHref} className="text-muted-foreground" />
+                      <a href={XTS_DESKTOP.x64} className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground underline-offset-4 hover:text-secondary hover:underline">
+                        <Monitor className="h-4 w-4" aria-hidden /> Symphony XTS · {t("apps.platforms.desktop")}
+                      </a>
                     </div>
                     <AppQrCodes app={trade} className="text-foreground" />
                   </div>
@@ -370,14 +426,14 @@ const AppsPage = () => {
             </div>
           </section>
 
-          {/* ── Compare ──────────────────────────────────────────────────── */}
-          <section id="compare" aria-labelledby="compare-heading" className="border-t border-border bg-muted/30 py-16 md:py-20 scroll-mt-28">
-            <div className="container mx-auto max-w-4xl px-4">
-              <motion.div {...revealSection} className="mb-8 text-center">
-                <h2 id="compare-heading" className="font-heading text-3xl font-bold text-foreground md:text-4xl">{t("apps.compare.heading")}</h2>
-                <p className="mt-3 text-muted-foreground">{t("apps.compare.body")}</p>
+          {/* ── Platforms: new and earlier ───────────────────────────────── */}
+          <section id="platforms" aria-labelledby="platforms-heading" className="border-t border-border bg-muted/30 py-16 md:py-20 scroll-mt-28">
+            <div className="container mx-auto max-w-5xl px-4">
+              <motion.div {...revealSection} className="mb-10 max-w-3xl">
+                <h2 id="platforms-heading" className="font-heading text-3xl font-bold text-foreground md:text-4xl">{t("apps.platforms.heading")}</h2>
+                <p className="mt-3 text-muted-foreground">{t("apps.platforms.body")}</p>
               </motion.div>
-              <CompareTable />
+              <PlatformLineup />
             </div>
           </section>
 

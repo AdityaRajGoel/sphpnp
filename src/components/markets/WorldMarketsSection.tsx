@@ -42,7 +42,9 @@ export function HeatStrip({ rows }: { rows: BoardRow[] }) {
   return (
     <div className="flex flex-wrap gap-1" role="list" aria-label="Day's change by market">
       {sorted.map((r) => {
-        const alpha = 0.15 + 0.75 * Math.min(1, Math.abs(r.day!) / scale);
+        // Capped at 0.5: stronger fills failed contrast with the text in both
+        // themes (dark text on the light theme, light text on the dark one).
+        const alpha = 0.12 + 0.38 * Math.min(1, Math.abs(r.day!) / scale);
         return (
           <span
             key={r.symbol}

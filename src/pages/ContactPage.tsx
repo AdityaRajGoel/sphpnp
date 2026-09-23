@@ -14,6 +14,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
 import { revealItemX, revealSection } from "@/lib/motion";
+import { BRANCH_EMAILS, PRIMARY_EMAIL } from "@/lib/contact";
 const contactFAQs = [
   { q: "What are your office timings?", a: "Our Panipat branch is open Monday to Friday from 9:00 AM to 6:00 PM, and Saturday from 9:00 AM to 2:00 PM. We are closed on Sundays and market holidays." },
   { q: "Can I visit without an appointment?", a: "Yes! Walk-ins are welcome during office hours. However, for detailed portfolio consultations, we recommend calling ahead to schedule an appointment so our advisors can dedicate proper time to you." },
@@ -25,7 +26,7 @@ const contactFAQs = [
 const quickContacts = [
   { icon: MapPin, label: "Visit Us", value: "Shakuntala Complex, Palika Bazaar, Panipat - 132103", href: "https://maps.app.goo.gl/dvR1a5LPc5xAq4Va8" },
   { icon: Phone, label: "Call Us", value: "+91 9416400314", href: "tel:+919416400314" },
-  { icon: Mail, label: "Email Us", value: "parasrampnp@gmail.com", href: "mailto:parasrampnp@gmail.com" },
+  { icon: Mail, label: "Email Us", value: BRANCH_EMAILS.join(" · "), href: `mailto:${PRIMARY_EMAIL}` },
   { icon: Clock, label: "Working Hours", value: "Mon–Fri 9AM–6PM, Sat 9AM–2PM", href: undefined },
 ];
 

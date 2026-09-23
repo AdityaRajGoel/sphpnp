@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from "motion/react";
-import { useRef, useState, useMemo, useCallback, useEffect } from "react";
+import { useRef, useState, useMemo, useCallback, useEffect, lazy, Suspense } from "react";
 import { Link } from "react-router-dom";
 import {
   TrendingUp, TrendingDown, Activity, Eye, ArrowUpRight, ArrowDownRight,
@@ -13,8 +13,15 @@ import {
 import type { LucideIcon } from "lucide-react";
 import { useLiveMarket } from "@/hooks/useLiveMarket";
 import { supabase } from "@/integrations/supabase/client";
-import PriceChart from "@/components/charts/PriceChart";
-import AdvancedChartDialog from "@/components/charts/AdvancedChartDialog";
+// The charts render only after a stock is opened; loading them lazily keeps
+// lightweight-charts (~120 KB gzipped with its helpers) off the home page's first load.
+const PriceChart = lazy(() => import("@/components/charts/PriceChart"));
+const AdvancedChartDialog = lazy(() => import("@/components/charts/AdvancedChartDialog"));
+const ChartSpinner = () => (
+  <div className="h-[220px] flex items-center justify-center">
+    <div className="w-6 h-6 rounded-full border-2 border-brand-orange border-t-transparent animate-spin" />
+  </div>
+);
 import type { ApiChartPoint } from "@/lib/chart-data";
 import { useCorporateActions, useMarketFlows, useMfNavs } from "@/hooks/useMarketFeed";
 import { revealBar, revealItemX, revealSection } from "@/lib/motion";
@@ -347,7 +354,7 @@ const MarketOverview = () => {
                       : "text-muted-foreground hover:text-foreground hover:bg-muted"
                   }`}>
                   <Icon className="w-3.5 h-3.5" />{tab.label}
-                  <span className="hidden sm:inline text-[10px] opacity-60">({tab.data.length})</span>
+                  <span className="hidden sm:inline text-[10px]">({tab.data.length})</span>
                 </button>
               );
             })}
@@ -517,8 +524,11 @@ const MarketOverview = () => {
                     </p>
                   </div>
                 ) : (
-                  <PriceChart data={chartPoints} mode="area" height={220} />
+                  <Suspense fallback={<ChartSpinner />}>
+                    <PriceChart data={chartPoints} mode="area" height={220} />
+                  </Suspense>
                 )}
+                <Suspense fallback={null}>
                 <AdvancedChartDialog
                   open={advancedOpen}
                   onOpenChange={setAdvancedOpen}
@@ -534,6 +544,7 @@ const MarketOverview = () => {
                   onRangeChange={setChartRange}
                   loading={chartLoading}
                 />
+                </Suspense>
               </div>
             </>
           )}

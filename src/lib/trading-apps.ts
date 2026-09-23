@@ -26,8 +26,26 @@ export type TradingApp = {
 /** When the store figures were read. Update the figures and this together. */
 export const STORE_STATS_AS_OF = "2026-09-23";
 
-/** MoneyMaker, the Windows terminal, is distributed from the parent site's setups page. */
-export const MONEYMAKER_DOWNLOAD_URL = "https://www.parasramindia.com/software-setups/";
+/**
+ * Desktop apps and developer links, all served by Parasram or its vendors
+ * (checked live 2026-09-23). Two platforms: Parasram Money (new) pairs with
+ * the MoneyMaker desktop and the TradeX API (Saral); Parasram Trade (the older
+ * app) pairs with the Symphony XTS desktop.
+ */
+export const SOFTWARE_SETUPS_URL = "https://www.parasramindia.com/software-setups/";
+export const MONEYMAKER_DOWNLOAD_URL = SOFTWARE_SETUPS_URL;
+/** ClickOnce installer for MoneyMaker Solo - the setups page links the same file. */
+export const MONEYMAKER_INSTALLER_URL = "https://money.parasramindia.com:8088/IBT/MoneyMakerSolo.application";
+export const XTS_DESKTOP = {
+  x64: "https://www.parasramindia.com/downloads/XTS-64bit.exe",
+  x32: "https://www.parasramindia.com/downloads/XTS-32Bit.exe",
+} as const;
+export const TRADE_GUIDES = {
+  app: "https://www.parasramindia.com/downloads/Parasram-Mobile-App-Overview.pdf",
+  web: "https://www.parasramindia.com/downloads/Web-Trade-Overview.pdf",
+} as const;
+/** Saral's TradeX API reference (REST, JWT) for Parasram Money accounts. */
+export const TRADEX_DOCS_URL = "https://www.saral-info.com/tradex";
 
 const webHref = (labelKey: (typeof TRADING_PLATFORMS)[number]["labelKey"]) =>
   TRADING_PLATFORMS.find((p) => p.labelKey === labelKey)!.href;

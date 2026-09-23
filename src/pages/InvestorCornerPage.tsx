@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { DURATION, EASE_OUT, revealSection } from "@/lib/motion";
 import { useScrollSpy } from "@/hooks/useScrollSpy";
+import { BRANCH_EMAILS } from "@/lib/contact";
 
 /** Anchor targets, in document order. Module scope so the observer in
  *  useScrollSpy is built once rather than on every render. */
@@ -312,7 +313,7 @@ const InvestorCornerPage = () => {
               <SectionCard id="grievance" icon={MessagesSquare} title="Grievance Redressal - Escalation Path">
                 <ol className="space-y-3">
                   {[
-                    { step: "1. Your branch / dealer", detail: "Contact the Panipat branch first: +91 94164 00314 · parasrampnp@gmail.com" },
+                    { step: "1. Your branch / dealer", detail: `Contact the Panipat branch first: +91 94164 00314 · ${BRANCH_EMAILS.join(" · ")}` },
                     { step: "2. Firm compliance desk", detail: "Escalate to Shri Parasram Holdings Pvt. Ltd.: compliance@sphpl.com · 011-4700-0000" },
                     { step: "3. Stock Exchange", detail: "NSE / BSE / MCX investor-services cell if the firm's response is unsatisfactory" },
                     { step: "4. SEBI SCORES", detail: "File on scores.sebi.gov.in - complaints are tracked and time-bound" },

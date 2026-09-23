@@ -15,6 +15,7 @@ import { useT } from "@/i18n/LanguageContext";
 import WebTradeMenu from "@/components/WebTradeMenu";
 import { NAV_LABEL_KEYS } from "@/i18n/config";
 import { useWatchlist } from "@/hooks/useWatchlist";
+import { BRANCH_EMAILS, PRIMARY_EMAIL } from "@/lib/contact";
 
 const CLIENT_LOGIN = "https://dashboard.parasramindia.com/Account/Login";
 const SOCIALS = [
@@ -38,8 +39,8 @@ const UtilityBar = () => (
           <span className="hidden text-primary-foreground/30 lg:inline" aria-hidden>·</span>
           <a href="tel:+919416400277" className={`${UTIL_LINK} hidden lg:inline-flex`}>9416400277</a>
         </span>
-        <a href="mailto:parasrampnp@gmail.com" className={`${UTIL_LINK} hidden md:inline-flex`}>
-          <Mail className="h-3.5 w-3.5" aria-hidden />parasrampnp@gmail.com
+        <a href={`mailto:${PRIMARY_EMAIL}`} className={`${UTIL_LINK} hidden md:inline-flex`}>
+          <Mail className="h-3.5 w-3.5" aria-hidden />{PRIMARY_EMAIL}
         </a>
         <span className="hidden items-center gap-1.5 text-primary-foreground/60 2xl:flex">
           <span className="h-1.5 w-1.5 rounded-full bg-secondary" aria-hidden />
