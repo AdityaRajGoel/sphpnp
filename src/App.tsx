@@ -37,6 +37,7 @@ import { EASE_OUT } from "@/lib/motion";
 // Lazy load all other pages
 const AboutPage = lazy(() => import("./pages/AboutPage"));
 const ServicesPage = lazy(() => import("./pages/ServicesPage"));
+const AppsPage = lazy(() => import("./pages/AppsPage"));
 const UnlistedSpacePage = lazy(() => import("./pages/UnlistedZonePage"));
 const TeamPage = lazy(() => import("./pages/TeamPage"));
 const ContactPage = lazy(() => import("./pages/ContactPage"));
@@ -180,6 +181,7 @@ const AnimatedRoutes = () => {
         <Route path="/" element={<Index />} />
         <Route path="/about" element={<AboutPage />} />
         <Route path="/services" element={<ServicesPage />} />
+        <Route path="/apps" element={<AppsPage />} />
         <Route path="/unlisted-space" element={<UnlistedSpacePage />} />
         <Route path="/team" element={<TeamPage />} />
         <Route path="/contact" element={<ContactPage />} />

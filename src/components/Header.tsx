@@ -8,6 +8,9 @@ import logo160 from "@/assets/logo-160.webp";
 import ThemeToggle from "@/components/ThemeToggle";
 import MotionToggle from "@/components/MotionToggle";
 import MegaDropdown from "@/components/header/MegaDropdown";
+import AppsMenuPanel from "@/components/header/AppsMenuPanel";
+import StoreButtons from "@/components/apps/StoreButtons";
+import { appById } from "@/lib/trading-apps";
 import { megaMenuItems } from "@/components/header/megaMenuData";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { useT } from "@/i18n/LanguageContext";
@@ -15,6 +18,19 @@ import WebTradeMenu from "@/components/WebTradeMenu";
 import { TRADING_PLATFORMS } from "@/lib/trading-platforms";
 import { NAV_LABEL_KEYS } from "@/i18n/config";
 import { useWatchlist } from "@/hooks/useWatchlist";
+
+const PILL = "ml-1.5 rounded-full bg-secondary px-1.5 py-px align-middle text-[9px] font-bold uppercase leading-4 tracking-wider text-secondary-foreground";
+
+const NavBadge = ({ text }: { text: string }) => <span className={`inline-flex ${PILL}`}>{text}</span>;
+
+// In the desktop bar the pill costs ~40px the nav doesn't have below 2xl; a dot says the same.
+const NavBadgeCompact = ({ text }: { text: string }) => (
+  <>
+    <span className={`hidden 2xl:inline-flex ${PILL}`}>{text}</span>
+    <span className="ml-1 h-1.5 w-1.5 rounded-full bg-secondary 2xl:hidden" aria-hidden />
+    <span className="sr-only 2xl:hidden">({text})</span>
+  </>
+);
 
 const Header = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -122,11 +138,11 @@ const Header = () => {
               The shrink-on-scroll affordance is a transform on the image
               instead: it costs no layout, so scrolling can't reflow the page
               or shift what's underneath. */}
-          <Link to="/" className="flex h-10 md:h-16 shrink-0 items-center group">
+          <Link to="/" className="flex h-12 md:h-16 shrink-0 items-center group">
             <img
               src={logo80}
               srcSet={`${logo80} 80w, ${logo160} 160w`}
-              sizes="(min-width: 768px) 80px, 40px"
+              sizes="(min-width: 768px) 80px, 48px"
               alt="Parasram - Science of Investment"
               width={80}
               height={80}
@@ -138,7 +154,7 @@ const Header = () => {
           </Link>
 
           {/* Desktop mega menu nav */}
-          <nav className="hidden lg:flex items-center gap-1" aria-label="Main navigation">
+          <nav className="hidden xl:flex items-center gap-1" aria-label="Main navigation">
             {megaMenuItems.map((item) => (
               <div
                 key={item.label}
@@ -149,7 +165,7 @@ const Header = () => {
                 {item.href && !item.subItems ? (
                   <Link
                     to={item.href}
-                    className={`px-2 2xl:px-3 py-3 min-h-[48px] text-sm font-medium transition-colors rounded-md flex items-center gap-1 ${
+                    className={`px-2 2xl:px-3 py-3 min-h-[48px] whitespace-nowrap text-sm font-medium transition-colors rounded-md flex items-center gap-1 ${
                       item.highlight
                         ? "text-brand-green font-bold hover:bg-accent/50"
                         : isActive(item)
@@ -158,10 +174,11 @@ const Header = () => {
                     }`}
                   >
                     {navLabel(item.label)}
+                    {item.badge && <NavBadgeCompact text={item.badge} />}
                   </Link>
                 ) : (
                   <div
-                    className={`px-2 2xl:px-3 py-3 min-h-[48px] text-sm font-medium transition-colors rounded-md flex items-center gap-1 ${
+                    className={`px-2 2xl:px-3 py-3 min-h-[48px] whitespace-nowrap text-sm font-medium transition-colors rounded-md flex items-center gap-1 ${
                       isActive(item)
                         ? "text-secondary"
                         : "text-foreground hover:bg-accent/50"
@@ -170,6 +187,7 @@ const Header = () => {
                     {item.href ? (
                       <Link to={item.href} className="hover:text-secondary inset-0 flex items-center">{navLabel(item.label)}</Link>
                     ) : navLabel(item.label)}
+                    {item.badge && <NavBadgeCompact text={item.badge} />}
                     {item.subItems && (
                       <ChevronDown className={`w-3.5 h-3.5 ml-0.5 transition-transform duration-fast ease-out ${activeMenu === item.label ? "rotate-180" : ""}`} />
                     )}
@@ -187,10 +205,13 @@ const Header = () => {
             ))}
           </nav>
 
-          <div className="flex items-center gap-2 lg:gap-1 2xl:gap-2">
-            <LanguageSwitcher />
-            <MotionToggle />
-            <ThemeToggle />
+          <div className="flex items-center gap-2 xl:gap-1.5 2xl:gap-2">
+            {/* Display preferences as one quiet group, apart from the actions. */}
+            <div className="flex items-center rounded-full border border-border/70 bg-muted/30 p-0.5">
+              <LanguageSwitcher labelClassName="hidden 2xl:inline" />
+              <MotionToggle />
+              <ThemeToggle />
+            </div>
             {watchlist.length > 0 && (
               <motion.div
                 initial={{ scale: 0 }}
@@ -206,13 +227,13 @@ const Header = () => {
                 </Link>
               </motion.div>
             )}
-            {/* Between the desktop nav appearing (lg) and a wide screen (2xl) the
-                nav and three CTAs did not fit, pushing the header 62px past a
-                1280px viewport on every page. Client login collapses to its icon
-                there, keeping its name for assistive tech and as a tooltip. */}
-            <Button asChild variant="outline" size="sm" className="hidden sm:inline-flex border-primary/50 text-primary hover:bg-primary hover:text-primary-foreground font-semibold lg:px-2.5 2xl:px-3">
+            {/* The full nav and three CTAs need 1280px: below xl the nav sits
+                behind the menu button (at 1024 it ran 206px off-screen). Between
+                xl and 2xl client login collapses to its icon, keeping its name
+                for assistive tech and as a tooltip. */}
+            <Button asChild variant="outline" size="sm" className="hidden sm:inline-flex border-primary/50 text-primary hover:bg-primary hover:text-primary-foreground font-semibold xl:px-2.5 2xl:px-3">
               <a href="https://dashboard.parasramindia.com/Account/Login" target="_blank" rel="noopener noreferrer" aria-label={t("cta.clientLogin")} title={t("cta.clientLogin")}>
-                <LogIn className="w-4 h-4 sm:mr-1 lg:mr-0 2xl:mr-1" aria-hidden="true" /><span className="lg:hidden 2xl:inline">{t("cta.clientLogin")}</span>
+                <LogIn className="w-4 h-4 sm:mr-1 xl:mr-0 2xl:mr-1" aria-hidden="true" /><span className="xl:hidden 2xl:inline">{t("cta.clientLogin")}</span>
               </a>
             </Button>
             <WebTradeMenu>
@@ -224,7 +245,7 @@ const Header = () => {
               <Link to="/open-account">{t("cta.openAccount")}</Link>
             </Button>
             <button
-              className="lg:hidden p-2 text-foreground hover:text-secondary transition-colors"
+              className="xl:hidden p-2 text-foreground hover:text-secondary transition-colors"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               aria-label="Toggle menu"
             >
@@ -240,10 +261,14 @@ const Header = () => {
               onMouseEnter={handleDropdownMouseEnter}
               onMouseLeave={handleMouseLeave}
             >
-              <MegaDropdown
-                items={megaMenuItems.find(m => m.label === activeMenu)!.subItems!}
-                onClose={() => setActiveMenu(null)}
-              />
+              {activeMenu === "Apps" ? (
+                <AppsMenuPanel onClose={() => setActiveMenu(null)} />
+              ) : (
+                <MegaDropdown
+                  items={megaMenuItems.find(m => m.label === activeMenu)!.subItems!}
+                  onClose={() => setActiveMenu(null)}
+                />
+              )}
             </div>
           )}
         </AnimatePresence>
@@ -256,7 +281,11 @@ const Header = () => {
               animate={{ height: "auto", opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
               transition={{ duration: 0.3 }}
-              className="lg:hidden overflow-y-auto max-h-[80vh] border-t border-border"
+              // Overlays the page rather than pushing it: the header is sticky, so
+              // an in-flow menu added its height to the document, and closing it on
+              // a same-page link (/apps#desktop while on /apps) pulled the target
+              // ~540px up mid-scroll.
+              className="xl:hidden absolute inset-x-0 top-full overflow-y-auto max-h-[80vh] border-t border-border bg-card shadow-xl"
             >
               <nav className="container mx-auto px-4 py-4 flex flex-col gap-1" aria-label="Mobile navigation">
                 {megaMenuItems.map((item, i) => (
@@ -274,7 +303,10 @@ const Header = () => {
                             isActive(item) ? "text-secondary" : "text-foreground"
                           }`}
                         >
-                          {navLabel(item.label)}
+                          <span>
+                            {navLabel(item.label)}
+                            {item.badge && <NavBadge text={item.badge} />}
+                          </span>
                           <ChevronDown className={`w-4 h-4 transition-transform duration-fast ease-out ${expandedMobileSection === item.label ? "rotate-180" : ""}`} />
                         </button>
                         <AnimatePresence>
@@ -319,7 +351,10 @@ const Header = () => {
                                     >
                                       <Icon className="w-4 h-4 text-primary flex-shrink-0" />
                                       <div>
-                                        <p className="text-sm font-medium text-foreground">{sub.label}</p>
+                                        <p className="text-sm font-medium text-foreground">
+                                          {sub.label}
+                                          {sub.badge && <NavBadge text={sub.badge} />}
+                                        </p>
                                         <p className="text-xs text-muted-foreground">{sub.description}</p>
                                       </div>
                                     </Link>
@@ -363,6 +398,12 @@ const Header = () => {
                   <Button asChild className="bg-brand-navy hover:bg-brand-navy/90 text-white font-semibold w-full">
                     <Link to="/open-account" onClick={() => setMobileMenuOpen(false)}>{t("cta.openAccount")}</Link>
                   </Button>
+                  <div className="mt-2 rounded-xl bg-hero p-4 text-primary-foreground">
+                    <p className="text-sm font-semibold">
+                      Get Parasram Money <NavBadge text="New" />
+                    </p>
+                    <StoreButtons app={appById("money")} size="sm" className="mt-3" />
+                  </div>
                 </div>
               </nav>
             </motion.div>

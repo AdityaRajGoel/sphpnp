@@ -4,7 +4,8 @@ import { useT } from "@/i18n/LanguageContext";
 import { LANGUAGES, type Lang } from "@/i18n/config";
 
 // Compact globe dropdown for switching UI language. Closes on outside click / Esc.
-const LanguageSwitcher = ({ className = "" }: { className?: string }) => {
+// labelClassName decides when the language name shows beside the globe.
+const LanguageSwitcher = ({ className = "", labelClassName = "hidden sm:inline" }: { className?: string; labelClassName?: string }) => {
   const { lang, setLang, t } = useT();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -40,7 +41,7 @@ const LanguageSwitcher = ({ className = "" }: { className?: string }) => {
         className="inline-flex items-center gap-1.5 min-h-[40px] px-2.5 rounded-lg text-sm font-medium text-foreground/80 hover:text-foreground hover:bg-muted/60 transition-colors"
       >
         <Globe className="w-4 h-4" />
-        <span className="hidden sm:inline">{current.native}</span>
+        <span className={labelClassName}>{current.native}</span>
         <ChevronDown className={`w-3.5 h-3.5 transition-transform ${open ? "rotate-180" : ""}`} />
       </button>
 

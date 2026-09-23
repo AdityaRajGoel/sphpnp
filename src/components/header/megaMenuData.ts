@@ -3,7 +3,8 @@ import { Gauge,
   Calculator, GitCompare, Calendar, ArrowUpDown, Activity,
   BookOpen, GraduationCap, Radio, Newspaper,
   Users, Building2, Phone, Mail, Award, ShieldCheck,
-  Search, Flame, Briefcase, Globe, KeyRound, Banknote, Percent, LifeBuoy
+  Search, Flame, Briefcase, Globe, KeyRound, Banknote, Percent, LifeBuoy,
+  Smartphone, Monitor, TabletSmartphone,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -13,12 +14,15 @@ export type SubItem = {
   icon: LucideIcon;
   description: string;
   external?: boolean;
+  /** Short pill after the label, e.g. "New". */
+  badge?: string;
 };
 
 export type MegaMenuItem = {
   label: string;
   href?: string;
   highlight?: boolean;
+  badge?: string;
   subItems?: SubItem[];
 };
 
@@ -69,9 +73,20 @@ export const megaMenuItems: MegaMenuItem[] = [
     href: "/screener",
     subItems: [
       { label: "Margin Calculator", href: "/margin-calculator", icon: Calculator, description: "Calculate margin requirements" },
-      { label: "F&O Margin Calculator", href: "https://webtrade.parasramindia.com/calculator#!/span", icon: Percent, description: "SPAN margin calculator for F&O trades", external: true },
       { label: "Brokerage Calculator", href: "/brokerage-calculator", icon: BarChart3, description: "Estimate trading charges & P&L" },
       { label: "Holiday Calendar", href: "/holidays", icon: Calendar, description: "Market holidays for 2026" },
+    ],
+  },
+  {
+    // Desktop shows a picture panel (AppsMenuPanel) in place of this list;
+    // the mobile menu uses the list as-is.
+    label: "Apps",
+    href: "/apps",
+    badge: "New",
+    subItems: [
+      { label: "Parasram Money", href: "/apps#money", icon: TabletSmartphone, description: "Our new app: Tradetron algos, instant pledge", badge: "New" },
+      { label: "MoneyMaker Desktop", href: "/apps#desktop", icon: Monitor, description: "The Windows terminal, with a video tour" },
+      { label: "Parasram Trade", href: "/apps#trade", icon: Smartphone, description: "The Symphony XTS mobile app" },
     ],
   },
   {

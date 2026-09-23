@@ -5,6 +5,7 @@ import WhatsappIcon from "@/components/icons/WhatsappIcon";
 import PhoneVolumeIcon from "@/components/icons/PhoneVolumeIcon";
 import DownloadIcon from "@/components/icons/DownloadIcon";
 import { canHover } from "@/components/icons/useAnimatedIcon";
+import { appById } from "@/lib/trading-apps";
 import type { AnimatedIconHandle, AnimatedIconProps } from "@/components/icons/types";
 
 type AnimatedIcon = React.ForwardRefExoticComponent<
@@ -60,6 +61,13 @@ const ActionButton = ({ action, delay }: { action: Action; delay: number }) => {
   );
 };
 
+// The featured app, in the store this device can install from.
+const moneyStoreHref = () => {
+  const money = appById("money");
+  const isApple = typeof navigator !== "undefined" && /iPhone|iPad|iPod/.test(navigator.userAgent);
+  return isApple ? money.iosHref : money.playHref;
+};
+
 const FloatingActions = () => {
   const [expanded, setExpanded] = useState(false);
   const [showBackToTop, setShowBackToTop] = useState(false);
@@ -91,8 +99,8 @@ const FloatingActions = () => {
     },
     {
       icon: DownloadIcon,
-      label: "Download App",
-      href: "https://play.google.com/store/apps/details?id=com.parasramindia.xts",
+      label: "Get Parasram Money",
+      href: moneyStoreHref(),
       color: "bg-purple-500 hover:bg-purple-600 shadow-purple-500/30",
     },
   ];

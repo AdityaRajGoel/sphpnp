@@ -5,7 +5,8 @@ import { motion } from "motion/react";
 import { Link } from "react-router-dom";
 import logo80 from "@/assets/logo-80.webp";
 import logo160 from "@/assets/logo-160.webp";
-import appQr from "@/assets/app-qr.svg";
+import { TRADING_APPS } from "@/lib/trading-apps";
+import { APP_QR } from "@/components/apps/appMedia";
 
 import { revealFade, revealItem, revealSection } from "@/lib/motion";
 import { openConsentSettings } from "@/lib/consent";
@@ -17,6 +18,7 @@ const companyLinks: FooterLink[] = [
   { label: "Unlisted Shares", href: "/unlisted-space" },
   { label: "Products & FDs", href: "/products" },
   { label: "Depository Services", href: "/depository-services" },
+  { label: "Mobile & Desktop Apps", href: "/apps" },
   { label: "Our Team", href: "/team" },
   { label: "Careers", href: "/careers" },
   { label: "Contact Us", href: "/contact" },
@@ -232,38 +234,39 @@ const Footer = () => {
                 <a href="mailto:parasrampnp@gmail.com" className="hover:text-secondary transition-colors">parasrampnp@gmail.com</a>
               </p>
 
-              {/* App download with scannable QR (parent-site pattern) */}
-              <div className="flex items-center gap-3">
-                <a
-                  href="https://play.google.com/store/apps/details?id=com.parasramindia.xts"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label="Scan or tap to download the Parasram Trade app on Google Play"
-                  className="shrink-0 bg-white rounded-lg p-1.5 hover:scale-105 transition-transform shadow-md"
-                >
-                  <img src={appQr} alt="QR code - download the Parasram Trade app" width={64} height={64} className="w-16 h-16" loading="lazy" />
-                </a>
-                <div className="flex flex-col gap-1.5">
-                  <span className="text-[11px] font-semibold text-primary-foreground/80">Scan for Parasram Trade</span>
-                  <div className="flex gap-1.5 flex-wrap">
+              {/* App downloads: a Google Play QR per app (most of our clients are on
+                  Android) with both store links beside it. /apps has the iPhone codes. */}
+              <div className="flex flex-col gap-3">
+                {TRADING_APPS.map((app) => (
+                  <div key={app.id} className="flex items-center gap-3">
                     <a
-                      href="https://play.google.com/store/apps/details?id=com.parasramindia.xts"
+                      href={app.playHref}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center bg-primary-foreground/10 hover:bg-secondary/30 rounded-md px-2.5 py-1.5 text-[11px] font-medium transition-[color,background-color,border-color,transform] ease-out hover:scale-105"
+                      aria-label={`Scan or tap to get ${app.name} on Google Play`}
+                      className="shrink-0 bg-white rounded-lg p-1 hover:scale-105 transition-transform shadow-md"
                     >
-                      Google Play
+                      <img src={APP_QR[app.id].android} alt="" width={56} height={56} className="w-14 h-14" loading="lazy" />
                     </a>
-                    <a
-                      href="https://apps.apple.com/us/app/parasram-trade/id1564728869"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center bg-primary-foreground/10 hover:bg-secondary/30 rounded-md px-2.5 py-1.5 text-[11px] font-medium transition-[color,background-color,border-color,transform] ease-out hover:scale-105"
-                    >
-                      App Store
-                    </a>
+                    <div className="flex flex-col gap-1.5">
+                      <span className="text-[11px] font-semibold text-primary-foreground/80">
+                        {app.name}
+                        {app.isNew && <span className="ml-1.5 rounded-full bg-secondary px-1.5 py-px text-[9px] font-bold uppercase text-secondary-foreground">New</span>}
+                      </span>
+                      <div className="flex gap-1.5 flex-wrap">
+                        <a href={app.playHref} target="_blank" rel="noopener noreferrer" aria-label={`Get ${app.name} on Google Play`} className="inline-flex items-center bg-primary-foreground/10 hover:bg-secondary/30 rounded-md px-2.5 py-1.5 text-[11px] font-medium transition-[color,background-color,border-color,transform] ease-out hover:scale-105">
+                          Google Play
+                        </a>
+                        <a href={app.iosHref} target="_blank" rel="noopener noreferrer" aria-label={`Get ${app.name} on the App Store`} className="inline-flex items-center bg-primary-foreground/10 hover:bg-secondary/30 rounded-md px-2.5 py-1.5 text-[11px] font-medium transition-[color,background-color,border-color,transform] ease-out hover:scale-105">
+                          App Store
+                        </a>
+                      </div>
+                    </div>
                   </div>
-                </div>
+                ))}
+                <Link to="/apps" className="text-[11px] font-medium text-primary-foreground/70 hover:text-secondary transition-colors">
+                  All apps and MoneyMaker desktop &rarr;
+                </Link>
               </div>
             </div>
           </FooterColumn>

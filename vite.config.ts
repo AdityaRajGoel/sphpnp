@@ -47,7 +47,7 @@ export default defineConfig(({ mode }) => ({
         // The precache is downloaded in full on a first visit. The certificate
         // scans (6.5 MB of PNG), the illustrations (served AVIF-first and cached
         // by the browser anyway) and the share images are never needed offline.
-        globIgnores: ['**/cert*.png', 'illustrations/**', 'og-*.jpg'],
+        globIgnores: ['**/cert*.png', 'illustrations/**', 'og-*.jpg', 'videos/**'],
         maximumFileSizeToCacheInBytes: 5000000, // 5MB limit
         navigateFallback: null,
         cleanupOutdatedCaches: true,

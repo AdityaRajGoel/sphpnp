@@ -36,6 +36,7 @@ const routes = [
   '/',
   '/about',
   '/services',
+  '/apps',
   '/unlisted-space',
   '/open-account',
   '/pricing',
