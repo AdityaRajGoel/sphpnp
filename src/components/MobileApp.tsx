@@ -4,16 +4,17 @@ import { ArrowRight, Bot, Layers, Play, Sparkles, Zap } from "lucide-react";
 import StoreButtons from "@/components/apps/StoreButtons";
 import AppQrCodes from "@/components/apps/AppQrCodes";
 import { DESKTOP_VIDEO, MONEY_HERO, MONEY_HERO_BACK, SCREEN_SIZE, TRADE_HERO } from "@/components/apps/appMedia";
-import { appById } from "@/lib/trading-apps";
+import { appById, totalPlayDownloads } from "@/lib/trading-apps";
 import { revealItem, revealSection } from "@/lib/motion";
+import { useT } from "@/i18n/LanguageContext";
 
 const money = appById("money");
 const trade = appById("trade");
 
 const MONEY_HIGHLIGHTS = [
-  { icon: Bot, text: "Tradetron no-code algo trading" },
-  { icon: Zap, text: "Instant margin pledge" },
-  { icon: Layers, text: "Option chain, technicals and IPOs" },
+  { icon: Bot, key: "apps.cap.algo" },
+  { icon: Zap, key: "apps.feature.pledge.title" },
+  { icon: Layers, key: "apps.teaser.cap3" },
 ];
 
 const Phone = ({ src, alt, className = "" }: { src: string; alt: string; className?: string }) => (
@@ -29,20 +30,25 @@ const Phone = ({ src, alt, className = "" }: { src: string; alt: string; classNa
 );
 
 /** The Services page's apps section: a short tour that hands off to /apps. */
-const MobileApp = () => (
+const MobileApp = () => {
+  const { t } = useT();
+  return (
   <section id="app" aria-labelledby="apps-teaser-heading" className="relative overflow-hidden bg-hero py-14 text-primary-foreground md:py-20">
     <div className="pointer-events-none absolute -right-32 top-0 h-96 w-96 rounded-full bg-secondary/20 blur-3xl" />
 
     <div className="container relative mx-auto px-4">
       <motion.div {...revealSection} className="mb-10 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div className="max-w-2xl">
-          <p className="text-sm font-semibold uppercase tracking-wider text-secondary">Our apps</p>
+          <p className="text-sm font-semibold uppercase tracking-wider text-secondary">{t("apps.teaser.eyebrow")}</p>
           <h2 id="apps-teaser-heading" className="mt-2 font-heading text-3xl font-bold md:text-4xl">
-            Trade from your phone or your desktop
+            {t("apps.teaser.heading")}
           </h2>
+          <p className="mt-3 text-primary-foreground/75">
+            <strong className="font-heading text-xl text-primary-foreground">{totalPlayDownloads()}</strong> {t("apps.stats.total")}
+          </p>
         </div>
         <Link to="/apps" className="inline-flex items-center gap-1.5 font-semibold hover:text-secondary">
-          Explore all apps <ArrowRight className="h-4 w-4" aria-hidden />
+          {t("apps.teaser.explore")} <ArrowRight className="h-4 w-4" aria-hidden />
         </Link>
       </motion.div>
 
@@ -58,14 +64,14 @@ const MobileApp = () => (
           </div>
           <div>
             <span className="inline-flex items-center gap-1.5 rounded-full bg-secondary px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider text-secondary-foreground">
-              <Sparkles className="h-3 w-3" aria-hidden /> New app
+              <Sparkles className="h-3 w-3" aria-hidden /> {t("apps.newApp")}
             </span>
-            <h3 className="mt-3 font-heading text-3xl font-bold">{money.name}</h3>
-            <p className="mt-2 text-primary-foreground/80">More of your account in one app, on Android, iPhone and the web.</p>
+            <h3 className="mt-3 font-heading text-3xl font-bold">{t(money.nameKey)}</h3>
+            <p className="mt-2 text-primary-foreground/80">{t("apps.teaser.moneyBody")}</p>
             <ul className="mt-4 space-y-2">
-              {MONEY_HIGHLIGHTS.map(({ icon: Icon, text }) => (
-                <li key={text} className="flex items-center gap-2.5 text-sm font-medium">
-                  <Icon className="h-4 w-4 text-secondary" aria-hidden /> {text}
+              {MONEY_HIGHLIGHTS.map(({ icon: Icon, key }) => (
+                <li key={key} className="flex items-center gap-2.5 text-sm font-medium">
+                  <Icon className="h-4 w-4 text-secondary" aria-hidden /> {t(key)}
                 </li>
               ))}
             </ul>
@@ -86,7 +92,7 @@ const MobileApp = () => (
               <span className="relative block aspect-video w-40 shrink-0 overflow-hidden rounded-xl sm:w-48">
                 <img
                   src={DESKTOP_VIDEO.poster}
-                  alt=""
+                  alt="MoneyMaker desktop trading terminal, video tour thumbnail"
                   width={DESKTOP_VIDEO.width}
                   height={DESKTOP_VIDEO.height}
                   loading="lazy"
@@ -100,8 +106,8 @@ const MobileApp = () => (
                 </span>
               </span>
               <span>
-                <span className="block font-heading text-lg font-bold group-hover:text-secondary">MoneyMaker Desktop</span>
-                <span className="mt-1 block text-sm text-primary-foreground/75">The Windows terminal. Watch the 40-second tour.</span>
+                <span className="block font-heading text-lg font-bold group-hover:text-secondary">{t("apps.menu.desktopTitle")}</span>
+                <span className="mt-1 block text-sm text-primary-foreground/75">{t("apps.menu.desktopBody")}</span>
               </span>
             </Link>
           </motion.div>
@@ -111,8 +117,8 @@ const MobileApp = () => (
             <Phone {...TRADE_HERO} className="w-24 shrink-0 self-start" />
             <div className="min-w-0">
               <p className="text-xs font-semibold uppercase tracking-wider text-primary-foreground/60">Symphony XTS</p>
-              <h3 className="font-heading text-xl font-bold">{trade.name}</h3>
-              <p className="mt-1 text-sm text-primary-foreground/75">The app many of our clients already trade on.</p>
+              <h3 className="font-heading text-xl font-bold">{t(trade.nameKey)}</h3>
+              <p className="mt-1 text-sm text-primary-foreground/75">{t("apps.teaser.tradeBody")}</p>
               <StoreButtons app={trade} size="sm" className="mt-4" />
             </div>
           </motion.article>
@@ -120,6 +126,7 @@ const MobileApp = () => (
       </div>
     </div>
   </section>
-);
+  );
+};
 
 export default MobileApp;

@@ -246,7 +246,7 @@ const Footer = () => {
                       aria-label={`Scan or tap to get ${app.name} on Google Play`}
                       className="shrink-0 bg-white rounded-lg p-1 hover:scale-105 transition-transform shadow-md"
                     >
-                      <img src={APP_QR[app.id].android} alt="" width={56} height={56} className="w-14 h-14" loading="lazy" />
+                      <img src={APP_QR[app.id].android} alt={`QR code to download ${app.name} on Google Play`} width={56} height={56} className="w-14 h-14" loading="lazy" />
                     </a>
                     <div className="flex flex-col gap-1.5">
                       <span className="text-[11px] font-semibold text-primary-foreground/80">

@@ -10,6 +10,7 @@ import { Link } from "react-router-dom";
 import { IndianRupee, BadgeCheck, Calculator, ArrowRight, Phone, Info, Percent, Scale, PhoneCall, FileText } from "lucide-react";
 
 import { revealItem, revealSection } from "@/lib/motion";
+import { RATE_CARD, formatRule } from "@/lib/brokerage";
 // Published tariff for Shri Parasram Holdings (as listed on broker-data
 // aggregators sourced from the firm's tariff sheet). Keep in sync with the
 // branch's current schedule - update here when rates change.
@@ -20,18 +21,11 @@ const accountCharges = [
   { item: "Trading Account AMC", value: "Free" },
 ];
 
-const brokerageCharges = [
-  { segment: "Equity Delivery", rate: "0.15%" },
-  { segment: "Equity Intraday", rate: "0.02%" },
-  { segment: "Equity Futures", rate: "0.02%" },
-  { segment: "Equity Options", rate: "₹30 per lot" },
-  { segment: "Currency Futures", rate: "0.02%" },
-  { segment: "Currency Options", rate: "₹30 per lot" },
-  { segment: "Commodity (MCX)", rate: "₹30 per lot" },
-];
+// Read from the shared rate card, which the Brokerage Calculator also uses.
+const brokerageCharges = RATE_CARD.map((r) => ({ segment: r.label, rate: formatRule(r.rule) }));
 
 const otherCharges = [
-  { item: "Transaction Charges", value: "0.003%" },
+  { item: "Exchange Transaction Charges", value: "0.00307% (NSE equity)" },
   { item: "GST", value: "18% on brokerage & fees" },
   { item: "Demat Reactivation", value: "₹20 per instruction" },
   { item: "Account Closure", value: "₹35 per instruction" },

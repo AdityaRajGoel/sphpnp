@@ -18,6 +18,8 @@ export const HTML_LANG: Record<Lang, string> = {
   hi: "hi-IN",
 };
 
+import { APPS_EN, APPS_HI } from "./apps";
+
 // Keys are stable ids; English is the source of truth and the fallback.
 export const translations: Record<Lang, Record<string, string>> = {
   en: {
@@ -64,6 +66,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     "openAccount.title1": "Open Your",
     "openAccount.title2": "Demat Account",
     "openAccount.subtitle": "Start your investment journey with Parasram India - serving investors since 1970, in Panipat since 1997.",
+    ...APPS_EN,
   },
   hi: {
     "nav.services": "हमारी सेवाएँ",
@@ -109,8 +112,13 @@ export const translations: Record<Lang, Record<string, string>> = {
     "openAccount.title1": "अपना",
     "openAccount.title2": "डीमैट खाता खोलें",
     "openAccount.subtitle": "पारसराम इंडिया के साथ अपनी निवेश यात्रा शुरू करें - 1970 से निवेशकों की सेवा में, 1997 से पानीपत में।",
+    ...APPS_HI,
   },
 };
+
+/** Fills "{name}" placeholders in a translated string: fill(t("store.aria"), { app, store }). */
+export const fill = (template: string, vars: Record<string, string | number>): string =>
+  template.replace(/\{(\w+)\}/g, (m, k: string) => (k in vars ? String(vars[k]) : m));
 
 // Maps the English nav labels used in megaMenuData to translation keys, so the
 // existing nav config doesn't need restructuring.
@@ -122,4 +130,5 @@ export const NAV_LABEL_KEYS: Record<string, string> = {
   "Learn": "nav.learn",
   "About": "nav.about",
   "Contact": "nav.contact",
+  "Apps": "nav.apps",
 };

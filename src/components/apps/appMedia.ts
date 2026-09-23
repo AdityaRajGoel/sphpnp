@@ -1,18 +1,18 @@
 import type { AppId } from "@/lib/trading-apps";
 
-import moneyWatchlist from "@/assets/parasram-money/watchlist.webp";
-import moneyWatchlistDark from "@/assets/parasram-money/watchlist-dark.webp";
-import moneyStockDetails from "@/assets/parasram-money/stock-details.webp";
-import moneyOptionChain from "@/assets/parasram-money/option-chain.webp";
-import moneyTechnicals from "@/assets/parasram-money/technicals.webp";
-import moneyDiscover from "@/assets/parasram-money/discover.webp";
-import moneyTradetron from "@/assets/parasram-money/tradetron.webp";
-import moneyPledge from "@/assets/parasram-money/margin-pledge.webp";
-import moneyDesktop from "@/assets/parasram-money/desktop.webp";
-import tradeMarket from "@/assets/parasram-trade/market.webp";
-import tradeMarketWatch from "@/assets/parasram-trade/market-watch.webp";
-import tradeLadder from "@/assets/parasram-trade/ladder.webp";
-import tradeStockDetails from "@/assets/parasram-trade/stock-details.webp";
+import moneyWatchlist from "@/assets/parasram-money/parasram-money-app-watchlist.webp";
+import moneyWatchlistDark from "@/assets/parasram-money/parasram-money-app-watchlist-dark-mode.webp";
+import moneyStockDetails from "@/assets/parasram-money/parasram-money-app-stock-market-depth.webp";
+import moneyOptionChain from "@/assets/parasram-money/parasram-money-app-option-chain.webp";
+import moneyTechnicals from "@/assets/parasram-money/parasram-money-app-technicals.webp";
+import moneyDiscover from "@/assets/parasram-money/parasram-money-app-discover-top-gainers.webp";
+import moneyTradetron from "@/assets/parasram-money/parasram-money-tradetron-algo-trading.webp";
+import moneyPledge from "@/assets/parasram-money/parasram-money-instant-margin-pledge.webp";
+import moneyDesktop from "@/assets/parasram-money/moneymaker-desktop-trading-terminal.webp";
+import tradeMarket from "@/assets/parasram-trade/parasram-trade-app-market-overview.webp";
+import tradeMarketWatch from "@/assets/parasram-trade/parasram-trade-app-market-watch.webp";
+import tradeLadder from "@/assets/parasram-trade/parasram-trade-app-price-ladder.webp";
+import tradeStockDetails from "@/assets/parasram-trade/parasram-trade-app-market-depth.webp";
 import qrMoneyAndroid from "@/assets/qr/money-android.svg";
 import qrMoneyIos from "@/assets/qr/money-ios.svg";
 import qrTradeAndroid from "@/assets/qr/trade-android.svg";
@@ -23,40 +23,40 @@ export type Screen = { src: string; alt: string };
 // Phone screenshots come from each app's App Store listing, 460 x 996.
 export const SCREEN_SIZE = { width: 460, height: 996 } as const;
 
-export const MONEY_HERO: Screen = { src: moneyWatchlist, alt: "Parasram Money watchlist with Nifty 50 and Sensex" };
-export const MONEY_HERO_BACK: Screen = { src: moneyOptionChain, alt: "Parasram Money option chain with OI and IV" };
+export const MONEY_HERO: Screen = { src: moneyWatchlist, alt: "Parasram Money app watchlist screen with Nifty 50 and Sensex prices and a Bank Nifty stock list" };
+export const MONEY_HERO_BACK: Screen = { src: moneyOptionChain, alt: "Parasram Money app option chain for Reliance showing calls and puts with open interest and implied volatility" };
 
 export const MONEY_SCREENS: Screen[] = [
   MONEY_HERO,
-  { src: moneyWatchlistDark, alt: "Parasram Money watchlist in dark mode" },
-  { src: moneyStockDetails, alt: "Stock details with market depth, buy and sell" },
+  { src: moneyWatchlistDark, alt: "Parasram Money app watchlist in dark mode" },
+  { src: moneyStockDetails, alt: "Parasram Money app stock details screen with market depth and buy and sell buttons" },
   MONEY_HERO_BACK,
-  { src: moneyTechnicals, alt: "Technicals tab with price changes and OHLC" },
-  { src: moneyDiscover, alt: "Discover tab with top gainers, IPO and back office" },
+  { src: moneyTechnicals, alt: "Parasram Money app technicals tab with weekly to yearly price change and OHLC" },
+  { src: moneyDiscover, alt: "Parasram Money app Discover tab with top gainers, IPO and back office shortcuts" },
 ];
 
-export const TRADE_HERO: Screen = { src: tradeMarket, alt: "Parasram Trade market screen with Sensex, Nifty and sector performance" };
+export const TRADE_HERO: Screen = { src: tradeMarket, alt: "Parasram Trade (Symphony XTS) app market screen with Sensex, Nifty 50 and a sector performance heat map" };
 
 export const TRADE_SCREENS: Screen[] = [
   TRADE_HERO,
-  { src: tradeMarketWatch, alt: "Parasram Trade market watch with futures and options" },
-  { src: tradeLadder, alt: "Parasram Trade price ladder for one-tap orders" },
-  { src: tradeStockDetails, alt: "Parasram Trade stock details with market depth" },
+  { src: tradeMarketWatch, alt: "Parasram Trade app market watch list with stocks, futures and options" },
+  { src: tradeLadder, alt: "Parasram Trade app price ladder for placing one-tap buy and sell orders" },
+  { src: tradeStockDetails, alt: "Parasram Trade app scrip screen with buy, sell, market depth and OHLC" },
 ];
 
 // Launch posters, 1280 x 960.
 export const MONEY_FEATURES = [
   {
     id: "tradetron",
-    title: "Tradetron algo trading, no code",
-    body: "Build a strategy from if-then blocks, backtest it on past data, then let it run on your Parasram Money account 24x7.",
-    image: { src: moneyTradetron, alt: "Tradetron is now available on Parasram Money: build, backtest, deploy and trade" },
+    titleKey: "apps.feature.tradetron.title",
+    bodyKey: "apps.feature.tradetron.body",
+    image: { src: moneyTradetron, alt: "Tradetron no-code algo trading now available on the Parasram Money app: build, backtest, deploy and trade strategies" },
   },
   {
     id: "margin-pledge",
-    title: "Instant margin pledge",
-    body: "Pledge holdings for margin straight from the Portfolio tab. No back-office login, no forms.",
-    image: { src: moneyPledge, alt: "Instant margin pledge from the Holdings screen of Parasram Money" },
+    titleKey: "apps.feature.pledge.title",
+    bodyKey: "apps.feature.pledge.body",
+    image: { src: moneyPledge, alt: "Instant margin pledge on the Parasram Money app: pledge holdings from the Portfolio screen without a back-office login" },
   },
 ] as const;
 
@@ -65,7 +65,7 @@ export const DESKTOP_SHOT = { src: moneyDesktop, width: 1600, height: 859 } as c
 export const DESKTOP_VIDEO = {
   hd: "/videos/moneymaker-desktop-1080.mp4",
   sd: "/videos/moneymaker-desktop-720.mp4",
-  poster: "/videos/moneymaker-desktop-poster.webp",
+  poster: "/videos/moneymaker-desktop-tour-thumbnail.webp",
   width: 1920,
   height: 1078,
 } as const;

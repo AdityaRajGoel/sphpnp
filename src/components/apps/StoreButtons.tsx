@@ -1,4 +1,6 @@
 import type { TradingApp } from "@/lib/trading-apps";
+import { useT } from "@/i18n/LanguageContext";
+import { fill } from "@/i18n/config";
 
 type Props = {
   app: TradingApp;
@@ -26,14 +28,15 @@ const AppleGlyph = () => (
  * than two identical "Google Play" links per page.
  */
 const StoreButtons = ({ app, tone = "onDark", size = "md", className = "" }: Props) => {
+  const { t } = useT();
   const skin =
     tone === "onDark"
       ? "bg-white text-brand-navy hover:bg-white/90 ring-1 ring-white/20"
       : "bg-brand-navy text-white hover:bg-brand-navy/90 dark:bg-white dark:text-brand-navy";
   const scale = size === "sm" ? "text-[13px] px-3 py-1.5 gap-2" : "text-base px-4 py-2.5 gap-2.5";
   const stores = [
-    { href: app.playHref, eyebrow: "Get it on", label: "Google Play", Glyph: PlayGlyph },
-    { href: app.iosHref, eyebrow: "Download on the", label: "App Store", Glyph: AppleGlyph },
+    { href: app.playHref, eyebrow: t("store.playEyebrow"), label: "Google Play", Glyph: PlayGlyph },
+    { href: app.iosHref, eyebrow: t("store.iosEyebrow"), label: "App Store", Glyph: AppleGlyph },
   ];
 
   return (
@@ -44,7 +47,7 @@ const StoreButtons = ({ app, tone = "onDark", size = "md", className = "" }: Pro
           href={href}
           target="_blank"
           rel="noopener noreferrer"
-          aria-label={`Get ${app.name} on ${label}`}
+          aria-label={fill(t("store.aria"), { app: t(app.nameKey), store: label })}
           className={`inline-flex items-center rounded-xl font-semibold shadow-sm transition-[background-color,transform] duration-fast ease-out hover:-translate-y-0.5 active:translate-y-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-2 ${skin} ${scale}`}
         >
           <Glyph />

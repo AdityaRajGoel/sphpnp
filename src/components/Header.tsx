@@ -21,16 +21,22 @@ import { useWatchlist } from "@/hooks/useWatchlist";
 
 const PILL = "ml-1.5 rounded-full bg-secondary px-1.5 py-px align-middle text-[9px] font-bold uppercase leading-4 tracking-wider text-secondary-foreground";
 
-const NavBadge = ({ text }: { text: string }) => <span className={`inline-flex ${PILL}`}>{text}</span>;
+const NavBadge = ({ text }: { text: string }) => {
+  const { t } = useT();
+  return <span className={`inline-flex ${PILL}`}>{t(text)}</span>;
+};
 
 // In the desktop bar the pill costs ~40px the nav doesn't have below 2xl; a dot says the same.
-const NavBadgeCompact = ({ text }: { text: string }) => (
-  <>
-    <span className={`hidden 2xl:inline-flex ${PILL}`}>{text}</span>
-    <span className="ml-1 h-1.5 w-1.5 rounded-full bg-secondary 2xl:hidden" aria-hidden />
-    <span className="sr-only 2xl:hidden">({text})</span>
-  </>
-);
+const NavBadgeCompact = ({ text }: { text: string }) => {
+  const { t } = useT();
+  return (
+    <>
+      <span className={`hidden 2xl:inline-flex ${PILL}`}>{t(text)}</span>
+      <span className="ml-1 h-1.5 w-1.5 rounded-full bg-secondary 2xl:hidden" aria-hidden />
+      <span className="sr-only 2xl:hidden">({t(text)})</span>
+    </>
+  );
+};
 
 const Header = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -78,6 +84,59 @@ const Header = () => {
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
   }, []);
 
+  // Keyboard access to the dropdowns. The panel renders after the whole nav, so
+  // Tab alone would never reach it: opening from the keyboard moves focus into
+  // the panel, Escape returns it to the trigger, and tabbing off either end of
+  // the panel lands back in the nav where the user left it.
+  const triggerRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+  const focusPanelOnOpen = useRef(false);
+
+  const openWithFocus = (label: string) => {
+    focusPanelOnOpen.current = true;
+    setActiveMenu(label);
+  };
+
+  const closeToTrigger = () => {
+    const label = activeMenu;
+    setActiveMenu(null);
+    if (label) triggerRefs.current[label]?.focus();
+  };
+
+  useEffect(() => {
+    if (!activeMenu || !focusPanelOnOpen.current) return;
+    focusPanelOnOpen.current = false;
+    // The open menu's own panel: during a cross-fade the closing one is still in the DOM.
+    const id = requestAnimationFrame(() =>
+      document.querySelector<HTMLElement>(`[data-nav-panel="${CSS.escape(activeMenu)}"]`)?.querySelector<HTMLElement>("a[href], button")?.focus(),
+    );
+    return () => cancelAnimationFrame(id);
+  }, [activeMenu]);
+
+  const onPanelKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === "Escape") {
+      e.preventDefault();
+      closeToTrigger();
+      return;
+    }
+    const panel = e.currentTarget;
+    if (e.key !== "Tab" || !activeMenu) return;
+    const items = [...panel.querySelectorAll<HTMLElement>("a[href], button")];
+    const first = items[0];
+    const last = items[items.length - 1];
+    if (e.shiftKey && document.activeElement === first) {
+      e.preventDefault();
+      closeToTrigger();
+    } else if (!e.shiftKey && document.activeElement === last) {
+      // On to whatever follows this menu's trigger in the header.
+      e.preventDefault();
+      const trigger = triggerRefs.current[activeMenu];
+      const focusables = [...document.querySelectorAll<HTMLElement>("header a[href], header button")].filter((el) => el.offsetParent !== null && !panel.contains(el));
+      const next = trigger ? focusables[focusables.indexOf(trigger) + 1] : undefined;
+      setActiveMenu(null);
+      next?.focus();
+    }
+  };
+
   const isActive = (item: typeof megaMenuItems[0]) => {
     if (item.href && location.pathname === item.href) return true;
     return item.subItems?.some(sub => location.pathname === sub.href) ?? false;
@@ -97,13 +156,13 @@ const Header = () => {
           <div className="flex items-center gap-3">
             <span className="flex items-center gap-1.5">
               <Phone className="w-3.5 h-3.5 text-secondary" />
-              <a href="tel:+919416400314" className="hover:text-secondary transition-colors font-medium">+91 9416400314</a>
+              <a href="tel:+919416400314" className="inline-flex min-h-6 items-center hover:text-secondary transition-colors font-medium">+91 9416400314</a>
               <span className="hidden lg:inline text-primary-foreground/30">·</span>
-              <a href="tel:+919999790011" className="hidden lg:inline hover:text-secondary transition-colors">9999790011</a>
+              <a href="tel:+919999790011" className="hidden lg:inline-flex min-h-6 items-center hover:text-secondary transition-colors">9999790011</a>
               <span className="hidden lg:inline text-primary-foreground/30">·</span>
-              <a href="tel:+919416400277" className="hidden lg:inline hover:text-secondary transition-colors">9416400277</a>
+              <a href="tel:+919416400277" className="hidden lg:inline-flex min-h-6 items-center hover:text-secondary transition-colors">9416400277</a>
             </span>
-            <a href="mailto:parasrampnp@gmail.com" className="hidden md:flex items-center gap-1.5 hover:text-secondary transition-colors">
+            <a href="mailto:parasrampnp@gmail.com" className="hidden md:flex min-h-6 items-center gap-1.5 hover:text-secondary transition-colors">
               <Mail className="w-3.5 h-3.5" /><span>parasrampnp@gmail.com</span>
             </a>
             <span className="hidden xl:flex items-center gap-1.5 text-primary-foreground/60">
@@ -113,17 +172,17 @@ const Header = () => {
           </div>
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2.5 pr-3 border-r border-primary-foreground/20">
-              <a href="https://www.instagram.com/parasrampanipat/" target="_blank" rel="noopener noreferrer" aria-label="Follow us on Instagram" className="inline-flex hover:text-secondary hover:scale-110 transition-[color,transform] duration-fast ease-out">
+              <a href="https://www.instagram.com/parasrampanipat/" target="_blank" rel="noopener noreferrer" aria-label="Follow us on Instagram" className="-m-[5px] inline-flex p-[5px] hover:text-secondary hover:scale-110 transition-[color,transform] duration-fast ease-out">
                 <Instagram className="w-3.5 h-3.5" />
               </a>
-              <a href="https://www.facebook.com/share/18B5W5rZaT/" target="_blank" rel="noopener noreferrer" aria-label="Follow us on Facebook" className="inline-flex hover:text-secondary hover:scale-110 transition-[color,transform] duration-fast ease-out">
+              <a href="https://www.facebook.com/share/18B5W5rZaT/" target="_blank" rel="noopener noreferrer" aria-label="Follow us on Facebook" className="-m-[5px] inline-flex p-[5px] hover:text-secondary hover:scale-110 transition-[color,transform] duration-fast ease-out">
                 <Facebook className="w-3.5 h-3.5" />
               </a>
-              <a href="https://x.com/ParasramPanipat" target="_blank" rel="noopener noreferrer" aria-label="Follow us on X (Twitter)" className="inline-flex hover:text-secondary hover:scale-110 transition-[color,transform] duration-fast ease-out">
+              <a href="https://x.com/ParasramPanipat" target="_blank" rel="noopener noreferrer" aria-label="Follow us on X (Twitter)" className="-m-[5px] inline-flex p-[5px] hover:text-secondary hover:scale-110 transition-[color,transform] duration-fast ease-out">
                 <Twitter className="w-3.5 h-3.5" />
               </a>
             </div>
-            <a href="https://parasramindia.com" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 hover:text-secondary transition-colors">
+            <a href="https://parasramindia.com" target="_blank" rel="noopener noreferrer" className="flex min-h-6 items-center gap-1 hover:text-secondary transition-colors">
               <span>Visit Main Website</span>
               <ExternalLink className="w-3.5 h-3.5" />
             </a>
@@ -189,7 +248,32 @@ const Header = () => {
                     ) : navLabel(item.label)}
                     {item.badge && <NavBadgeCompact text={item.badge} />}
                     {item.subItems && (
-                      <ChevronDown className={`w-3.5 h-3.5 ml-0.5 transition-transform duration-fast ease-out ${activeMenu === item.label ? "rotate-180" : ""}`} />
+                      <button
+                        type="button"
+                        ref={(el) => { triggerRefs.current[item.label] = el; }}
+                        aria-expanded={activeMenu === item.label}
+                        aria-controls="nav-panel"
+                        aria-label={`${navLabel(item.label)} menu`}
+                        // A mouse click (detail > 0) just opens - hover got there first. From
+                        // the keyboard (detail 0) Enter/Space toggles and moves focus in.
+                        onClick={(e) => {
+                          if (e.detail > 0) setActiveMenu(item.label);
+                          else if (activeMenu === item.label) setActiveMenu(null);
+                          else openWithFocus(item.label);
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "ArrowDown") {
+                            e.preventDefault();
+                            openWithFocus(item.label);
+                          } else if (e.key === "Escape" && activeMenu) {
+                            e.preventDefault();
+                            setActiveMenu(null);
+                          }
+                        }}
+                        className="-my-1 ml-0.5 rounded p-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary"
+                      >
+                        <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-fast ease-out ${activeMenu === item.label ? "rotate-180" : ""}`} aria-hidden />
+                      </button>
                     )}
                   </div>
                 )}
@@ -258,17 +342,25 @@ const Header = () => {
         <AnimatePresence>
           {activeMenu && megaMenuItems.find(m => m.label === activeMenu)?.subItems && (
             <div
+              // Keyed by panel TYPE. Reopening the same type during the ~200ms close
+              // animation revives this child; switching type cross-fades a new one.
+              // With no key a menu opened mid-close never rendered, and with one
+              // shared key the Apps panel mounted inside the exiting wrapper and
+              // was removed with it.
+              key={activeMenu === "Apps" ? "apps-panel" : "mega-panel"}
               onMouseEnter={handleDropdownMouseEnter}
               onMouseLeave={handleMouseLeave}
             >
-              {activeMenu === "Apps" ? (
-                <AppsMenuPanel onClose={() => setActiveMenu(null)} />
-              ) : (
-                <MegaDropdown
-                  items={megaMenuItems.find(m => m.label === activeMenu)!.subItems!}
-                  onClose={() => setActiveMenu(null)}
-                />
-              )}
+              <div id="nav-panel" data-nav-panel={activeMenu} onKeyDown={onPanelKeyDown}>
+                {activeMenu === "Apps" ? (
+                  <AppsMenuPanel onClose={() => setActiveMenu(null)} />
+                ) : (
+                  <MegaDropdown
+                    items={megaMenuItems.find(m => m.label === activeMenu)!.subItems!}
+                    onClose={() => setActiveMenu(null)}
+                  />
+                )}
+              </div>
             </div>
           )}
         </AnimatePresence>
@@ -400,7 +492,7 @@ const Header = () => {
                   </Button>
                   <div className="mt-2 rounded-xl bg-hero p-4 text-primary-foreground">
                     <p className="text-sm font-semibold">
-                      Get Parasram Money <NavBadge text="New" />
+                      {t("apps.menu.getMoney")} <NavBadge text="badge.new" />
                     </p>
                     <StoreButtons app={appById("money")} size="sm" className="mt-3" />
                   </div>

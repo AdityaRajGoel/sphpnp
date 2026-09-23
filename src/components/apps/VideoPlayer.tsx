@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { Maximize, Minimize, Pause, Play, RotateCcw } from "lucide-react";
+import { useT } from "@/i18n/LanguageContext";
 
 type Props = {
   /** Rendition for wide screens and for narrow ones - picked once, at mount. */
@@ -12,6 +13,10 @@ type Props = {
   title: string;
   /** Small label above the title on the thumbnail. */
   eyebrow?: string;
+  /** Describes the thumbnail frame, for search and for anyone not seeing it. */
+  posterAlt?: string;
+  /** Id of the visible text that describes the video. */
+  describedBy?: string;
 };
 
 const SEEK_STEP_S = 5;
@@ -34,7 +39,8 @@ type IosVideo = HTMLVideoElement & { webkitEnterFullscreen?: () => void };
  * preload="none" plus a lazy thumbnail means nothing downloads until the player
  * is near the viewport, and the video itself not until someone presses play.
  */
-const VideoPlayer = ({ hdSrc, sdSrc, poster, width, height, title, eyebrow }: Props) => {
+const VideoPlayer = ({ hdSrc, sdSrc, poster, width, height, title, eyebrow, posterAlt = "", describedBy }: Props) => {
+  const { t } = useT();
   const frameRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const [src] = useState(() =>
@@ -112,7 +118,7 @@ const VideoPlayer = ({ hdSrc, sdSrc, poster, width, height, title, eyebrow }: Pr
     <div
       ref={frameRef}
       role="region"
-      aria-label={`${title} video`}
+      aria-label={title}
       onKeyDown={onKeyDown}
       className="group/player relative overflow-hidden rounded-2xl bg-black shadow-2xl ring-1 ring-white/10"
       style={{ aspectRatio: `${width} / ${height}` }}
@@ -123,6 +129,8 @@ const VideoPlayer = ({ hdSrc, sdSrc, poster, width, height, title, eyebrow }: Pr
         width={width}
         height={height}
         preload="none"
+        aria-label={title}
+        aria-describedby={describedBy}
         muted
         playsInline
         onClick={toggle}
@@ -147,12 +155,12 @@ const VideoPlayer = ({ hdSrc, sdSrc, poster, width, height, title, eyebrow }: Pr
         <button
           type="button"
           onClick={toggle}
-          aria-label={`Play ${title}`}
+          aria-label={`${t("video.play")}: ${title}`}
           className="absolute inset-0 text-left text-white focus-visible:outline-none"
         >
           <img
             src={poster}
-            alt=""
+            alt={posterAlt}
             width={width}
             height={height}
             loading="lazy"
@@ -167,7 +175,7 @@ const VideoPlayer = ({ hdSrc, sdSrc, poster, width, height, title, eyebrow }: Pr
               </span>
             )}
             <span className="mt-2 block font-heading text-base font-bold leading-tight sm:text-xl md:text-4xl">{title}</span>
-            <span className="mt-1.5 block text-xs text-white/75 md:text-sm">{fmt(duration || FALLBACK_DURATION_S)} · no sound</span>
+            <span className="mt-1.5 block text-xs text-white/75 md:text-sm">{fmt(duration || FALLBACK_DURATION_S)} · {t("video.noSound")}</span>
           </span>
           <span className="absolute left-1/2 top-1/2 flex h-16 w-16 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-secondary text-secondary-foreground shadow-xl shadow-black/40 ring-4 ring-white/25 transition-transform duration-base ease-out group-hover/player:scale-110 group-focus-within/player:ring-white/70 md:h-24 md:w-24">
             {isLoading ? (
@@ -183,7 +191,7 @@ const VideoPlayer = ({ hdSrc, sdSrc, poster, width, height, title, eyebrow }: Pr
         <button
           type="button"
           onClick={toggle}
-          aria-label={`Replay ${title}`}
+          aria-label={`${t("video.replay")}: ${title}`}
           className="absolute inset-0 flex items-center justify-center bg-black/50 focus-visible:outline-none"
         >
           <span className="flex h-16 w-16 items-center justify-center rounded-full bg-secondary text-secondary-foreground shadow-xl ring-4 ring-white/25 md:h-20 md:w-20">
@@ -202,7 +210,7 @@ const VideoPlayer = ({ hdSrc, sdSrc, poster, width, height, title, eyebrow }: Pr
           <button
             type="button"
             onClick={toggle}
-            aria-label={isPlaying ? "Pause" : "Play"}
+            aria-label={isPlaying ? t("video.pause") : t("video.play")}
             className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full hover:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary"
           >
             {isPlaying ? <Pause className="h-5 w-5 fill-current" /> : <Play className="h-5 w-5 fill-current" />}
@@ -217,7 +225,7 @@ const VideoPlayer = ({ hdSrc, sdSrc, poster, width, height, title, eyebrow }: Pr
             step={0.1}
             value={time}
             onChange={(e) => seekTo(Number(e.target.value))}
-            aria-label="Seek"
+            aria-label={t("video.seek")}
             aria-valuetext={`${fmt(time)} of ${fmt(duration)}`}
             className="h-1.5 min-w-0 flex-1 cursor-pointer appearance-none rounded-full accent-secondary"
             style={{ background: `linear-gradient(to right, hsl(var(--secondary)) ${progress}%, rgb(255 255 255 / 0.3) ${progress}%)` }}
@@ -225,7 +233,7 @@ const VideoPlayer = ({ hdSrc, sdSrc, poster, width, height, title, eyebrow }: Pr
           <button
             type="button"
             onClick={toggleFullscreen}
-            aria-label={isFullscreen ? "Exit full screen" : "Full screen"}
+            aria-label={isFullscreen ? t("video.exitFullscreen") : t("video.fullscreen")}
             className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full hover:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary"
           >
             {isFullscreen ? <Minimize className="h-5 w-5" /> : <Maximize className="h-5 w-5" />}

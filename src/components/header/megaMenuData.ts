@@ -14,7 +14,7 @@ export type SubItem = {
   icon: LucideIcon;
   description: string;
   external?: boolean;
-  /** Short pill after the label, e.g. "New". */
+  /** i18n key of a short pill after the label, e.g. "badge.new". */
   badge?: string;
 };
 
@@ -82,9 +82,9 @@ export const megaMenuItems: MegaMenuItem[] = [
     // the mobile menu uses the list as-is.
     label: "Apps",
     href: "/apps",
-    badge: "New",
+    badge: "badge.new",
     subItems: [
-      { label: "Parasram Money", href: "/apps#money", icon: TabletSmartphone, description: "Our new app: Tradetron algos, instant pledge", badge: "New" },
+      { label: "Parasram Money", href: "/apps#money", icon: TabletSmartphone, description: "Our new app: Tradetron algos, instant pledge", badge: "badge.new" },
       { label: "MoneyMaker Desktop", href: "/apps#desktop", icon: Monitor, description: "The Windows terminal, with a video tour" },
       { label: "Parasram Trade", href: "/apps#trade", icon: Smartphone, description: "The Symphony XTS mobile app" },
     ],

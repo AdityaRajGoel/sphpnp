@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { TRADING_APPS, appById } from "@/lib/trading-apps";
+import { TRADING_APPS, appById, totalPlayDownloads } from "@/lib/trading-apps";
 import { TRADING_PLATFORMS } from "@/lib/trading-platforms";
 
 describe("TRADING_APPS", () => {
@@ -18,5 +18,10 @@ describe("TRADING_APPS", () => {
   it("features Parasram Money first as the new app", () => {
     expect(TRADING_APPS[0].id).toBe("money");
     expect(TRADING_APPS.filter((a) => a.isNew).map((a) => a.id)).toEqual(["money"]);
+  });
+
+  it("adds both apps' Play download floors into one showcase figure", () => {
+    expect(totalPlayDownloads()).toBe("11,000+");
+    expect(totalPlayDownloads([appById("trade")])).toBe("10,000+");
   });
 });
