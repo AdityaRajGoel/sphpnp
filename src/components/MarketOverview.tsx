@@ -1,4 +1,5 @@
 import { motion, AnimatePresence } from "motion/react";
+import { emptyTabMessage } from "@/lib/market-overview";
 import { useRef, useState, useMemo, useCallback, useEffect, lazy, Suspense } from "react";
 import { Link } from "react-router-dom";
 import {
@@ -386,9 +387,7 @@ const MarketOverview = () => {
                      price rows are gone. Saying so is the honest outcome when
                      the feed is unreachable. */
                   <div className="py-8 text-center text-sm text-muted-foreground">
-                    {activeTab === "calendar"
-                      ? "No upcoming corporate actions listed right now - check back soon."
-                      : "Live market data is temporarily unavailable. Figures are not shown rather than estimated."}
+                    {emptyTabMessage(activeTab, liveData !== null, totalStocks)}
                   </div>
                 ) : (
                   activeConfig.data.map((item, i) => (
@@ -418,14 +417,17 @@ const MarketOverview = () => {
         <motion.div className="mt-8 bg-card border border-border/50 rounded-xl p-5" {...revealSection}>
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-bold text-foreground">Market Breadth</h3>
-            <span className="text-[10px] text-muted-foreground">NSE</span>
+            {/* The live feed covers a tracked set of large caps, not the whole
+                exchange; unlabelled, "0 advances, 20 declines" read as all of NSE. */}
+            <span className="text-[10px] text-muted-foreground">{totalStocks ? `${totalStocks} tracked NSE stocks` : "NSE"}</span>
           </div>
           <div className="flex items-center gap-3 mb-2">
             <span className="text-xs font-bold text-secondary">{liveAdvances.toLocaleString()} Advances</span>
             <div className="flex-1 h-3 rounded-full bg-muted overflow-hidden flex">
-              <div className="bg-secondary/80 rounded-l-full" style={{ width: `${totalStocks ? (liveAdvances / totalStocks * 100) : 62}%` }} />
-              <div className="bg-muted-foreground/30" style={{ width: `${totalStocks ? (liveUnchanged / totalStocks * 100) : 8}%` }} />
-              <div className="bg-destructive/80 rounded-r-full" style={{ width: `${totalStocks ? (liveDeclines / totalStocks * 100) : 30}%` }} />
+              {/* No data draws an empty track, not a made-up split. */}
+              <div className="bg-secondary/80 rounded-l-full" style={{ width: `${totalStocks ? (liveAdvances / totalStocks * 100) : 0}%` }} />
+              <div className="bg-muted-foreground/30" style={{ width: `${totalStocks ? (liveUnchanged / totalStocks * 100) : 0}%` }} />
+              <div className="bg-destructive/80 rounded-r-full" style={{ width: `${totalStocks ? (liveDeclines / totalStocks * 100) : 0}%` }} />
             </div>
             <span className="text-xs font-bold text-destructive">{liveDeclines.toLocaleString()} Declines</span>
           </div>

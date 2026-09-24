@@ -51,20 +51,55 @@ const Index = () => {
       <StockTicker />
       <main id="main-content">
       <Hero />
+      {/*
+        The page runs in five groups, each kept together:
+          1. What we offer   - products, then how the branch helps
+          2. Markets today   - indices, movers, sentiment and flows, breadth
+          3. IPOs
+          4. Research & news - the branch's reports, its calls, the headlines
+          5. Why Parasram    - the case, the credentials, the awards, the reviews
+        The market sections used to be split by the trust badges and awards,
+        and the reasons to choose us were spread over four places; a reader
+        crossing the page now meets each subject once. About, Our Legacy and
+        Contact still do NOT appear here - /about and /contact are their home,
+        and duplicating them competed with those pages for the same searches.
+      */}
       <Suspense fallback={<SectionSkeleton height="h-96" />}>
         <InvestmentProducts />
       </Suspense>
       <Suspense fallback={<SectionSkeleton height="h-96" />}>
         <HomeStories />
       </Suspense>
+
       <Suspense fallback={<SectionSkeleton height="h-96" />}>
         <LiveChart />
+      </Suspense>
+      <Suspense fallback={<SectionSkeleton height="h-96" />}>
+        <MarketOverview />
       </Suspense>
       <Suspense fallback={<SectionSkeleton height="h-80" />}>
         <MarketDashboard />
       </Suspense>
       <Suspense fallback={<SectionSkeleton height="h-80" />}>
         <HomeMarketGlance />
+      </Suspense>
+
+      <Suspense fallback={<SectionSkeleton height="h-64" />}>
+        <IPOTracker />
+      </Suspense>
+
+      <Suspense fallback={<SectionSkeleton height="h-64" />}>
+        <DailyResearch />
+      </Suspense>
+      <Suspense fallback={<SectionSkeleton height="h-80" />}>
+        <TelegramChannel limit={4} showViewAll={true} />
+      </Suspense>
+      <Suspense fallback={<SectionSkeleton height="h-64" />}>
+        <MarketNews />
+      </Suspense>
+
+      <Suspense fallback={<SectionSkeleton height="h-64" />}>
+        <WhyChooseUs />
       </Suspense>
       {/* Desktop-only: mobile keeps the home page short and conversion-focused */}
       <div className="hidden md:block">
@@ -77,32 +112,8 @@ const Index = () => {
           <AwardsSection />
         </Suspense>
       </div>
-      <Suspense fallback={<SectionSkeleton height="h-96" />}>
-        <MarketOverview />
-      </Suspense>
-      <Suspense fallback={<SectionSkeleton height="h-64" />}>
-        <IPOTracker />
-      </Suspense>
       <Suspense fallback={<SectionSkeleton height="h-24" />}>
         <ClientMarquee />
-      </Suspense>
-      <Suspense fallback={<SectionSkeleton height="h-64" />}>
-        <MarketNews />
-      </Suspense>
-      <Suspense fallback={<SectionSkeleton height="h-64" />}>
-        <DailyResearch />
-      </Suspense>
-      {/* Why Choose Us sits after the market tools: someone who came for a
-          number gets it first, and the case for us is made to a reader who has
-          already stayed. About, Our Legacy and Contact deliberately do NOT
-          appear here - /about and /contact are their home, and duplicating them
-          on the home page competed with those pages for the same search intent
-          on a site already struggling to get its pages indexed. */}
-      <Suspense fallback={<SectionSkeleton height="h-64" />}>
-        <WhyChooseUs />
-      </Suspense>
-      <Suspense fallback={<SectionSkeleton height="h-80" />}>
-        <TelegramChannel limit={4} showViewAll={true} />
       </Suspense>
       <div className="hidden md:block">
         <Suspense fallback={<SectionSkeleton height="h-80" />}>

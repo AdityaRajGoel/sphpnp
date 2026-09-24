@@ -161,7 +161,10 @@ const LiveMarketPanel = memo(({ tiles, loading, tip, reduceMotion }: {
         </div>
         <div className="flex items-center justify-between text-[10px] md:text-xs tabular-nums">
           <span className="font-bold text-secondary">{advances} Advances</span>
-          <span className="font-medium text-primary-foreground/50">{unchanged} Unchanged</span>
+          <span className="font-medium text-primary-foreground/50">
+            {/* The feed tracks a set of large caps, not all of NSE. */}
+            {total ? `${unchanged} unchanged · ${total} tracked` : `${unchanged} Unchanged`}
+          </span>
           <span className="font-bold text-destructive">{declines} Declines</span>
         </div>
       </div>
@@ -241,13 +244,17 @@ const Hero = () => {
       "Never invest money you can't afford to lose.",
       "Research before you invest.",
     ];
-    if (niftyData?.up) tips.unshift(`NIFTY 50 is up ${niftyData.change} - markets looking bullish today.`);
-    else if (niftyData) tips.unshift(`NIFTY 50 is down ${niftyData.change} - consider buying the dip wisely.`);
-    if (goldData?.up) tips.push(`Gold is up ${goldData.change} - a safe haven in volatile markets.`);
+    // Facts only. These lines once read "consider buying the dip", "markets
+    // looking bullish" and "stay cautious": a registered broker's home page
+    // telling every visitor what to do with their money is advice, and the
+    // falls read "down -1.67%". The sign is dropped where the verb carries it.
+    const size = (change: string) => change.replace(/^[+-]/, "");
+    if (niftyData) tips.unshift(`NIFTY 50 is ${niftyData.up ? "up" : "down"} ${size(niftyData.change)} today.`);
+    if (goldData) tips.push(`Gold is ${goldData.up ? "up" : "down"} ${size(goldData.change)} today.`);
     if (marketOverview) {
-      const { advances = 0, declines = 0 } = marketOverview;
-      if (advances > declines) tips.push(`${advances} advances vs ${declines} declines - broad market strength.`);
-      else if (declines > advances) tips.push(`${declines} declines vs ${advances} advances - stay cautious.`);
+      const { advances = 0, declines = 0, unchanged = 0 } = marketOverview;
+      const tracked = advances + declines + unchanged;
+      if (tracked > 0) tips.push(`${advances} of ${tracked} tracked large caps are up today, ${declines} down.`);
     }
     return tips;
   }, [niftyData, goldData, marketOverview]);

@@ -102,6 +102,9 @@ const IPOCard = ({ ipo, index }: { ipo: DisplayIpo; index: number }) => (
 
 type FetchIposResponse = { success: boolean; ipos?: Ipo[]; error?: string; fetchedAt?: string };
 
+/** The home page previews the calendar; the full list lives on /ipo. */
+const HOME_LIMIT = 6;
+
 const IPOTracker = () => {
   const [activeTab, setActiveTab] = useState<TabKey>("upcoming");
   const [ipos, setIpos] = useState<DisplayIpo[]>([]);
@@ -205,7 +208,7 @@ const IPOTracker = () => {
               exit={{ opacity: 0, y: -10 }}
               className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 max-md:[&>*:nth-child(n+4)]:hidden"
             >
-              {filtered.length > 0 ? filtered.map((ipo, i) => (
+              {filtered.length > 0 ? filtered.slice(0, HOME_LIMIT).map((ipo, i) => (
                 <IPOCard key={ipo.id} ipo={ipo} index={i} />
               )) : (
                 <div className="col-span-full text-center py-12 text-muted-foreground">
@@ -214,6 +217,13 @@ const IPOTracker = () => {
               )}
             </motion.div>
           </AnimatePresence>
+        )}
+        {!loading && filtered.length > HOME_LIMIT && (
+          <p className="mt-4 text-center text-sm">
+            <Link to="/ipo" className="link-arrow font-semibold text-secondary">
+              See all {filtered.length} {activeTab === "listed" ? "recent listings" : `${activeTab} issues`}
+            </Link>
+          </p>
         )}
 
         {/* How to apply - compact 4-step strip (parent-site pattern) */}
