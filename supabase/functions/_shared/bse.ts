@@ -76,3 +76,36 @@ export function parseBseAnnouncements(raw: unknown, symbol: string, scripCode: s
   }
   return out.sort((a, b) => (b.published_at ?? "").localeCompare(a.published_at ?? ""));
 }
+
+/** Rows BSE returns per announcements page. */
+export const BSE_PAGE_SIZE = 50;
+/** Pages read per scrip: a year of filings for the busiest stocks fits in five. */
+export const BSE_MAX_PAGES = 5;
+
+/**
+ * How many pages of a scrip's window to read, judged from page 1. BSE states the
+ * total in Table1[0].ROWCNT; without it, a short first page is the only page.
+ * Shared by the edge function and the host fetch so the two can never disagree.
+ */
+export function bsePagesToFetch(firstPage: unknown, maxPages = BSE_MAX_PAGES): number {
+  if (!isRecord(firstPage)) return 1;
+  const rows = Array.isArray(firstPage.Table) ? firstPage.Table.length : 0;
+  const meta = Array.isArray(firstPage.Table1) && isRecord(firstPage.Table1[0]) ? firstPage.Table1[0] : null;
+  const total = Number(meta?.ROWCNT);
+  if (Number.isFinite(total) && total > 0) return Math.max(1, Math.min(maxPages, Math.ceil(total / BSE_PAGE_SIZE)));
+  return rows < BSE_PAGE_SIZE ? 1 : maxPages;
+}
+
+/**
+ * One scrip's announcements across all the pages read, each once, newest first.
+ * BSE can hand back the same rows for a page past the end, so ids are the key.
+ */
+export function mergeBsePages(pages: unknown[], symbol: string, scripCode: string): BseAnnouncement[] {
+  const seen = new Map<string, BseAnnouncement>();
+  for (const page of pages) {
+    for (const item of parseBseAnnouncements(page, symbol, scripCode)) {
+      if (!seen.has(item.news_id)) seen.set(item.news_id, item);
+    }
+  }
+  return [...seen.values()].sort((a, b) => (b.published_at ?? "").localeCompare(a.published_at ?? ""));
+}
