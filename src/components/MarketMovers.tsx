@@ -123,7 +123,7 @@ const MarketMovers = ({ stocks, onPick }: MarketMoversProps) => {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -8 }}
           transition={{ duration: 0.2 }}
-          className="grid sm:grid-cols-2 gap-x-6 gap-y-0.5"
+          className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-0.5"
         >
           {rows.length === 0 ? (
             <p className="text-sm text-muted-foreground py-6 text-center col-span-full">No data available yet.</p>

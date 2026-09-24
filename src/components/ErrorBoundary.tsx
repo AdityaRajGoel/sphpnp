@@ -1,5 +1,6 @@
 import React, { Component, ErrorInfo, ReactNode } from "react";
 import { reportClientError, toReport } from "@/lib/client-errors";
+import { isChunkReloadPending } from "@/lib/chunk-reload";
 import { AlertTriangle, RefreshCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -24,6 +25,7 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    if (isChunkReloadPending()) return;
     console.error("Uncaught error:", error, errorInfo);
     // Logged on the VPS (live site only, see src/lib/client-errors.ts).
     const report = toReport("react", error, undefined, window.location.pathname);
@@ -31,11 +33,11 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   public render() {
+    // A failed chunk is already reloading the page: no error screen for that instant.
+    if (this.state.hasError && isChunkReloadPending()) return null;
     if (this.state.hasError) {
       return (
         <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4 relative overflow-hidden">
-          {/* Ambient glow decoration */}
-          <div className="absolute w-96 h-96 bg-destructive/10 rounded-full blur-3xl transform-gpu" />
           
           <div className="relative z-10 flex flex-col items-center max-w-md text-center">
             <div className="w-16 h-16 bg-destructive/20 rounded-2xl flex items-center justify-center mb-6 border border-destructive/30">
@@ -58,7 +60,7 @@ export class ErrorBoundary extends Component<Props, State> {
             <Button 
               size="lg" 
               onClick={() => window.location.reload()}
-              className="bg-brand-orange hover:bg-brand-orange/90 text-white dark:text-brand-charcoal gap-2 font-semibold shadow-lg shadow-brand-orange/20"
+              className="bg-brand-orange hover:bg-brand-orange/90 text-white dark:text-brand-charcoal gap-2 font-semibold shadow-lg"
             >
               <RefreshCcw className="w-4 h-4" />
               Reload Page

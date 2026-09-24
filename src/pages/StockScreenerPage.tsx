@@ -454,7 +454,7 @@ const StockScreenerPage = () => {
         )}
 
         {/* EOD smart-money boards: bulk/block deals + circuit hitters */}
-        <div className="grid md:grid-cols-2 gap-6 mb-8 empty:hidden">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 empty:hidden">
           <BulkBlockDeals />
           <CircuitWatch rows={bhavRows} asOf={bhavAsOf} loading={bhavLoading} />
         </div>
@@ -482,7 +482,7 @@ const StockScreenerPage = () => {
               return (
                 <Card 
                   key={b.id} 
-                  className={`p-4 flex flex-col cursor-pointer transition-transform ease-out hover:scale-[1.02] active:scale-[0.97] ${isActive ? "ring-2 ring-brand-orange bg-brand-orange/5 border-brand-orange/50" : "hover:border-primary/50"}`}
+                  className={`p-4 flex flex-col cursor-pointer transition-transform ease-out active:scale-[0.97] ${isActive ? "ring-2 ring-brand-orange bg-brand-orange/5 border-brand-orange/50" : "hover:border-primary/50"}`}
                   onClick={() => setActiveBasket(isActive ? null : b.id)}
                   aria-pressed={isActive}
                   {...pressable(() => setActiveBasket(isActive ? null : b.id))}

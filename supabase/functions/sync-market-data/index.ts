@@ -358,13 +358,19 @@ async function run(ctx: Ctx, dataset: string, body: Record<string, unknown>): Pr
       // one that is missing is still fetched here, so a partial feed still works.
       const nse = parseNseEventCalendar(body.nse ?? await fetchJson("https://www.nseindia.com/api/event-calendar"));
       if (body.bse === undefined) await sleep(1000);
-      const bse = parseBseResultsCalendar(
-        body.bse ?? await fetchJson("https://api.bseindia.com/BseIndiaAPI/api/Corpforthresults/w", BSE_HEADERS),
-        await bseCodes(sb),
-      );
+      // BSE's CDN has refused this runtime outright since 24 Sep 2026 (403 to Deno and
+      // curl, 200 to Node on the same host), so its half is best-effort here: the NSE
+      // rows are still written and host-fetch.sh supplies BSE twice a day.
+      let bseRaw: unknown = body.bse;
+      let bseError: string | undefined;
+      if (bseRaw === undefined) {
+        try { bseRaw = await fetchJson("https://api.bseindia.com/BseIndiaAPI/api/Corpforthresults/w", BSE_HEADERS); }
+        catch (e) { bseError = (e as Error).message; }
+      }
+      const bse = bseRaw === undefined ? [] : parseBseResultsCalendar(bseRaw, await bseCodes(sb));
       const rows = [...new Map([...nse, ...bse].map((e) => [e.event_key, e])).values()];
       await sb.from("corporate_calendar").delete().lt("event_date", daysAgo(60));
-      return { rows: await upsert(sb, "corporate_calendar", rows, "event_key"), nse: nse.length, bse: bse.length };
+      return { rows: await upsert(sb, "corporate_calendar", rows, "event_key"), nse: nse.length, bse: bse.length, bseError };
     }
     case "macro_ingest": {
       const rows = (Array.isArray(body.rows) ? body.rows : []).filter((r): r is MacroMonthly =>

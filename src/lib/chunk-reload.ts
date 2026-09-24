@@ -11,6 +11,12 @@
 const KEY = "sphpnp:chunk-reload-at";
 export const RELOAD_COOLDOWN_MS = 30_000;
 
+// Cancelling the preload error makes Vite resolve the import to undefined, so the
+// React.lazy() around it throws "reading 'default'" before the reload lands. The
+// error boundary checks this flag to stay blank and silent for that moment.
+let reloadPending = false;
+export const isChunkReloadPending = () => reloadPending;
+
 export function shouldReloadForChunkError(now: number, lastReloadAt: number | null, online: boolean): boolean {
   if (!online) return false;
   return lastReloadAt === null || now - lastReloadAt > RELOAD_COOLDOWN_MS;
@@ -34,6 +40,7 @@ export function installChunkReload(): void {
       return;
     }
     event.preventDefault();
+    reloadPending = true;
     window.location.reload();
   });
 }
