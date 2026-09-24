@@ -11,7 +11,7 @@ import ScrollProgress from "@/components/ScrollProgress";
 import WhatsAppButton from "@/components/WhatsAppButton";
 import { Button } from "@/components/ui/button";
 import {
-  BANK, CHECKED_ON, CLIENT_BANK_ACCOUNTS_PDF, FUND_TRANSFER_SOURCE, GATEWAY_CHARGE, PAYMENT_GATEWAY, WITHDRAWAL_EMAIL,
+  BANK, CHECKED_ON, CLIENT_BANK_ACCOUNTS_PDF, FUND_TRANSFER_SOURCE, GATEWAY_CHARGE, WITHDRAWAL_EMAIL,
   virtualAccountFor,
 } from "@/lib/fund-transfer";
 
@@ -136,11 +136,11 @@ const FundTransferPage = () => {
             <aside className="min-w-0 space-y-8" aria-label="Other ways to pay and withdraw">
               <section aria-labelledby="pay-online">
                 <h2 id="pay-online" className="text-xl font-bold">Pay online</h2>
-                <p className="mt-1 text-sm text-muted-foreground">NetBanking or UPI through Parasram&rsquo;s payment gateway, for NSE, BSE and MCX. You will need your client code.</p>
+                <p className="mt-1 text-sm text-muted-foreground">NetBanking or UPI through Parasram&rsquo;s payment gateway, for NSE, BSE and MCX, linked from the firm&rsquo;s fund-transfer page. You will need your client code.</p>
                 <p className="mt-3 text-sm"><span className="text-muted-foreground">Charge:</span> {GATEWAY_CHARGE}</p>
-                <Button asChild className="mt-4 bg-secondary text-secondary-foreground hover:bg-secondary/90">
-                  <a href={PAYMENT_GATEWAY} target="_blank" rel="noopener noreferrer">
-                    Open the payment gateway <ExternalLink className="ml-1.5 h-4 w-4" aria-hidden />
+                <Button asChild variant="outline" className="mt-4 border-secondary/50 text-secondary hover:bg-secondary hover:text-secondary-foreground">
+                  <a href={FUND_TRANSFER_SOURCE} target="_blank" rel="noopener noreferrer">
+                    Go to Parasram&rsquo;s payment page <ExternalLink className="ml-1.5 h-4 w-4" aria-hidden />
                   </a>
                 </Button>
               </section>

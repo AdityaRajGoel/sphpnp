@@ -9,8 +9,14 @@ export const FUND_TRANSFER_SOURCE = "https://www.parasramindia.com/fund-transfer
 export const CLIENT_BANK_ACCOUNTS_PDF = "https://www.parasramindia.com/wp-content/uploads/2025/07/CLIENT-BANK-ACCOUNTS-2025.pdf";
 export const CHECKED_ON = "24 Sep 2026";
 
-/** Parasram's own gateway (NetBanking or UPI, via Atom Paynetz). HTTP-only upstream. */
-export const PAYMENT_GATEWAY = "http://trade.parasramindia.com:9002/FundTransfer.aspx";
+/*
+ * The firm's online gateway (NetBanking or UPI, via Atom Paynetz) is served only
+ * over plain http (trade.parasramindia.com:9002; https does not answer, checked
+ * 24 Sep 2026), and it shows a client's name and bank details for a typed code.
+ * This site does not send clients to it directly: "Pay online" points at the
+ * parent's https fund-transfer page, which links it. Link the gateway here again
+ * once it is served over https.
+ */
 /** ₹7 + 18% GST, per transaction, as published. */
 export const GATEWAY_CHARGE = "₹8.26 per transaction (₹7 + 18% GST)";
 
