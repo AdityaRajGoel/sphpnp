@@ -56,6 +56,8 @@ const LearningCenterPage = lazy(() => import("./pages/LearningCenterPage"));
 const BannerManagerPage = lazy(() => import("./pages/BannerManagerPage"));
 const ProductsPage = lazy(() => import("./pages/ProductsPage"));
 const DepositoryServicesPage = lazy(() => import("./pages/DepositoryServicesPage"));
+const FundTransferPage = lazy(() => import("./pages/FundTransferPage"));
+const DownloadsPage = lazy(() => import("./pages/DownloadsPage"));
 const CareersPage = lazy(() => import("./pages/CareersPage"));
 const PrivacyPolicyPage = lazy(() => import("./pages/PrivacyPolicyPage"));
 const CookiePolicyPage = lazy(() => import("./pages/CookiePolicyPage"));
@@ -191,6 +193,8 @@ const AnimatedRoutes = () => {
         <Route path="/banner-manager" element={<BannerManagerPage />} />
         <Route path="/products" element={<ProductsPage />} />
         <Route path="/depository-services" element={<DepositoryServicesPage />} />
+        <Route path="/fund-transfer" element={<FundTransferPage />} />
+        <Route path="/downloads" element={<DownloadsPage />} />
         <Route path="/careers" element={<CareersPage />} />
         <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
         <Route path="/cookie-policy" element={<CookiePolicyPage />} />

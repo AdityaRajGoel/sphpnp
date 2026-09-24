@@ -52,6 +52,8 @@ const routes = [
   '/compare',
   '/products',
   '/depository-services',
+  '/fund-transfer',
+  '/downloads',
   '/brokerage-calculator',
   '/margin-calculator',
   '/sip-calculator',

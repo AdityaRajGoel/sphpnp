@@ -57,7 +57,7 @@ const importantLinks: FooterLink[] = [
   { label: "SMART ODR", href: "https://smartodr.in/login", external: true, title: "SEBI Online Dispute Resolution" },
   { label: "NSE Investor", href: "https://www.nseindia.com/static/invest/investors-home", external: true },
   { label: "BSE Investor", href: "https://www.bseindia.com/investor.html", external: true },
-  { label: "Useful Downloads", href: "https://www.parasramindia.com/software-setups/", external: true },
+  { label: "Forms & Downloads", href: "/downloads" },
 ];
 
 const LEGAL_LINKS: FooterLink[] = [

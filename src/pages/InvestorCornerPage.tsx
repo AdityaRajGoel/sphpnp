@@ -96,7 +96,7 @@ const ADVISORIES = [
 // must always reflect the parent firm's latest published versions).
 const OFFICIAL_LINKS: { label: string; desc: string; href: string; icon: typeof FileText }[] = [
   { label: "Investor Charter", desc: "Broker, NSDL & CDSL investor charters", href: "https://www.parasramindia.com/investor-charter/", icon: Scale },
-  { label: "Investor Grievances / Complaints Data", desc: "Monthly complaints disclosure (PDF)", href: "https://www.parasramindia.com/wp-content/uploads/2026/05/COMPLAINTS-TRENDS-2026.pdf", icon: FileText },
+  { label: "Investor Grievances / Complaints Data", desc: "Monthly complaints disclosure (PDF)", href: "https://www.parasramindia.com/wp-content/uploads/2026/09/COMPLAINTS-TRENDS.pdf", icon: FileText },
   { label: "Policies & Procedures", desc: "RMS and client-dealing policies", href: "https://www.parasramindia.com/wp-content/uploads/2022/07/policy-procedure.docx", icon: FileText },
   { label: "SEBI SCORES", desc: "File a complaint with the regulator", href: "https://scores.sebi.gov.in/", icon: Landmark },
   { label: "SMART ODR", desc: "Online dispute resolution portal", href: "https://smartodr.in/login", icon: MessagesSquare },

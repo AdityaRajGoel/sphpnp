@@ -61,6 +61,8 @@ const urls = [
   { loc: '/services',            changefreq: 'weekly',  priority: '0.85', lastmod: null },
   { loc: '/apps',                changefreq: 'monthly', priority: '0.8',  lastmod: null },
   { loc: '/depository-services', changefreq: 'weekly',  priority: '0.85', lastmod: null },
+  { loc: '/fund-transfer',       changefreq: 'monthly', priority: '0.7',  lastmod: '2026-09-24' },
+  { loc: '/downloads',           changefreq: 'monthly', priority: '0.6',  lastmod: '2026-09-24' },
   { loc: '/about',               changefreq: 'monthly', priority: '0.8',  lastmod: null },
   { loc: '/screener',            changefreq: 'daily',   priority: '0.8',  lastmod: today },
   { loc: '/ipo',                 changefreq: 'daily',   priority: '0.85', lastmod: today },

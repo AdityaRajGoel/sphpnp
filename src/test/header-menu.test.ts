@@ -27,6 +27,6 @@ describe("header menu", () => {
     for (const page of ["/services", "/pricing", "/open-account", "/unlisted-space", "/products", "/depository-services", "/market-pulse", "/indices",
       "/reports", "/screener", "/compare", "/52-week-tracker", "/fno", "/ipo", "/ipo-pipeline", "/brokerage-calculator", "/margin-calculator",
       "/sip-calculator", "/watchlist", "/portfolio", "/holidays", "/apps", "/learn", "/learn/recommendations", "/help", "/about", "/team",
-      "/careers", "/investor-corner", "/contact"]) expect(hrefs.has(page), page).toBe(true);
+      "/careers", "/investor-corner", "/contact", "/fund-transfer", "/downloads"]) expect(hrefs.has(page), page).toBe(true);
   });
 });

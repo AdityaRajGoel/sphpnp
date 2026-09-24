@@ -2,7 +2,7 @@ import {
   Gauge, TrendingUp, BarChart3, PieChart, Landmark, FileText, Calculator, GitCompare, Calendar, ArrowUpDown,
   Activity, GraduationCap, Radio, Newspaper, Users, Building2, Phone, Mail, Award, ShieldCheck, Search, Flame,
   Briefcase, Globe, KeyRound, Banknote, Percent, LifeBuoy, LineChart, Star, Wallet, Smartphone, UserPlus, Rocket,
-  BookOpen, History,
+  BookOpen, History, FolderDown,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -62,7 +62,8 @@ export const megaMenuItems: MegaMenuItem[] = [
           { label: "Pricing & Charges", href: "/pricing", icon: Percent, description: "Brokerage and account charges" },
           { label: "Depository Services", href: "/depository-services", icon: ShieldCheck, description: "CDSL and NSDL Demat" },
           { label: "Update KYC", href: "https://dashboard.parasramindia.com/Account/Login?Link=1006", icon: KeyRound, description: "Change your details online", external: true },
-          { label: "Fund Transfer", href: "https://www.parasramindia.com/fund-transfer/", icon: Banknote, description: "Add money to your trading account", external: true },
+          { label: "Fund Transfer", href: "/fund-transfer", icon: Banknote, description: "Add money to your trading account" },
+          { label: "Forms & Downloads", href: "/downloads", icon: FolderDown, description: "KYC, demat and account forms" },
         ],
       },
     ],
