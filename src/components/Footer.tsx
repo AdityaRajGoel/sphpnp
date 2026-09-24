@@ -150,15 +150,9 @@ const Footer = () => {
 
   return (
     <footer className="bg-hero text-primary-foreground relative overflow-hidden">
-      {/* Animated top border: a double-width strip of two identical gradients
-          slides by half its width, so the loop is seamless and the bar is always
-          full. It used to translate the bar itself, leaving part of it empty. */}
-      <div className="h-1 overflow-hidden" aria-hidden>
-        <div
-          className="h-full w-[200%] bg-[linear-gradient(90deg,hsl(var(--secondary)),hsl(var(--brand-gold)),hsl(var(--secondary)),hsl(var(--brand-gold)),hsl(var(--secondary)))]"
-          style={{ animation: "ticker-left 12s linear infinite" }}
-        />
-      </div>
+      {/* A still brand rule. It was an animated green-gold loop: motion with no
+          information in it, on the one part of the page people read slowly. */}
+      <div className="h-0.5 bg-secondary" aria-hidden />
 
       {/* CTA band - the footer's conversion anchor */}
       <div className="border-b border-primary-foreground/10">
@@ -169,7 +163,7 @@ const Footer = () => {
           >
             <div className="text-center md:text-left">
               <h3 className="font-heading text-xl md:text-2xl font-bold">
-                Start your investment journey <span className="text-brand-gold">today</span>
+                Start your investment journey today
               </h3>
               <p className="text-primary-foreground/60 text-sm mt-1">
                 Free Demat account · SEBI registered · Serving investors since 1970 · Real branch support in Panipat
@@ -184,7 +178,7 @@ const Footer = () => {
               </a>
               <Link
                 to="/open-account"
-                className="inline-flex items-center gap-2 btn-shine bg-gradient-to-r from-secondary to-brand-green text-secondary-foreground font-bold px-5 py-2.5 rounded-xl shadow-lg shadow-secondary/20 hover:scale-[1.03] transition-transform"
+                className="inline-flex items-center gap-2 bg-secondary hover:bg-secondary/90 text-secondary-foreground font-bold px-5 py-2.5 rounded-xl shadow-lg transition-transform"
               >
                 {t("footer.ctaBand")} <ArrowRight className="w-4 h-4" />
               </Link>
@@ -263,7 +257,7 @@ const Footer = () => {
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label={`Scan or tap to get ${app.name} on Google Play`}
-                  className="shrink-0 rounded-lg bg-white p-1 shadow-md transition-transform hover:scale-105"
+                  className="shrink-0 rounded-lg bg-white p-1 shadow-md transition-transform"
                 >
                   <img src={APP_QR[app.id].android} alt={`QR code to download ${app.name} on Google Play`} width={56} height={56} className="h-14 w-14" loading="lazy" />
                 </a>
@@ -383,7 +377,7 @@ const Footer = () => {
             <button
               onClick={scrollToTop}
               aria-label="Scroll to top"
-              className="w-10 h-10 bg-secondary/20 hover:bg-secondary rounded-full flex items-center justify-center text-primary-foreground transition-[color,background-color,border-color,transform] ease-out hover:scale-110 hover:-translate-y-1 active:scale-[0.97]"
+              className="w-10 h-10 bg-secondary/20 hover:bg-secondary rounded-full flex items-center justify-center text-primary-foreground transition-[color,background-color,border-color,transform] ease-out hover:-translate-y-0.5 active:scale-[0.97]"
             >
               <ArrowUp className="w-5 h-5" />
             </button>

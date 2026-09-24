@@ -13,11 +13,6 @@ const steps: ScrollyStep[] = [
 const HowItWorks = () => {
   return (
     <section className="py-10 md:py-20 bg-background relative overflow-hidden">
-      <div className="absolute inset-0 pointer-events-none">
-        <div
-          className="absolute bottom-20 right-20 w-80 h-80 bg-secondary/5 rounded-full blur-3xl"
-        />
-      </div>
 
       <div className="container mx-auto px-4 relative z-10">
         <motion.div
@@ -31,7 +26,7 @@ const HowItWorks = () => {
             How It Works
           </h2>
           <motion.div
-            className="w-20 h-1 bg-gradient-to-r from-secondary to-brand-gold mx-auto rounded-full"
+            className="w-20 h-1 bg-secondary mx-auto rounded-full"
             {...revealBar}
           />
         </motion.div>

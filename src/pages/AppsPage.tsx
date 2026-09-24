@@ -137,7 +137,6 @@ const AppsPage = () => {
         <main>
           {/* ── Hero: Parasram Money ─────────────────────────────────────── */}
           <section id="money" aria-labelledby="money-heading" className="relative overflow-hidden bg-hero text-primary-foreground scroll-mt-28">
-            <div className="pointer-events-none absolute -right-32 top-0 h-[32rem] w-[32rem] rounded-full bg-secondary/25 blur-3xl" />
             <div className="container relative mx-auto grid items-center gap-12 px-4 pb-16 pt-12 md:pb-20 md:pt-16 lg:grid-cols-[1.15fr_0.85fr]">
               <motion.div {...revealItemX("left")}>
                 <span className="inline-flex items-center gap-2 rounded-full bg-secondary px-3 py-1 text-xs font-bold uppercase tracking-wider text-secondary-foreground">

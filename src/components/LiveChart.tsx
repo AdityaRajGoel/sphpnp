@@ -399,7 +399,6 @@ const LiveChart = () => {
   return (
     <section className="py-8 md:py-16 bg-background relative overflow-hidden">
       <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-gradient-to-b from-brand-orange/3 to-transparent rounded-full blur-3xl" />
         <div className="absolute inset-0 opacity-[0.02]" style={{ backgroundImage: `linear-gradient(hsl(var(--foreground)) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--foreground)) 1px, transparent 1px)`, backgroundSize: '40px 40px' }} />
       </div>
       <div className="container mx-auto px-4 relative z-10">
@@ -438,7 +437,7 @@ const LiveChart = () => {
               const isActive = activeIndexKey === idx.key;
               return (
                 <motion.button key={idx.key} onClick={() => setActiveIndexKey(idx.key)}
-                  className={`flex items-center gap-3 p-3 rounded-xl border transition-colors min-w-[180px] sm:min-w-[200px] lg:min-w-0 snap-start text-left ${isActive ? "bg-card border-brand-orange/40 shadow-lg shadow-brand-orange/10" : "bg-card/50 border-border/30 hover:border-border"}`}
+                  className={`flex items-center gap-3 p-3 rounded-xl border transition-colors min-w-[180px] sm:min-w-[200px] lg:min-w-0 snap-start text-left ${isActive ? "bg-card border-brand-orange/40 shadow-lg" : "bg-card/50 border-border/30 hover:border-border"}`}
                   whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
                   <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${idx.up ? "bg-secondary/10" : "bg-destructive/10"}`}>
                     {idx.up ? <TrendingUp className="w-4 h-4 text-secondary" /> : <TrendingDown className="w-4 h-4 text-destructive" />}

@@ -343,11 +343,11 @@ const Hero = () => {
           </video>
         )}
         {/* Brand overlay - keeps text legible */}
-        <div className="absolute inset-0 bg-gradient-to-br from-brand-navy/72 via-brand-navy/58 to-brand-green/40" />
+        <div className="absolute inset-0 bg-brand-navy/70" />
         <div
           className="absolute inset-0"
           style={{
-            background: `linear-gradient(135deg, hsl(213 80% 12% / 0.72) 0%, hsl(213 80% 22% / 0.68) 50%, hsl(145 70% 25% / 0.65) 100%)`,
+            background: `linear-gradient(180deg, hsl(213 70% 10% / 0.78) 0%, hsl(213 75% 16% / 0.72) 100%)`,
           }}
         />
         {/* Subtle grid */}
@@ -358,10 +358,6 @@ const Hero = () => {
             backgroundSize: "50px 50px",
           }}
         />
-        {/* Aurora mesh - slow drifting brand glows for depth */}
-        {!prefersReducedMotion && (
-          <div className="hero-aurora absolute inset-0 mix-blend-screen opacity-70" aria-hidden="true" />
-        )}
       </div>
 
       <div className="container relative z-10 mx-auto flex w-full items-center px-4 py-6 md:py-10 lg:py-12">
@@ -369,18 +365,15 @@ const Hero = () => {
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.4, ease: EASE_OUT }}>
             {/* 1. Credentials */}
             <motion.div
-              className="mb-4 flex flex-wrap gap-2 md:mb-5 md:gap-2.5"
+              className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-1.5 md:mb-5"
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.05, duration: 0.5, ease: EASE_OUT }}
             >
               {trustBadges.map(({ icon: Icon, label }) => (
-                <span
-                  key={label}
-                  className="inline-flex items-center gap-1.5 rounded-pill border border-white/20 bg-white/10 px-2.5 py-1 backdrop-blur-sm md:px-3 md:py-1.5"
-                >
-                  <Icon className="h-3 w-3 text-secondary md:h-3.5 md:w-3.5" />
-                  <span className="text-[11px] font-semibold text-primary-foreground md:text-xs">{label}</span>
+                <span key={label} className="inline-flex items-center gap-1.5">
+                  <Icon className="h-3.5 w-3.5 text-secondary" aria-hidden="true" />
+                  <span className="text-xs font-medium text-primary-foreground/85 md:text-sm">{label}</span>
                 </span>
               ))}
             </motion.div>
@@ -402,7 +395,7 @@ const Hero = () => {
             >
               {t("hero.title1")}
               <br />
-              <span className="block pb-1 text-brand-gold">
+              <span className="block pb-1 text-primary-foreground/90">
                 {t("hero.title2")}
               </span>
             </motion.h1>
@@ -427,7 +420,7 @@ const Hero = () => {
               <Button
                 asChild
                 size="lg"
-                className="btn-shine w-full border-2 border-transparent bg-gradient-to-r from-secondary to-brand-green px-6 py-4 text-sm font-bold text-secondary-foreground shadow-xl shadow-secondary/30 hover:from-secondary/90 hover:to-brand-green/90 sm:w-auto md:px-10 md:py-6 md:text-lg"
+                className="w-full border border-transparent bg-secondary px-6 py-4 text-sm font-semibold text-secondary-foreground hover:bg-secondary/90 sm:w-auto md:px-8 md:py-6 md:text-base"
               >
                 <Link to="/open-account">
                   {t("hero.ctaInvest")}
@@ -438,7 +431,7 @@ const Hero = () => {
                 <Button
                   variant="outline"
                   size="lg"
-                  className="w-full border-2 border-secondary/60 bg-secondary/20 px-6 py-4 text-sm font-bold text-primary-foreground backdrop-blur-sm hover:bg-secondary/40 hover:text-primary-foreground sm:w-auto md:px-10 md:py-6 md:text-lg"
+                  className="w-full border border-white/40 bg-transparent px-6 py-4 text-sm font-semibold text-primary-foreground hover:bg-white/10 hover:text-primary-foreground sm:w-auto md:px-8 md:py-6 md:text-base"
                 >
                   {t("hero.ctaTrade")}
                   <ChevronDown className="ml-2 h-4 w-4 md:h-5 md:w-5" aria-hidden />
@@ -474,18 +467,10 @@ const Hero = () => {
       {!isMobile && (
         <motion.div
           className="pointer-events-none absolute inset-y-0 right-0 z-10 hidden w-[45%] flex-col items-center justify-center md:flex lg:w-1/2 px-6 2xl:px-12"
-          initial={{ opacity: 0, x: 48 }}
+          initial={{ opacity: 0, x: 16 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.8, delay: 0.3, ease: EASE_OUT }}
         >
-          {/* Glow halo */}
-          <div
-            className="pointer-events-none absolute h-[50%] w-[50%] rounded-pill blur-3xl"
-            style={{
-              background: "radial-gradient(circle, hsl(145 70% 40% / 0.3) 0%, hsl(213 80% 40% / 0.15) 60%, transparent 100%)",
-              animation: prefersReducedMotion ? undefined : "pulse-glow 4s ease-in-out infinite",
-            }}
-          />
 
           <motion.img
             src={platformImg}

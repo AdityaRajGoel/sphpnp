@@ -310,7 +310,7 @@ const GlobalStockSearch = ({ className }: Props) => {
           {selected && (
             <div className="flex flex-col h-full max-h-[90vh]">
               {/* Premium Header */}
-              <div className="p-6 pb-4 border-b border-border/20 bg-gradient-to-br from-muted/50 to-transparent">
+              <div className="p-6 pb-4 border-b border-border/20 bg-muted/30">
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-3">
                     <DialogTitle className="text-2xl font-black tracking-tight text-foreground">{selected.symbol}</DialogTitle>
@@ -361,7 +361,7 @@ const GlobalStockSearch = ({ className }: Props) => {
                        <Button
                         variant="default"
                         size="sm"
-                        className="bg-brand-orange hover:bg-brand-orange/90 text-white dark:text-brand-charcoal text-[10px] font-bold h-7 px-4 shadow-lg shadow-brand-orange/20"
+                        className="bg-brand-orange hover:bg-brand-orange/90 text-white dark:text-brand-charcoal text-[10px] font-bold h-7 px-4 shadow-lg"
                         onClick={() => setAnalyzingStock(selected)}
                       >
                         <Bot className="w-3.5 h-3.5 mr-1.5" /> AI ANALYSIS

@@ -78,15 +78,6 @@ const Contact = () => {
 
   return (
     <section ref={sectionRef} id="contact" className="py-10 md:py-20 bg-muted/50 relative overflow-hidden">
-      {/* Ambient background orbs */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div
-          className="absolute top-10 left-20 w-72 h-72 bg-secondary/5 rounded-full blur-3xl"
-        />
-        <div
-          className="absolute bottom-10 right-20 w-80 h-80 bg-brand-gold/5 rounded-full blur-3xl"
-        />
-      </div>
 
       <div className="container mx-auto px-4 relative z-10">
         <motion.div
@@ -116,7 +107,7 @@ const Contact = () => {
         >
           <motion.div
             className="bg-card rounded-3xl shadow-2xl border border-border/50 overflow-hidden max-w-2xl w-full"
-            whileHover={{ scale: 1.01, boxShadow: "0 30px 60px -15px hsl(213 80% 25% / 0.25)" }}
+            whileHover={{ y: -2 }}
             transition={{ duration: 0.4 }}
           >
             <img
@@ -137,14 +128,13 @@ const Contact = () => {
               <motion.div
                 key={item.title}
                 {...revealItemX("left")}
-                whileHover={{ x: 6 }}
+                whileHover={{ x: 2 }}
               >
                 <Card className="bg-card border-border/50 hover:shadow-xl hover:border-secondary/40 transition-[box-shadow,color,background-color,border-color] duration-base group">
                   <CardContent className="p-5">
                     <div className="flex gap-4 items-start">
                       <motion.div
                         className="w-11 h-11 bg-primary/10 group-hover:bg-secondary/20 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors duration-base"
-                        whileHover={{ rotate: [0, -12, 12, 0] }}
                         transition={{ duration: 0.5 }}
                       >
                         <item.icon className="w-5 h-5 text-primary group-hover:text-secondary transition-colors duration-base" />
@@ -158,7 +148,7 @@ const Contact = () => {
                     </div>
                     {/* animated bottom line */}
                     <motion.div
-                      className="h-0.5 bg-gradient-to-r from-secondary to-brand-gold mt-4 rounded-full"
+                      className="h-0.5 bg-secondary mt-4 rounded-full"
                       initial={{ width: 0 }}
                       whileHover={{ width: "100%" }}
                       transition={{ duration: 0.3 }}
@@ -174,7 +164,7 @@ const Contact = () => {
             <motion.div
               className="rounded-2xl overflow-hidden border border-border/50 shadow-lg"
               {...revealPop()}
-              whileHover={{ scale: 1.01, boxShadow: "0 20px 40px -10px hsl(145 70% 40% / 0.2)" }}
+              whileHover={{ y: -2 }}
             >
               <iframe
                 src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3469.037453247!2d76.96786!3d29.38917!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x390dda2a2b0e82e1%3A0x8a8a8a8a8a8a8a8a!2sShakuntala%20Complex%2C%20Palika%20Bazaar%2C%20Panipat%2C%20Haryana%20132103!5e0!3m2!1sen!2sin!4v1700000000000!5m2!1sen!2sin"
@@ -225,7 +215,7 @@ const Contact = () => {
                   <p className="text-primary-foreground/80 mb-6">
                     Open your Demat account today and get access to all our trading platforms
                   </p>
-                  <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}>
+                  <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}>
                     <Button
                       asChild
                       size="lg"

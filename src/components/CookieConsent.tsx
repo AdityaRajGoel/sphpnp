@@ -246,7 +246,7 @@ const CookieConsent = () => {
               <Button
                 onClick={() => decide("all")}
                 aria-pressed={current ? current === "all" : undefined}
-                className="w-full sm:w-auto sm:min-w-[8.5rem] bg-brand-navy font-medium text-white shadow-sm transition-colors hover:bg-brand-navy/90 pressable btn-shine"
+                className="w-full sm:w-auto sm:min-w-[8.5rem] bg-brand-navy font-medium text-white shadow-sm transition-colors hover:bg-brand-navy/90 pressable"
               >
                 Accept All
               </Button>

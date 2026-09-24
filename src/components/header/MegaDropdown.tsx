@@ -68,7 +68,6 @@ const MegaDropdown = ({ item, onClose }: MegaDropdownProps) => {
             onClick={onClose}
             className="group relative flex min-h-[13rem] self-start overflow-hidden rounded-2xl bg-hero p-5 text-primary-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-2"
           >
-            <span className="pointer-events-none absolute -right-12 -top-12 h-40 w-40 rounded-full bg-secondary/30 blur-3xl" />
             <span className="relative flex min-w-0 flex-1 flex-col">
               <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-secondary">{feature.eyebrow}</span>
               <span className="mt-1.5 font-heading text-lg font-bold leading-tight">{feature.title}</span>
@@ -85,7 +84,7 @@ const MegaDropdown = ({ item, onClose }: MegaDropdownProps) => {
                 width={SCREEN_SIZE.width}
                 height={SCREEN_SIZE.height}
                 decoding="async"
-                className="relative -mb-10 ml-3 w-20 shrink-0 self-end rounded-xl border-[3px] border-foreground/90 shadow-xl transition-transform duration-base group-hover:-translate-y-1"
+                className="relative -mb-10 ml-3 w-20 shrink-0 self-end rounded-xl border-[3px] border-foreground/90 shadow-xl transition-transform duration-base group-hover:-translate-y-0.5"
               />
             )}
           </Link>

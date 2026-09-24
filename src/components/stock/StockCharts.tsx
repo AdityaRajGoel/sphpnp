@@ -1,9 +1,10 @@
 import { useState, type ReactNode } from "react";
 import { motion } from "motion/react";
 import {
-  Bar, BarChart, CartesianGrid, Cell, ComposedChart, Legend, Line, Pie, PieChart, ReferenceLine,
+  Bar, BarChart, CartesianGrid, Cell, ComposedChart, Legend, Line, LineChart, Pie, PieChart, ReferenceLine,
   ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from "recharts";
+import { CHART } from "@/components/markets/chart-kit";
 import { Card } from "@/components/ui/card";
 import { revealItem, revealSection } from "@/lib/motion";
 import type { HolderSeries, RoePoint, StatementGrid, StatementKind } from "@/lib/statements";
@@ -20,19 +21,28 @@ type Props = {
   source: string;
 };
 
-// Revenue is a fixed blue, not the theme's --primary: in dark mode --primary
-// is green and revenue bars sat beside the green profit bars indistinguishably.
+// Series colours are the validated --chart-* steps (see markets/chart-kit):
+// revenue the blue, profit the green, a loss the theme's red, and anything a
+// second panel carries the orange. Equity and debt are two series, not good and
+// bad, so debt is orange rather than red.
 const C = {
-  revenue: "hsl(217 80% 55%)",
-  profit: "hsl(var(--secondary))",
-  margin: "hsl(var(--brand-orange))",
-  gold: "hsl(var(--brand-gold))",
-  loss: "hsl(var(--destructive))",
-  grid: "hsl(var(--border))",
-  axis: "hsl(var(--muted-foreground))",
+  revenue: CHART.series[2],
+  profit: CHART.series[0],
+  second: CHART.series[1],
+  loss: CHART.down,
+  grid: CHART.grid,
+  axis: CHART.axis,
 };
-/** Holder categories in distinct hues - no two greens, whichever the theme. */
-const PIE = ["hsl(217 80% 55%)", "hsl(var(--brand-gold))", "hsl(199 89% 48%)", "hsl(var(--brand-orange))", "hsl(262 70% 62%)", "hsl(var(--muted-foreground))"];
+/**
+ * Colour follows the holder, never its position in the list: a company with no
+ * government holding must not repaint FII as the next colour along.
+ */
+const holderColour = (name: string) =>
+  /promot/i.test(name) ? CHART.series[2]
+    : /fii|fpi|foreign/i.test(name) ? CHART.series[0]
+    : /dii|domestic|mutual/i.test(name) ? CHART.series[1]
+    : /public|retail|non.?inst/i.test(name) ? CHART.series[3]
+    : CHART.muted;
 
 const axisTick = { fill: C.axis, fontSize: 11 };
 const tooltipStyle = {
@@ -70,24 +80,44 @@ function Stat({ label, value, tone }: { label: string; value: string; tone?: "up
 const toneOf = (v: number | null) => (v === null ? undefined : v >= 0 ? "up" : "down");
 const signed = (v: number | null) => (v === null ? "—" : `${v >= 0 ? "+" : ""}${v.toFixed(1)}%`);
 
+/** A small panel label, for the lower half of a two-panel chart. */
+const PanelLabel = ({ children }: { children: ReactNode }) => (
+  <p className="mt-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{children}</p>
+);
+
+/**
+ * Rupees and a percentage never share a plot: two y-scales on one chart imply a
+ * relationship from wherever the scales happen to line up. The margin gets its
+ * own panel under the bars, on the same periods, with hover linked by syncId.
+ */
 function PerformanceChart({ data }: { data: PerformancePoint[] }) {
   return (
-    <ResponsiveContainer width="100%" height={280}>
-      <ComposedChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke={C.grid} vertical={false} />
-        <XAxis dataKey="period" tick={axisTick} tickLine={false} axisLine={false} interval="preserveStartEnd" minTickGap={12} />
-        <YAxis yAxisId="amt" tick={axisTick} tickLine={false} axisLine={false} tickFormatter={shortCrore} width={64} />
-        <YAxis yAxisId="pct" orientation="right" tick={axisTick} tickLine={false} axisLine={false} tickFormatter={(v: number) => `${v}%`} width={40} />
-        <Tooltip {...tooltipStyle} formatter={(v: unknown, name: string) => (name.includes("margin") ? pct(v) : crore(v))} />
-        <Legend wrapperStyle={{ fontSize: 12 }} />
-        <ReferenceLine yAxisId="amt" y={0} stroke={C.grid} />
-        <Bar yAxisId="amt" dataKey="revenue" name="Revenue" fill={C.revenue} radius={[3, 3, 0, 0]} maxBarSize={28} />
-        <Bar yAxisId="amt" dataKey="profit" name="Net profit" radius={[3, 3, 0, 0]} maxBarSize={28}>
-          {data.map((d) => <Cell key={d.period} fill={(d.profit ?? 0) < 0 ? C.loss : C.profit} />)}
-        </Bar>
-        <Line yAxisId="pct" dataKey="margin" name="Operating margin" stroke={C.margin} strokeWidth={2} dot={{ r: 2 }} connectNulls />
-      </ComposedChart>
-    </ResponsiveContainer>
+    <>
+      <ResponsiveContainer width="100%" height={200}>
+        <ComposedChart data={data} syncId="stock-performance" margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+          <CartesianGrid stroke={C.grid} vertical={false} />
+          <XAxis dataKey="period" hide />
+          <YAxis tick={axisTick} tickLine={false} axisLine={false} tickFormatter={shortCrore} width={64} />
+          <Tooltip {...tooltipStyle} formatter={(v: unknown) => crore(v)} />
+          <Legend wrapperStyle={{ fontSize: 12 }} />
+          <ReferenceLine y={0} stroke={C.axis} />
+          <Bar dataKey="revenue" name="Revenue" fill={C.revenue} radius={[3, 3, 0, 0]} maxBarSize={28} />
+          <Bar dataKey="profit" name="Net profit" radius={[3, 3, 0, 0]} maxBarSize={28}>
+            {data.map((d) => <Cell key={d.period} fill={(d.profit ?? 0) < 0 ? C.loss : C.profit} />)}
+          </Bar>
+        </ComposedChart>
+      </ResponsiveContainer>
+      <PanelLabel>Operating margin</PanelLabel>
+      <ResponsiveContainer width="100%" height={90}>
+        <LineChart data={data} syncId="stock-performance" margin={{ top: 6, right: 8, left: 0, bottom: 0 }}>
+          <CartesianGrid stroke={C.grid} vertical={false} />
+          <XAxis dataKey="period" tick={axisTick} tickLine={false} axisLine={false} interval="preserveStartEnd" minTickGap={12} />
+          <YAxis tick={axisTick} tickLine={false} axisLine={false} tickFormatter={(v: number) => `${v}%`} width={64} tickCount={3} />
+          <Tooltip {...tooltipStyle} formatter={(v: unknown) => pct(v)} />
+          <Line dataKey="margin" name="Operating margin" stroke={C.second} strokeWidth={2} dot={{ r: 2 }} connectNulls />
+        </LineChart>
+      </ResponsiveContainer>
+    </>
   );
 }
 
@@ -163,7 +193,7 @@ export default function StockCharts({ statements, shareholding, roeHistory, sour
             index={index++}
             className="lg:col-span-2"
             title={`Revenue, profit & margin - ${performance === quarterly ? "quarterly" : "annual"}`}
-            subtitle="Bars in ₹ crore (a loss shows red); line is operating margin"
+            subtitle="₹ crore; a loss shows red. Operating margin below, same periods."
           >
             <PerformanceChart data={performance} />
           </ChartCard>
@@ -173,8 +203,8 @@ export default function StockCharts({ statements, shareholding, roeHistory, sour
           <ChartCard index={index++} title="Who owns the company" subtitle={holders.date ? `Shareholding as of ${quarterDate(holders.date)}` : undefined}>
             <ResponsiveContainer width="100%" height={280}>
               <PieChart>
-                <Pie data={holders.slices} dataKey="value" nameKey="name" innerRadius="55%" outerRadius="80%" paddingAngle={2} stroke="none">
-                  {holders.slices.map((s, i) => <Cell key={s.name} fill={PIE[i % PIE.length]} />)}
+                <Pie data={holders.slices} dataKey="value" nameKey="name" innerRadius="58%" outerRadius="80%" paddingAngle={1} stroke="hsl(var(--card))" strokeWidth={2}>
+                  {holders.slices.map((s) => <Cell key={s.name} fill={holderColour(s.name)} />)}
                 </Pie>
                 <Tooltip {...tooltipStyle} formatter={(v: unknown) => pct(v)} />
                 <Legend wrapperStyle={{ fontSize: 12 }} />
@@ -187,16 +217,16 @@ export default function StockCharts({ statements, shareholding, roeHistory, sour
           <ChartCard index={index++} className="lg:col-span-2" title="Cash flows" subtitle="Where cash came from and went, by fiscal year (₹ crore)">
             <ResponsiveContainer width="100%" height={260}>
               <ComposedChart data={cash} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke={C.grid} vertical={false} />
+                <CartesianGrid stroke={C.grid} vertical={false} />
                 <XAxis dataKey="period" tick={axisTick} tickLine={false} axisLine={false} minTickGap={12} />
                 <YAxis tick={axisTick} tickLine={false} axisLine={false} tickFormatter={shortCrore} width={64} />
                 <Tooltip {...tooltipStyle} formatter={(v: unknown) => crore(v)} />
                 <Legend wrapperStyle={{ fontSize: 12 }} />
                 <ReferenceLine y={0} stroke={C.axis} />
-                <Bar dataKey="operating" name="Operating" fill={C.profit} maxBarSize={18} />
-                <Bar dataKey="investing" name="Investing" fill={C.revenue} maxBarSize={18} />
-                <Bar dataKey="financing" name="Financing" fill={C.gold} maxBarSize={18} />
-                <Line dataKey="free" name="Free cash flow" stroke={C.margin} strokeWidth={2} dot={{ r: 2 }} connectNulls />
+                <Bar dataKey="operating" name="Operating" fill={CHART.series[0]} radius={[2, 2, 0, 0]} maxBarSize={18} />
+                <Bar dataKey="investing" name="Investing" fill={CHART.series[1]} radius={[2, 2, 0, 0]} maxBarSize={18} />
+                <Bar dataKey="financing" name="Financing" fill={CHART.series[2]} radius={[2, 2, 0, 0]} maxBarSize={18} />
+                <Line dataKey="free" name="Free cash flow" stroke={CHART.series[3]} strokeWidth={2} dot={{ r: 2 }} connectNulls />
               </ComposedChart>
             </ResponsiveContainer>
           </ChartCard>
@@ -206,13 +236,13 @@ export default function StockCharts({ statements, shareholding, roeHistory, sour
           <ChartCard index={index++} title="Return on equity" subtitle="Net profit over shareholders' equity, by fiscal year">
             <ResponsiveContainer width="100%" height={260}>
               <BarChart data={roe} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke={C.grid} vertical={false} />
+                <CartesianGrid stroke={C.grid} vertical={false} />
                 <XAxis dataKey="period" tick={axisTick} tickLine={false} axisLine={false} minTickGap={8} />
                 <YAxis tick={axisTick} tickLine={false} axisLine={false} tickFormatter={(v: number) => `${v}%`} width={40} />
                 <Tooltip {...tooltipStyle} formatter={(v: unknown) => pct(v)} />
-                <ReferenceLine y={15} stroke={C.margin} strokeDasharray="4 4" label={{ value: "15%", fill: C.axis, fontSize: 10, position: "insideTopRight" }} />
+                <ReferenceLine y={15} stroke={C.axis} strokeDasharray="4 4" label={{ value: "15% screen", fill: C.axis, fontSize: 10, position: "insideTopRight" }} />
                 <Bar dataKey="roe" name="ROE" radius={[3, 3, 0, 0]} maxBarSize={26}>
-                  {roe.map((r) => <Cell key={r.period} fill={r.roe < 0 ? C.loss : r.roe >= 15 ? C.profit : C.gold} />)}
+                  {roe.map((r) => <Cell key={r.period} fill={r.roe < 0 ? C.loss : C.revenue} />)}
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
@@ -220,19 +250,27 @@ export default function StockCharts({ statements, shareholding, roeHistory, sour
         )}
 
         {capital.length > 0 && (
-          <ChartCard index={index++} className="lg:col-span-3" title="Equity vs debt" subtitle="Shareholders' equity against borrowings (₹ crore); line is debt-to-equity">
-            <ResponsiveContainer width="100%" height={240}>
-              <ComposedChart data={capital} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke={C.grid} vertical={false} />
-                <XAxis dataKey="period" tick={axisTick} tickLine={false} axisLine={false} minTickGap={12} />
-                <YAxis yAxisId="amt" tick={axisTick} tickLine={false} axisLine={false} tickFormatter={shortCrore} width={64} />
-                <YAxis yAxisId="ratio" orientation="right" tick={axisTick} tickLine={false} axisLine={false} tickFormatter={(v: number) => `${v.toFixed(1)}x`} width={40} />
-                <Tooltip {...tooltipStyle} formatter={(v: unknown, name: string) => (name === "Debt / equity" ? (typeof v === "number" ? `${v.toFixed(2)}x` : "—") : crore(v))} />
+          <ChartCard index={index++} className="lg:col-span-3" title="Equity vs debt" subtitle="Shareholders' equity against borrowings (₹ crore); the ratio below, same years.">
+            <ResponsiveContainer width="100%" height={200}>
+              <BarChart data={capital} syncId="stock-capital" margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                <CartesianGrid stroke={C.grid} vertical={false} />
+                <XAxis dataKey="period" hide />
+                <YAxis tick={axisTick} tickLine={false} axisLine={false} tickFormatter={shortCrore} width={64} />
+                <Tooltip {...tooltipStyle} formatter={(v: unknown) => crore(v)} />
                 <Legend wrapperStyle={{ fontSize: 12 }} />
-                <Bar yAxisId="amt" dataKey="equity" name="Equity" fill={C.profit} radius={[3, 3, 0, 0]} maxBarSize={26} />
-                <Bar yAxisId="amt" dataKey="debt" name="Debt" fill={C.loss} radius={[3, 3, 0, 0]} maxBarSize={26} />
-                <Line yAxisId="ratio" dataKey="debtToEquity" name="Debt / equity" stroke={C.margin} strokeWidth={2} dot={{ r: 2 }} connectNulls />
-              </ComposedChart>
+                <Bar dataKey="equity" name="Equity" fill={CHART.series[2]} radius={[3, 3, 0, 0]} maxBarSize={26} />
+                <Bar dataKey="debt" name="Debt" fill={CHART.series[1]} radius={[3, 3, 0, 0]} maxBarSize={26} />
+              </BarChart>
+            </ResponsiveContainer>
+            <PanelLabel>Debt to equity</PanelLabel>
+            <ResponsiveContainer width="100%" height={90}>
+              <LineChart data={capital} syncId="stock-capital" margin={{ top: 6, right: 8, left: 0, bottom: 0 }}>
+                <CartesianGrid stroke={C.grid} vertical={false} />
+                <XAxis dataKey="period" tick={axisTick} tickLine={false} axisLine={false} minTickGap={12} />
+                <YAxis tick={axisTick} tickLine={false} axisLine={false} tickFormatter={(v: number) => `${v.toFixed(1)}x`} width={64} tickCount={3} />
+                <Tooltip {...tooltipStyle} formatter={(v: unknown) => (typeof v === "number" ? `${v.toFixed(2)}x` : "—")} />
+                <Line dataKey="debtToEquity" name="Debt / equity" stroke={CHART.series[3]} strokeWidth={2} dot={{ r: 2 }} connectNulls />
+              </LineChart>
             </ResponsiveContainer>
           </ChartCard>
         )}

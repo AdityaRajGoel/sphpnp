@@ -34,7 +34,6 @@ const MobileApp = () => {
   const { t } = useT();
   return (
   <section id="app" aria-labelledby="apps-teaser-heading" className="relative overflow-hidden bg-hero py-14 text-primary-foreground md:py-20">
-    <div className="pointer-events-none absolute -right-32 top-0 h-96 w-96 rounded-full bg-secondary/20 blur-3xl" />
 
     <div className="container relative mx-auto px-4">
       <motion.div {...revealSection} className="mb-10 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
@@ -97,7 +96,7 @@ const MobileApp = () => {
                   height={DESKTOP_VIDEO.height}
                   loading="lazy"
                   decoding="async"
-                  className="h-full w-full object-cover transition-transform duration-slow ease-out group-hover:scale-105"
+                  className="h-full w-full object-cover transition-transform duration-slow ease-out group-"
                 />
                 <span className="absolute inset-0 flex items-center justify-center bg-brand-navy/40">
                   <span className="flex h-10 w-10 items-center justify-center rounded-full bg-secondary text-secondary-foreground ring-4 ring-white/25">

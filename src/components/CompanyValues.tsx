@@ -14,11 +14,6 @@ const values = [
 const CompanyValues = () => {
   return (
     <section className="py-8 md:py-16 bg-muted/20 relative overflow-hidden">
-      <div className="absolute inset-0 pointer-events-none">
-        <div
-          className="absolute top-20 left-20 w-72 h-72 bg-brand-gold/5 rounded-full blur-3xl"
-        />
-      </div>
 
       <div className="container mx-auto px-4 relative z-10">
         <motion.div
@@ -27,10 +22,10 @@ const CompanyValues = () => {
         >
           <span className="inline-block text-brand-gold font-semibold text-sm uppercase tracking-wider mb-3">What We Stand For</span>
           <h2 className="font-heading text-3xl md:text-4xl font-bold text-foreground mb-4">
-            Our <span className="text-secondary">Core Values</span>
+            Our Core Values
           </h2>
           <motion.div
-            className="w-20 h-1 bg-gradient-to-r from-brand-gold to-secondary mx-auto rounded-full"
+            className="w-20 h-1 bg-secondary mx-auto rounded-full"
             {...revealBar}
           />
         </motion.div>
@@ -42,11 +37,10 @@ const CompanyValues = () => {
               className="bg-card border border-border/50 rounded-xl p-6 hover:shadow-xl hover:border-secondary/30 transition-[box-shadow,color,background-color,border-color] group"
               {...revealSection}
               transition={{ delay: i * 0.08 }}
-              whileHover={{ y: -6 }}
+              whileHover={{ y: -2 }}
             >
               <motion.div
-                className={`w-12 h-12 rounded-xl ${v.color} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}
-                whileHover={{ rotate: [0, -10, 10, 0] }}
+                className={`w-12 h-12 rounded-xl ${v.color} flex items-center justify-center mb-4 transition-transform`}
                 transition={{ duration: 0.5 }}
               >
                 <v.icon className="w-6 h-6" />

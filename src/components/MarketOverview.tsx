@@ -87,7 +87,7 @@ const StockRow = ({ stock, index, onChartClick }: { stock: Stock; index: number;
   <motion.div
     className="flex items-center justify-between py-3 px-3 sm:px-4 rounded-xl hover:bg-muted/50 transition-colors duration-fast cursor-pointer group border-b border-border/30 last:border-0"
     {...revealItemX("left")}
-    whileHover={{ x: 4 }}
+    whileHover={{ x: 2 }}
     onClick={() => onChartClick(stock)}
     {...pressable(() => onChartClick(stock), { label: `View chart for ${stock.name}, ${stock.price}, ${stock.change}` })}
   >
@@ -130,7 +130,7 @@ const CalendarRow = ({ action, index }: { action: CalendarAction; index: number 
   <motion.div
     className="flex items-center justify-between py-3 px-3 sm:px-4 rounded-xl hover:bg-muted/50 transition-colors duration-fast cursor-default group border-b border-border/30 last:border-0"
     {...revealItemX("left")}
-    whileHover={{ x: 4 }}
+    whileHover={{ x: 2 }}
   >
     <div className="flex items-center gap-3 min-w-0 flex-1">
       <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-bold shrink-0 ${action.up ? "bg-secondary/10 text-secondary" : "bg-destructive/10 text-destructive"}`}>
@@ -322,7 +322,7 @@ const MarketOverview = () => {
             Market Pulse
           </motion.span>
           <h2 className="font-heading text-3xl md:text-4xl font-bold text-foreground mb-4">Today's Market Overview</h2>
-          <motion.div className="w-20 h-1 bg-gradient-to-r from-brand-orange to-brand-gold mx-auto rounded-full" {...revealBar} />
+          <motion.div className="w-20 h-1 bg-secondary mx-auto rounded-full" {...revealBar} />
           <p className="text-muted-foreground mt-3 max-w-xl mx-auto text-sm">
             Real-time market data across equities, derivatives, mutual funds & commodities
           </p>
@@ -331,7 +331,7 @@ const MarketOverview = () => {
         {/* Stats strip */}
         <motion.div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3 mb-12" {...revealSection}>
           {marketStats.map((stat, i) => (
-            <motion.div key={stat.label} className={`bg-card border border-border/50 rounded-xl p-3 text-center group ${i >= 4 ? 'hidden sm:block' : ''}`} whileHover={{ scale: 1.05, y: -4 }} transition={{ type: "spring", stiffness: 300 }}>
+            <motion.div key={stat.label} className={`bg-card border border-border/50 rounded-xl p-3 text-center group ${i >= 4 ? 'hidden sm:block' : ''}`} whileHover={{ y: -2 }} transition={{ type: "spring", stiffness: 300 }}>
               <div className={`w-9 h-9 mx-auto mb-1.5 rounded-xl flex items-center justify-center ${stat.bgColor}`}>
                 <stat.icon className={`w-4 h-4 ${stat.color}`} />
               </div>

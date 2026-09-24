@@ -133,7 +133,7 @@ const PricingPage = () => {
               <IndianRupee className="w-4 h-4" /> Transparent Pricing
             </span>
             <h1 className="font-heading text-3xl md:text-5xl font-bold text-foreground mb-4">
-              Brokerage Charges, <span className="text-brand-gold">No Surprises</span>
+              Brokerage Charges, No Surprises
             </h1>
             <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
               Every charge published upfront - and if you trade actively, we tailor
@@ -166,7 +166,7 @@ const PricingPage = () => {
               {...revealSection}
             >
               <h2 className="font-heading text-2xl md:text-3xl font-bold text-foreground mb-2">
-                What Sets Us <span className="text-secondary">Apart</span>
+                What Sets Us Apart
               </h2>
               <p className="text-muted-foreground text-sm max-w-xl mx-auto">
                 Low brokerage is the start. The real value is a branch that works
@@ -187,7 +187,7 @@ const PricingPage = () => {
                   className="group bg-card border border-border/50 rounded-2xl p-5 hover:border-secondary/40 hover:shadow-lg transition-[color,background-color,border-color,box-shadow]"
                   variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0, transition: { duration: 0.45 } } }}
                 >
-                  <div className="w-11 h-11 rounded-xl bg-secondary/10 flex items-center justify-center mb-3 group-hover:bg-secondary/20 group-hover:scale-110 transition-[color,background-color,border-color,transform] ease-out">
+                  <div className="w-11 h-11 rounded-xl bg-secondary/10 flex items-center justify-center mb-3 group-hover:bg-secondary/20 transition-[color,background-color,border-color,transform] ease-out">
                     <u.icon className="w-5 h-5 text-secondary" />
                   </div>
                   <h3 className="font-heading text-base font-bold text-foreground mb-1.5 group-hover:text-secondary transition-colors">
@@ -199,7 +199,7 @@ const PricingPage = () => {
             </motion.div>
 
             <motion.div
-              className="mt-5 border-beam bg-gradient-to-br from-secondary/5 to-brand-gold/5 border border-secondary/20 rounded-2xl px-6 py-5 text-center"
+              className="mt-5 bg-secondary/5 border border-secondary/20 rounded-2xl px-6 py-5 text-center"
               {...revealItem()}
             >
               <p className="text-sm text-muted-foreground mb-3">
@@ -276,7 +276,7 @@ const PricingPage = () => {
 
           {/* CTA */}
           <motion.div
-            className="mt-12 bg-gradient-to-br from-brand-navy to-primary text-white rounded-2xl p-6 md:p-8 text-center"
+            className="mt-12 bg-brand-navy text-white rounded-2xl p-6 md:p-8 text-center"
             {...revealSection}
           >
             <h2 className="font-heading text-xl md:text-2xl font-bold mb-2">Ready to invest at these rates?</h2>
@@ -289,7 +289,7 @@ const PricingPage = () => {
               </a>
               <Link
                 to="/open-account"
-                className="inline-flex items-center gap-2 btn-shine bg-gradient-to-r from-secondary to-brand-green text-secondary-foreground font-bold px-6 py-3 rounded-xl shadow-lg hover:scale-[1.03] transition-transform"
+                className="inline-flex items-center gap-2 bg-secondary hover:bg-secondary/90 text-secondary-foreground font-bold px-6 py-3 rounded-xl shadow-lg transition-transform"
               >
                 Open Free Demat Account <ArrowRight className="w-4 h-4" />
               </Link>

@@ -30,7 +30,6 @@ const rise = (i: number) =>
   }) as const;
 
 const SETTLE = { initial: { scale: 1.08, opacity: 0.4 }, animate: { scale: 1, opacity: 1 }, transition: { duration: 1.4, ease: EASE_OUT } } as const;
-const SWEEP = { initial: { x: "-30%" }, animate: { x: "130%" }, transition: { duration: 6, ease: EASE_OUT, repeat: Infinity, repeatDelay: 4 } } as const;
 
 /**
  * Image-led page header for the terminal and tool pages. The still-life fills
@@ -60,10 +59,6 @@ export default function ImageBanner({ slug, eyebrow, title, description, childre
         </motion.div>
         <div className="absolute inset-0 bg-gradient-to-t from-[#0a1624] via-[#0a1624]/20 to-transparent md:bg-gradient-to-r md:from-[#0a1624] md:via-[#0a1624]/55 md:to-transparent" />
       </div>
-
-      {!reduce && (
-        <motion.div {...SWEEP} className="pointer-events-none absolute inset-y-0 left-0 w-1/3 bg-gradient-to-r from-transparent via-white/[0.06] to-transparent" aria-hidden="true" />
-      )}
 
       <div className="relative -mt-8 px-5 pb-7 sm:px-8 md:mt-0 md:max-w-[58%] md:px-10 md:py-12 lg:py-14">
         {eyebrow && (

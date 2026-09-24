@@ -37,7 +37,7 @@ const categoryConfig: Record<MessageCategory, {
     color: "text-emerald-700 dark:text-emerald-300",
     bgColor: "bg-emerald-50 dark:bg-emerald-950/40",
     borderColor: "border-emerald-200 dark:border-emerald-800/50",
-    glowColor: "shadow-emerald-500/10",
+    glowColor: "",
     icon: TrendingUp,
   },
   sell: {
@@ -170,7 +170,7 @@ const MessageCard = ({ message, index }: { message: TelegramMessage; index: numb
       {...revealSection}
       transition={{ delay: Math.min(index * 0.06, 0.3), duration: 0.35 }}
     >
-      <Card className={`group overflow-hidden transition-[box-shadow,transform] ease-out duration-base hover:shadow-xl ${config.glowColor} border ${config.borderColor} hover:scale-[1.01]`}>
+      <Card className={`group overflow-hidden transition-[box-shadow,transform] ease-out duration-base hover:shadow-xl ${config.glowColor} border ${config.borderColor}`}>
         {/* Category accent - left border */}
         <div className="flex">
           <div className={`w-1.5 flex-shrink-0 ${config.bgColor}`}
@@ -367,15 +367,6 @@ const TelegramChannel = ({ limit = 10, showViewAll = false, showFilters = false 
 
   return (
     <section className="py-12 md:py-20 bg-muted/20 relative overflow-hidden">
-      {/* Background accents */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div
-          className="absolute top-10 left-10 w-80 h-80 bg-[#229ED9]/5 rounded-full blur-3xl"
-        />
-        <div
-          className="absolute bottom-10 right-10 w-64 h-64 bg-secondary/5 rounded-full blur-3xl"
-        />
-      </div>
 
       <div className="container mx-auto px-4 relative z-10">
         {/* Header */}

@@ -284,7 +284,7 @@ export default function HelpPage() {
                 ))}
               </dl>
               <p className="text-sm text-muted-foreground">Longer names work too: “Return on equity”, “Debt to equity”, “Market capitalization”, “Dividend yield”. Queries can be up to 400 characters long, with up to six levels of brackets.</p>
-              <Link to={`/screener?fx=${encodeURIComponent("ROCE > 20 AND D/E < 0.5 AND P/E < 30")}`} className="inline-flex items-center gap-1.5 rounded-lg bg-secondary px-4 py-2 text-sm font-semibold text-secondary-foreground shadow-sm transition-transform pressable btn-shine hover:bg-secondary/90">
+              <Link to={`/screener?fx=${encodeURIComponent("ROCE > 20 AND D/E < 0.5 AND P/E < 30")}`} className="inline-flex items-center gap-1.5 rounded-lg bg-secondary px-4 py-2 text-sm font-semibold text-secondary-foreground shadow-sm transition-transform pressable hover:bg-secondary/90">
                 Try a query in the screener <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
               </Link>
             </DocSection>

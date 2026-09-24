@@ -35,15 +35,6 @@ const SIPCalculator = ({ headingLevel = 2 }: SIPCalculatorProps) => {
 
   return (
     <section className="py-10 md:py-20 bg-background relative overflow-hidden">
-      {/* Background */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div
-          className="absolute top-10 right-20 w-72 h-72 bg-secondary/5 rounded-full blur-3xl"
-        />
-        <div
-          className="absolute bottom-10 left-10 w-96 h-96 bg-brand-gold/5 rounded-full blur-3xl"
-        />
-      </div>
 
       <div className="container mx-auto px-4 relative z-10">
         <motion.div

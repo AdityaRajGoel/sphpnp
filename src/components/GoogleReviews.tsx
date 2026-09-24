@@ -41,7 +41,7 @@ const GoogleReviews = () => {
   };
 
   const cardVariants: Variants = {
-    hidden: { opacity: 0, y: 40, scale: 0.95 },
+    hidden: { opacity: 0, y: 8 },
     visible: {
       opacity: 1,
       y: 0,
@@ -54,13 +54,7 @@ const GoogleReviews = () => {
     <section ref={sectionRef} id="google-reviews" className="py-10 md:py-20 bg-gradient-to-b from-background to-muted/30 relative overflow-hidden">
       {/* Background decorations */}
       <motion.div className="absolute inset-0 pointer-events-none" style={{ y: bgY }}>
-        <div
-          className="absolute top-10 right-20 w-72 h-72 bg-brand-gold/5 rounded-full blur-3xl"
-        />
-        <div
-          className="absolute bottom-10 left-10 w-80 h-80 bg-secondary/5 rounded-full blur-3xl"
-        />
-      </motion.div>
+              </motion.div>
 
       {/* Floating stars background */}
       <div className="absolute inset-0 pointer-events-none">
@@ -94,7 +88,7 @@ const GoogleReviews = () => {
             Shri Parasram Holdings Panipat reviews
           </h2>
           <motion.div
-            className="w-20 h-1 bg-gradient-to-r from-brand-gold to-secondary mx-auto rounded-full mb-6"
+            className="w-20 h-1 bg-secondary mx-auto rounded-full mb-6"
             {...revealBar}
           />
 
@@ -105,7 +99,7 @@ const GoogleReviews = () => {
           <motion.div
             className="inline-flex items-center gap-4 bg-card border border-border rounded-2xl px-8 py-4 shadow-lg"
             {...revealPop()}
-            whileHover={{ scale: 1.03, boxShadow: "0 20px 40px -10px hsl(45 90% 50% / 0.15)" }}
+            whileHover={{ y: -2 }}
           >
             <motion.div
               className="text-5xl font-bold text-foreground"
@@ -174,7 +168,7 @@ const GoogleReviews = () => {
               key={`${review.name}-${review.time}`}
               className="group bg-card rounded-2xl p-6 shadow-md hover:shadow-xl transition-shadow duration-slow border border-border/50 relative"
               variants={cardVariants}
-              whileHover={{ y: -8, scale: 1.02 }}
+              whileHover={{ y: -2 }}
             >
               {/* Google icon badge */}
               <motion.div
@@ -192,8 +186,7 @@ const GoogleReviews = () => {
               {/* Author row */}
               <div className="flex items-center gap-3 mb-4">
                 <motion.div
-                  className="w-10 h-10 rounded-full bg-gradient-to-br from-secondary to-brand-green flex items-center justify-center text-white font-bold text-sm overflow-hidden shrink-0"
-                  whileHover={{ scale: 1.15, rotate: 10 }}
+                  className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center text-white font-bold text-sm overflow-hidden shrink-0"
                 >
                   {review.photo ? (
                     <img
@@ -232,7 +225,7 @@ const GoogleReviews = () => {
               </p>
 
               {/* Hover gradient */}
-              <motion.div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-brand-gold/5 to-secondary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-slow pointer-events-none" />
+              <motion.div className="absolute inset-0 rounded-2xl bg-secondary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-slow pointer-events-none" />
             </motion.div>
           ))}
         </motion.div>
@@ -244,8 +237,8 @@ const GoogleReviews = () => {
           {...revealSection}
           transition={{ delay: 0.4 }}
         >
-          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.97 }}>
-            <Button asChild className="btn-shine bg-gradient-to-r from-secondary to-brand-green hover:from-secondary/90 hover:to-brand-green/90 text-secondary-foreground font-semibold">
+          <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}>
+            <Button asChild className="bg-secondary hover:bg-secondary/90 text-secondary-foreground font-semibold">
               <a
                 href="https://search.google.com/local/writereview?placeid=ChIJ6zHm2PzbDTkRJ_5hCPHVKaw"
                 target="_blank"
@@ -256,7 +249,7 @@ const GoogleReviews = () => {
               </a>
             </Button>
           </motion.div>
-          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.97 }}>
+          <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}>
             <Button asChild variant="outline" className="border-border">
               <a
                 href="https://share.google/BzommM8rixb1emIzj"

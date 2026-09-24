@@ -61,15 +61,15 @@ const StockHeatmap = ({ stocks, maxItems = 50 }: Props) => {
           return (
             <motion.div
               key={stock.symbol}
-              initial={{ opacity: 0, scale: 0.85 }}
-              animate={{ opacity: 1, scale: 1 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
               transition={{ delay: i * 0.015 }}
               className="flex"
               style={{ flexBasis: `${pctArea}%`, flexGrow: 1, minWidth: `${minW}px`, minHeight: `${minH}px`, maxWidth: `${Math.max(pctArea * 2, 14)}%` }}
             >
               <Link
                 to={`/stock/${encodeURIComponent(stock.symbol)}`}
-                className="flex-1 rounded-md flex flex-col items-center justify-center transition-transform hover:scale-105 hover:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="flex-1 rounded-md flex flex-col items-center justify-center transition-transform hover:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 style={{ background: heatColor(stock.change_pct), color: heatTextColor(stock.change_pct) }}
                 title={`${stock.name} | ₹${stock.price.toLocaleString("en-IN")} | ${change} | MCap: ${formatCap(stock.market_cap)}`}
                 aria-label={`${stock.name} (${stock.symbol}) ${change}, open stock page`}

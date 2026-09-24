@@ -90,7 +90,7 @@ export default function GlobalCuesSection() {
             {series.length < 2 ? <EmptyState text="History appears after the first collection." /> : (
               <ResponsiveContainer width="100%" height={260}>
                 <AreaChart data={series} margin={{ top: 12, right: 8, left: 0, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke={CHART.grid} vertical={false} />
+                  <CartesianGrid stroke={CHART.grid} vertical={false} />
                   <XAxis dataKey="date" tick={axisTick} tickLine={false} axisLine={false} minTickGap={40} tickFormatter={(d: string) => shortDate(d).replace(/^\d+ /, "")} />
                   <YAxis tick={axisTick} tickLine={false} axisLine={false} width={56} domain={["auto", "auto"]} tickFormatter={(v: number) => v.toLocaleString("en-IN", { maximumFractionDigits: 0 })} />
                   <Tooltip {...tooltipStyle} labelFormatter={(d: string) => shortDate(d)} formatter={(v: unknown) => (typeof v === "number" ? price(v, pick.unit) : "—")} />

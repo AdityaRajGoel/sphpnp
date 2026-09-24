@@ -88,8 +88,8 @@ test.describe("reduced motion: reduce", () => {
 
   /*
    * Asserted as a policy over the whole page rather than against named
-   * components: `.hero-aurora` is conditionally unmounted under reduced motion
-   * (Hero.tsx:342) and lazy sections may not have mounted yet, so pinning class
+   * components: decorative elements come and go (the hero aurora this once named
+   * has been removed) and lazy sections may not have mounted yet, so pinning class
    * names tests the fixture, not the rule. What actually matters is that no
    * ambient loop is left running anywhere.
    */
@@ -118,15 +118,6 @@ test.describe("reduced motion: reduce", () => {
     ).toEqual([]);
   });
 
-  test("momentum scrolling is disabled", async ({ page }) => {
-    await page.goto("/");
-    await page.waitForTimeout(1000);
-
-    const rootClass = await page.evaluate(() => document.documentElement.className);
-    expect(rootClass, "Lenis must not drive the scroll under reduced motion").not.toContain(
-      "lenis",
-    );
-  });
 });
 
 test.describe("reduced motion: no-preference", () => {
@@ -141,12 +132,25 @@ test.describe("reduced motion: no-preference", () => {
     ).toBe(false);
   });
 
+  // A policy over the page, not a named element: the canary used to be the hero
+  // aurora, which was removed with the rest of the decorative effects. The
+  // market ticker and the live-updates dot are the loops that remain.
   test("decorative motion runs when the user has no preference", async ({ page }) => {
     await page.goto("/");
-    await expect(page.locator(".hero-aurora")).toBeAttached();
+    await page.waitForTimeout(1200);
 
-    const animation = await page.evaluate(computed(".hero-aurora", "animation-name"));
-    expect(animation).not.toBe("none");
+    const loopingCount = await page.evaluate(
+      () =>
+        Array.from(document.querySelectorAll("body *")).filter((el) => {
+          const cs = getComputedStyle(el);
+          return (
+            cs.animationName !== "none" &&
+            cs.animationIterationCount === "infinite" &&
+            (parseFloat(cs.animationDuration) || 0) > 0.01
+          );
+        }).length,
+    );
+    expect(loopingCount).toBeGreaterThan(0);
   });
 
   test("interaction feedback runs when the user has no preference", async ({ page }) => {
@@ -212,23 +216,14 @@ test.describe("motion override", () => {
     expect(loopingCount, "an explicit opt-out must be honoured too").toBe(0);
   });
 
-  test("momentum scrolling follows the override, not the media query", async ({ page }) => {
-    await page.emulateMedia({ reducedMotion: "reduce" });
-    await page.addInitScript(() => localStorage.setItem("motion-preference", "on"));
-    await page.goto("/");
-    await page.waitForTimeout(1200);
-
-    const rootClass = await page.evaluate(() => document.documentElement.className);
-    expect(rootClass).toContain("lenis");
-  });
 });
 
 /*
  * Toggling motion must update the page, not rebuild it.
  *
- * SmoothScroll returned either <ReactLenis>{children}</ReactLenis> or a bare
- * fragment depending on whether motion was enabled. Those are different
- * component types at the same position, so flipping the preference made React
+ * A smooth-scroll wrapper (since removed: scrolling is native) returned either
+ * a provider or a bare fragment depending on whether motion was enabled. Those
+ * are different component types at the same position, so flipping the preference made React
  * unmount and remount the entire app: every lazy section re-suspended, all
  * component state was lost and every reveal replayed. That was invisible while
  * the value came only from the OS and never changed mid-session; the in-app

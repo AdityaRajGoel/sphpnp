@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Bar, CartesianGrid, ComposedChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis, Legend } from "recharts";
+import { Bar, CartesianGrid, ComposedChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { Card } from "@/components/ui/card";
 import { useStockMarketData } from "@/hooks/useStockMarketData";
 import { shortDate } from "@/lib/market-data";
@@ -43,18 +43,30 @@ export default function ExchangeHistory({ symbol }: { symbol: string }) {
           ))}
         </div>
       </div>
-      <ResponsiveContainer width="100%" height={300}>
-        <ComposedChart data={series} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke={CHART.grid} vertical={false} />
-          <XAxis dataKey="date" tick={axisTick} tickLine={false} axisLine={false} minTickGap={36} tickFormatter={(d: string) => shortDate(d).replace(/ \d{4}$/, "")} />
-          <YAxis yAxisId="price" tick={axisTick} tickLine={false} axisLine={false} width={56} domain={["auto", "auto"]} tickFormatter={(v: number) => `₹${v.toLocaleString("en-IN")}`} />
-          <YAxis yAxisId="pct" orientation="right" domain={[0, 100]} tick={axisTick} tickLine={false} axisLine={false} width={36} tickFormatter={(v: number) => `${v}%`} />
+      {/* Price and delivery share the x-axis but not a y-axis: one panel each,
+          hover linked by syncId. A second y-scale on one plot invents a
+          correlation from wherever the two scales happen to line up. */}
+      <ResponsiveContainer width="100%" height={220}>
+        <ComposedChart data={series} syncId={`exh-${symbol}`} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+          <CartesianGrid stroke={CHART.grid} vertical={false} />
+          <XAxis dataKey="date" hide />
+          <YAxis tick={axisTick} tickLine={false} axisLine={false} width={64} domain={["auto", "auto"]} tickFormatter={(v: number) => `₹${v.toLocaleString("en-IN")}`} />
           <Tooltip {...tooltipStyle} labelFormatter={(d: string) => shortDate(d)}
-            formatter={(v: unknown, name: string) => (typeof v !== "number" ? "—" : name === "Delivery" ? `${v.toFixed(1)}%` : `₹${v.toLocaleString("en-IN")}`)} />
-          <Legend wrapperStyle={{ fontSize: 12 }} />
-          <Bar yAxisId="pct" dataKey="delivery" name="Delivery" fill={CHART.gold} fillOpacity={0.45} maxBarSize={6} />
-          <Line yAxisId="price" dataKey="close" name="NSE close" stroke={CHART.primary} strokeWidth={2} dot={false} connectNulls />
-          {series.some((s) => s.bse !== null) && <Line yAxisId="price" dataKey="bse" name="BSE close" stroke={CHART.accent} strokeWidth={1} strokeDasharray="3 3" dot={false} connectNulls />}
+            formatter={(v: unknown) => (typeof v !== "number" ? "—" : `₹${v.toLocaleString("en-IN")}`)} />
+          {/* NSE only: BSE's close tracks it within paise, so a second line just
+              muddied the first. The subtitle states the BSE close. */}
+          <Line dataKey="close" name="NSE close" stroke={CHART.primary} strokeWidth={2} dot={false} connectNulls />
+        </ComposedChart>
+      </ResponsiveContainer>
+      <p className="mt-3 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Delivery, % of volume</p>
+      <ResponsiveContainer width="100%" height={110}>
+        <ComposedChart data={series} syncId={`exh-${symbol}`} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
+          <CartesianGrid stroke={CHART.grid} vertical={false} />
+          <XAxis dataKey="date" tick={axisTick} tickLine={false} axisLine={false} minTickGap={36} tickFormatter={(d: string) => shortDate(d).replace(/ \d{4}$/, "")} />
+          <YAxis domain={[0, 100]} ticks={[0, 50, 100]} tick={axisTick} tickLine={false} axisLine={false} width={64} tickFormatter={(v: number) => `${v}%`} />
+          <Tooltip {...tooltipStyle} labelFormatter={(d: string) => shortDate(d)}
+            formatter={(v: unknown) => (typeof v !== "number" ? "—" : `${v.toFixed(1)}%`)} />
+          <Bar dataKey="delivery" name="Delivery" fill={CHART.series[0]} maxBarSize={6} radius={[2, 2, 0, 0]} />
         </ComposedChart>
       </ResponsiveContainer>
       <p className="mt-2 text-xs text-muted-foreground">High delivery with a rising price suggests buyers holding rather than trading the move.</p>

@@ -14,8 +14,8 @@ type Props = {
 /**
  * Centred header for the tool pages (calculators, screener, IPO, trackers),
  * after the group's webtrade platform: title, a short accent rule, the intro
- * underneath. In the site's own colours - the rule runs brand green to gold -
- * and Montserrat for the title, as every other heading. Replaces the dark
+ * underneath. In the site's own colours - a solid brand-green rule - and the
+ * heading face (IBM Plex Sans) as every other heading. Replaces the dark
  * image banner on these pages: the tool is the point, and the illustration
  * was the heaviest image on each.
  */
@@ -27,7 +27,7 @@ export default function PageHeader({ eyebrow, title, description, children, head
         <p className="mb-3 inline-flex items-center gap-2 text-[0.6875rem] font-semibold uppercase tracking-[0.18em] text-secondary">{eyebrow}</p>
       )}
       <Heading className="font-heading text-3xl font-bold leading-tight tracking-tight text-foreground [text-wrap:balance] md:text-4xl">{title}</Heading>
-      <div className="mx-auto mt-4 h-[3px] w-[100px] rounded-full bg-gradient-to-r from-secondary to-brand-gold" aria-hidden="true" />
+      <div className="mx-auto mt-4 h-[3px] w-[100px] rounded-full bg-secondary" aria-hidden="true" />
       {description && <p className="mx-auto mt-4 max-w-2xl text-[0.9375rem] leading-relaxed text-muted-foreground md:text-base">{description}</p>}
       {children && <div className="mt-6 flex flex-wrap items-center justify-center gap-2.5">{children}</div>}
     </header>

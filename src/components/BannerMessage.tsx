@@ -76,7 +76,7 @@ const getThemeStyles = (theme: string, type: BannerType) => {
       };
     case 'brand-gradient':
       return { 
-        container: "bg-gradient-to-br from-primary via-primary/90 to-secondary/90 text-white border-primary/20", 
+        container: "bg-primary text-white border-primary/20", 
         text: "text-white/90", 
         title: "text-white", 
         iconBg: "bg-white/10", 

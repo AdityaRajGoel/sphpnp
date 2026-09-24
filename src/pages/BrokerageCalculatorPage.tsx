@@ -261,8 +261,8 @@ const BrokerageCalculatorPage = () => {
             <Card
               className={`relative overflow-hidden border-0 shadow-xl ${
                 isProfit
-                  ? "bg-gradient-to-br from-secondary/10 via-brand-green/5 to-transparent"
-                  : "bg-gradient-to-br from-destructive/10 via-red-500/5 to-transparent"
+                  ? "bg-secondary/5"
+                  : "bg-destructive/5"
               }`}
             >
               <div className="p-6">

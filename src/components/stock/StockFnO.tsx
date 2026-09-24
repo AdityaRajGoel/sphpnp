@@ -63,7 +63,7 @@ export default function StockFnO({ symbol }: { symbol: string }) {
           <p className="text-xs text-muted-foreground mb-2">Calls open above (resistance) and puts below (support), in shares</p>
           <ResponsiveContainer width="100%" height={220}>
             <BarChart data={strikes} margin={{ top: 8, right: 8, left: 0, bottom: 0 }} barGap={0}>
-              <CartesianGrid strokeDasharray="3 3" stroke={CHART.grid} vertical={false} />
+              <CartesianGrid stroke={CHART.grid} vertical={false} />
               <XAxis dataKey="strike" tick={axisTick} tickLine={false} axisLine={false} minTickGap={16} />
               <YAxis tick={axisTick} tickLine={false} axisLine={false} width={52} tickFormatter={shareCount} />
               <Tooltip {...tooltipStyle} formatter={(v: unknown) => (typeof v === "number" ? shareCount(v) : "—")} labelFormatter={(k) => `Strike ₹${Number(k).toLocaleString("en-IN")}`} />
@@ -80,19 +80,30 @@ export default function StockFnO({ symbol }: { symbol: string }) {
           {trend.length < 2 ? (
             <p className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">The daily history builds from each close.</p>
           ) : (
-            <ResponsiveContainer width="100%" height={220}>
-              <ComposedChart data={trend} margin={{ top: 8, right: 0, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke={CHART.grid} vertical={false} />
-                <XAxis dataKey="date" tick={axisTick} tickLine={false} axisLine={false} minTickGap={24} tickFormatter={(d: string) => shortDate(d).replace(/ \d{4}$/, "")} />
-                <YAxis yAxisId="oi" tick={axisTick} tickLine={false} axisLine={false} width={52} tickFormatter={shareCount} />
-                <YAxis yAxisId="px" orientation="right" tick={axisTick} tickLine={false} axisLine={false} width={52} domain={["auto", "auto"]} tickFormatter={(v: number) => `₹${v.toLocaleString("en-IN", { maximumFractionDigits: 0 })}`} />
-                <Tooltip {...tooltipStyle} labelFormatter={(d: string) => shortDate(d)}
-                  formatter={(v: unknown, name: string) => (typeof v !== "number" ? "—" : name === "Open interest" ? shareCount(v) : price(v))} />
-                <Legend wrapperStyle={{ fontSize: 12 }} />
-                <Bar yAxisId="oi" dataKey="oi" name="Open interest" fill={CHART.muted} fillOpacity={0.35} maxBarSize={10} />
-                <Line yAxisId="px" dataKey="close" name="Future" stroke={CHART.primary} strokeWidth={2} dot={false} />
-              </ComposedChart>
-            </ResponsiveContainer>
+            <>
+              {/* Price over OI as two panels on one time axis, hover linked:
+                  shares and rupees on two y-scales of one plot read as a
+                  relationship the data does not state. */}
+              <ResponsiveContainer width="100%" height={140}>
+                <ComposedChart data={trend} syncId="stock-fno-trend" margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                  <CartesianGrid stroke={CHART.grid} vertical={false} />
+                  <XAxis dataKey="date" hide />
+                  <YAxis tick={axisTick} tickLine={false} axisLine={false} width={60} domain={["auto", "auto"]} tickFormatter={(v: number) => `₹${v.toLocaleString("en-IN", { maximumFractionDigits: 0 })}`} />
+                  <Tooltip {...tooltipStyle} labelFormatter={(d: string) => shortDate(d)} formatter={(v: unknown) => (typeof v === "number" ? price(v) : "—")} />
+                  <Line dataKey="close" name="Future" stroke={CHART.primary} strokeWidth={2} dot={false} />
+                </ComposedChart>
+              </ResponsiveContainer>
+              <p className="mt-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Open interest, shares</p>
+              <ResponsiveContainer width="100%" height={96}>
+                <ComposedChart data={trend} syncId="stock-fno-trend" margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
+                  <CartesianGrid stroke={CHART.grid} vertical={false} />
+                  <XAxis dataKey="date" tick={axisTick} tickLine={false} axisLine={false} minTickGap={24} tickFormatter={(d: string) => shortDate(d).replace(/ \d{4}$/, "")} />
+                  <YAxis tick={axisTick} tickLine={false} axisLine={false} width={60} tickCount={3} tickFormatter={shareCount} />
+                  <Tooltip {...tooltipStyle} labelFormatter={(d: string) => shortDate(d)} formatter={(v: unknown) => (typeof v === "number" ? shareCount(v) : "—")} />
+                  <Bar dataKey="oi" name="Open interest" fill={CHART.series[2]} fillOpacity={0.55} maxBarSize={10} radius={[2, 2, 0, 0]} />
+                </ComposedChart>
+              </ResponsiveContainer>
+            </>
           )}
         </div>
       </div>

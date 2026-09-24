@@ -16,8 +16,6 @@ import { toMotionConfigValue } from "@/lib/motion-preference";
 import { AnimatePresence, motion, MotionConfig } from "motion/react";
 
 import useScrollToHash from "@/hooks/useScrollToHash";
-import SmoothScroll from "@/components/SmoothScroll";
-import { useLenis } from "lenis/react";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { useLocation } from "react-router-dom";
 import SmartPopup from "@/components/SmartPopup";
@@ -102,12 +100,6 @@ const PageFallback = () => (
       }}
     />
 
-    {/* Ambient glow */}
-    <motion.div
-      className="absolute w-64 h-64 bg-secondary/10 rounded-full blur-3xl"
-      animate={{ scale: [1, 1.3, 1], opacity: [0.15, 0.3, 0.15] }}
-      transition={{ duration: 3, repeat: Infinity }}
-    />
 
     <motion.div
       initial={{ opacity: 0, scale: 0.8 }}
@@ -145,7 +137,7 @@ const PageFallback = () => (
       {/* Progress line */}
       <div className="w-48 h-0.5 bg-muted rounded-full mt-5 overflow-hidden">
         <motion.div
-          className="h-full bg-gradient-to-r from-secondary to-brand-gold rounded-full"
+          className="h-full bg-secondary rounded-full"
           initial={{ x: "-100%" }}
           animate={{ x: "100%" }}
           transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut" }}
@@ -158,20 +150,17 @@ const PageFallback = () => (
 
 const AnimatedRoutes = () => {
   const location = useLocation();
-  const lenis = useLenis();
 
   /*
    * The page starts at the top when the NEW page mounts, not when the URL
    * changes. useScrollToHash resets on the URL change, but with mode="wait" the
-   * old page is still on screen for its exit animation, and Lenis re-applies its
-   * remembered offset during it - measured on the live site, a phone-width
-   * About -> Contact tap showed Contact at the old page's bottom offset 200ms
-   * after the click. Resetting here, through Lenis as well as the window, runs
-   * after the exit and before the new page paints. Hash links keep their target.
+   * old page is still on screen for its exit animation - measured on the live
+   * site, a phone-width About -> Contact tap once showed Contact at the old
+   * page's bottom offset 200ms after the click. Resetting here runs after the
+   * exit and before the new page paints. Hash links keep their target.
    */
   const resetScroll = () => {
     if (location.hash) return;
-    lenis?.scrollTo(0, { immediate: true, force: true });
     window.scrollTo({ top: 0, behavior: "instant" });
   };
 
@@ -280,11 +269,9 @@ const App = () => (
             <CookieConsent />
             <StickyMobileCTA />
             <ErrorBoundary>
-              <SmoothScroll>
-                <Suspense fallback={<PageFallback />}>
-                  <AnimatedRoutes />
-                </Suspense>
-              </SmoothScroll>
+              <Suspense fallback={<PageFallback />}>
+                <AnimatedRoutes />
+              </Suspense>
             </ErrorBoundary>
           </AuthProvider>
         </BrowserRouter>

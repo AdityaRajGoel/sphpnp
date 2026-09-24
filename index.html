@@ -31,7 +31,11 @@
        downloaded the same image twice on every visit, and the splash logo was
        competing with it at high priority. -->
   <link rel="preload" as="image" type="image/webp" imagesrcset="/hero-bg-640.webp 640w, /hero-bg-1280.webp 1280w, /hero-bg.webp 2940w" imagesizes="100vw" fetchpriority="high" />  <!-- hero-*.webm/mp4 load via the Hero component after mount; eager preload is not needed and hurts LCP -->
-  <!-- Fonts are self-hosted (@fontsource-variable, imported in src/main.tsx). -->
+  <!-- Fonts are self-hosted (@fontsource IBM Plex, imported in src/main.tsx). -->
+  <!-- The saved theme is applied before first paint. ThemeToggle used to add the
+       class after React mounted, so a dark-theme visitor saw the light page (and
+       a white splash) first, then the switch. -->
+  <script>try{if(localStorage.getItem("theme")==="dark")document.documentElement.classList.add("dark")}catch(e){}</script>
   <!-- Critical inline CSS to avoid render-blocking -->
   <style>
     :root {
@@ -42,15 +46,15 @@
     }
 
     .dark {
-      --background: 220 60% 6%;
-      --foreground: 210 40% 96%;
-      --card: 220 55% 10%;
-      --brand-charcoal: 220 50% 8%
+      --background: 216 28% 7%;
+      --foreground: 210 25% 94%;
+      --card: 216 24% 10%;
+      --brand-charcoal: 216 28% 8%
     }
 
     body {
       margin: 0;
-      font-family: 'Roboto Variable', 'Roboto', 'Roboto Fallback', system-ui, -apple-system, sans-serif;
+      font-family: 'IBM Plex Sans Variable', 'IBM Plex Sans', 'IBM Plex Sans Fallback', system-ui, -apple-system, sans-serif;
       background: hsl(var(--background));
       color: hsl(var(--foreground))
     }
@@ -135,11 +139,13 @@
   <style>
     #app-splash{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:#ffffff;transition:opacity .4s ease}
     #app-splash.hide{opacity:0;pointer-events:none}
+    .dark #app-splash{background:#0d1117}
+    .dark .splash-logo{background:#fff;border-radius:16px}
     .splash-inner{display:flex;flex-direction:column;align-items:center;gap:26px;animation:splashIn .45s ease both}
     @keyframes splashIn{from{opacity:0;transform:scale(.97)}to{opacity:1;transform:none}}
     .splash-logo{width:auto;height:120px;max-width:70vw;object-fit:contain}
     .splash-bar{width:132px;height:3px;border-radius:99px;background:rgba(33,131,82,.14);overflow:hidden}
-    .splash-bar span{display:block;height:100%;width:40%;border-radius:99px;background:linear-gradient(90deg,#218352,#c88704);animation:splashSweep 1.15s cubic-bezier(.4,0,.2,1) infinite}
+    .splash-bar span{display:block;height:100%;width:40%;border-radius:99px;background:#218352;animation:splashSweep 1.15s cubic-bezier(.4,0,.2,1) infinite}
     @keyframes splashSweep{0%{transform:translateX(-130%)}100%{transform:translateX(360%)}}
     @media(prefers-reduced-motion:reduce){.splash-bar span{animation:none;width:100%}}
   </style>

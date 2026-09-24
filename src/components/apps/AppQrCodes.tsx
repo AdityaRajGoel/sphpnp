@@ -27,7 +27,7 @@ const AppQrCodes = ({ app, className = "" }: Props) => {
           aria-label={fill(t("store.scanAria"), { app: t(app.nameKey), platform: c.platform })}
           className="group flex flex-col items-center gap-1.5"
         >
-          <span className="rounded-xl bg-white p-1.5 shadow-md ring-1 ring-black/5 transition-transform duration-fast ease-out group-hover:scale-105">
+          <span className="rounded-xl bg-white p-1.5 shadow-md ring-1 ring-black/5 transition-transform duration-fast ease-out group-">
             <img src={c.src} alt={`QR code to download ${app.name} on ${c.href === app.playHref ? "Android (Google Play)" : "iPhone (App Store)"}`} width={84} height={84} loading="lazy" decoding="async" className="h-[84px] w-[84px]" />
           </span>
           <span className="text-[11px] font-semibold uppercase tracking-wide opacity-80">{c.platform}</span>

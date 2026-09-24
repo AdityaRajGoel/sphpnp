@@ -53,7 +53,7 @@ const ActionButton = ({ action, delay }: { action: Action; delay: number }) => {
 
       {/* Icon button */}
       <div
-        className={`w-12 h-12 rounded-full flex items-center justify-center shadow-lg ${action.color} text-white transition-transform ease-out duration-fast hover:scale-110`}
+        className={`w-12 h-12 rounded-full flex items-center justify-center shadow-lg ${action.color} text-white transition-transform ease-out duration-fast`}
       >
         <Icon ref={iconRef} size={20} />
       </div>
@@ -89,7 +89,7 @@ const FloatingActions = () => {
       icon: WhatsappIcon,
       label: "WhatsApp Chat",
       href: whatsappUrl,
-      color: "bg-green-500 hover:bg-green-600 shadow-green-500/30",
+      color: "bg-green-500 hover:bg-green-600",
     },
     {
       icon: PhoneVolumeIcon,
@@ -142,19 +142,14 @@ const FloatingActions = () => {
       <motion.button
         onClick={() => setExpanded(!expanded)}
         className="relative"
-        whileTap={{ scale: 0.9 }}
+        whileTap={{ scale: 0.97 }}
         aria-label={expanded ? "Close help menu" : "Open help menu"}
       >
-        {/* Pulse ring when collapsed */}
-        {!expanded && (
-          <div className="absolute inset-0 bg-green-500 rounded-full animate-ping opacity-25" />
-        )}
-
         <motion.div
           className={`relative w-14 h-14 rounded-full flex items-center justify-center shadow-lg transition-colors duration-base ${
             expanded
               ? "bg-card text-foreground border border-border/50 hover:bg-accent"
-              : "bg-green-500 hover:bg-green-600 text-white shadow-green-500/30"
+              : "bg-green-500 hover:bg-green-600 text-white"
           }`}
           animate={{ rotate: expanded ? 90 : 0 }}
           transition={{ duration: 0.2 }}

@@ -52,7 +52,7 @@ const UtilityBar = () => (
         <Link to="/help" className={`${UTIL_LINK} hidden lg:inline-flex`}>Help</Link>
         <div className="flex items-center gap-2.5 border-x border-primary-foreground/20 px-3">
           {SOCIALS.map(({ href, label, Icon }) => (
-            <a key={href} href={href} target="_blank" rel="noopener noreferrer" aria-label={label} className="-m-[5px] inline-flex p-[5px] transition-[color,transform] duration-fast ease-out hover:scale-110 hover:text-secondary">
+            <a key={href} href={href} target="_blank" rel="noopener noreferrer" aria-label={label} className="-m-[5px] inline-flex p-[5px] transition-[color,transform] duration-fast ease-out hover:text-secondary">
               <Icon className="h-3.5 w-3.5" aria-hidden />
             </a>
           ))}
@@ -282,11 +282,11 @@ const Header = () => {
               </a>
             </Button>
             <WebTradeMenu>
-              <Button size="sm" className="hidden bg-secondary font-semibold text-secondary-foreground hover:bg-secondary/90 sm:inline-flex">
+              <Button size="sm" variant="outline" className="hidden border-secondary/50 font-semibold text-secondary hover:bg-secondary hover:text-secondary-foreground sm:inline-flex">
                 <BarChart3 className="mr-1 h-4 w-4" aria-hidden />{t("cta.webTrade")}<ChevronDown className="ml-1 h-3.5 w-3.5" aria-hidden />
               </Button>
             </WebTradeMenu>
-            <Button asChild className="btn-shine hidden bg-gradient-to-r from-secondary to-brand-green font-bold text-secondary-foreground shadow-md shadow-secondary/25 hover:from-secondary/90 hover:to-brand-green/90 hover:shadow-lg hover:shadow-secondary/30 sm:inline-flex">
+            <Button asChild className="hidden bg-secondary font-semibold text-secondary-foreground hover:bg-secondary/90 sm:inline-flex">
               <Link to="/open-account">{t("cta.openAccount")}</Link>
             </Button>
             <button

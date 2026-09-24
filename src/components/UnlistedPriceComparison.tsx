@@ -162,7 +162,7 @@ const UnlistedPriceComparison = () => {
             What Other Dealers Are Quoting
           </h2>
           <motion.div
-            className="w-20 h-1 bg-gradient-to-r from-secondary to-brand-gold mx-auto rounded-full mb-4"
+            className="w-20 h-1 bg-secondary mx-auto rounded-full mb-4"
             {...revealBar}
           />
           <p className="text-sm text-muted-foreground max-w-2xl mx-auto">

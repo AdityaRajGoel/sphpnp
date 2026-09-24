@@ -1,7 +1,7 @@
 import { TrendingUp, BarChart3, Wallet, Globe, FileText, Smartphone, ArrowUpRight, Vault, Building2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
-import { motion, Variants, useScroll, useTransform } from "motion/react";
-import { useRef, useState } from "react";
+import { motion, Variants } from "motion/react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useT } from "@/i18n/LanguageContext";
 import { EASE_OUT, revealBar, revealFade, revealSection, revealTracking } from "@/lib/motion";
@@ -85,14 +85,7 @@ const services = [
 
 const Services = () => {
   const { t } = useT();
-  const sectionRef = useRef<HTMLDivElement>(null);
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
-  const { scrollYProgress } = useScroll({
-    target: sectionRef,
-    offset: ["start end", "end start"],
-  });
-  const bgY = useTransform(scrollYProgress, [0, 1], [40, -40]);
-  const rotateOrb = useTransform(scrollYProgress, [0, 1], [0, 360]);
 
   const containerVariants: Variants = {
     hidden: { opacity: 0 },
@@ -103,50 +96,16 @@ const Services = () => {
   };
 
   const cardVariants: Variants = {
-    hidden: { opacity: 0, y: 50, scale: 0.9 },
+    hidden: { opacity: 0, y: 8 },
     visible: {
       opacity: 1,
       y: 0,
-      scale: 1,
       transition: { duration: 0.5, ease: EASE_OUT },
     },
   };
 
   return (
-    <section ref={sectionRef} id="services" className="py-12 md:py-24 bg-muted/50 overflow-hidden relative">
-      {/* Parallax background orbs */}
-      <motion.div className="absolute inset-0 pointer-events-none" style={{ y: bgY }}>
-        <div
-          className="absolute top-10 left-10 w-72 h-72 bg-secondary/5 rounded-full blur-3xl"
-        />
-        <div
-          className="absolute bottom-10 right-10 w-96 h-96 bg-brand-gold/5 rounded-full blur-3xl"
-        />
-        {/* Orbiting element */}
-        <motion.div
-          className="absolute top-1/2 left-1/2 w-4 h-4 bg-secondary/20 rounded-full"
-          style={{ rotate: rotateOrb, x: 200, y: -100 }}
-        />
-      </motion.div>
-
-      {/* Animated grid lines */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        <motion.div
-          className="absolute top-0 left-1/4 w-px h-full bg-gradient-to-b from-transparent via-secondary/10 to-transparent"
-          animate={{ opacity: [0, 0.5, 0] }}
-          transition={{ duration: 4, repeat: Infinity, delay: 0 }}
-        />
-        <motion.div
-          className="absolute top-0 left-2/4 w-px h-full bg-gradient-to-b from-transparent via-brand-gold/10 to-transparent"
-          animate={{ opacity: [0, 0.5, 0] }}
-          transition={{ duration: 4, repeat: Infinity, delay: 1.5 }}
-        />
-        <motion.div
-          className="absolute top-0 left-3/4 w-px h-full bg-gradient-to-b from-transparent via-secondary/10 to-transparent"
-          animate={{ opacity: [0, 0.5, 0] }}
-          transition={{ duration: 4, repeat: Infinity, delay: 3 }}
-        />
-      </div>
+    <section id="services" className="py-12 md:py-24 bg-muted/50 overflow-hidden relative">
 
       <div className="container mx-auto px-4 relative z-10">
         <motion.div
@@ -163,7 +122,7 @@ const Services = () => {
             {t("page.services")}
           </h1>
           <motion.div
-            className="w-20 h-1 bg-gradient-to-r from-secondary to-brand-gold mx-auto rounded-full mb-4"
+            className="w-20 h-1 bg-secondary mx-auto rounded-full mb-4"
             {...revealBar}
           />
           <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
@@ -185,7 +144,7 @@ const Services = () => {
               key={service.title}
               id={service.id}
               variants={cardVariants}
-              whileHover={{ y: -10, scale: 1.02 }}
+              whileHover={{ y: -2 }}
               transition={{ type: "spring", stiffness: 300 }}
               onHoverStart={() => setHoveredIndex(index)}
               onHoverEnd={() => setHoveredIndex(null)}
@@ -197,7 +156,7 @@ const Services = () => {
               >
               <Card className="group bg-card hover:shadow-2xl transition-[box-shadow,color,background-color,border-color] duration-base border-border/50 hover:border-secondary/50 overflow-hidden h-full relative">
                 {/* Gradient overlay on hover */}
-                <motion.div className="absolute inset-0 bg-gradient-to-br from-secondary/5 to-brand-gold/5 opacity-0 group-hover:opacity-100 transition-opacity duration-slow" />
+                <motion.div className="absolute inset-0 bg-secondary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-slow" />
 
                 <CardContent className="p-6 relative z-10">
                   <div className="flex items-start justify-between mb-4">
@@ -235,7 +194,7 @@ const Services = () => {
 
                 {/* Bottom accent line */}
                 <motion.div
-                  className="absolute bottom-0 left-0 h-1 bg-gradient-to-r from-secondary to-brand-gold"
+                  className="absolute bottom-0 left-0 h-1 bg-secondary"
                   initial={{ width: 0 }}
                   whileHover={{ width: "100%" }}
                   transition={{ duration: 0.3 }}
@@ -254,7 +213,7 @@ const Services = () => {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link
               to="/open-account"
-              className="btn-shine inline-flex items-center justify-center gap-2 min-h-[44px] px-7 py-3 rounded-full bg-brand-green text-white font-semibold hover:opacity-90 transition-opacity"
+              className="inline-flex items-center justify-center gap-2 min-h-[44px] px-7 py-3 rounded-full bg-brand-green text-white font-semibold hover:opacity-90 transition-opacity"
             >
               Open a Free Demat Account
               <ArrowUpRight className="w-4 h-4" />

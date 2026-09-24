@@ -175,7 +175,7 @@ const ArticlePage = () => {
           {/* CTA */}
           <motion.div
             {...revealSection}
-            className="mt-10 bg-gradient-to-br from-brand-navy to-primary text-white rounded-2xl p-6 md:p-8 text-center"
+            className="mt-10 bg-brand-navy text-white rounded-2xl p-6 md:p-8 text-center"
           >
             <h2 className="font-heading text-xl md:text-2xl font-bold mb-2">Ready to start investing?</h2>
             <p className="text-white/80 text-sm mb-5 max-w-md mx-auto">
@@ -183,7 +183,7 @@ const ArticlePage = () => {
             </p>
             <Link
               to="/open-account"
-              className="inline-flex items-center gap-2 btn-shine bg-gradient-to-r from-secondary to-brand-green text-secondary-foreground font-bold px-6 py-3 rounded-xl shadow-lg hover:scale-[1.03] transition-transform"
+              className="inline-flex items-center gap-2 bg-secondary hover:bg-secondary/90 text-secondary-foreground font-bold px-6 py-3 rounded-xl shadow-lg transition-transform"
             >
               Open Free Demat Account <ArrowRight className="w-4 h-4" />
             </Link>

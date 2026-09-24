@@ -160,7 +160,7 @@ const OpenAccountPage = () => {
             <p className="text-muted-foreground mb-2">Your account opening request has been submitted successfully.</p>
             <p className="text-sm text-muted-foreground mb-8">Our team will call you within 24 hours. You can also visit our branch at <b>Shakuntala Complex, Palika Bazaar, Panipat</b>.</p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              <Button asChild className="btn-shine bg-gradient-to-r from-secondary to-brand-green text-secondary-foreground font-bold">
+              <Button asChild className="bg-secondary hover:bg-secondary/90 text-secondary-foreground font-bold">
                 <a href="tel:+919416400314"><Phone className="w-4 h-4 mr-2" />Call Now</a>
               </Button>
               <Button asChild variant="outline"><Link to="/">Back to Home</Link></Button>
@@ -238,18 +238,14 @@ const OpenAccountPage = () => {
       <Header />
       <VisibleBreadcrumbs items={[{ name: "Home", url: "/" }, { name: "Open Demat Account" }]} />
 
-      <section className="relative py-10 md:py-28 overflow-hidden" style={{ background: `linear-gradient(135deg, hsl(213 80% 12% / 0.95), hsl(213 80% 22% / 0.9), hsl(145 70% 25% / 0.88))` }}>
-        <div className="absolute inset-0 pointer-events-none overflow-hidden">
-          <div className="absolute top-10 right-10 w-96 h-96 bg-secondary/20 rounded-full blur-3xl" />
-          <div className="absolute bottom-10 left-10 w-80 h-80 bg-brand-gold/15 rounded-full blur-3xl" />
-        </div>
+      <section className="relative py-10 md:py-28 overflow-hidden" style={{ background: "var(--gradient-hero)" }}>
         <div className="container mx-auto max-w-6xl px-4 relative z-10 grid items-center gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:gap-14">
           <div className="text-center lg:text-left">
             <motion.span className="inline-flex items-center gap-1.5 bg-white/10 border border-white/20 text-white text-xs font-bold uppercase tracking-wider px-3 py-1.5 rounded-full mb-4" initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }}>
               <TrendingUp className="w-3.5 h-3.5 text-secondary" /> Free Demat Account
             </motion.span>
             <motion.h1 className="font-heading text-4xl md:text-5xl lg:text-6xl font-bold text-primary-foreground mb-4 [text-wrap:balance]" initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-              {t("openAccount.title1")} <span className="text-brand-gold">{t("openAccount.title2")}</span>
+              {t("openAccount.title1")} {t("openAccount.title2")}
             </motion.h1>
             <motion.p className="text-lg text-primary-foreground/80 max-w-xl mx-auto lg:mx-0" initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
               {t("openAccount.subtitle")}
@@ -332,7 +328,7 @@ const OpenAccountPage = () => {
                   <Textarea id="lead-message" name="message" aria-describedby="lead-message-count" value={form.message} onChange={handleChange} placeholder="Any specific requirements or questions..." rows={4} maxLength={1000} />
                   <p id="lead-message-count" className="pt-1 text-right text-xs tabular-nums text-muted-foreground">{form.message.length} / 1000</p>
                 </div>
-                <RippleButton type="submit" disabled={loading} className="w-full sm:w-auto bg-gradient-to-r from-brand-orange to-brand-gold text-white font-bold text-base px-10 py-6 shadow-lg shadow-brand-orange/20 hover:opacity-90 transition-opacity">
+                <RippleButton type="submit" disabled={loading} className="w-full sm:w-auto bg-secondary text-secondary-foreground font-bold text-base px-10 py-6 shadow-lg hover:opacity-90 transition-opacity">
                   {loading ? "Submitting..." : "Submit Request"}
                   <ArrowRight className="ml-2 w-5 h-5" />
                 </RippleButton>

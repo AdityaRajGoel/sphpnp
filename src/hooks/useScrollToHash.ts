@@ -5,18 +5,12 @@ import { useLocation } from "react-router-dom";
  * Scrolls to the element matching the URL hash after navigation, or to the top
  * when there is none.
  *
- * Two things fight this and both had to be handled, because between them they
- * produced the "clicked a link and landed near the bottom of the new page"
- * report:
- *
- *  - The browser's own scroll restoration. `history.scrollRestoration` defaults
- *    to "auto", so the browser re-applies a remembered offset after a history
- *    entry changes. Whether that lands before or after this effect is a race,
- *    which is exactly why the symptom was intermittent. It is set to "manual"
- *    in main.tsx so the browser stops competing.
- *
- *  - Lenis. It maintains its own scroll position and re-applies it on its next
- *    animation frame, so a bare window.scrollTo can be undone a frame later.
+ * The browser's own scroll restoration fights this: `history.scrollRestoration`
+ * defaults to "auto", so the browser re-applies a remembered offset after a
+ * history entry changes. Whether that lands before or after this effect is a
+ * race, which is exactly why the "clicked a link and landed near the bottom of
+ * the new page" report was intermittent. It is set to "manual" in main.tsx so
+ * the browser stops competing.
  *
  * Hence the reset is applied now AND on the next frame: the first covers the
  * common case, the second survives anything that re-applies an offset after

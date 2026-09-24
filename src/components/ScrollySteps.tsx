@@ -103,7 +103,7 @@ const StepScene = ({ step, index, total }: { step: ScrollyStep; index: number; t
       transition={{ type: "spring", stiffness: 210, damping: 24 }}
     >
       <div className="relative mb-6">
-        <div className="relative w-32 h-32 rounded-3xl bg-gradient-to-br from-secondary/15 to-brand-gold/10 border border-secondary/25 flex items-center justify-center shadow-xl shadow-secondary/10">
+        <div className="relative w-32 h-32 rounded-3xl bg-secondary/10 border border-secondary/25 flex items-center justify-center shadow-xl">
           <Icon className="w-14 h-14 text-secondary" />
           <SceneAccent accent={step.accent} />
         </div>

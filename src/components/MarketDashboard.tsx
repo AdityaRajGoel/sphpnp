@@ -108,7 +108,7 @@ const SectorHeatmap = memo(() => {
             return (
               <motion.div key={sector.name}
                 className={`flex items-center gap-2 p-2.5 rounded-lg border transition-colors cursor-pointer ${sector.up ? "bg-secondary/5 border-secondary/20 hover:bg-secondary/10" : "bg-destructive/5 border-destructive/20 hover:bg-destructive/10"}`}
-                whileHover={{ scale: 1.02, y: -2 }}>
+                whileHover={{ y: -2 }}>
                 <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${sector.up ? "bg-secondary/15" : "bg-destructive/15"}`}>
                   <Icon className={`w-3.5 h-3.5 ${sector.up ? "text-secondary" : "text-destructive"}`} />
                 </div>
@@ -269,7 +269,7 @@ const TrendingStocks = memo(() => {
   const stocks = ready ? trending : [];
 
   return (
-    <Card className="border-border/50 overflow-hidden bg-gradient-to-r from-brand-charcoal to-brand-navy">
+    <Card className="border-border/50 overflow-hidden bg-brand-navy">
       <CardContent className="p-4">
         <div className="flex items-center gap-2 mb-3">
           <Zap className="w-4 h-4 text-brand-orange" />
@@ -286,7 +286,7 @@ const TrendingStocks = memo(() => {
           {stocks.map((stock) => (
             <motion.div key={stock.name}
               className="flex-shrink-0 bg-white/8 border border-white/10 rounded-lg px-3 py-2 backdrop-blur-sm cursor-pointer min-w-[160px]"
-              whileHover={{ scale: 1.03, backgroundColor: "rgba(255,255,255,0.12)" }}>
+              whileHover={{ backgroundColor: "rgba(255,255,255,0.12)" }}>
               <div className="flex items-center justify-between mb-1">
                 <span className="text-xs font-bold text-primary-foreground">{stock.name}</span>
                 <span className={`text-[10px] font-bold flex items-center gap-0.5 ${stock.up ? "text-secondary" : "text-destructive"}`}>
@@ -556,10 +556,6 @@ const MarketDashboard = () => {
   const [activeTab, setActiveTab] = useState<MiTabId>("sentiment");
   return (
     <section id="market-watch" className="py-8 md:py-16 bg-background relative overflow-hidden">
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-gradient-to-bl from-brand-orange/5 to-transparent rounded-full blur-3xl" />
-        <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-gradient-to-tr from-brand-gold/5 to-transparent rounded-full blur-3xl" />
-      </div>
 
       <div className="container mx-auto px-4 relative z-10">
         <motion.div className="text-center mb-10" {...revealSection}>

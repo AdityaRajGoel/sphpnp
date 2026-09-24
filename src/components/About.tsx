@@ -1,6 +1,5 @@
 import { CheckCircle2, TrendingUp, Users, Award, BarChart2 } from "lucide-react";
-import { motion, Variants, useScroll, useTransform } from "motion/react";
-import { useRef } from "react";
+import { motion, Variants } from "motion/react";
 import { EASE_IN_OUT, EASE_OUT, revealItemX, revealPop, revealSection } from "@/lib/motion";
 
 const features = [
@@ -22,12 +21,6 @@ const features = [
 const About = ({ headingLevel = "h1" }: { headingLevel?: "h1" | "h2" } = {}) => {
   const Heading = motion[headingLevel];
 
-  const sectionRef = useRef<HTMLDivElement>(null);
-  const { scrollYProgress } = useScroll({
-    target: sectionRef,
-    offset: ["start end", "end start"],
-  });
-  const parallaxY = useTransform(scrollYProgress, [0, 1], [50, -50]);
   const containerVariants: Variants = {
     hidden: { opacity: 0 },
     visible: {
@@ -48,7 +41,7 @@ const About = ({ headingLevel = "h1" }: { headingLevel?: "h1" | "h2" } = {}) => 
   };
 
   const cardVariants: Variants = {
-    hidden: { opacity: 0, x: 50, rotateY: -10 },
+    hidden: { opacity: 0, x: 8 },
     visible: {
       opacity: 1,
       x: 0,
@@ -58,21 +51,12 @@ const About = ({ headingLevel = "h1" }: { headingLevel?: "h1" | "h2" } = {}) => 
   };
 
   return (
-    <section ref={sectionRef} id="about" className="py-12 md:py-24 bg-background overflow-hidden relative">
-      {/* Ambient orbs with parallax */}
-      <motion.div className="absolute inset-0 pointer-events-none" style={{ y: parallaxY }}>
-        <div
-          className="absolute top-20 right-10 w-64 h-64 bg-secondary/5 rounded-full blur-3xl"
-        />
-        <div
-          className="absolute bottom-10 left-10 w-80 h-80 bg-brand-gold/5 rounded-full blur-3xl"
-        />
-      </motion.div>
+    <section id="about" className="py-12 md:py-24 bg-background overflow-hidden relative">
 
       <div className="container mx-auto px-4 relative z-10">
         {/* Stats strip */}
         <motion.div
-          className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-20 bg-gradient-to-r from-primary/5 via-secondary/5 to-brand-gold/5 rounded-2xl p-8 border border-border/50"
+          className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-20 bg-secondary/5 rounded-2xl p-8 border border-border/50"
           {...revealSection}
         >
           {[
@@ -86,11 +70,10 @@ const About = ({ headingLevel = "h1" }: { headingLevel?: "h1" | "h2" } = {}) => 
               className="flex flex-col items-center text-center gap-3 group"
               {...revealSection}
               transition={{ delay: i * 0.1, duration: 0.5 }}
-              whileHover={{ y: -4 }}
+              whileHover={{ y: -2 }}
             >
               <motion.div
                 className="w-12 h-12 rounded-xl bg-white border border-border/50 shadow-sm flex items-center justify-center group-hover:shadow-md transition-shadow"
-                whileHover={{ rotate: [0, -10, 10, 0], scale: 1.1 }}
                 transition={{ duration: 0.5 }}
               >
                 <stat.icon className={`w-6 h-6 ${stat.color}`} />
@@ -143,7 +126,7 @@ const About = ({ headingLevel = "h1" }: { headingLevel?: "h1" | "h2" } = {}) => 
                   key={feature}
                   className="flex items-center gap-3 group"
                   variants={itemVariants}
-                  whileHover={{ x: 6, backgroundColor: "hsl(145 70% 40% / 0.05)", borderRadius: "8px", padding: "4px 8px" }}
+                  whileHover={{ x: 2 }}
                   transition={{ type: "spring", stiffness: 300 }}
                 >
                   <motion.div
@@ -154,7 +137,7 @@ const About = ({ headingLevel = "h1" }: { headingLevel?: "h1" | "h2" } = {}) => 
                     viewport={{ once: true }}
                     transition={{ delay: 0.5 + index * 0.1, type: "spring" }}
                   >
-                    <CheckCircle2 className="w-5 h-5 text-secondary flex-shrink-0 group-hover:scale-110 transition-transform" />
+                    <CheckCircle2 className="w-5 h-5 text-secondary flex-shrink-0 transition-transform" />
                   </motion.div>
                   <span className="text-foreground">{feature}</span>
                 </motion.div>
@@ -185,11 +168,10 @@ const About = ({ headingLevel = "h1" }: { headingLevel?: "h1" | "h2" } = {}) => 
                     key={item.num}
                     className="flex gap-4 group"
                     {...revealItemX("right")}
-                    whileHover={{ x: 4 }}
+                    whileHover={{ x: 2 }}
                   >
                     <motion.span
                       className="w-8 h-8 bg-secondary rounded-full flex items-center justify-center flex-shrink-0 text-secondary-foreground font-bold"
-                      whileHover={{ scale: 1.2, rotate: 360 }}
                       transition={{ type: "spring", stiffness: 300 }}
                     >
                       {item.num}

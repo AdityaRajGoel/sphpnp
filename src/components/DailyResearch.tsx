@@ -42,15 +42,6 @@ const researchCards = [
 const DailyResearch = () => {
   return (
     <section id="research" className="py-12 md:py-20 bg-muted/30 overflow-hidden relative">
-      {/* Background accents */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div
-          className="absolute top-10 right-10 w-80 h-80 bg-secondary/5 rounded-full blur-3xl"
-        />
-        <div
-          className="absolute bottom-10 left-10 w-64 h-64 bg-primary/5 rounded-full blur-3xl"
-        />
-      </div>
 
       <div className="container mx-auto px-4 relative z-10">
         <motion.div
@@ -67,7 +58,7 @@ const DailyResearch = () => {
             Daily Market Research
           </h2>
           <motion.div
-            className="w-20 h-1 bg-gradient-to-r from-secondary to-brand-gold mx-auto rounded-full mb-4"
+            className="w-20 h-1 bg-secondary mx-auto rounded-full mb-4"
             {...revealBar}
           />
           <p className="text-muted-foreground max-w-xl mx-auto">
@@ -85,7 +76,7 @@ const DailyResearch = () => {
               className="group relative overflow-hidden rounded-2xl bg-card border border-border/50 hover:border-transparent transition-[color,background-color,border-color,box-shadow] duration-base hover:shadow-2xl block"
               {...revealSection}
               transition={{ delay: i * 0.1, duration: 0.5 }}
-              whileHover={{ y: -8 }}
+              whileHover={{ y: -2 }}
             >
               {/* Top gradient strip */}
               <div className={`h-1.5 bg-gradient-to-r ${card.color}`} />
@@ -95,7 +86,7 @@ const DailyResearch = () => {
 
               <div className="p-6 relative z-10">
                 <div className="flex items-start justify-between mb-4">
-                  <div className={`w-14 h-14 rounded-xl ${card.bgAccent} flex items-center justify-center group-hover:scale-110 transition-transform duration-base`}>
+                  <div className={`w-14 h-14 rounded-xl ${card.bgAccent} flex items-center justify-center transition-transform duration-base`}>
                     <card.icon className={`w-7 h-7 ${card.textColor}`} />
                   </div>
                   <motion.div

@@ -91,7 +91,7 @@ const ProductsPage = () => {
         {/* Hero Section */}
         <SplitHero
           eyebrow="FDs · Bonds · Insurance"
-          title={<>Diversified <span className="text-secondary">Wealth Products</span></>}
+          title={<>Diversified Wealth Products</>}
           subtitle="Beyond the stock market: fixed income and protection solutions to round out your portfolio."
           illustration="insurance-family"
           badge={<p className="text-sm"><span className="block text-[0.6875rem] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Cover planned with you</span><span className="font-semibold">Health · Home · Vehicle · Life</span></p>}
@@ -104,7 +104,7 @@ const ProductsPage = () => {
               {products.map((product, idx) => (
                 <motion.div 
                   key={product.title}
-                  className="bg-card glass-card p-8 md:p-10 rounded-3xl border border-border/50 shadow-sm relative overflow-hidden group hover:border-brand-gold/50 transition-colors"
+                  className="bg-card p-8 md:p-10 rounded-3xl border border-border/50 shadow-sm relative overflow-hidden group hover:border-brand-gold/50 transition-colors"
                   {...revealSection}
                   transition={{ delay: idx * 0.1, duration: 0.5 }}
                 >
@@ -115,7 +115,7 @@ const ProductsPage = () => {
                         slug={product.art}
                         alt=""
                         sizes="(min-width: 1024px) 256px, (min-width: 768px) 224px, 100vw"
-                        className="h-44 w-full object-contain p-4 transition-transform duration-slow ease-out group-hover:scale-105 md:aspect-square md:h-auto"
+                        className="h-44 w-full object-contain p-4 transition-transform duration-slow ease-out group- md:aspect-square md:h-auto"
                       />
                       <span className="absolute left-3 top-3 grid h-9 w-9 place-items-center rounded-xl bg-white/90 shadow-sm ring-1 ring-border">
                         <product.icon className="h-4.5 w-4.5 text-secondary" aria-hidden="true" />

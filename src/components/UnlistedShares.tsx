@@ -29,7 +29,7 @@ const howItWorks = [
 ];
 
 const containerVariants: Variants = { hidden: { opacity: 0 }, visible: { opacity: 1, transition: { staggerChildren: 0.1 } } };
-const itemVariants: Variants = { hidden: { opacity: 0, y: 30 }, visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: EASE_OUT } } };
+const itemVariants: Variants = { hidden: { opacity: 0, y: 8 }, visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: EASE_OUT } } };
 
 type SortKey = "name" | "price-asc" | "price-desc";
 
@@ -162,10 +162,9 @@ const UnlistedShares = () => {
   return (
     <div>
       {/* Hero */}
-      <section className="relative py-10 md:py-28 overflow-hidden" style={{ background: "linear-gradient(135deg, hsl(213 80% 12%) 0%, hsl(213 80% 18%) 50%, hsl(145 40% 20%) 100%)" }}>
+      <section className="relative py-10 md:py-28 overflow-hidden" style={{ background: "var(--gradient-hero)" }}>
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute inset-0 opacity-5" style={{ backgroundImage: `radial-gradient(circle at 1px 1px, rgba(255,255,255,0.3) 1px, transparent 0)`, backgroundSize: '30px 30px' }} />
-          <div className="absolute top-20 right-20 w-96 h-96 bg-secondary/10 rounded-full blur-3xl" />
         </div>
         <div className="container mx-auto max-w-6xl px-4 relative z-10 grid items-center gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:gap-14">
           <div className="text-center lg:text-left">
@@ -174,7 +173,7 @@ const UnlistedShares = () => {
             <span className="text-primary-foreground/90 text-sm font-medium">Pre-IPO & Unlisted Shares</span>
           </motion.div>
           <motion.h1 className="font-heading text-4xl md:text-5xl lg:text-6xl font-bold text-primary-foreground mb-6 leading-tight" initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-            Buy and Sell<br /><span className="text-brand-gold">Pre-IPO | Unlisted Shares</span>
+            Buy and Sell<br />Pre-IPO | Unlisted Shares
           </motion.h1>
           <motion.p className="text-primary-foreground/70 text-lg md:text-xl max-w-2xl mx-auto lg:mx-0 mb-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}>
             Grab your chance to invest in India's top companies.
@@ -200,7 +199,7 @@ const UnlistedShares = () => {
       <section className="py-8 md:py-16 bg-background relative">
         <div className="container mx-auto px-4">
           <motion.div className="text-center mb-10" {...revealSection}>
-            <h2 className="font-heading text-2xl md:text-3xl font-bold text-foreground mb-2">Available <span className="text-secondary">Unlisted Shares</span></h2>
+            <h2 className="font-heading text-2xl md:text-3xl font-bold text-foreground mb-2">Available Unlisted Shares</h2>
             <p className="text-muted-foreground">Contact us for live pricing & availability</p>
           </motion.div>
 
@@ -296,7 +295,7 @@ const UnlistedShares = () => {
             <motion.div key={`${sector}-${sort}-${visibleStocks.length}`} className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4" variants={containerVariants} initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-50px" }}>
               {visibleStocks.map((stock, index) => (
                 <motion.div key={stock.name} variants={itemVariants}>
-                  <Card className="group cursor-pointer transition-[color,background-color,border-color,box-shadow] duration-base border-border/50 hover:border-secondary/50 hover:shadow-xl hover:shadow-secondary/5"
+                  <Card className="group cursor-pointer transition-[color,background-color,border-color,box-shadow] duration-base border-border/50 hover:border-secondary/50 hover:shadow-xl"
                     onClick={() => setSelectedStock(stock)} {...pressable(() => setSelectedStock(stock))}>
                     <CardContent className="p-5">
                       <div className="flex items-start gap-4">
@@ -454,7 +453,7 @@ const UnlistedShares = () => {
       <section className="py-8 md:py-16 bg-background">
         <div className="container mx-auto px-4">
           <motion.div className="text-center mb-12" {...revealSection}>
-            <h2 className="font-heading text-2xl md:text-3xl font-bold text-foreground mb-2">How It <span className="text-secondary">Works</span></h2>
+            <h2 className="font-heading text-2xl md:text-3xl font-bold text-foreground mb-2">How It Works</h2>
             <p className="text-muted-foreground">Simple 4-step process to start investing in unlisted shares</p>
           </motion.div>
           <motion.div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6" variants={containerVariants} initial="hidden" whileInView="visible" viewport={{ once: true }}>

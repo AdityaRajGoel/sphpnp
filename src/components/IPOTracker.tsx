@@ -31,7 +31,7 @@ const IPOCard = ({ ipo, index }: { ipo: DisplayIpo; index: number }) => (
     className="bg-card border border-border/50 rounded-xl p-4 hover:shadow-lg hover:border-brand-orange/30 transition-[box-shadow,color,background-color,border-color] cursor-pointer group"
     {...revealItem()}
     transition={{ delay: index * 0.06 }}
-    whileHover={{ y: -3 }}
+    whileHover={{ y: -2 }}
   >
     <div className="flex items-start justify-between mb-3">
       <div className="flex-1 min-w-0">
@@ -89,7 +89,7 @@ const IPOCard = ({ ipo, index }: { ipo: DisplayIpo; index: number }) => (
       <motion.div className="mt-3 pt-3 border-t border-border/30">
         <Link
           to={ipo.slug ? `/ipo/${ipo.slug}` : "/ipo"}
-          className="inline-flex items-center gap-1.5 btn-shine bg-gradient-to-r from-secondary to-brand-green text-secondary-foreground text-[11px] font-bold px-3 py-1.5 rounded-lg hover:opacity-90 transition-opacity"
+          className="inline-flex items-center gap-1.5 bg-secondary hover:bg-secondary/90 text-secondary-foreground text-[11px] font-bold px-3 py-1.5 rounded-lg hover:opacity-90 transition-opacity"
         >
           <IndianRupee className="w-3 h-3" />
           View details
@@ -144,9 +144,6 @@ const IPOTracker = () => {
 
   return (
     <section id="ipo-corner" className="py-8 md:py-16 bg-muted/20 relative overflow-hidden">
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-gradient-to-br from-brand-orange/5 to-transparent rounded-full blur-3xl" />
-      </div>
 
       <div className="container mx-auto px-4 relative z-10">
         <motion.div className="text-center mb-10" {...revealSection}>
@@ -158,7 +155,7 @@ const IPOTracker = () => {
           <p className="text-muted-foreground text-sm max-w-lg mx-auto">
             Track upcoming, open, and recently listed IPOs with GMP updates
           </p>
-          <motion.div className="w-20 h-1 bg-gradient-to-r from-brand-orange to-brand-gold mx-auto rounded-full mt-3" {...revealBar} />
+          <motion.div className="w-20 h-1 bg-secondary mx-auto rounded-full mt-3" {...revealBar} />
           {fetchedAt && (
             <div className="flex items-center justify-center gap-2 mt-3 text-[10px] text-muted-foreground">
               <span>Last updated: {new Date(fetchedAt).toLocaleString("en-IN", { hour: "2-digit", minute: "2-digit", day: "numeric", month: "short" })}</span>
@@ -179,7 +176,7 @@ const IPOTracker = () => {
                 onClick={() => setActiveTab(tab.key)}
                 className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold transition-colors ${
                   activeTab === tab.key
-                    ? "bg-brand-orange text-white dark:text-brand-charcoal shadow-lg shadow-brand-orange/30"
+                    ? "bg-brand-orange text-white dark:text-brand-charcoal shadow-lg"
                     : "bg-card border border-border/50 text-muted-foreground hover:text-foreground hover:bg-muted"
                 }`}
               >
@@ -254,7 +251,7 @@ const IPOTracker = () => {
           </p>
           <Link
             to="/ipo"
-            className="inline-flex items-center gap-2 bg-gradient-to-r from-brand-orange to-brand-gold text-white font-bold text-sm px-6 py-3 rounded-xl hover:opacity-90 transition-opacity shadow-lg shadow-brand-orange/20"
+            className="inline-flex items-center gap-2 bg-secondary text-secondary-foreground font-bold text-sm px-6 py-3 rounded-xl hover:opacity-90 transition-opacity shadow-lg"
           >
             <TrendingUp className="w-4 h-4" />
             Explore IPO tracker

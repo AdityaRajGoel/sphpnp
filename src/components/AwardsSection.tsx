@@ -61,11 +61,6 @@ const AwardsSection = () => {
   // large subtree onto the compositor for no informational gain.
   return (
     <section className="py-12 md:py-20 relative overflow-hidden bg-background">
-      {/* Background decorations */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-brand-gold/10 rounded-full blur-3xl opacity-50" />
-        <div className="absolute bottom-0 left-0 w-80 h-80 bg-primary/5 rounded-full blur-3xl opacity-50" />
-      </div>
 
       <div className="container mx-auto px-4 relative z-10">
         <motion.div 
@@ -76,7 +71,7 @@ const AwardsSection = () => {
             Trust & Recognition
           </span>
           <h2 className="font-heading text-3xl md:text-5xl font-bold text-foreground mb-4">
-            Our Legacy of <span className="text-secondary">Excellence</span>
+            Our Legacy of Excellence
           </h2>
           <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
             Decades of trust, millions of clients, and recognition across the industry.
@@ -103,7 +98,7 @@ const AwardsSection = () => {
                   hover:border-brand-gold/60
                   focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-gold focus-visible:ring-offset-2 focus-visible:ring-offset-background
                   transition-[border-color,box-shadow,transform] duration-base ease-out
-                  motion-safe:hover:-translate-y-1
+                  motion-safe:hover:-translate-y-0.5
                 "
                 aria-label={`View certificate: ${cert.issuer} ${cert.title}`}
               >
@@ -117,7 +112,7 @@ const AwardsSection = () => {
                     height={cert.height}
                     loading="lazy"
                     decoding="async"
-                    className="absolute inset-0 h-full w-full object-cover object-top transition-transform duration-slow ease-out motion-safe:group-hover:scale-[1.04]"
+                    className="absolute inset-0 h-full w-full object-cover object-top transition-transform duration-slow ease-out motion-safe:group-"
                   />
                   <span
                     aria-hidden="true"

@@ -96,13 +96,11 @@ const SmartPopup = () => {
           />
           <motion.div 
             className="bg-card w-full max-w-md p-6 sm:p-8 rounded-3xl border border-border shadow-2xl relative z-10 pointer-events-auto overflow-hidden"
-            initial={{ opacity: 0, y: 50, scale: 0.95 }}
+            initial={{ opacity: 0, y: 12, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
             transition={{ type: "spring", duration: 0.5 }}
           >
-            {/* Background elements */}
-            <div aria-hidden="true" className="absolute top-0 right-0 w-32 h-32 bg-brand-gold/10 rounded-full blur-2xl transform translate-x-10 -translate-y-10"></div>
             
             <button 
               ref={closeRef}

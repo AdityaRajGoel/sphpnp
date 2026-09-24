@@ -4,14 +4,14 @@ import { Building2, TrendingUp, Award, Users, Globe, Landmark, Sparkles } from "
 import { revealBar, revealItemX, revealSection } from "@/lib/motion";
 
 const milestones = [
-  { year: "1970", title: "Foundation", desc: "Parasram begins serving investors, establishing a trusted name in financial services.", icon: Building2, color: "from-primary to-primary/80" },
-  { year: "1994", title: "Incorporated", desc: "The business was incorporated as Shri Parasram Holdings Pvt. Ltd. (CIN: U67120DL1994PTC060726).", icon: Building2, color: "from-primary to-primary/80" },
-  { year: "1995", title: "NSE & BSE Membership", desc: "Became a registered member of both the National and Bombay Stock Exchanges.", icon: Award, color: "from-secondary to-brand-green" },
-  { year: "1997", title: "Panipat Branch Opens", desc: "Opened our Panipat branch at Shakuntala Complex, Palika Bazaar bringing institutional-grade services to Haryana.", icon: Landmark, color: "from-brand-gold to-brand-orange" },
-  { year: "2005", title: "MCX Membership", desc: "Added commodity trading capabilities with MCX membership, expanding our service portfolio.", icon: Globe, color: "from-brand-copper to-brand-orange" },
-  { year: "2012", title: "Digital Transformation", desc: "Launched online trading platforms and mobile app access for clients across India.", icon: TrendingUp, color: "from-primary to-secondary" },
-  { year: "2019", title: "10 Lakh+ Clients", desc: "Crossed the milestone of serving over 10 lakh happy clients across the nation.", icon: Users, color: "from-brand-gold to-secondary" },
-  { year: "2020", title: "Unlisted Space Launch", desc: "Introduced pre-IPO and unlisted shares trading - opening new investment avenues for our clients.", icon: Sparkles, color: "from-brand-orange to-brand-gold" },
+  { year: "1970", title: "Foundation", desc: "Parasram begins serving investors, establishing a trusted name in financial services.", icon: Building2 },
+  { year: "1994", title: "Incorporated", desc: "The business was incorporated as Shri Parasram Holdings Pvt. Ltd. (CIN: U67120DL1994PTC060726).", icon: Building2 },
+  { year: "1995", title: "NSE & BSE Membership", desc: "Became a registered member of both the National and Bombay Stock Exchanges.", icon: Award },
+  { year: "1997", title: "Panipat Branch Opens", desc: "Opened our Panipat branch at Shakuntala Complex, Palika Bazaar bringing institutional-grade services to Haryana.", icon: Landmark },
+  { year: "2005", title: "MCX Membership", desc: "Added commodity trading capabilities with MCX membership, expanding our service portfolio.", icon: Globe },
+  { year: "2012", title: "Digital Transformation", desc: "Launched online trading platforms and mobile app access for clients across India.", icon: TrendingUp },
+  { year: "2019", title: "10 Lakh+ Clients", desc: "Crossed the milestone of serving over 10 lakh happy clients across the nation.", icon: Users },
+  { year: "2020", title: "Unlisted Space Launch", desc: "Introduced pre-IPO and unlisted shares trading - opening new investment avenues for our clients.", icon: Sparkles },
 ];
 
 const CompanyTimeline = () => {
@@ -24,11 +24,6 @@ const CompanyTimeline = () => {
 
   return (
     <section ref={sectionRef} id="timeline" className="py-10 md:py-20 bg-background relative overflow-hidden">
-      <div className="absolute inset-0 pointer-events-none">
-        <div
-          className="absolute top-40 right-10 w-80 h-80 bg-brand-gold/5 rounded-full blur-3xl"
-        />
-      </div>
 
       <div className="container mx-auto px-4 relative z-10">
         <motion.div
@@ -37,10 +32,10 @@ const CompanyTimeline = () => {
         >
           <span className="inline-block text-brand-orange font-semibold text-sm uppercase tracking-wider mb-3">Our Journey</span>
           <h2 className="font-heading text-3xl md:text-4xl font-bold text-foreground mb-4">
-            50+ Years of <span className="text-secondary">Trust & Excellence</span>
+            50+ Years of Trust & Excellence
           </h2>
           <motion.div
-            className="w-20 h-1 bg-gradient-to-r from-brand-orange to-brand-gold mx-auto rounded-full"
+            className="w-20 h-1 bg-secondary mx-auto rounded-full"
             {...revealBar}
           />
         </motion.div>
@@ -65,7 +60,7 @@ const CompanyTimeline = () => {
                 >
                   {/* Timeline dot */}
                   <motion.div
-                    className={`absolute left-6 md:left-1/2 -translate-x-1/2 w-12 h-12 rounded-full bg-gradient-to-br ${m.color} flex items-center justify-center shadow-lg z-10 border-4 border-background`}
+                    className={`absolute left-6 md:left-1/2 -translate-x-1/2 w-12 h-12 rounded-full bg-primary flex items-center justify-center shadow-lg z-10 border-4 border-background`}
                     /* motion-exempt: keyframe overshoot on the timeline dot, deliberately punchier
                        than revealPop because it marks a position rather than delivering content. */
                     whileInView={{ scale: [0, 1.2, 1] }}
@@ -79,10 +74,10 @@ const CompanyTimeline = () => {
                   <div className={`ml-16 md:ml-0 md:w-[calc(50%-40px)] ${isLeft ? "md:pr-4" : "md:pl-4"}`}>
                     <motion.div
                       className="bg-card border border-border/50 rounded-xl p-5 shadow-md hover:shadow-xl hover:border-secondary/30 transition-[box-shadow,color,background-color,border-color] group"
-                      whileHover={{ y: -4 }}
+                      whileHover={{ y: -2 }}
                     >
                       <div className="flex items-center gap-3 mb-2">
-                        <span className={`text-xs font-bold px-2.5 py-1 rounded-full bg-gradient-to-r ${m.color} text-white`}>
+                        <span className={`text-xs font-bold px-2.5 py-1 rounded-full bg-primary/10 text-primary`}>
                           {m.year}
                         </span>
                         <h3 className="font-heading text-lg font-bold text-foreground group-hover:text-secondary transition-colors">

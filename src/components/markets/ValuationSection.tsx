@@ -80,7 +80,7 @@ export default function ValuationSection() {
           ) : (
             <ResponsiveContainer width="100%" height={280}>
               <ComposedChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke={CHART.grid} vertical={false} />
+                <CartesianGrid stroke={CHART.grid} vertical={false} />
                 <XAxis dataKey="date" tick={axisTick} tickLine={false} axisLine={false} minTickGap={40} tickFormatter={(d: string) => shortDate(d).replace(/^\d+ /, "")} />
                 <YAxis tick={axisTick} tickLine={false} axisLine={false} width={44} domain={["auto", "auto"]} />
                 <Tooltip {...tooltipStyle} labelFormatter={(d: string) => shortDate(d)} formatter={(v: unknown) => (typeof v === "number" ? fmt(v, metric) : "—")} />

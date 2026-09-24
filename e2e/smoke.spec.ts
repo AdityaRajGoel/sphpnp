@@ -4,7 +4,7 @@ import { test, expect } from "@playwright/test";
 
 test("homepage renders hero and primary CTA", async ({ page }) => {
   await page.goto("/");
-  await expect(page.locator("h1")).toContainText("Trusted Partner");
+  await expect(page.locator("h1")).toContainText(/trusted partner/i);
   await expect(page.getByRole("link", { name: /open account/i }).first()).toBeVisible();
 });
 

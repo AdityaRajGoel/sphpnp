@@ -3,9 +3,12 @@ import { ReactNode } from "react";
 import { EASE_OUT } from "@/lib/motion";
 import { usePrefersReducedMotion } from "@/contexts/MotionPreferenceContext";
 
-// Route transition: content fade/lift plus a brand-colored wipe that sweeps
-// across the viewport between pages (App.tsx wraps routes in AnimatePresence
-// mode="wait", so exit runs fully before the next page enters).
+// Route transition: a short cross-fade and nothing else. App.tsx wraps routes in
+// AnimatePresence mode="wait", so the exit runs fully before the next page
+// enters - which is why both halves are kept brief: every millisecond here is
+// a millisecond before the page someone asked for appears. There used to be a
+// full-viewport green-to-gold wipe on top; it read as a landing-page trick and
+// added ~0.5s to every navigation.
 
 interface PageTransitionProps {
   children: ReactNode;
@@ -13,18 +16,10 @@ interface PageTransitionProps {
 
 /*
  * The element tree is identical in both motion modes; only the variants differ.
- *
- * This used to return one shape when reduced motion was on and a deeper,
- * three-element shape when it was off. React matches children by position and
- * type, so flipping the preference changed the tree under `children` and
- * remounted the entire page: lazy sections re-suspended, state was lost and
- * every reveal replayed. Harmless while the value came only from the OS and was
- * fixed for the session; the in-app motion toggle made it something a user
- * does, and it read as the site hanging. Guarded by e2e/reduced-motion.spec.ts.
- *
- * So the structure is constant and reduced motion is expressed as a quieter set
- * of variants: content fades without travelling, and the wipe stays collapsed
- * rather than sweeping across the viewport.
+ * Flipping between two different tree shapes remounted the whole page (lazy
+ * sections re-suspended, state lost, reveals replayed) once the in-app motion
+ * toggle made the preference something a user changes mid-session. Guarded by
+ * e2e/reduced-motion.spec.ts.
  */
 export const PageTransition = ({ children }: PageTransitionProps) => {
   const prefersReducedMotion = usePrefersReducedMotion();
@@ -32,41 +27,18 @@ export const PageTransition = ({ children }: PageTransitionProps) => {
   const contentVariants: Variants = prefersReducedMotion
     ? {
         initial: { opacity: 0 },
-        in: { opacity: 1, transition: { duration: 0.15 } },
-        out: { opacity: 0, transition: { duration: 0.1 } },
+        in: { opacity: 1, transition: { duration: 0.12 } },
+        out: { opacity: 0, transition: { duration: 0.08 } },
       }
     : {
-        initial: { opacity: 0, y: 12 },
-        in: { opacity: 1, y: 0, transition: { duration: 0.25, ease: EASE_OUT, delay: 0.08 } },
-        out: { opacity: 0, y: -8, transition: { duration: 0.15, ease: EASE_OUT } },
-      };
-
-  // Collapsed in every state under reduced motion: a full-viewport colour sweep
-  // between routes is exactly the large-scale motion the preference exists to
-  // stop, so it is neutralised rather than merely shortened.
-  const wipeVariants: Variants = prefersReducedMotion
-    ? {
-        initial: { scaleX: 0, transformOrigin: "right" },
-        in: { scaleX: 0, transformOrigin: "right", transition: { duration: 0 } },
-        out: { scaleX: 0, transformOrigin: "left", transition: { duration: 0 } },
-      }
-    : {
-        initial: { scaleX: 1, transformOrigin: "right" },
-        in: { scaleX: 0, transformOrigin: "right", transition: { duration: 0.3, ease: [0.76, 0, 0.24, 1] } },
-        out: { scaleX: 1, transformOrigin: "left", transition: { duration: 0.22, ease: [0.76, 0, 0.24, 1] } },
+        initial: { opacity: 0, y: 4 },
+        in: { opacity: 1, y: 0, transition: { duration: 0.2, ease: EASE_OUT } },
+        out: { opacity: 0, transition: { duration: 0.1, ease: EASE_OUT } },
       };
 
   return (
     <motion.div initial="initial" animate="in" exit="out">
-      {/* Page content */}
       <motion.div variants={contentVariants}>{children}</motion.div>
-
-      {/* Brand wipe - sweeps in on exit, sweeps away on enter */}
-      <motion.div
-        className="fixed inset-0 z-[70] pointer-events-none bg-gradient-to-r from-secondary via-brand-green to-brand-gold"
-        variants={wipeVariants}
-        aria-hidden="true"
-      />
     </motion.div>
   );
 };

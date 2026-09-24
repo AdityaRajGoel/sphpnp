@@ -58,7 +58,7 @@ const containerVariants: Variants = {
 };
 
 const itemVariants: Variants = {
-  hidden: { opacity: 0, y: 30, scale: 0.95 },
+  hidden: { opacity: 0, y: 8 },
   visible: {
     opacity: 1,
     y: 0,
@@ -70,15 +70,6 @@ const itemVariants: Variants = {
 const WhyChooseUs = () => {
   return (
     <section id="why-us" className="py-12 md:py-20 bg-background overflow-hidden relative">
-      {/* Background ornaments */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div
-          className="absolute top-20 left-0 w-72 h-72 bg-secondary/5 rounded-full blur-3xl"
-        />
-        <div
-          className="absolute bottom-10 right-0 w-96 h-96 bg-brand-gold/5 rounded-full blur-3xl"
-        />
-      </div>
 
       <div className="container mx-auto px-4 relative z-10">
         <motion.div
@@ -95,7 +86,7 @@ const WhyChooseUs = () => {
             <RevealText text="Why Choose Us?" />
           </h2>
           <motion.div
-            className="w-20 h-1 bg-gradient-to-r from-secondary to-brand-gold mx-auto rounded-full mb-4"
+            className="w-20 h-1 bg-secondary mx-auto rounded-full mb-4"
             {...revealBar}
           />
           <p className="text-muted-foreground max-w-xl mx-auto">
@@ -116,16 +107,15 @@ const WhyChooseUs = () => {
               <motion.div
                 key={usp.title}
                 variants={itemVariants}
-                whileHover={{ y: -6, scale: 1.02 }}
+                whileHover={{ y: -2 }}
                 className="group relative bg-card border border-border/50 rounded-2xl p-4 sm:p-5 hover:border-secondary/40 hover:shadow-xl transition-[color,background-color,border-color,box-shadow] duration-base overflow-hidden"
               >
                 {/* Hover gradient overlay */}
-                <div className="absolute inset-0 bg-gradient-to-br from-secondary/5 to-brand-gold/5 opacity-0 group-hover:opacity-100 transition-opacity duration-slow" />
+                <div className="absolute inset-0 bg-secondary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-slow" />
 
                 <div className="relative z-10">
                   <motion.div
-                    className="w-12 h-12 bg-secondary/10 rounded-xl flex items-center justify-center mb-4 group-hover:bg-secondary/20 group-hover:scale-110 transition-[color,background-color,border-color,transform] ease-out duration-base"
-                    whileHover={{ rotate: [0, -8, 8, 0] }}
+                    className="w-12 h-12 bg-secondary/10 rounded-xl flex items-center justify-center mb-4 group-hover:bg-secondary/20 transition-[color,background-color,border-color,transform] ease-out duration-base"
                     transition={{ duration: 0.5 }}
                   >
                     <Icon className="w-6 h-6 text-secondary" />
@@ -141,7 +131,7 @@ const WhyChooseUs = () => {
 
                 {/* Bottom accent */}
                 <motion.div
-                  className="absolute bottom-0 left-0 h-0.5 bg-gradient-to-r from-secondary to-brand-gold"
+                  className="absolute bottom-0 left-0 h-0.5 bg-secondary"
                   initial={{ width: 0 }}
                   whileHover={{ width: "100%" }}
                   transition={{ duration: 0.3 }}

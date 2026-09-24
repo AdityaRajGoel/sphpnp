@@ -51,11 +51,6 @@ const tools = [
 const InvestmentTools = () => {
   return (
     <section className="py-10 md:py-20 bg-background relative overflow-hidden">
-      <div className="absolute inset-0 pointer-events-none">
-        <div
-          className="absolute -top-20 -right-20 w-[500px] h-[500px] bg-secondary/3 rounded-full blur-3xl"
-        />
-      </div>
 
       <div className="container mx-auto px-4 relative z-10">
         <motion.div
@@ -72,7 +67,7 @@ const InvestmentTools = () => {
             Investment & Research Tools
           </h2>
           <motion.div
-            className="w-20 h-1 bg-gradient-to-r from-secondary to-brand-gold mx-auto rounded-full mb-4"
+            className="w-20 h-1 bg-secondary mx-auto rounded-full mb-4"
             {...revealBar}
           />
           <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
@@ -86,7 +81,7 @@ const InvestmentTools = () => {
               key={tool.title}
               {...revealSection}
               transition={{ delay: index * 0.08, duration: 0.5 }}
-              whileHover={{ y: -8 }}
+              whileHover={{ y: -2 }}
             >
               <Card className="h-full bg-card border-border/50 hover:border-secondary/40 hover:shadow-2xl transition-[color,background-color,border-color,box-shadow] duration-base group overflow-hidden relative">
                 {/* Top gradient accent */}
@@ -97,7 +92,6 @@ const InvestmentTools = () => {
                   <div className="flex items-start justify-between mb-4">
                     <motion.div
                       className={`w-12 h-12 rounded-xl bg-gradient-to-br ${tool.color} flex items-center justify-center shadow-lg`}
-                      whileHover={{ rotate: [0, -10, 10, 0], scale: 1.1 }}
                       transition={{ duration: 0.4 }}
                     >
                       <tool.icon className="w-6 h-6 text-white" />

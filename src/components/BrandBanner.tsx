@@ -17,15 +17,6 @@ const BrandBanner = () => {
 
   return (
     <section ref={ref} className="py-8 md:py-16 bg-gradient-to-b from-muted/30 to-background relative overflow-hidden">
-      {/* Background decorations */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div
-          className="absolute top-0 left-1/4 w-96 h-96 bg-secondary/5 rounded-full blur-3xl"
-        />
-        <div
-          className="absolute bottom-0 right-1/4 w-80 h-80 bg-brand-gold/5 rounded-full blur-3xl"
-        />
-      </div>
 
       <div className="container mx-auto px-4 relative z-10">
         <motion.div
@@ -37,7 +28,6 @@ const BrandBanner = () => {
             className="bg-card rounded-3xl shadow-2xl border border-border/50 overflow-hidden max-w-2xl w-full"
             {...revealSection}
             transition={{ duration: 0.7, ease: EASE_OUT }}
-            whileHover={{ boxShadow: "0 30px 60px -15px hsl(213 80% 25% / 0.25)" }}
           >
             <motion.img
               src={brandImage}
@@ -57,7 +47,7 @@ const BrandBanner = () => {
             <motion.a
               href="tel:+919416400314"
               className="flex items-center gap-2 hover:text-secondary transition-colors"
-              whileHover={{ scale: 1.05 }}
+              whileHover={{ scale: 1.02 }}
             >
               <Phone className="w-4 h-4" />
               +91 9416400314
@@ -67,7 +57,7 @@ const BrandBanner = () => {
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-2 hover:text-secondary transition-colors"
-              whileHover={{ scale: 1.05 }}
+              whileHover={{ scale: 1.02 }}
             >
               <Instagram className="w-4 h-4" />
               @parasrampanipat
@@ -77,14 +67,14 @@ const BrandBanner = () => {
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-2 hover:text-secondary transition-colors"
-              whileHover={{ scale: 1.05 }}
+              whileHover={{ scale: 1.02 }}
             >
               <Facebook className="w-4 h-4" />
               Facebook
             </motion.a>
             <motion.span
               className="flex items-center gap-2"
-              whileHover={{ scale: 1.05 }}
+              whileHover={{ scale: 1.02 }}
             >
               <MapPin className="w-4 h-4" />
               Panipat - 132103

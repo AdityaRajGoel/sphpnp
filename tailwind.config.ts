@@ -22,9 +22,22 @@ export default {
       },
     },
     extend: {
+      // IBM Plex throughout: Sans for text and headings, Mono for the prices that
+      // tick (ticker, quote headers). One family keeps the site reading as a
+      // single instrument rather than a landing page stitched to a terminal.
       fontFamily: {
-        sans: ["Roboto Variable", "Roboto", "Roboto Fallback", "sans-serif"],
-        heading: ["Montserrat Variable", "Montserrat", "Montserrat Fallback", "sans-serif"],
+        sans: ["IBM Plex Sans Variable", "IBM Plex Sans", "IBM Plex Sans Fallback", "system-ui", "sans-serif"],
+        heading: ["IBM Plex Sans Variable", "IBM Plex Sans", "IBM Plex Sans Fallback", "system-ui", "sans-serif"],
+        mono: ["IBM Plex Mono", "ui-monospace", "SFMono-Regular", "Menlo", "monospace"],
+      },
+      // Plex's heaviest weight is 700. `bold` is its SemiBold, as in IBM's own
+      // Carbon system: headings and emphasis stay firm without the shouting weight
+      // the display font had, and extrabold/black no longer ask for weights the
+      // font does not have.
+      fontWeight: {
+        bold: "600",
+        extrabold: "700",
+        black: "700",
       },
       colors: {
         border: "hsl(var(--border))",
@@ -121,17 +134,12 @@ export default {
           from: { opacity: "0", transform: "translateX(-30px)" },
           to: { opacity: "1", transform: "translateX(0)" },
         },
-        "pulse-glow": {
-          "0%, 100%": { boxShadow: "0 0 20px hsl(145 70% 40% / 0.3)" },
-          "50%": { boxShadow: "0 0 40px hsl(145 70% 40% / 0.5)" },
-        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
         "fade-in": "fade-in 0.6s ease-out forwards",
         "slide-in-left": "slide-in-left 0.5s ease-out forwards",
-        "pulse-glow": "pulse-glow 2s ease-in-out infinite",
       },
     },
   },

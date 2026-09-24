@@ -2,25 +2,19 @@
 
 @tailwind base;
 
-/* Stand-ins while the web fonts load, scaled to their metrics (Arial adjusted
-   to Roboto / Montserrat). Without them the swap at ~3s on slow 4G reflowed the
-   home hero: CLS 0.319 on a throttled phone, 0.087 with them. Preloading the
-   fonts instead cost ~0.4s of LCP there, competing with the hero image. */
+/* Stand-in while IBM Plex Sans loads, scaled to its metrics (Arial adjusted to
+   Plex: weighted average advance 0.4450 vs 0.4396 em, ascent 1025 / descent 275
+   of 1000, read from the woff2). Without a metric-matched fallback the font swap
+   at ~3s on slow 4G reflowed the home hero (CLS 0.319 measured with the previous
+   fonts, 0.087 with their fallbacks). Preloading the font instead cost ~0.4s of
+   LCP there, competing with the hero image. */
 @font-face {
-  font-family: "Roboto Fallback";
+  font-family: "IBM Plex Sans Fallback";
   src: local("Arial"), local("Helvetica Neue"), local("Helvetica");
-  ascent-override: 92.77%;
-  descent-override: 24.41%;
+  ascent-override: 101.26%;
+  descent-override: 27.17%;
   line-gap-override: 0%;
-  size-adjust: 100.3%;
-}
-@font-face {
-  font-family: "Montserrat Fallback";
-  src: local("Arial"), local("Helvetica Neue"), local("Helvetica");
-  ascent-override: 85.79%;
-  descent-override: 22.25%;
-  line-gap-override: 0%;
-  size-adjust: 112.83%;
+  size-adjust: 101.22%;
 }
 @tailwind components;
 @tailwind utilities;
@@ -131,12 +125,10 @@
     --brand-copper: 20 70% 42%;
     --brand-charcoal: 220 15% 20%;
     
-    /* Gradients */
-    --gradient-hero: linear-gradient(135deg, hsl(220 15% 12%) 0%, hsl(210 100% 20%) 50%, hsl(24 95% 20%) 100%);
-    --gradient-accent: linear-gradient(135deg, hsl(38 92% 45%) 0%, hsl(24 95% 53%) 100%);
-    --gradient-card: linear-gradient(180deg, hsl(0 0% 100%) 0%, hsl(30 80% 98%) 100%);
-    --gradient-warm: linear-gradient(135deg, hsl(24 95% 53%) 0%, hsl(38 92% 50%) 100%);
-    --gradient-premium: linear-gradient(135deg, hsl(220 15% 15%) 0%, hsl(24 60% 25%) 100%);
+    /* The one gradient: the navy bands (hero, footer), two close navies so the
+       band reads as a surface, not an effect. No orange/gold in it - the brand
+       is navy and green, and a warm corner is what made the bands look stock. */
+    --gradient-hero: linear-gradient(180deg, hsl(213 70% 15%) 0%, hsl(210 100% 20%) 100%);
 
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
@@ -148,34 +140,38 @@
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
 
+  /* Dark surfaces are near-neutral with a trace of the navy (saturation 16-28%),
+     the way trading terminals are, instead of the saturated navy-black (50-60%)
+     they were. Checked 2026-09-24: body text 15.5:1 and muted text 7.3:1 on
+     cards, borders 1.36:1 against cards (were 1.15:1 and all but invisible). */
   .dark {
-    --background: 220 60% 6%;
-    --foreground: 210 40% 96%;
+    --background: 216 28% 7%;
+    --foreground: 210 25% 94%;
 
-    --card: 220 55% 10%;
-    --card-foreground: 210 40% 96%;
+    --card: 216 24% 10%;
+    --card-foreground: 210 25% 94%;
 
-    --popover: 220 55% 10%;
-    --popover-foreground: 210 40% 96%;
+    --popover: 216 24% 10%;
+    --popover-foreground: 210 25% 94%;
 
-    --primary: 150 55% 34%; /* 34% (was 40%): white on it passes 4.5:1; text-primary is lightened below */
+    --primary: 152 50% 31%; /* white on it 5.5:1; text-primary is lightened below */
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 150 65% 55%;
-    --secondary-foreground: 220 50% 8%; /* navy on the bright dark-theme green: white was 1.85:1 */
+    --secondary: 150 48% 52%;
+    --secondary-foreground: 220 50% 8%; /* navy on the dark-theme green: 8.2:1 (white was 1.85:1) */
 
-    --muted: 220 50% 14%;
-    --muted-foreground: 215 25% 65%;
+    --muted: 216 20% 14%;
+    --muted-foreground: 214 14% 66%;
 
-    --accent: 220 55% 18%;
-    --accent-foreground: 210 40% 96%;
+    --accent: 216 20% 16%;
+    --accent-foreground: 210 25% 94%;
 
-    --destructive: 0 85% 66%; /* 66% (was 60%): 4.5:1 as text on its own dark tint */
+    --destructive: 0 80% 66%; /* 5.6:1 as text on cards */
     --destructive-foreground: 210 40% 98%;
 
-    --border: 220 50% 16%;
-    --input: 220 50% 16%;
-    --ring: 150 50% 40%;
+    --border: 216 16% 20%;
+    --input: 216 16% 20%;
+    --ring: 150 45% 45%;
 
     /* Chart palette, dark. Chosen against the dark card surface, not derived
        from the light steps - see the note above. */
@@ -185,25 +181,23 @@
     --chart-4: 329 49% 58%;
 
     /* Brand overrides for dark */
-    --brand-navy: 210 60% 12%;
-    --brand-charcoal: 220 50% 8%;
+    --brand-navy: 216 30% 12%;
+    --brand-charcoal: 216 28% 8%;
     /* Brighter gold/orange on dark surfaces for legible accent text */
-    --brand-gold: 42 96% 58%;
-    --brand-orange: 24 95% 58%;
-    --brand-copper: 20 80% 60%;
+    --brand-gold: 42 90% 58%;
+    --brand-orange: 24 90% 60%;
+    --brand-copper: 20 75% 60%;
 
-    --gradient-hero: linear-gradient(135deg, hsl(220 60% 5%) 0%, hsl(220 55% 12%) 50%, hsl(220 40% 18%) 100%);
-    --gradient-card: linear-gradient(180deg, hsl(220 55% 10%) 0%, hsl(220 50% 8%) 100%);
-    --gradient-premium: linear-gradient(135deg, hsl(220 55% 8%) 0%, hsl(220 45% 14%) 100%);
+    --gradient-hero: linear-gradient(180deg, hsl(216 28% 9%) 0%, hsl(216 26% 12%) 100%);
 
-    --sidebar-background: 220 55% 7%;
-    --sidebar-foreground: 210 40% 96%;
-    --sidebar-primary: 213 70% 50%;
+    --sidebar-background: 216 26% 8%;
+    --sidebar-foreground: 210 25% 94%;
+    --sidebar-primary: 213 60% 50%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 220 50% 12%;
-    --sidebar-accent-foreground: 210 40% 96%;
-    --sidebar-border: 220 50% 14%;
-    --sidebar-ring: 213 70% 50%;
+    --sidebar-accent: 216 20% 13%;
+    --sidebar-accent-foreground: 210 25% 94%;
+    --sidebar-border: 216 16% 18%;
+    --sidebar-ring: 213 60% 50%;
   }
 }
 
@@ -225,12 +219,15 @@
 
   body {
     @apply bg-background text-foreground font-sans;
-    font-family: 'Roboto Variable', 'Roboto', 'Roboto Fallback', system-ui, -apple-system, sans-serif;
+    /* Plex's figures are tabular by default (every digit 600 units wide), so
+       prices and table columns line up without a font-feature setting. */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Montserrat Variable', 'Montserrat', 'Montserrat Fallback', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    font-display: swap;
+    @apply font-heading;
+    letter-spacing: -0.012em;
   }
 
   /* Keyboard-only focus ring (mouse clicks don't trigger it). Accessibility. */
@@ -259,34 +256,10 @@
   :root:not(.dark) .text-brand-gold:not(:is(.bg-hero, .on-dark) *) { color: hsl(38 96% 29%); }
   :root:not(.dark) .text-brand-orange:not(:is(.bg-hero, .on-dark) *) { color: hsl(22 95% 35%); }
 
-  .text-gradient {
-    @apply bg-clip-text text-transparent;
-    background-image: var(--gradient-accent);
-  }
-  
   .bg-hero {
     background: var(--gradient-hero);
   }
   
-  .bg-accent-gradient {
-    background: var(--gradient-accent);
-  }
-
-  .glass-card {
-    @apply bg-card/80 backdrop-blur-sm border border-border/50;
-  }
-
-  /* Hover lift. Gated so a tap on a touch device doesn't leave the
-     element stuck in its hover state. */
-  .hover-scale {
-    transition: transform var(--duration-fast) var(--ease-out);
-  }
-  @media (hover: hover) and (pointer: fine) {
-    .hover-scale:hover {
-      transform: scale(1.05);
-    }
-  }
-
   /* Press feedback for things that are clickable but aren't <Button>:
      cards, tiles, links acting as targets. Gives the interface the
      "it heard me" beat that a pure colour change never does. */
@@ -295,28 +268,6 @@
   }
   .pressable:active {
     transform: scale(0.985);
-  }
-
-  /* Diagonal light sweep on hover for primary CTAs */
-  .btn-shine {
-    position: relative;
-    overflow: hidden;
-    isolation: isolate;
-  }
-  .btn-shine::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(120deg, transparent 30%, hsl(0 0% 100% / 0.35) 50%, transparent 70%);
-    transform: translateX(-130%);
-    transition: transform 0.7s var(--ease-out);
-    pointer-events: none;
-    z-index: 1;
-  }
-  @media (hover: hover) and (pointer: fine) {
-    .btn-shine:hover::after {
-      transform: translateX(130%);
-    }
   }
 
   /* Left-to-right animated underline for nav links */
@@ -383,70 +334,8 @@
     .link-arrow::after, .link-arrow::before { transition: none; }
   }
 
-  /* Hero aurora — slow-drifting brand-colored glows behind the video overlay */
-  .hero-aurora {
-    background:
-      radial-gradient(40% 55% at 18% 30%, hsl(var(--secondary) / 0.55), transparent 70%),
-      radial-gradient(35% 45% at 82% 22%, hsl(var(--brand-gold) / 0.40), transparent 70%),
-      radial-gradient(45% 50% at 65% 85%, hsl(var(--brand-green) / 0.45), transparent 72%);
-    filter: blur(64px);
-    animation: aurora-drift 22s ease-in-out infinite alternate;
-    will-change: transform, opacity;
-  }
-  @keyframes aurora-drift {
-    0%   { transform: translate3d(-4%, -2%, 0) scale(1.05); opacity: 0.45; }
-    50%  { transform: translate3d(3%, 2%, 0) scale(1.16); opacity: 0.75; }
-    100% { transform: translate3d(5%, -3%, 0) scale(1.08); opacity: 0.55; }
-  }
-
-  /* Cursor-follow glow for cards — desktop pointers only */
-  @media (hover: hover) and (pointer: fine) {
-    .card-glow::before {
-      content: "";
-      position: absolute;
-      inset: 0;
-      border-radius: inherit;
-      background: radial-gradient(180px circle at var(--mx, 50%) var(--my, 50%), hsl(var(--secondary) / 0.16), transparent 60%);
-      opacity: 0;
-      transition: opacity 0.3s ease;
-      pointer-events: none;
-      z-index: 1;
-    }
-    .card-glow:hover::before { opacity: 1; }
-  }
-
-  /* Border beam — a thin light that travels around a card's border.
-     Falls back to a static gradient ring in browsers without @property. */
-  .border-beam {
-    position: relative;
-  }
-  .border-beam::after {
-    content: "";
-    position: absolute;
-    inset: -1px;
-    border-radius: inherit;
-    padding: 1.5px;
-    background: conic-gradient(
-      from var(--beam-angle, 0deg),
-      transparent 0% 78%,
-      hsl(var(--secondary) / 0.9) 86%,
-      hsl(var(--brand-gold) / 0.9) 93%,
-      transparent 100%
-    );
-    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-    -webkit-mask-composite: xor;
-    mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-    mask-composite: exclude;
-    animation: beam-rotate 7s linear infinite;
-    pointer-events: none;
-    z-index: 2;
-  }
-  @keyframes beam-rotate {
-    to { --beam-angle: 360deg; }
-  }
-
   /* Expand touch target without visual/layout change (mobile a11y).
-     Uses ::before so it never clashes with ::after decorations (btn-shine). */
+     Uses ::before so it never clashes with ::after decorations. */
   .tap-area {
     position: relative;
   }
@@ -471,22 +360,10 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .btn-shine::after,
     .nav-underline::after {
       transition: none;
     }
-    .hero-aurora,
-    .border-beam::after {
-      animation: none;
-    }
   }
-}
-
-/* Register the beam angle so browsers can interpolate it */
-@property --beam-angle {
-  syntax: "<angle>";
-  initial-value: 0deg;
-  inherits: false;
 }
 
 @layer utilities {
@@ -507,7 +384,7 @@
    * users this preference exists to serve.
    *
    * So keyframe animations are stopped here, JS motion is stopped by
-   * `MotionConfig reducedMotion="user"` (App.tsx) and Lenis by SmoothScroll,
+   * `MotionConfig reducedMotion="user"` (App.tsx; scrolling is native, never eased by script),
    * while authored transitions are left alone — they are already short by
    * design (see lib/motion.ts). Guarded by e2e/reduced-motion.spec.ts.
    */
@@ -629,28 +506,6 @@ input[type="range"]::-moz-range-thumb {
 @keyframes spin {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
-}
-
-/* ========================================================================= */
-/* PERFORMANCE OPTIMIZATIONS (GPU & MOBILE)                                  */
-/* ========================================================================= */
-
-/* 1. Hardware-accelerate heavy background blurs so they don't break main thread */
-.blur-2xl, .blur-3xl {
-  transform: translate3d(0, 0, 0);
-  will-change: transform, filter;
-  backface-visibility: hidden;
-}
-
-/* 2. On mobile, halving the massive blur radius gives a 300% FPS boost.
-   The visual difference is barely noticeable because the element is huge. */
-@media (max-width: 768px) {
-  .blur-3xl {
-    filter: blur(32px) !important;
-  }
-  .blur-2xl {
-    filter: blur(16px) !important;
-  }
 }
 
 /* ========================================================================= */

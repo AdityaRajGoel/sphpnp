@@ -394,7 +394,7 @@ const LeadsPanel = ({ password }: { password: string }) => {
             <CardContent className="p-3 pt-2">
               <ResponsiveContainer width="100%" height={160}>
                 <BarChart data={trendData}>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                  <CartesianGrid className="stroke-border" />
                   <XAxis dataKey="date" tick={{ fontSize: 10 }} className="fill-muted-foreground" />
                   <YAxis tick={{ fontSize: 10 }} className="fill-muted-foreground" allowDecimals={false} />
                   <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }} />
@@ -570,7 +570,7 @@ const AnalyticsPanel = ({ password }: { password: string }) => {
           <CardContent className="p-3 pt-2">
             <ResponsiveContainer width="100%" height={200}>
               <LineChart data={data.dailyViews}>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                <CartesianGrid className="stroke-border" />
                 <XAxis dataKey="date" tick={{ fontSize: 10 }} className="fill-muted-foreground" tickFormatter={(v: string) => v.slice(5)} />
                 <YAxis tick={{ fontSize: 10 }} className="fill-muted-foreground" allowDecimals={false} />
                 <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }} />
@@ -624,7 +624,7 @@ const AnalyticsPanel = ({ password }: { password: string }) => {
           <CardContent className="p-3 pt-2">
             <ResponsiveContainer width="100%" height={180}>
               <BarChart data={data.leadTrend}>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                <CartesianGrid className="stroke-border" />
                 <XAxis dataKey="date" tick={{ fontSize: 10 }} className="fill-muted-foreground" tickFormatter={(v: string) => v.slice(5)} />
                 <YAxis tick={{ fontSize: 10 }} className="fill-muted-foreground" allowDecimals={false} />
                 <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }} />

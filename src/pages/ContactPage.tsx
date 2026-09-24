@@ -54,14 +54,6 @@ const ContactPage = () => {
 
       {/* Hero banner */}
       <section className="py-8 md:py-20 bg-hero text-primary-foreground relative overflow-hidden">
-        <div className="absolute inset-0 pointer-events-none">
-          <div
-            className="absolute top-10 right-20 w-72 h-72 bg-secondary/10 rounded-full blur-3xl"
-          />
-          <div
-            className="absolute bottom-10 left-10 w-60 h-60 bg-brand-gold/8 rounded-full blur-3xl"
-          />
-        </div>
         <div className="container mx-auto px-4 relative z-10 text-center">
           <motion.div
             className="inline-flex items-center gap-2 bg-white/10 border border-white/20 rounded-full px-4 py-2 mb-6"
@@ -77,7 +69,7 @@ const ContactPage = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
           >
-            {t("contact.title1")} <span className="text-secondary">{t("contact.title2")}</span>
+            {t("contact.title1")} {t("contact.title2")}
           </motion.h1>
           <motion.p
             className="text-primary-foreground/70 text-lg max-w-xl mx-auto"

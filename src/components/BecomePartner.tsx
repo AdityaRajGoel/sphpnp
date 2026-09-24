@@ -93,15 +93,6 @@ const BecomePartner = () => {
 
   return (
     <section className="py-12 md:py-20 bg-hero overflow-hidden relative">
-      {/* Background accents */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div
-          className="absolute top-20 right-20 w-80 h-80 bg-secondary/10 rounded-full blur-3xl"
-        />
-        <div
-          className="absolute bottom-10 left-10 w-64 h-64 bg-brand-gold/10 rounded-full blur-3xl"
-        />
-      </div>
 
       <div className="container mx-auto px-4 relative z-10">
         <div className="grid lg:grid-cols-2 gap-10 items-center">
@@ -117,9 +108,9 @@ const BecomePartner = () => {
             </motion.span>
             <h2 className="font-heading text-3xl md:text-4xl font-bold text-primary-foreground mb-4">
               Become a{" "}
-              <span className="text-brand-gold">
+              
                 Business Associate
-              </span>
+              
             </h2>
             <p className="text-primary-foreground/80 text-lg mb-8 max-w-lg">
               Join Parasram India's growing network of authorized business partners. Earn attractive commissions while helping investors in your city grow their wealth.
@@ -165,7 +156,7 @@ const BecomePartner = () => {
             ) : (
               <form
                 onSubmit={handleSubmit}
-                className="border-beam bg-card/10 backdrop-blur-md border border-white/10 rounded-2xl p-6 md:p-8 space-y-4"
+                className="bg-card/10 backdrop-blur-md border border-white/10 rounded-2xl p-6 md:p-8 space-y-4"
               >
                 <h3 className="font-heading text-lg font-bold text-primary-foreground mb-1">Apply to Become a Partner</h3>
                 <p className="text-primary-foreground/60 text-sm mb-4">Fill in your details and our team will get in touch.</p>

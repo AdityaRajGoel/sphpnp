@@ -128,7 +128,7 @@ const PriceChart = ({
       layout: {
         background: { color: "transparent" },
         textColor: c.text,
-        fontFamily: "'Roboto Variable', 'Roboto', system-ui, sans-serif",
+        fontFamily: "'IBM Plex Sans Variable', 'IBM Plex Sans', system-ui, sans-serif",
         attributionLogo: false,
       },
       grid: {
@@ -292,7 +292,9 @@ const PriceChart = ({
     createTextWatermark(pane, {
       horzAlign: "center",
       vertAlign: "center",
-      lines: [{ text: watermark, color: token("--muted-foreground", "hsl(213 30% 40%)"), fontSize: 44 }],
+      // A faint mark, as trading terminals draw it: at full muted ink the
+      // symbol sat on the price line and competed with the data.
+      lines: [{ text: watermark, color: withAlpha(token("--muted-foreground", "hsl(213 30% 40%)"), 0.12), fontSize: 40 }],
     });
   }, [watermark]);
 

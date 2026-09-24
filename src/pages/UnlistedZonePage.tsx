@@ -91,7 +91,7 @@ const UnlistedSpacePage = () => {
               </a>{" "}- process, risks and taxation.
             </p>
             <motion.div
-              className="w-20 h-1 bg-gradient-to-r from-secondary to-brand-gold mx-auto rounded-full"
+              className="w-20 h-1 bg-secondary mx-auto rounded-full"
               {...revealBar}
             />
           </motion.div>
@@ -108,7 +108,7 @@ const UnlistedSpacePage = () => {
               {...revealItemX("left")}
             >
               <h2 className="font-heading text-2xl md:text-3xl font-bold text-foreground mb-4">
-                Interested in <span className="text-secondary">Unlisted Shares?</span>
+                Interested in Unlisted Shares?
               </h2>
               <p className="text-muted-foreground mb-6">
                 Send us your inquiry and our team will get back to you with live pricing and availability within hours.

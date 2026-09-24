@@ -19,11 +19,6 @@ type FAQProps = {
 const FAQ = ({ title = "Frequently Asked Questions", subtitle, items }: FAQProps) => {
   return (
     <section className="py-8 md:py-16 bg-muted/20 relative overflow-hidden">
-      <div className="absolute inset-0 pointer-events-none">
-        <div
-          className="absolute bottom-20 left-20 w-72 h-72 bg-secondary/5 rounded-full blur-3xl"
-        />
-      </div>
 
       <div className="container mx-auto px-4 relative z-10">
         <motion.div
@@ -37,7 +32,7 @@ const FAQ = ({ title = "Frequently Asked Questions", subtitle, items }: FAQProps
           <h2 className="font-heading text-3xl md:text-4xl font-bold text-foreground mb-2">{title}</h2>
           {subtitle && <p className="text-muted-foreground max-w-xl mx-auto">{subtitle}</p>}
           <motion.div
-            className="w-20 h-1 bg-gradient-to-r from-brand-orange to-brand-gold mx-auto rounded-full mt-4"
+            className="w-20 h-1 bg-secondary mx-auto rounded-full mt-4"
             {...revealBar}
           />
         </motion.div>

@@ -74,7 +74,7 @@ const CareersPage = () => {
         {/* Hero Section */}
         <SplitHero
           eyebrow={<><Briefcase className="h-3.5 w-3.5 text-brand-gold" aria-hidden="true" /> We're Hiring</>}
-          title={<>Build Your Career in <span className="text-brand-gold">Finance</span></>}
+          title={<>Build Your Career in Finance</>}
           subtitle="Join the fastest growing brokerage branch in Panipat. Work with a trusted legacy spanning 50+ years and help drive wealth creation."
           illustration="derivatives-desk"
           badge={<p className="text-sm"><span className="block text-[0.6875rem] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Learn on the desk</span><span className="font-semibold">Mentored by senior advisors</span></p>}

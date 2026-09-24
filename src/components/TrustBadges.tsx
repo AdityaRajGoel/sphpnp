@@ -48,11 +48,10 @@ const TrustBadges = () => {
               key={badge.label}
               className="flex items-center gap-3 bg-card border border-border/50 rounded-xl px-5 py-3 shadow-sm group cursor-default"
               {...revealPop()}
-              whileHover={{ y: -4, scale: 1.05, boxShadow: "0 10px 30px -10px hsl(145 70% 40% / 0.2)" }}
+              whileHover={{ y: -2 }}
             >
               <motion.div
-                className={`w-10 h-10 rounded-lg flex items-center justify-center ${badge.bg} group-hover:scale-110 transition-transform`}
-                whileHover={{ rotate: [0, -10, 10, 0] }}
+                className={`w-10 h-10 rounded-lg flex items-center justify-center ${badge.bg} transition-transform`}
                 transition={{ duration: 0.4 }}
               >
                 <badge.icon className={`w-5 h-5 ${badge.color}`} />

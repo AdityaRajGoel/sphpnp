@@ -698,7 +698,7 @@ export const AIAnalysisModal = ({ isOpen, onClose, stock }: AIAnalysisModalProps
                   </span>
                 </div>
                 <div className="w-64 h-2 bg-muted rounded-full overflow-hidden mb-8 shadow-inner">
-                  <motion.div className="h-full bg-gradient-to-r from-brand-orange via-secondary to-brand-orange bg-[length:200%_100%]"
+                  <motion.div className="h-full bg-gradient-to-r from-secondary/40 via-secondary to-secondary/40 bg-[length:200%_100%]"
                     initial={{ width: "0%", backgroundPosition: "100% 0" }}
                     animate={{ width: `${((loadingStep + 1) / analysisSteps.length) * 100}%`, backgroundPosition: "0% 0" }}
                     transition={{
@@ -858,7 +858,7 @@ export const AIAnalysisModal = ({ isOpen, onClose, stock }: AIAnalysisModalProps
                         initial={{ opacity: 0, y: 16 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.3 }}
-                        className="bg-gradient-to-br from-brand-orange/5 via-transparent to-secondary/5 border border-brand-orange/20 rounded-xl p-4"
+                        className="bg-muted/30 border border-brand-orange/20 rounded-xl p-4"
                       >
                         <div className="flex items-center gap-2 mb-4">
                           <Zap className="w-3.5 h-3.5 text-brand-orange" />
@@ -1012,7 +1012,7 @@ export const AIAnalysisModal = ({ isOpen, onClose, stock }: AIAnalysisModalProps
 
                         {/* Analyst Consensus - real Wall Street data from Yahoo */}
                         {geminiVerdict.structured.analyst_consensus && geminiVerdict.structured.analyst_consensus.count ? (
-                          <div className="bg-gradient-to-r from-secondary/5 to-brand-orange/5 border border-secondary/20 rounded-xl p-4">
+                          <div className="bg-secondary/5 border border-secondary/20 rounded-xl p-4">
                             <div className="flex items-center justify-between mb-3">
                               <div className="text-[10px] font-bold text-muted-foreground uppercase flex items-center gap-2">
                                 <Users className="w-3 h-3" /> Analyst Consensus
@@ -1079,7 +1079,7 @@ export const AIAnalysisModal = ({ isOpen, onClose, stock }: AIAnalysisModalProps
 
                         {/* AI Committee - independent model verdicts vs the quant engine */}
                         {geminiVerdict.structured.committee && geminiVerdict.structured.committee.members.length > 0 && (
-                          <div className="bg-gradient-to-r from-brand-orange/5 to-secondary/5 border border-brand-orange/20 rounded-xl p-4">
+                          <div className="bg-secondary/5 border border-brand-orange/20 rounded-xl p-4">
                             <div className="flex items-center justify-between mb-3">
                               <div className="text-[10px] font-bold text-muted-foreground uppercase flex items-center gap-2">
                                 <Cpu className="w-3 h-3" /> AI Committee
@@ -1146,7 +1146,7 @@ export const AIAnalysisModal = ({ isOpen, onClose, stock }: AIAnalysisModalProps
 
                         {/* Sector Comparison Widget */}
                         {geminiVerdict.structured.sector_comparison && typeof geminiVerdict.structured.sector_comparison.pe_avg === 'number' && (
-                          <div className="bg-gradient-to-r from-brand-orange/5 to-secondary/5 border border-brand-orange/10 rounded-xl p-4">
+                          <div className="bg-secondary/5 border border-brand-orange/10 rounded-xl p-4">
                             <div className="flex items-center justify-between mb-4">
                               <div className="text-[10px] font-bold text-muted-foreground uppercase flex items-center gap-2">
                                 <BarChart2 className="w-3 h-3" /> Sector Peer Benchmark

@@ -81,7 +81,7 @@ function Positioning({ rows }: { rows: ParticipantOi[] }) {
         {history.length < 2 ? <EmptyState text="The history builds up day by day." /> : (
           <ResponsiveContainer width="100%" height={230}>
             <LineChart data={history} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke={CHART.grid} vertical={false} />
+              <CartesianGrid stroke={CHART.grid} vertical={false} />
               <XAxis dataKey="date" tick={axisTick} tickLine={false} axisLine={false} minTickGap={30} tickFormatter={(d: string) => shortDate(d).replace(/ \d{4}$/, "")} />
               <YAxis domain={[0, 100]} tick={axisTick} tickLine={false} axisLine={false} width={36} tickFormatter={(v: number) => `${v}%`} />
               <Tooltip {...tooltipStyle} labelFormatter={(d: string) => shortDate(d)} formatter={(v: unknown) => (typeof v === "number" ? `${v.toFixed(1)}% long` : "—")} />
@@ -160,7 +160,7 @@ function ChainView({ chains, snapshots, symbol, onSymbol }: ChainProps) {
         <p className="text-xs text-muted-foreground mb-3">Calls (resistance) and puts (support) open at each strike, in {unit}, {shortDate(chain.trade_date)} close</p>
         <ResponsiveContainer width="100%" height={300}>
           <BarChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }} barGap={0}>
-            <CartesianGrid strokeDasharray="3 3" stroke={CHART.grid} vertical={false} />
+            <CartesianGrid stroke={CHART.grid} vertical={false} />
             <XAxis dataKey="strike" tick={axisTick} tickLine={false} axisLine={false} minTickGap={16} />
             <YAxis tick={axisTick} tickLine={false} axisLine={false} width={48} tickFormatter={lakhs} />
             <Tooltip {...tooltipStyle} formatter={(v: unknown) => (typeof v === "number" ? lakhs(v) : "—")} labelFormatter={(k) => `Strike ${Number(k).toLocaleString("en-IN")}`} />

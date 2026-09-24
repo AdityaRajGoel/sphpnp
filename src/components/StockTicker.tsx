@@ -1,4 +1,4 @@
-import { TrendingUp, TrendingDown, Clock } from "lucide-react";
+import { Clock } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 
 import { useNavigate } from "react-router-dom";
@@ -60,9 +60,8 @@ const PriceCell = ({ item }: { item: LiveStock }) => {
 
   return (
     <span
-      className={`font-tabular-nums ${
-        flash === "up" ? "text-brand-gold font-bold" :
-        flash === "down" ? "text-brand-orange font-bold" : "text-white/80 font-semibold"
+      className={`font-mono transition-colors duration-slow ${
+        flash === "up" ? "text-emerald-300" : flash === "down" ? "text-red-300" : "text-white/85"
       }`}
     >
       {item.price}
@@ -96,11 +95,12 @@ const TickerRow = ({ items, direction = "left", bgClass = "bg-brand-charcoal", t
             className="relative inline-flex items-center gap-1 md:gap-1.5 text-xs md:text-sm cursor-pointer select-none px-1 md:px-1.5 py-2.5 -my-2 rounded-md hover:bg-white/10 transition-colors group"
             onClick={() => navigate("/screener")}
           >
-            <span className={`font-bold tracking-wide transition-colors ${item.up ? "text-[#00e676]" : "text-[#ff6b6b]"}`}>{item.name}</span>
+            <span className="font-semibold text-white">{item.name}</span>
             {item.unit ? <span className="opacity-50 text-[10px] md:text-xs">{item.unit}</span> : null}
             <PriceCell item={item} />
-            <span className={`flex items-center gap-0.5 font-bold text-[11px] md:text-xs px-1.5 py-0.5 rounded-full ${item.up ? "bg-brand-gold/15 text-brand-gold" : "bg-brand-orange/15 text-brand-orange"}`}>
-              {item.up ? <TrendingUp className="w-2.5 h-2.5 md:w-3 md:h-3" /> : <TrendingDown className="w-2.5 h-2.5 md:w-3 md:h-3" />}
+            {/* Green up, red down, as on every exchange screen: gold and orange were
+                both warm and hard to tell apart at a glance. Mono so digits hold still. */}
+            <span className={`font-mono text-[11px] md:text-xs ${item.up ? "text-emerald-400" : "text-red-400"}`}>
               {item.change}
             </span>
             <span className="text-white/20 text-sm mx-0.5">·</span>

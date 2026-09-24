@@ -68,30 +68,13 @@ const containerVariants: Variants = {
 };
 
 const itemVariants: Variants = {
-  hidden: { opacity: 0, y: 30, scale: 0.95 },
+  hidden: { opacity: 0, y: 8 },
   visible: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.5, ease: EASE_OUT } },
-};
-
-// Track cursor position as CSS vars so the card glow follows the pointer.
-const handleCardGlow = (e: React.MouseEvent<HTMLElement>) => {
-  const el = e.currentTarget;
-  const rect = el.getBoundingClientRect();
-  el.style.setProperty("--mx", `${e.clientX - rect.left}px`);
-  el.style.setProperty("--my", `${e.clientY - rect.top}px`);
 };
 
 const InvestmentProducts = () => {
   return (
     <section className="py-12 md:py-20 bg-background overflow-hidden relative">
-      {/* Background ornaments - consistent with WhyChooseUs */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div
-          className="absolute top-16 right-0 w-80 h-80 bg-secondary/5 rounded-full blur-3xl"
-        />
-        <div
-          className="absolute bottom-0 left-0 w-96 h-96 bg-brand-gold/5 rounded-full blur-3xl"
-        />
-      </div>
 
       <div className="container mx-auto px-4 relative z-10">
         {/* Heading */}
@@ -105,7 +88,7 @@ const InvestmentProducts = () => {
           <h2 className="font-heading text-3xl md:text-4xl font-bold text-foreground mb-3">
             <RevealText text="Explore What You Can Invest In" />
           </h2>
-          <div className="w-20 h-1 bg-gradient-to-r from-secondary to-brand-gold mx-auto rounded-full mb-4" />
+          <div className="w-20 h-1 bg-secondary mx-auto rounded-full mb-4" />
           <p className="text-muted-foreground max-w-xl mx-auto">
             From equities to unlisted shares - a full-service brokerage experience, all under one roof.
           </p>
@@ -124,20 +107,19 @@ const InvestmentProducts = () => {
             const isFeatured = p.layout === "featured";
             const isWide = p.layout === "wide";
             const spanClass = isFeatured
-              ? "col-span-2 lg:row-span-2 border-beam rounded-2xl"
+              ? "col-span-2 lg:row-span-2 rounded-2xl"
               : isWide
               ? "col-span-2"
               : "";
             return (
-              <motion.div key={p.title} variants={itemVariants} whileHover={{ y: -6 }} className={spanClass}>
+              <motion.div key={p.title} variants={itemVariants} whileHover={{ y: -2 }} className={spanClass}>
                 <Link
                   to={p.to}
-                  onMouseMove={handleCardGlow}
-                  className={`card-glow group relative flex flex-col h-full bg-card border border-border/50 rounded-2xl hover:border-secondary/40 hover:shadow-xl transition-[color,background-color,border-color,box-shadow] duration-base overflow-hidden ${
-                    isFeatured ? "p-5 md:p-7 bg-gradient-to-br from-card to-secondary/[0.04]" : "p-4 md:p-5"
+                  className={`group relative flex flex-col h-full bg-card border border-border/50 rounded-2xl hover:border-secondary/40 hover:shadow-xl transition-[color,background-color,border-color,box-shadow] duration-base overflow-hidden ${
+                    isFeatured ? "p-5 md:p-7 bg-card" : "p-4 md:p-5"
                   }`}
                 >
-                  <div className="absolute inset-0 bg-gradient-to-br from-secondary/5 to-brand-gold/5 opacity-0 group-hover:opacity-100 transition-opacity duration-slow" />
+                  <div className="absolute inset-0 bg-secondary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-slow" />
 
                   <div className="relative z-10 flex flex-col h-full">
                     {p.art && (
@@ -146,12 +128,12 @@ const InvestmentProducts = () => {
                           slug={p.art}
                           alt={`${p.title} illustration`}
                           sizes="(min-width: 1024px) 280px, 50vw"
-                          className="h-24 w-full object-cover transition-transform duration-slow ease-out group-hover:scale-110 sm:h-28 md:h-32"
+                          className="h-24 w-full object-cover transition-transform duration-slow ease-out sm:h-28 md:h-32"
                         />
                       </div>
                     )}
                     <div className="flex items-start justify-between mb-3">
-                      <div className={`bg-secondary/10 rounded-xl flex items-center justify-center group-hover:bg-secondary/20 group-hover:scale-110 transition-[color,background-color,border-color,transform] ease-out duration-base ${isFeatured ? "w-14 h-14" : "w-11 h-11"}`}>
+                      <div className={`bg-secondary/10 rounded-xl flex items-center justify-center group-hover:bg-secondary/20 transition-[color,background-color,border-color,transform] ease-out duration-base ${isFeatured ? "w-14 h-14" : "w-11 h-11"}`}>
                         <Icon className={`text-secondary ${isFeatured ? "w-7 h-7" : "w-5 h-5"}`} />
                       </div>
                       <span className="text-[9px] font-bold uppercase tracking-wide text-orange-800 dark:text-orange-300 bg-brand-orange/10 border border-brand-orange/20 rounded-full px-2 py-0.5">
@@ -170,7 +152,7 @@ const InvestmentProducts = () => {
                       <Illustration
                         slug="analyst-charts"
                         sizes="(min-width: 1024px) 520px, 0px"
-                        className="mt-4 hidden h-44 w-full object-contain object-left mix-blend-multiply transition-transform duration-slow ease-out group-hover:scale-[1.02] dark:mix-blend-normal dark:opacity-80 md:block lg:h-56"
+                        className="mt-4 hidden h-44 w-full object-contain object-left mix-blend-multiply transition-transform duration-slow ease-out group- dark:mix-blend-normal dark:opacity-80 md:block lg:h-56"
                       />
                     )}
                     {isFeatured && <FeaturedSparkline />}
@@ -181,7 +163,7 @@ const InvestmentProducts = () => {
                   </div>
 
                   <motion.div
-                    className="absolute bottom-0 left-0 h-0.5 bg-gradient-to-r from-secondary to-brand-gold"
+                    className="absolute bottom-0 left-0 h-0.5 bg-secondary"
                     initial={{ width: 0 }}
                     whileHover={{ width: "100%" }}
                     transition={{ duration: 0.3 }}
@@ -210,7 +192,7 @@ const InvestmentProducts = () => {
           </div>
           <Link
             to="/open-account"
-            className="inline-flex items-center gap-2 btn-shine bg-gradient-to-r from-secondary to-brand-green text-secondary-foreground font-bold px-6 py-3 rounded-xl shadow-lg hover:shadow-xl hover:scale-[1.03] transition-[box-shadow,transform] ease-out duration-base"
+            className="inline-flex items-center gap-2 bg-secondary hover:bg-secondary/90 text-secondary-foreground font-bold px-6 py-3 rounded-xl shadow-lg hover:shadow-xl transition-[box-shadow,transform] ease-out duration-base"
           >
             Open Free Demat Account <ArrowRight className="w-4 h-4" />
           </Link>

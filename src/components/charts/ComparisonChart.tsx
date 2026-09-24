@@ -89,7 +89,7 @@ const ComparisonChart = ({ series, height = 300, smaPeriods }: ComparisonChartPr
       layout: {
         background: { color: "transparent" },
         textColor: text,
-        fontFamily: "'Roboto Variable', 'Roboto', system-ui, sans-serif",
+        fontFamily: "'IBM Plex Sans Variable', 'IBM Plex Sans', system-ui, sans-serif",
         attributionLogo: false,
       },
       grid: { vertLines: { color: grid }, horzLines: { color: grid } },

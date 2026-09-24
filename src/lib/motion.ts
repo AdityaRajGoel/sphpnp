@@ -24,7 +24,7 @@ export const DURATION = {
   base: 0.24,
   slow: 0.36,
   /** Section-scale entrances, which are allowed to be slower than UI feedback. */
-  reveal: 0.5,
+  reveal: 0.4,
   /** Decorative loops only — marquees, ambient pulses. Never UI feedback. */
   ambient: 1,
 } as const;
@@ -34,7 +34,7 @@ export const DURATION = {
  * rows, list entries), `section` for a whole block arriving. Anything further
  * than this reads as a slide rather than a lift.
  */
-export const REVEAL_Y = { item: 16, section: 24 } as const;
+export const REVEAL_Y = { item: 8, section: 12 } as const;
 
 /**
  * Stagger between siblings entering together. Long delays make an interface feel

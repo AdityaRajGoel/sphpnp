@@ -82,7 +82,7 @@ const DepositoryServicesPage = () => {
         {/* Hero Section */}
         <SplitHero
           eyebrow="CDSL · NSDL Depository Participant"
-          title={<>Depository <span className="text-secondary">Services</span></>}
+          title={<>Depository Services</>}
           subtitle="Hold, transfer, and manage your electronic securities safely and simply."
           illustration="demat-network"
           badge={<p className="text-sm"><span className="block text-[0.6875rem] font-semibold uppercase tracking-[0.12em] text-muted-foreground">One demat account</span><span className="font-semibold">NSE · BSE · CDSL · NSDL</span></p>}
@@ -93,11 +93,9 @@ const DepositoryServicesPage = () => {
           <div className="container mx-auto px-4">
             
             <motion.div 
-              className="mb-16 bg-card glass-card p-8 md:p-12 rounded-3xl border border-border overflow-hidden relative"
+              className="mb-16 bg-card p-8 md:p-12 rounded-3xl border border-border overflow-hidden relative"
               {...revealSection}
             >
-              {/* Decorative Circle */}
-              <div className="absolute -top-32 -right-32 w-64 h-64 bg-brand-gold/10 rounded-full blur-3xl"></div>
 
               <div className="relative z-10 max-w-3xl">
                 <h2 className="text-3xl font-bold font-heading text-foreground mb-6">Why Open a Demat With Us?</h2>
@@ -116,7 +114,7 @@ const DepositoryServicesPage = () => {
               {features.map((feature, idx) => (
                 <motion.div 
                   key={feature.title}
-                  className="bg-muted/30 p-6 rounded-2xl border border-border/50 hover:bg-muted/60 hover:border-secondary/30 transition-[color,background-color,border-color,transform] ease-out duration-base transform hover:-translate-y-1"
+                  className="bg-muted/30 p-6 rounded-2xl border border-border/50 hover:bg-muted/60 hover:border-secondary/30 transition-[color,background-color,border-color,transform] ease-out duration-base transform hover:-translate-y-0.5"
                   {...revealSection}
                   transition={{ delay: idx * 0.1 }}
                 >

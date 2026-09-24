@@ -29,10 +29,6 @@ type Props = {
 export default function SplitHero({ eyebrow, title, subtitle, children, illustration, badge }: Props) {
   return (
     <section className="relative overflow-hidden bg-hero text-primary-foreground">
-      <div className="pointer-events-none absolute inset-0" aria-hidden="true">
-        <div className="absolute -right-24 top-0 h-[28rem] w-[28rem] rounded-full bg-secondary/20 blur-3xl" />
-        <div className="absolute -left-16 bottom-0 h-80 w-80 rounded-full bg-brand-gold/10 blur-3xl" />
-      </div>
       <div className="container relative z-10 mx-auto grid max-w-7xl items-center gap-8 px-4 pb-14 pt-10 md:gap-10 md:pb-24 md:pt-20 lg:grid-cols-[0.9fr_1.1fr] lg:gap-12">
         <div className="text-center lg:text-left">
           {eyebrow && (

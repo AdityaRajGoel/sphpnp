@@ -26,9 +26,6 @@ type Props = { id?: string; eyebrow: string; heading: string; intro?: string; it
 export default function FeatureStory({ id, eyebrow, heading, intro, items }: Props) {
   return (
     <section id={id} aria-labelledby={id ? `${id}-heading` : undefined} className="relative overflow-hidden py-16 md:py-28">
-      <div className="pointer-events-none absolute inset-0 -z-10" aria-hidden="true">
-        <div className="absolute left-1/2 top-24 h-[36rem] w-[36rem] -translate-x-1/2 rounded-full bg-secondary/[0.06] blur-3xl" />
-      </div>
       <div className="container mx-auto max-w-6xl px-4">
         <motion.div {...revealSection} className="mx-auto max-w-2xl text-center">
           <p className="mb-4 inline-flex rounded-full border border-secondary/30 bg-secondary/10 px-3 py-1 text-[0.6875rem] font-semibold uppercase tracking-[0.18em] text-secondary">{eyebrow}</p>

@@ -1,21 +1,22 @@
 import type { ReactNode } from "react";
 
 /**
- * One colour language for every chart on the site: gains and buying in the
- * theme's green, losses and selling in its red, the subject series in the
- * brand primary, comparisons in gold and orange. Colours come from the theme's
- * CSS variables, so charts follow light and dark mode with the rest of the page.
+ * One colour language for every chart on the site. Gains and buying are the
+ * theme's green, losses and selling its red - those two mean something and are
+ * used for nothing else. Everything that is merely "a series" takes the four
+ * --chart-* steps from index.css, in that fixed order, which were checked for
+ * colour-vision deficiency against the card surface in both themes. The subject
+ * series of a chart is --chart-3 (the blue), so it never reads as a gain.
+ *
+ * Two measures on different scales are never put on two y-axes: the chart
+ * splits into stacked panels sharing the x-axis (see ExchangeHistory, StockFnO).
  */
 export const CHART = {
   up: "hsl(var(--secondary))",
   down: "hsl(var(--destructive))",
-  // Not the theme's --primary: that is navy in light mode but green in dark,
-  // where it would be indistinguishable from the gain colour.
-  primary: "hsl(217 80% 55%)",
-  accent: "hsl(var(--brand-orange))",
-  gold: "hsl(var(--brand-gold))",
-  sky: "hsl(199 89% 48%)",
-  violet: "hsl(262 83% 58%)",
+  series: ["hsl(var(--chart-1))", "hsl(var(--chart-2))", "hsl(var(--chart-3))", "hsl(var(--chart-4))"] as const,
+  primary: "hsl(var(--chart-3))",
+  accent: "hsl(var(--chart-2))",
   muted: "hsl(var(--muted-foreground))",
   grid: "hsl(var(--border))",
   axis: "hsl(var(--muted-foreground))",

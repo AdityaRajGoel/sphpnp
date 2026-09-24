@@ -45,7 +45,7 @@ function FpiView({ rows }: { rows: FpiRow[] }) {
         {history.length < 2 ? <EmptyState text="The daily history builds as NSDL publishes each day." /> : (
           <ResponsiveContainer width="100%" height={220}>
             <BarChart data={history} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke={CHART.grid} vertical={false} />
+              <CartesianGrid stroke={CHART.grid} vertical={false} />
               <XAxis dataKey="date" tick={axisTick} tickLine={false} axisLine={false} minTickGap={24} tickFormatter={(d: string) => shortDate(d).replace(/ \d{4}$/, "")} />
               <YAxis tick={axisTick} tickLine={false} axisLine={false} width={56} tickFormatter={(v: number) => `${(v / 1000).toFixed(1)}K`} />
               <Tooltip {...tooltipStyle} labelFormatter={(d: string) => shortDate(d)} formatter={(v: unknown) => (typeof v === "number" ? signedCr(v) : "—")} />

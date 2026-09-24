@@ -102,20 +102,19 @@ const TeamMemberCard = ({ member, index }: { member: typeof teamMembers[0]; inde
     <motion.div
       className="group bg-card rounded-2xl border border-border/50 hover:border-secondary/30 shadow-lg hover:shadow-2xl transition-[color,background-color,border-color,box-shadow] duration-slow relative overflow-hidden"
       {...revealSection}
-      whileHover={{ y: -6 }}
+      whileHover={{ y: -2 }}
     >
       {/* Top gradient bar */}
       <div className={`h-1.5 bg-gradient-to-r ${member.accent}`} />
 
       {/* Hover overlay */}
-      <motion.div className="absolute inset-0 bg-gradient-to-br from-secondary/5 to-brand-gold/5 opacity-0 group-hover:opacity-100 transition-opacity duration-slow" />
+      <motion.div className="absolute inset-0 bg-secondary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-slow" />
 
       <div className="relative z-10 p-8 sm:p-10">
         {/* Header row */}
         <div className="flex items-start gap-5 mb-6">
           <motion.div
             className={`w-20 h-20 bg-gradient-to-br ${member.accent} rounded-2xl flex items-center justify-center text-white shadow-lg flex-shrink-0`}
-            whileHover={{ rotate: [0, -8, 8, 0], scale: 1.1 }}
             transition={{ duration: 0.5 }}
           >
             <member.icon className="w-8 h-8" />
@@ -210,13 +209,7 @@ const TeamPage = () => {
       <motion.section ref={heroRef} style={{ opacity: heroOpacity }} className="py-10 md:py-28 bg-background relative overflow-hidden">
         {/* Ambient background */}
         <div className="absolute inset-0 pointer-events-none">
-          <div
-            className="absolute top-20 right-10 w-72 h-72 bg-secondary/5 rounded-full blur-3xl"
-          />
-          <div
-            className="absolute bottom-10 left-10 w-80 h-80 bg-brand-gold/5 rounded-full blur-3xl"
-          />
-          <div
+                    <div
             className="absolute inset-0 opacity-[0.02]"
             style={{
               backgroundImage: `linear-gradient(hsl(var(--foreground)) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--foreground)) 1px, transparent 1px)`,
@@ -241,10 +234,10 @@ const TeamPage = () => {
               Our Experts
             </motion.span>
             <h1 className="font-heading text-3xl md:text-4xl lg:text-5xl font-bold text-foreground mb-4">
-              Meet Our <span className="text-secondary">Team</span>
+              Meet Our Team
             </h1>
             <motion.div
-              className="w-20 h-1 bg-gradient-to-r from-secondary to-brand-gold mx-auto rounded-full mb-6"
+              className="w-20 h-1 bg-secondary mx-auto rounded-full mb-6"
               initial={{ width: 0 }}
               animate={{ width: 80 }}
               transition={{ delay: 0.4, duration: 0.6 }}
@@ -308,7 +301,7 @@ const TeamPage = () => {
             className="font-heading text-2xl md:text-3xl font-bold text-foreground text-center mb-10"
             {...revealFade}
           >
-            Why Families Trust <span className="text-secondary">Our Team</span>
+            Why Families Trust Our Team
           </motion.h2>
           <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-6">
             {[

@@ -55,7 +55,7 @@ export default function SectorFlows({ rows }: { rows: FpiSector[] }) {
         </div>
         <ResponsiveContainer width="100%" height={Math.max(320, sectors.length * 28)}>
           <BarChart data={sectors} layout="vertical" margin={{ top: 0, right: 12, left: 0, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke={CHART.grid} horizontal={false} />
+            <CartesianGrid stroke={CHART.grid} horizontal={false} />
             <XAxis type="number" tick={axisTick} tickLine={false} axisLine={false} tickFormatter={(v: number) => `${(v / 1000).toFixed(0)}K`} />
             <YAxis type="category" dataKey="sector" tick={{ ...axisTick, fontSize: 10 }} tickLine={false} axisLine={false} width={150} interval={0} />
             <Tooltip {...tooltipStyle} formatter={(v: unknown) => (typeof v === "number" ? signedCr(v) : "—")} />
