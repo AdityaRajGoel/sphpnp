@@ -1,0 +1,108 @@
+# External circuit breaker for a total VPS reachability failure.
+#
+# This deliberately has no checkout step: the recovery job must not execute
+# repository code while it holds credentials that can restart production.
+name: VPS auto-recovery
+
+on:
+  schedule:
+    # GitHub Actions' shortest supported schedule interval is five minutes.
+    - cron: "*/5 * * * *"
+  workflow_dispatch: {}
+
+permissions: {}
+
+concurrency:
+  group: vps-auto-recovery
+  cancel-in-progress: false
+
+jobs:
+  probe:
+    name: Confirm public outage
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    outputs:
+      unavailable: ${{ steps.probe.outputs.unavailable }}
+    steps:
+      - id: probe
+        name: Probe twice from outside the VPS
+        shell: bash
+        run: |
+          set -u -o pipefail
+
+          healthy() {
+            local url="$1" expected="$2" method="${3:-GET}" code
+            code=$(curl --silent --output /dev/null --connect-timeout 8 --max-time 15 \
+              --request "$method" --write-out '%{http_code}' "$url" || true)
+            printf '%s %s -> %s (expected %s)\n' "$method" "$url" "${code:-000}" "$expected"
+            [ "$code" = "$expected" ]
+          }
+
+          all_critical_endpoints_healthy() {
+            healthy 'https://www.sphpnp.com/' 200 &&
+              healthy 'https://api.sphpnp.com/rest/v1/' 401 &&
+              healthy 'https://api.sphpnp.com/functions/v1/fetch-ipos' 200 POST
+          }
+
+          if all_critical_endpoints_healthy; then
+            echo 'unavailable=false' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # A single runner or short network blip must never reboot production.
+          echo 'First external probe failed; confirming after 60 seconds.'
+          sleep 60
+          if all_critical_endpoints_healthy; then
+            echo 'Recovered before restart threshold.'
+            echo 'unavailable=false' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo '::error title=Public VPS outage confirmed::All three critical endpoints failed twice from GitHub-hosted infrastructure.'
+          echo 'unavailable=true' >> "$GITHUB_OUTPUT"
+          exit 1
+
+  restart:
+    name: Restart unreachable VPS through Contabo
+    needs: probe
+    if: ${{ always() && needs.probe.outputs.unavailable == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    env:
+      CONTABO_CLIENT_ID: ${{ secrets.CONTABO_CLIENT_ID }}
+      CONTABO_CLIENT_SECRET: ${{ secrets.CONTABO_CLIENT_SECRET }}
+      CONTABO_API_USER: ${{ secrets.CONTABO_API_USER }}
+      CONTABO_API_PASSWORD: ${{ secrets.CONTABO_API_PASSWORD }}
+      CONTABO_INSTANCE_ID: ${{ secrets.CONTABO_INSTANCE_ID }}
+    steps:
+      - name: Request a provider restart
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          for name in CONTABO_CLIENT_ID CONTABO_CLIENT_SECRET CONTABO_API_USER CONTABO_API_PASSWORD CONTABO_INSTANCE_ID; do
+            [ -n "${!name}" ] || {
+              echo "::error title=Auto-recovery is not configured::$name is missing. See docs/runbooks/vps-network-outage.md."
+              exit 1
+            }
+          done
+          [[ "$CONTABO_INSTANCE_ID" =~ ^[0-9]+$ ]] || {
+            echo '::error title=Invalid Contabo instance ID::CONTABO_INSTANCE_ID must be numeric.'
+            exit 1
+          }
+
+          access_token=$(curl --fail --silent --show-error --request POST \
+            'https://auth.contabo.com/auth/realms/contabo/protocol/openid-connect/token' \
+            --data-urlencode "client_id=$CONTABO_CLIENT_ID" \
+            --data-urlencode "client_secret=$CONTABO_CLIENT_SECRET" \
+            --data-urlencode "username=$CONTABO_API_USER" \
+            --data-urlencode "password=$CONTABO_API_PASSWORD" \
+            --data-urlencode 'grant_type=password' | jq --raw-output --exit-status '.access_token')
+          request_id=$(cat /proc/sys/kernel/random/uuid)
+
+          curl --fail --silent --show-error --output /dev/null --request POST \
+            "https://api.contabo.com/v1/compute/instances/$CONTABO_INSTANCE_ID/actions/restart" \
+            --header "Authorization: Bearer $access_token" \
+            --header "x-request-id: $request_id" \
+            --header "x-trace-id: $GITHUB_RUN_ID"
+          echo 'Requested a Contabo restart after two failed external probes.'

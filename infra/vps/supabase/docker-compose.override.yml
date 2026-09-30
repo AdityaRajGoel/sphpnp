@@ -17,6 +17,14 @@ services:
     # Provider API keys and SYNC_SECRET for the edge functions (chmod 600, never in git).
     env_file:
       - ./functions.env
+    # The 30 Sep 2026 outage was a failure of both Contabo resolvers. Docker's
+    # embedded resolver otherwise forwards every external lookup to the host's
+    # configured resolver, so the functions were unable to resolve Yahoo even
+    # though the process and database were healthy. Keep service-name resolution
+    # through Docker while giving its upstream resolver two independent paths.
+    dns:
+      - 1.1.1.1
+      - 8.8.8.8
     # Many upstreams (Yahoo Finance, Economic Times, Livemint, CNBC, BSE) resolve to
     # IPv6 first, and the Supabase network has no IPv6 route: Deno failed with
     # "Network is unreachable (os error 101)" and commodity prices went missing.
