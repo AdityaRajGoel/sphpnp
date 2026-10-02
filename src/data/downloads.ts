@@ -107,6 +107,10 @@ export const DOWNLOAD_SECTIONS: DownloadSection[] = [
     title: "Policies and circulars",
     intro: "The firm's own policies, and SEBI circulars it asks clients to read.",
     items: [
+      { title: "Investor charter for stock brokers", date: "Jul 2025", href: `${U}/2025/07/Investor-Charter-Stock-Brokers-2025.pdf`, kind: "PDF" },
+      { title: "Investor charter for depository participants (NSDL)", date: "27 Nov 2025", href: `${U}/2025/11/Investor-Charter-DP-NSDL-27-nov-2025.pdf`, kind: "PDF" },
+      { title: "Investor charter for depository participants (CDSL)", date: "27 Nov 2025", href: `${U}/2025/11/Investor-Charter-DP-CDSL-27-nov-2025.pdf`, kind: "PDF" },
+      { title: "SEBI master circular: online dispute resolution (SMART ODR)", date: "Jul 2026", href: `${U}/2026/07/SEBI-Master-Circular-for-Online-Dispute-resolution.pdf`, kind: "PDF" },
       { title: "Policies and procedures", date: "10 May 2018", href: `${U}/2022/07/Policies-Procedure.pdf`, kind: "PDF" },
       { title: "Risk management system (RMS) policy", date: "24 Feb 2022", href: `${PI}/downloads/misc/Risk-Management-System-Policy.pdf`, kind: "PDF" },
       { title: "PMLA policy", date: "2025", href: `${U}/2025/01/PMLA-POLICY-REVISED.pdf`, kind: "PDF" },

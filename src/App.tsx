@@ -89,7 +89,9 @@ const MarketListsHubPage = lazy(() => import("./pages/MarketListsHubPage"));
 const MarketMoversPage = lazy(() => import("./pages/MarketMoversPage"));
 const GiftNiftyPage = lazy(() => import("./pages/GiftNiftyPage"));
 const CommoditiesPage = lazy(() => import("./pages/CommoditiesPage"));
+const CommodityResearchPage = lazy(() => import("./pages/CommodityResearchPage"));
 const GlobalMarketsPage = lazy(() => import("./pages/GlobalMarketsPage"));
+const MutualFundsPage = lazy(() => import("./pages/MutualFundsPage"));
 const HelpPage = lazy(() => import("./pages/HelpPage"));
 const WatchlistPage = lazy(() => import("./pages/WatchlistPage"));
 const PortfolioPage = lazy(() => import("./pages/PortfolioPage"));
@@ -201,7 +203,9 @@ const AnimatedRoutes = () => {
         <Route path="/52-week-tracker" element={<Week52TrackerPage />} />
         <Route path="/markets/gift-nifty" element={<GiftNiftyPage />} />
         <Route path="/commodities" element={<CommoditiesPage />} />
+        <Route path="/commodity-research" element={<CommodityResearchPage />} />
         <Route path="/global-markets" element={<GlobalMarketsPage />} />
+        <Route path="/mutual-funds" element={<MutualFundsPage />} />
         <Route path="/markets/:list" element={<MarketMoversPage />} />
         <Route path="/market-pulse" element={<MarketPulsePage />} />
         <Route path="/auth" element={<AuthPage />} />

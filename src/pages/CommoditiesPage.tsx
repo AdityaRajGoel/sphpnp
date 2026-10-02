@@ -210,6 +210,7 @@ export default function CommoditiesPage() {
 
         <p className="mt-8 text-xs text-muted-foreground">
           MCX quotes via Economic Times; international closes from EODHD and Yahoo Finance; energy spot prices from the US EIA via FRED. Market data, not investment advice. See also{" "}
+          <Link to="/commodity-research" className="underline underline-offset-4 hover:text-secondary">ten-year commodity research</Link>,{" "}
           <Link to="/indices" className="underline underline-offset-4 hover:text-secondary">NSE indices</Link> and{" "}
           <Link to="/market-pulse#global" className="underline underline-offset-4 hover:text-secondary">global cues</Link>.
         </p>

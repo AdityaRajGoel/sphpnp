@@ -23,8 +23,8 @@ describe("parseEodhdEod", () => {
 
 describe("the free-plan budget", () => {
   it("fits the daily ticker list under the budget, which stays under the plan's 20 calls", () => {
-    // FRED tickers never fall back to EODHD, so only the rest can spend its budget.
-    expect(GLOBAL_TICKERS.filter((t) => !t.fred).length).toBeLessThanOrEqual(DAILY_BUDGET);
+    // FRED and Yahoo-only tickers never fall back to EODHD, so only the rest can spend its budget.
+    expect(GLOBAL_TICKERS.filter((t) => !t.fred && !t.yahooOnly).length).toBeLessThanOrEqual(DAILY_BUDGET);
     expect(DAILY_BUDGET).toBeLessThan(20);
     expect(new Set(GLOBAL_TICKERS.map((t) => t.ticker)).size).toBe(GLOBAL_TICKERS.length);
   });

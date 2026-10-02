@@ -79,7 +79,7 @@ const ServicesPage = () => {
               "item": {
                 "@type": "Service",
                 "name": "F&O Trading",
-                "description": "Trade futures and options on NSE with advanced risk management tools.",
+                "description": "Trade index and stock futures and options on NSE.",
                 "provider": { "@type": "Organization", "name": "Shri Parasram Holdings Panipat" },
                 "serviceType": "Derivatives Trading",
                 "areaServed": "Panipat, Haryana"
@@ -91,7 +91,7 @@ const ServicesPage = () => {
               "item": {
                 "@type": "Service",
                 "name": "Commodities Trading",
-                "description": "Trade gold, silver, crude oil, and agricultural commodities on MCX and NCDEX.",
+                "description": "Trade gold, silver, crude oil, natural gas and base metals on MCX.",
                 "provider": { "@type": "Organization", "name": "Shri Parasram Holdings Panipat" },
                 "serviceType": "Commodity Trading",
                 "areaServed": "Panipat, Haryana"
@@ -115,7 +115,7 @@ const ServicesPage = () => {
               "item": {
                 "@type": "Service",
                 "name": "Demat Account Opening",
-                "description": "Open a free Demat and trading account backed by CDSL/NSDL with zero AMC for first year.",
+                "description": "Open a Demat and trading account with NSDL or CDSL as depository.",
                 "provider": { "@type": "Organization", "name": "Shri Parasram Holdings Panipat" },
                 "serviceType": "Depository Participant Services",
                 "areaServed": "Panipat, Haryana"
@@ -126,10 +126,10 @@ const ServicesPage = () => {
               "position": 8,
               "item": {
                 "@type": "Service",
-                "name": "Portfolio Management & Research",
-                "description": "Daily stock recommendations, portfolio advisory and market research by certified analysts.",
+                "name": "Market Research Tools",
+                "description": "Stock screener, index, mutual fund and commodity research pages built from exchange and AMFI data.",
                 "provider": { "@type": "Organization", "name": "Shri Parasram Holdings Panipat" },
-                "serviceType": "Investment Advisory",
+                "serviceType": "Market Data and Research Tools",
                 "areaServed": "Panipat, Haryana"
               }
             }

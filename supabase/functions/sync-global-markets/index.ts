@@ -114,6 +114,7 @@ Deno.serve(async (req) => {
           results[t.ticker] = `${results[t.ticker] ?? "yahoo: no bars"}; twelve: ${(e as Error).message}`;
         }
       }
+      if (t.yahooOnly) continue;
       if (calls >= DAILY_BUDGET) { results[t.ticker] = `${results[t.ticker] ?? "yahoo: no bars"}; EODHD skipped: daily budget used`; continue; }
     }
     if (calls >= DAILY_BUDGET) { results[t.ticker] = "skipped: daily budget used"; continue; }

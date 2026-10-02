@@ -24,6 +24,10 @@ export type AmfiNav = {
   nav: number;
   /** ISO yyyy-mm-dd. */
   nav_date: string;
+  /** The fund-house line above this group, e.g. "HDFC Mutual Fund". */
+  amc: string | null;
+  /** The scheme-type heading above it, e.g. "Equity Scheme - Large Cap Fund". */
+  category: string | null;
 };
 
 export type AmfiParseResult = {
@@ -53,7 +57,8 @@ const COLUMN_ALIASES = {
   scheme_code: ["schemecode"],
   isin_growth: ["isindivpayoutisingrowth", "isingrowth", "isindivpayout"],
   isin_reinvest: ["isindivreinvestment", "isinreinvestment"],
-  scheme_name: ["schemename"],
+  // "NAV Name" in the NAV history report.
+  scheme_name: ["schemename", "navname"],
   plan: ["plan"],
   option: ["option"],
   nav: ["netassetvalue", "nav"],
@@ -102,9 +107,19 @@ const optional = (value: string): string | null => (value && value !== "-" ? val
  * those two into "no data" is how the previous defect stayed invisible, so the
  * caller is given enough to tell them apart and fail loudly.
  */
+/**
+ * "Open Ended Schemes ( Equity Scheme - Large Cap Fund )" -> "Equity Scheme -
+ * Large Cap Fund". Close-ended and interval schemes cannot be bought on any
+ * day, so their category is left null.
+ */
+const CATEGORY_LINE = /^(open|close|interval)\s+ended\s+schemes?\s*\(\s*(.+?)\s*\)\s*$/i;
+
 export function parseAmfiNavAll(text: string): AmfiParseResult {
   const rows: AmfiNav[] = [];
   let columns: ColumnIndex | null = null;
+  // Group context: the file sets these on their own lines above each block.
+  let category: string | null = null;
+  let amc: string | null = null;
 
   for (const rawLine of text.split(/\r?\n/)) {
     const line = rawLine.trim();
@@ -123,7 +138,12 @@ export function parseAmfiNavAll(text: string): AmfiParseResult {
     }
 
     const parts = line.split(";");
-    if (parts.length < 4) continue;
+    if (parts.length < 4) {
+      const heading = line.match(CATEGORY_LINE);
+      if (heading) { category = heading[1].toLowerCase() === "open" ? heading[2] : null; amc = null; }
+      else if (!line.includes(";")) amc = line;
+      continue;
+    }
 
     const scheme_code = cell(parts, columns.scheme_code);
     if (!/^\d+$/.test(scheme_code)) continue;
@@ -142,6 +162,8 @@ export function parseAmfiNavAll(text: string): AmfiParseResult {
       option: optional(cell(parts, columns.option)),
       nav,
       nav_date,
+      amc,
+      category,
     });
   }
 

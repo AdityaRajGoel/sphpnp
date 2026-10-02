@@ -30,3 +30,130 @@ export function trailingCagr(navs: readonly NavPoint[], years: number): number |
   const base = [...navs].reverse().find((n) => n.date <= targetIso);
   return base ? (Math.pow(last.nav / base.nav, 1 / years) - 1) * 100 : null;
 }
+
+/**
+ * Mutual fund research data (mf_schemes, from AMFI) and the helpers the
+ * /mutual-funds page needs. AMFI labels categories two ways at once: SEBI's
+ * older names ("Equity Scheme - Large Cap Fund") beside newer ones ("Equity
+ * Schemes - Large Cap Fund", "Income/Debt Oriented Schemes - Liquid Fund"),
+ * so the page groups by a normalised category instead.
+ */
+export type MfGroup = "Equity" | "Hybrid" | "Debt" | "Index funds & ETFs" | "Fund of funds" | "Solution-oriented" | "Other";
+export const MF_GROUPS: MfGroup[] = ["Equity", "Hybrid", "Debt", "Index funds & ETFs", "Fund of funds", "Solution-oriented", "Other"];
+
+export type MfCategory = { group: MfGroup; name: string };
+
+/** Ordered: the first matching rule wins, so the narrower patterns come first. */
+const RULES: [RegExp, MfGroup, string][] = [
+  [/etf/i, "Index funds & ETFs", ""],
+  [/index funds?/i, "Index funds & ETFs", ""],
+  [/fof overseas|investing overseas/i, "Fund of funds", "Overseas"],
+  [/fof|fund of funds/i, "Fund of funds", "Domestic"],
+  [/retirement/i, "Solution-oriented", "Retirement"],
+  [/child/i, "Solution-oriented", "Children's"],
+  [/life cycle/i, "Solution-oriented", "Life cycle"],
+  [/elss|tax saver/i, "Equity", "ELSS (tax saver)"],
+  [/large\s*&\s*mid/i, "Equity", "Large & Mid Cap"],
+  [/large cap/i, "Equity", "Large Cap"],
+  [/mid cap/i, "Equity", "Mid Cap"],
+  [/small cap/i, "Equity", "Small Cap"],
+  [/multi cap/i, "Equity", "Multi Cap"],
+  [/flexi cap/i, "Equity", "Flexi Cap"],
+  [/focused/i, "Equity", "Focused"],
+  [/value fund/i, "Equity", "Value"],
+  [/contra/i, "Equity", "Contra"],
+  [/dividend yield/i, "Equity", "Dividend Yield"],
+  [/aggressive hybrid/i, "Hybrid", "Aggressive Hybrid"],
+  [/balanced advantage|dynamic asset/i, "Hybrid", "Balanced Advantage"],
+  [/multi asset/i, "Hybrid", "Multi Asset"],
+  [/equity savings/i, "Hybrid", "Equity Savings"],
+  [/arbitrage/i, "Hybrid", "Arbitrage"],
+  [/conservative hybrid/i, "Hybrid", "Conservative Hybrid"],
+  [/balanced hybrid/i, "Hybrid", "Balanced Hybrid"],
+  [/overnight/i, "Debt", "Overnight"],
+  [/liquid/i, "Debt", "Liquid"],
+  [/money market/i, "Debt", "Money Market"],
+  [/ultra short/i, "Debt", "Ultra Short Duration"],
+  [/short (duration|term)/i, "Debt", "Short Duration"],
+  [/medium to long/i, "Debt", "Medium to Long Duration"],
+  [/medium (duration|term)/i, "Debt", "Medium Duration"],
+  [/long (duration|term)/i, "Debt", "Long Duration"],
+  [/dynamic (bond|term)/i, "Debt", "Dynamic Bond"],
+  [/corporate bond/i, "Debt", "Corporate Bond"],
+  [/banking and psu/i, "Debt", "Banking & PSU"],
+  [/credit risk/i, "Debt", "Credit Risk"],
+  [/constant maturity/i, "Debt", "Gilt, 10-year constant maturity"],
+  [/gilt/i, "Debt", "Gilt"],
+  [/floating|floater/i, "Debt", "Floater"],
+  [/^equity/i, "Equity", "Sectoral & Thematic"],
+  [/^(income|debt)/i, "Debt", "Other debt"],
+];
+
+/** The ETF and index-fund kinds: Gold ETFs, Debt index funds, and so on. */
+function indexOrEtfName(raw: string): string {
+  if (/etf/i.test(raw)) {
+    for (const kind of ["Gold", "Silver", "Equity", "Debt"]) if (new RegExp(`${kind} ETF`, "i").test(raw)) return `${kind} ETFs`;
+    return "Other ETFs";
+  }
+  if (/debt/i.test(raw)) return "Debt index funds";
+  if (/hybrid/i.test(raw)) return "Hybrid index funds";
+  if (/equity/i.test(raw)) return "Equity index funds";
+  return "Index funds";
+}
+
+export function normalizeCategory(raw: string): MfCategory {
+  for (const [pattern, group, name] of RULES) {
+    if (!pattern.test(raw)) continue;
+    // A sectoral fund under a debt heading is debt, not equity thematic.
+    if (name === "Sectoral & Thematic" && /debt|income/i.test(raw)) return { group: "Debt", name: "Other debt" };
+    return { group, name: group === "Index funds & ETFs" ? indexOrEtfName(raw) : name };
+  }
+  if (/sectoral|thematic/i.test(raw)) return { group: /debt|income/i.test(raw) ? "Debt" : "Equity", name: /debt|income/i.test(raw) ? "Other debt" : "Sectoral & Thematic" };
+  return { group: "Other", name: raw.split(" - ").pop()?.trim() || raw };
+}
+
+/** "HDFC Large Cap Fund - Growth Option - Direct Plan" -> "HDFC Large Cap Fund". */
+export function cleanFundName(name: string): string {
+  const parts = name.split(/\s*-\s*/);
+  const tail = /^(direct|regular|growth|plan|option|direct plan|regular plan|growth option|growth plan)\b/i;
+  while (parts.length > 1 && tail.test(parts[parts.length - 1])) parts.pop();
+  return parts.join(" - ").trim();
+}
+
+export const median = (values: (number | null)[]): number | null => {
+  const v = values.filter((x): x is number => x !== null && Number.isFinite(x)).sort((a, b) => a - b);
+  if (!v.length) return null;
+  const mid = Math.floor(v.length / 2);
+  return v.length % 2 ? v[mid] : (v[mid - 1] + v[mid]) / 2;
+};
+
+export type MfScheme = {
+  scheme_code: string;
+  scheme_name: string;
+  amc: string | null;
+  category: string;
+  nav: number;
+  nav_date: string;
+  ret_1m: number | null;
+  ret_6m: number | null;
+  ret_1y: number | null;
+  ret_3y: number | null;
+  ret_5y: number | null;
+};
+
+/** Every scheme in one plan, paged past PostgREST's 1,000-row cap (~1,800 direct). */
+export async function loadSchemes(plan: "direct" | "regular"): Promise<MfScheme[]> {
+  const out: MfScheme[] = [];
+  for (let from = 0; from < 10_000; from += 1000) {
+    const { data, error } = await supabase.from("mf_schemes" as never)
+      .select("scheme_code,scheme_name,amc,category,nav,nav_date,ret_1m,ret_6m,ret_1y,ret_3y,ret_5y")
+      .eq("plan", plan).order("scheme_code").range(from, from + 999);
+    if (error) throw new Error(error.message);
+    out.push(...((data ?? []) as MfScheme[]));
+    if ((data ?? []).length < 1000) break;
+  }
+  return out.map((s) => ({ ...s, nav: Number(s.nav), ret_1m: num(s.ret_1m), ret_6m: num(s.ret_6m), ret_1y: num(s.ret_1y), ret_3y: num(s.ret_3y), ret_5y: num(s.ret_5y) }));
+}
+
+/** PostgREST sends numeric columns as strings. */
+const num = (v: unknown): number | null => (v === null || v === undefined || v === "" ? null : Number(v));

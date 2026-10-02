@@ -30,9 +30,12 @@ J=/opt/sphpnp/jobs/sync.sh
 47 *  * * *     deploy flock -n /tmp/sync-fundamentals.lock $J repeat sync-fundamentals 8 300
 7  *  * * *     deploy flock -n /tmp/sync-fundamentals-yahoo.lock $J once sync-fundamentals-yahoo '{}' 300
 40 7  * * *     deploy flock -n /tmp/sync-google-finance.lock $J once sync-google-finance '{}' 150
-# IndianAPI profiles, profile-only: 6 symbols x 3 runs = 18 requests a day, a full pass in
-# ~14 days, then each symbol rests 30 days - ~250-300 requests a month (key 429'd at ~480).
+# IndianAPI profiles, profile-only: 6 symbols x 3 runs = 18 requests a day, a full pass of
+# ~505 stocks in ~28 days, then each rests 45 days - ~340 requests a month (key 429'd at ~480).
 25 7,13,20 * * * deploy flock -n /tmp/sync-stock-statements.lock $J once sync-stock-statements '{}' 150
+# Mutual fund research (/mutual-funds): every open-ended growth scheme from AMFI's NAVAll,
+# then the NAVs a month to five years back from its history report, one call each.
+15 6 * * *     deploy flock -n /tmp/sync-mf.lock bash -c '$J once sync-mf-schemes "{\"part\":\"latest\"}" 160; for a in 1m 3m 6m 1y 3y 5y; do $J once sync-mf-schemes "{\"part\":\"anchor\",\"anchor\":\"$a\"}" 160; done'
 10 8  * * *     deploy flock -n /tmp/build-screener.lock $J once build-screener-fundamentals '{}' 150
 40 23 * * *     deploy flock -n /tmp/sync-scores.lock $J loop sync-fundamental-scores 12
 35 9,12,15,18 * * 1-6 deploy flock -n /tmp/sync-announcements.lock $J once sync-announcements '{}' 120

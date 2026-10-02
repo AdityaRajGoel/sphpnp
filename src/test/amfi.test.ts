@@ -77,3 +77,37 @@ describe("parseAmfiNavAll", () => {
     expect(rows.length, "one bad row must not discard the rest").toBeGreaterThan(0);
   });
 });
+
+describe("parseAmfiNavAll, fund house and category", () => {
+  // The shape of NAVAll.txt and the NAV history report: a category heading and
+  // a fund-house line, each on its own line, above that group's schemes.
+  const text = [
+    "Scheme Code;Scheme Name;Plan;Option;ISIN Div Payout/ISIN Growth;ISIN Div Reinvestment;Net Asset Value;Date",
+    "",
+    "Open Ended Schemes ( Equity Scheme - Large Cap Fund )",
+    "",
+    "Axis Mutual Fund",
+    "120465;Axis Large Cap Fund - Direct Plan - Growth;Direct Plan;Growth;INF846K01DP8;-;65.43;01-Oct-2026",
+    "",
+    "HDFC Mutual Fund",
+    "119018;HDFC Large Cap Fund - Growth Option - Direct Plan;Direct Plan;Growth;INF179K01XQ0;-;1210.5;01-Oct-2026",
+    "",
+    "Open Ended Schemes ( Debt Scheme - Liquid Fund )",
+    "HDFC Mutual Fund",
+    "119091;HDFC Liquid Fund - Direct Plan - Growth Option;Direct Plan;Growth;INF179KB1HP9;-;5100.1;01-Oct-2026",
+  ].join("\n");
+
+  it("tags each scheme with the heading and fund house above it", () => {
+    const { rows } = parseAmfiNavAll(text);
+    expect(rows.map((r) => [r.scheme_code, r.amc, r.category])).toEqual([
+      ["120465", "Axis Mutual Fund", "Equity Scheme - Large Cap Fund"],
+      ["119018", "HDFC Mutual Fund", "Equity Scheme - Large Cap Fund"],
+      ["119091", "HDFC Mutual Fund", "Debt Scheme - Liquid Fund"],
+    ]);
+  });
+
+  it("leaves the category null under close-ended and interval headings", () => {
+    const closed = text + "\n\nClose Ended Schemes ( Income )\nX Mutual Fund\n200001;X FMP Series 1 - Direct - Growth;Direct Plan;Growth;INF1;-;11.2;01-Oct-2026";
+    expect(parseAmfiNavAll(closed).rows.find((r) => r.scheme_code === "200001")?.category).toBeNull();
+  });
+});

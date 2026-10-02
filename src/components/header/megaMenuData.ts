@@ -50,7 +50,7 @@ export const megaMenuItems: MegaMenuItem[] = [
           { label: "Stocks & F&O", href: "/services", icon: Briefcase, description: "Equity, futures, options and commodities" },
           { label: "IPOs", href: "/ipo", icon: FileText, description: "Upcoming issues, and applying online" },
           { label: "Unlisted Shares", href: "/unlisted-space", icon: Flame, description: "Pre-IPO and unlisted companies" },
-          { label: "Mutual Funds", href: "/learn/mutual-funds-guide", icon: PieChart, description: "How funds work, and investing online" },
+          { label: "Mutual Funds", href: "/mutual-funds", icon: PieChart, description: "Compare every fund by category, and invest" },
           { label: "FDs & Bonds", href: "/products", icon: Building2, description: "Fixed deposits, bonds and insurance" },
           { label: "Invest Globally", href: "/global-markets#invest-abroad", icon: Globe, description: "US stocks through India INX GIFT City" },
         ],
@@ -84,6 +84,7 @@ export const megaMenuItems: MegaMenuItem[] = [
           { label: "Market Pulse", href: "/market-pulse", icon: Gauge, description: "Valuations, FII flows and deals" },
           { label: "Indices", href: "/indices", icon: LineChart, description: "Nifty and sector index levels, returns, P/E" },
           { label: "Commodities", href: "/commodities", icon: Gem, description: "MCX gold, silver, crude and metals" },
+          { label: "Commodity Research", href: "/commodity-research", icon: Gem, description: "Ten-year returns, volatility and seasonality" },
           { label: "Global Markets", href: "/global-markets", icon: Globe, description: "World indices, and investing in US stocks" },
           { label: "Market Movers", href: "/markets/top-gainers", icon: TrendingUp, description: "Gainers, losers, circuits, 52-week highs" },
           { label: "GIFT Nifty", href: "/markets/gift-nifty", icon: Globe, description: "Pre-market cue and pre-open prices" },
@@ -224,7 +225,7 @@ const pathOf = (href: string) => href.split("#")[0];
 // Deep pages that belong to a section without being listed in its menu.
 const SECTION_PREFIXES: Record<string, string[]> = {
   IPO: ["/ipo"],
-  Markets: ["/stock/", "/indices", "/sectors/", "/ipo-pipeline", "/markets/", "/commodities", "/global-markets"],
+  Markets: ["/stock/", "/indices", "/sectors/", "/ipo-pipeline", "/markets/", "/commodities", "/commodity-research", "/global-markets"],
   Learn: ["/learn"],
 };
 

@@ -24,6 +24,8 @@ export type GlobalTicker = {
   twelve?: string;
   /** A FRED series id; fetched with FRED_API_KEY and never falls back to EODHD, which has no rates. */
   fred?: string;
+  /** Yahoo only: EODHD has no equivalent (COMEX futures), so a Yahoo miss must not spend its budget. */
+  yahooOnly?: boolean;
 };
 
 export const GLOBAL_TICKERS: GlobalTicker[] = [
@@ -64,6 +66,12 @@ export const GLOBAL_TICKERS: GlobalTicker[] = [
   { ticker: "BRENT.SPOT", name: "Brent crude spot ($/bbl)", group: "Commodity", unit: "dollars", fred: "DCOILBRENTEU" },
   { ticker: "WTI.SPOT", name: "WTI crude spot ($/bbl)", group: "Commodity", unit: "dollars", fred: "DCOILWTICO" },
   { ticker: "NATGAS.SPOT", name: "Henry Hub natural gas ($/mmBtu)", group: "Commodity", unit: "dollars", fred: "DHHNGSP" },
+  // COMEX front-month futures, keyless from Yahoo, for the ten-year research view
+  // (EODHD's free plan gives spot gold and silver one year). Kept as their own
+  // series, never spliced into spot: futures sit ~1-2% above it.
+  { ticker: "GOLD.FUT", name: "Gold, COMEX futures ($/oz)", group: "Commodity", unit: "dollars", yahoo: "GC=F", yahooOnly: true },
+  { ticker: "SILVER.FUT", name: "Silver, COMEX futures ($/oz)", group: "Commodity", unit: "dollars", yahoo: "SI=F", yahooOnly: true },
+  { ticker: "COPPER.FUT", name: "Copper, COMEX futures ($/lb)", group: "Commodity", unit: "dollars", yahoo: "HG=F", yahooOnly: true },
 ];
 
 export type GlobalBar = { ticker: string; trade_date: string; open: number | null; high: number | null; low: number | null; close: number; volume: number | null };

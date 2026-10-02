@@ -266,7 +266,7 @@ Logs go to `/var/log/sphpnp-sync/YYYY-MM-DD.log` (two weeks kept).
 | `kronos.sh` | weekly Kronos forecast (Python venv in `/opt/sphpnp/kronos-venv`) |
 
 `sync-stock-statements` runs profile-only at 07:25, 13:25 and 20:25 (18 IndianAPI requests a
-day, ~250-300 a month); statements come from screener.in. Set `STATEMENTS_PROFILE_ONLY=0` to
+day, ~340 a month for ~505 stocks on a 45-day refresh); statements come from screener.in. Set `STATEMENTS_PROFILE_ONLY=0` to
 fetch IndianAPI statements again (six requests a symbol).
 
 ## Bootstrap (phase 1)

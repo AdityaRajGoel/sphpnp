@@ -35,14 +35,16 @@ const BASE_URL = "https://stock.indianapi.in";
  * symbol (two when the ticker search misses). Statements now come free from
  * screener.in for the whole universe, and IndianAPI's passed the revenue check
  * for one stock, so five of every six requests bought nothing. A full pass is
- * then ~250 requests a month against a key that returned 429 after ~480.
+ * then ~340 requests a month (505 stocks, 45-day refresh) against a key that
+ * returned 429 after ~480.
  * STATEMENTS_PROFILE_ONLY=0 restores the statements.
  */
 const PROFILE_ONLY = (Deno.env.get("STATEMENTS_PROFILE_ONLY") ?? "1") !== "0";
 /** Symbols per run. Each costs 1 request profile-only, else 1 + STATEMENT_KINDS.length = 6. */
 const BATCH_SIZE = Number(Deno.env.get("STATEMENTS_BATCH_SIZE") ?? "6");
 /** A symbol attempted more recently than this is not due. */
-const REFRESH_DAYS = Number(Deno.env.get("STATEMENTS_REFRESH_DAYS") ?? (PROFILE_ONLY ? "30" : "7"));
+// 45 days since the universe widened to the NIFTY 500 (~505 stocks): ~340 requests a month.
+const REFRESH_DAYS = Number(Deno.env.get("STATEMENTS_REFRESH_DAYS") ?? (PROFILE_ONLY ? "45" : "7"));
 /** Supabase kills the worker at 150s; stop well before, as sync-fundamentals does. */
 const RUN_BUDGET_MS = 110_000;
 const REQUEST_TIMEOUT_MS = 20_000;

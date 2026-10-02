@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { dailyQuote } from "../_shared/yahoo-daily-quote.ts";
+import { mergeUniverse, type UniverseStock } from "../_shared/universe.ts";
 import { buildStockRow, exchangeCloseRow, groupRowsByShape, isStaleQuote, type ExchangeBar } from "../_shared/screener-row.ts";
 
 const corsHeaders = {
@@ -407,7 +408,18 @@ async function fetchBatchQuotes(symbols: string[], crumb: string, cookie: string
 // the same reason ratios.ts and period.ts live in _shared rather than inline
 // in their sync functions.
 
-async function processBatch(stocks: typeof NSE_SYMBOLS, crumb: string, cookie: string, batchSize = 15, delayMs = 400) {
+/**
+ * The hand-picked list above plus every NIFTY 500 stock (index_constituents,
+ * refreshed from NSE), so large, mid and small caps all reach the screener.
+ * A failed read keeps the hand-picked list rather than emptying the screener.
+ */
+async function loadUniverse(sb: ReturnType<typeof createClient>): Promise<UniverseStock[]> {
+  const { data, error } = await sb.from("index_constituents").select("symbol,company,industry").eq("index_name", "NIFTY 500");
+  if (error) { console.error("universe: NIFTY 500 read failed, using the hand-picked list:", error.message); return NSE_SYMBOLS; }
+  return mergeUniverse(NSE_SYMBOLS, (data ?? []) as { symbol: string; company: string | null; industry: string | null }[]);
+}
+
+async function processBatch(stocks: UniverseStock[], crumb: string, cookie: string, batchSize = 15, delayMs = 400) {
   const results: any[] = [];
   for (let i = 0; i < stocks.length; i += batchSize) {
     const batch = stocks.slice(i, i + batchSize);
@@ -443,12 +455,12 @@ const EXCHANGE_FALLBACK_MS = 2 * 86_400_000;
  * filled from eq_eod, the exchange's own daily close. IndiGrid showed Rs 140 against an
  * NSE close of Rs 173 until this existed.
  */
-async function fillFromExchange(sb: ReturnType<typeof createClient>): Promise<void> {
+async function fillFromExchange(sb: ReturnType<typeof createClient>, universe: UniverseStock[]): Promise<void> {
   const cutoff = new Date(Date.now() - EXCHANGE_FALLBACK_MS).toISOString();
   const { data: stale, error: staleErr } = await sb
     .from("screener_stocks")
     .select("symbol")
-    .in("symbol", NSE_SYMBOLS.map((s) => s.symbol))
+    .in("symbol", universe.map((s) => s.symbol))
     .lt("updated_at", cutoff);
   if (staleErr || !stale?.length) return;
 
@@ -473,7 +485,7 @@ async function fillFromExchange(sb: ReturnType<typeof createClient>): Promise<vo
   // UPDATE, not upsert: these rows exist, and an upsert's insert half fails the
   // NOT NULL name/sector columns a partial quote does not carry.
   const filled: string[] = [];
-  const meta = new Map(NSE_SYMBOLS.map((s) => [s.symbol, { name: s.name, sector: s.sector }]));
+  const meta = new Map(universe.map((s) => [s.symbol, { name: s.name, sector: s.sector }]));
   for (const { symbol, ...quote } of rows) {
     const { error } = await sb.from("screener_stocks").update({ ...quote, ...meta.get(symbol as string) }).eq("symbol", symbol as string);
     if (error) console.error(`exchange fallback update failed for ${symbol}:`, error.message);
@@ -487,9 +499,12 @@ async function fillFromExchange(sb: ReturnType<typeof createClient>): Promise<vo
  * symbols, so visitors are never made to wait for it (see the handler).
  */
 async function refreshFromYahoo(sb: ReturnType<typeof createClient>): Promise<void> {
-  console.log(`Fetching ${NSE_SYMBOLS.length} stocks from Yahoo Finance...`);
+  const universe = await loadUniverse(sb);
+  console.log(`Fetching ${universe.length} stocks from Yahoo Finance...`);
   const { crumb, cookie } = await getYahooCrumb();
-  const stockData = await processBatch(NSE_SYMBOLS, crumb, cookie, 5, 500);
+  // 20 a call: Yahoo's v7 quote takes a list, and at 5 a call ~505 stocks
+  // took ~80s of the function's 150s.
+  const stockData = await processBatch(universe, crumb, cookie, 20, 400);
   console.log(`Got data for ${stockData.length} stocks`);
 
   if (stockData.length > 0) {
@@ -530,7 +545,7 @@ async function refreshFromYahoo(sb: ReturnType<typeof createClient>): Promise<vo
       }
     }
   }
-  await fillFromExchange(sb);
+  await fillFromExchange(sb, universe);
 }
 
 /** One refresh at a time per worker; concurrent stale requests share it. */
