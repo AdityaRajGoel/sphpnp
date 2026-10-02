@@ -33,7 +33,7 @@ export default function StockIndexLinks({ symbol }: { symbol: string }) {
   if (!data || (data.indices.length === 0 && data.lotSize === null)) return null;
 
   return (
-    <section aria-labelledby="stock-links" className="mt-6 rounded-lg border bg-card px-4 py-3">
+    <section aria-labelledby="stock-links" className="rounded-surface border bg-card px-4 py-3 shadow-sm">
       <h2 id="stock-links" className="flex items-center gap-2 text-sm font-semibold">
         <Layers className="h-4 w-4 text-secondary" aria-hidden="true" /> {symbol} in NSE indices and F&amp;O
       </h2>

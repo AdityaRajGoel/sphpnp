@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { toCandles, toKLineData, toVolume, zipSeries, sma, type ApiChartPoint } from "@/lib/chart-data";
+import { toCandles, toKLineData, toVolume, zipSeries, sma, priceEvents, snapEvents, type ApiChartPoint } from "@/lib/chart-data";
 
 /** One trading day of ticks, in the shape the Supabase functions actually return. */
 const point = (tMs: number, o: number, h: number, l: number, c: number, v = 1000): ApiChartPoint =>
@@ -153,5 +153,43 @@ describe("sma", () => {
 
   it("returns all nulls when the period exceeds the data length", () => {
     expect(sma([1, 2], 5)).toEqual([null, null]);
+  });
+});
+
+describe("priceEvents + snapEvents", () => {
+  // Daily bars stamped 09:15 IST (03:45 UTC), as the chart feed sends them.
+  const bar = (day: string) => (Date.parse(`${day}T03:45:00Z`) / 1000) as never;
+  const times = ["2026-07-08", "2026-07-09", "2026-07-10", "2026-07-13", "2026-07-14"].map(bar);
+  const actions = [
+    { ex_date: "2026-07-11", action_type: "dividend", value: 5 }, // a Saturday
+    { ex_date: "2026-07-11", action_type: "dividend", value: 2 }, // special, same day
+    { ex_date: "2026-07-09", action_type: "split", value: 1 },
+    { ex_date: "2026-09-01", action_type: "dividend", value: 5 }, // upcoming
+  ];
+  // Filed 19:10 IST on 9 Jul = 13:40 UTC; the consolidated copy a minute later.
+  const filings = ["2026-07-09T13:40:00+00:00", "2026-07-09T13:41:00+00:00", "2026-01-02T20:00:00+00:00", "not a date"];
+
+  it("keeps one results marker per IST day and one dividend per ex-date, and ignores splits", () => {
+    const events = priceEvents(actions, filings);
+    expect(events.filter((e) => e.kind === "results").map((e) => e.date)).toEqual(["2026-07-09", "2026-01-03"]);
+    expect(events.filter((e) => e.kind === "dividend").map((e) => e.date)).toEqual(["2026-07-11", "2026-09-01"]);
+  });
+
+  it("pins each event to the bar whose period holds it and drops events outside the bars or after today", () => {
+    const snapped = snapEvents(priceEvents(actions, filings), times, "2026-07-20");
+    expect(snapped.map((s) => [s.event.kind, s.time])).toEqual([
+      ["results", bar("2026-07-09")],
+      ["dividend", bar("2026-07-10")], // Saturday: Friday's bar
+    ]);
+  });
+
+  it("puts a mid-month event on its month's bar when the bars are monthly (the 5Y range)", () => {
+    const months = ["2026-06-01", "2026-07-01", "2026-08-03"].map(bar);
+    const events = [{ date: "2026-07-24", kind: "results" as const }, { date: "2026-08-20", kind: "dividend" as const }, { date: "2026-10-01", kind: "dividend" as const }];
+    expect(snapEvents(events, months, "2026-09-25").map((s) => s.time)).toEqual([bar("2026-07-01"), bar("2026-08-03")]);
+  });
+
+  it("is empty without bars", () => {
+    expect(snapEvents(priceEvents(actions, filings), [])).toEqual([]);
   });
 });

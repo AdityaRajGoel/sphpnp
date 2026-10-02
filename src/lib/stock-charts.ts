@@ -119,6 +119,62 @@ export function shareholdingSlices(shareholding: HolderSeries[]): { date: string
   return { date, slices };
 }
 
+export type HolderTrend = { categories: string[]; rows: Record<string, string | number>[] };
+
+/**
+ * The last `quarters` filings as one row per filing date and one key per holder
+ * category (% of equity), for a stacked bar per quarter. Categories run largest
+ * first by the latest filing, so the stack order stays put from bar to bar.
+ */
+export function shareholdingTrend(shareholding: HolderSeries[], quarters = 8): HolderTrend {
+  const dates = [...new Set(shareholding.flatMap((s) => s.points.map((p) => p.date)))].sort().slice(-quarters);
+  if (dates.length === 0) return { categories: [], rows: [] };
+  const latest = dates[dates.length - 1];
+  const pctAt = (s: HolderSeries, date: string) => s.points.find((p) => p.date === date)?.pct ?? 0;
+  const held = shareholding.filter((s) => dates.some((d) => pctAt(s, d) > 0));
+  const categories = [...held].sort((a, b) => pctAt(b, latest) - pctAt(a, latest)).map((s) => s.category);
+  const rows = dates.map((date) => Object.fromEntries([["date", date], ...held.map((s) => [s.category, pctAt(s, date)])]));
+  return { categories, rows };
+}
+
+export type DividendYear = { year: string; dps: number };
+type Action = { ex_date: string; action_type: string; value: number | null };
+
+/** Indian fiscal year of a YYYY-MM-DD date: April 2025 to March 2026 is FY26 (2026). */
+const fiscalYear = (date: string) => {
+  const [y, m] = date.split("-").map(Number);
+  return m >= 4 ? y + 1 : y;
+};
+
+/**
+ * Dividend per share by fiscal year and ex-date, oldest first, the last `span`
+ * years. A year that paid nothing is a zero bar, not a missing one. The fiscal
+ * year of the oldest stored action is left out, because the history can start
+ * part-way through it. Amounts are as paid, so a split or bonus inside the
+ * charted years comes back as `reset`: bars before it are per pre-split share.
+ */
+export function dividendsByYear(actions: readonly Action[], span = 10): { years: DividendYear[]; reset: { type: string; date: string } | null } {
+  const paid = new Map<number, number>();
+  for (const a of actions) {
+    if (a.action_type === "dividend" && a.value !== null && a.value > 0) {
+      const fy = fiscalYear(a.ex_date);
+      paid.set(fy, (paid.get(fy) ?? 0) + a.value);
+    }
+  }
+  if (paid.size === 0) return { years: [], reset: null };
+  const last = Math.max(...paid.keys());
+  const first = Math.max(Math.min(...actions.map((a) => fiscalYear(a.ex_date))) + 1, Math.min(...paid.keys()), last - span + 1);
+  if (first > last) return { years: [], reset: null };
+  const years = Array.from({ length: last - first + 1 }, (_, i) => first + i).map((fy) => ({
+    year: `FY${String(fy).slice(2)}`,
+    dps: Math.round((paid.get(fy) ?? 0) * 100) / 100,
+  }));
+  const reset = actions
+    .filter((a) => (a.action_type === "split" || a.action_type === "bonus") && a.ex_date >= `${first - 1}-04-01`)
+    .sort((a, b) => b.ex_date.localeCompare(a.ex_date))[0];
+  return { years, reset: reset ? { type: reset.action_type, date: reset.ex_date } : null };
+}
+
 /** Return on equity by fiscal year - IndianAPI's derived history, else Google's balance sheet row. */
 export function roeSeries(history: RoePoint[] | undefined, statements: Statements): RoeBar[] {
   if (history && history.length > 0) {
@@ -136,9 +192,28 @@ export function roeSeries(history: RoePoint[] | undefined, statements: Statement
 export function shortCrore(value: number): string {
   const abs = Math.abs(value);
   const sign = value < 0 ? "-" : "";
-  if (abs >= 100000) return `${sign}${(abs / 100000).toFixed(1)}L Cr`;
-  if (abs >= 1000) return `${sign}${(abs / 1000).toFixed(1)}K Cr`;
+  const one = (n: number) => n.toFixed(1).replace(/\.0$/, "");
+  if (abs >= 100000) return `${sign}${one(abs / 100000)}L Cr`;
+  if (abs >= 1000) return `${sign}${one(abs / 1000)}K Cr`;
   return `${sign}${abs.toFixed(0)} Cr`;
+}
+
+/**
+ * Axis ticks on round steps (1, 2, 2.5 or 5 x 10^n), from zero or below it
+ * to the top of the data, about `steps` intervals. Recharts' own picker lands
+ * on steps like 5.5K and 7, which read as arbitrary.
+ */
+export function niceTicks(values: readonly (number | null | undefined)[], steps = 4): number[] {
+  const nums = values.filter((v): v is number => typeof v === "number" && Number.isFinite(v));
+  const lo = Math.min(0, ...nums);
+  const hi = Math.max(0, ...nums);
+  if (hi === lo) return [0, 1];
+  const rough = (hi - lo) / steps;
+  const mag = 10 ** Math.floor(Math.log10(rough));
+  const step = [1, 2, 2.5, 5, 10].map((m) => m * mag).find((s) => s >= rough) ?? 10 * mag;
+  const start = Math.floor(lo / step);
+  const end = Math.ceil(hi / step);
+  return Array.from({ length: end - start + 1 }, (_, i) => Number(((start + i) * step).toPrecision(12)));
 }
 
 /**

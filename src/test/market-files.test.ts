@@ -3,7 +3,8 @@ import { readFileSync } from "node:fs";
 import {
   num, isoDate, csvRows, parseIndexCloseAll, parseParticipantOi, parseNseBhavdataFull, parseBseBhavcopy, parsePledges,
   parseDeals, parseNseIpos, priceRange, parseWeek52, parseMovers, parseConstituents, parseLotSizes, parseFoBan, parseAsm,
-  parseGsm, weekdaysBack, ddmmyyyy, yyyymmdd,
+  parseGsm, weekdaysBack, ddmmyyyy, yyyymmdd, parseVariations, parseWeek52Live, parseBandHitters, parseBreadth,
+  parseMarketStatus, parsePreOpen,
 } from "../../supabase/functions/_shared/market-files";
 
 /* NSE and BSE files and market JSON, captured 2026-09-11 (src/test/fixtures/nse-market). */
@@ -143,5 +144,59 @@ describe("other NSE lists", () => {
     expect(asm.some((a) => a.flag === "asm_long" && a.stage === "Stage I")).toBe(true);
     expect(asm.some((a) => a.flag === "asm_short")).toBe(true);
     expect(parseGsm(json("gsm.json"))[0]).toMatchObject({ flag: "gsm", symbol: "AGSTRA" });
+  });
+});
+
+/* NSE live-analysis JSON, captured from the VPS after the close on 2026-09-28. */
+describe("live market snapshots", () => {
+  const close = "2026-09-28T10:30:00.000Z"; // 16:00 IST
+
+  it("reads gainers and losers, turnover given in lakh", () => {
+    const gainers = parseVariations(json("movers_gainers.json"));
+    expect(gainers.as_of).toBe(close);
+    expect(gainers.movers[0]).toMatchObject({ symbol: "RSYSTEMS", price: 282.74, change_pct: 20, volume: 61311130 });
+    expect(gainers.movers[0].value_cr).toBeCloseTo(1633.94, 2);
+    expect(parseVariations(json("movers_losers.json")).movers[0]).toMatchObject({ symbol: "KOTYARK", change_pct: -15.06 });
+  });
+
+  it("reads new 52-week highs from both price buckets", () => {
+    const highs = parseWeek52Live(json("week52_high_live.json"));
+    expect(highs.as_of).toBe("2026-09-28T10:30:28.000Z");
+    expect(highs.movers.map((m) => m.symbol)).toEqual(["3BBLACKBIO", "AARNAV", "IMPEXFERRO"]);
+    expect(highs.movers[0]).toMatchObject({ name: "3B Blackbio Dx Limited", price: 1580.2 });
+  });
+
+  it("reads circuit hitters, volume in lakh shares and turnover in crore", () => {
+    const upper = parseBandHitters(json("band_hitters.json"), "upper");
+    expect(upper.as_of).toBe(close);
+    expect(upper.movers[0]).toMatchObject({ symbol: "RSYSTEMS", price: 282.74, change_pct: 20, value_cr: 1633.9416145 });
+    expect(upper.movers[0].volume).toBeCloseTo(61311130, 0);
+    expect(parseBandHitters(json("band_hitters.json"), "lower").movers[0]).toMatchObject({ symbol: "LALITHAA", change_pct: -1.91 });
+  });
+
+  it("reads breadth across every traded stock", () => {
+    expect(parseBreadth(json("stocks_traded.json"))).toEqual({ as_of: close, advances: 869, declines: 2716, unchanged: 91, total: 3676 });
+  });
+
+  it("reads GIFT Nifty and the Nifty's state", () => {
+    expect(parseMarketStatus(json("market_status.json"))).toEqual({
+      gift_nifty: { last: 22827.5, change: 3, change_pct: 0.01, expiry: "2026-09-29", as_of: "2026-09-28T11:43:00.000Z" },
+      nifty: { last: 22780.25, change: -360.25, change_pct: -1.56, status: "Closed", as_of: "2026-09-28T10:00:00.000Z" },
+    });
+  });
+
+  it("reads the pre-open session, turnover given in rupees", () => {
+    const pre = parsePreOpen(json("pre_open_fo.json"));
+    expect(pre).toMatchObject({ as_of: "2026-09-28T03:38:39.000Z", advances: 38, declines: 139, unchanged: 33 });
+    expect(pre.movers[0]).toMatchObject({ symbol: "BLUESTARCO", price: 1585.7, change_pct: 1.32, volume: 9477 });
+    expect(pre.movers[0].value_cr).toBeCloseTo(1.5028, 3);
+  });
+
+  it("returns empty lists, not errors, when NSE sends nothing", () => {
+    expect(parseVariations({}).movers).toEqual([]);
+    expect(parseBandHitters({}, "upper").movers).toEqual([]);
+    expect(parseBreadth({})).toBeNull();
+    expect(parseMarketStatus({})).toEqual({ gift_nifty: null, nifty: null });
+    expect(parsePreOpen({ data: [], msg: "" }).movers).toEqual([]);
   });
 });

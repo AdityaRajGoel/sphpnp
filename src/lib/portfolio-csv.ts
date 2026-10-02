@@ -60,3 +60,16 @@ export function parseHoldings(text: string): { holdings: Holding[]; error: strin
   const holdings = [...bySymbol.values()].slice(0, MAX_HOLDINGS);
   return { holdings, error: holdings.length ? null : "No holdings with a quantity were found in the file." };
 }
+
+/** Where /portfolio keeps holdings: this browser only, read by the tax-loss harvesting calculator too. */
+export const PORTFOLIO_STORAGE_KEY = "panipat_portfolio";
+
+export function loadSavedHoldings(): Holding[] {
+  try {
+    const v: unknown = JSON.parse(localStorage.getItem(PORTFOLIO_STORAGE_KEY) ?? "[]");
+    if (!Array.isArray(v)) return [];
+    return v.filter((h): h is Holding => !!h && typeof h.symbol === "string" && typeof h.qty === "number" && h.qty > 0).slice(0, MAX_HOLDINGS);
+  } catch {
+    return [];
+  }
+}

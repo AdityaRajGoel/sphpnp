@@ -445,62 +445,7 @@ const StockScreenerPage = () => {
           </Button>
         </PageHeader>
 
-        {/* Exchange-style market snapshot */}
-        <MarketSnapshot />
-
-        {/* Exchange-homepage-style movers board */}
-        {!loading && stocks.length > 0 && (
-          <MarketMovers stocks={stocks} onPick={addToChart} />
-        )}
-
-        {/* EOD smart-money boards: bulk/block deals + circuit hitters */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 empty:hidden">
-          <BulkBlockDeals />
-          <CircuitWatch rows={bhavRows} asOf={bhavAsOf} loading={bhavLoading} />
-        </div>
-
-        {/* Global Stock Search */}
-        <GlobalStockSearch className="mb-6" />
-
-        {/* Thematic Baskets */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-heading font-bold flex items-center gap-2">
-              <LayoutGrid className="w-5 h-5 text-brand-orange" />
-              Thematic Baskets
-            </h2>
-            {activeBasket && (
-              <Button variant="ghost" size="sm" onClick={() => setActiveBasket(null)} className="h-8 text-muted-foreground hover:text-foreground">
-                Clear Selection
-              </Button>
-            )}
-          </div>
-          <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
-            {THEMATIC_BASKETS.map(b => {
-              const Icon = b.icon;
-              const isActive = activeBasket === b.id;
-              return (
-                <Card 
-                  key={b.id} 
-                  className={`p-4 flex flex-col cursor-pointer transition-transform ease-out active:scale-[0.97] ${isActive ? "ring-2 ring-brand-orange bg-brand-orange/5 border-brand-orange/50" : "hover:border-primary/50"}`}
-                  onClick={() => setActiveBasket(isActive ? null : b.id)}
-                  aria-pressed={isActive}
-                  {...pressable(() => setActiveBasket(isActive ? null : b.id))}
-                >
-                  <Icon className={`w-6 h-6 mb-3 ${isActive ? "text-brand-orange" : "text-muted-foreground"}`} />
-                  <h3 className="font-semibold text-sm mb-1 text-foreground">{b.name}</h3>
-                  <p className="text-xs text-muted-foreground line-clamp-2">{b.desc}</p>
-                </Card>
-              );
-            })}
-          </div>
-        </div>
-
-        <ScannerLibrary active={activeScans} counts={counts} onToggle={toggleScan} onClear={() => setActiveScans([])} />
-
-        <CustomFilterBuilder rules={rules} onChange={changeRules} matches={ruleMatches} query={query} onQueryChange={changeQuery} queryMatches={queryMatches} />
-
-        {/* Filters */}
+        {/* The screener itself comes first, right under the header: filters, then the results. */}
         <Card className="p-4 mb-6">
           <div className="flex items-center gap-2 mb-3 text-sm font-medium text-muted-foreground">
             <Filter className="w-4 h-4" /> Filters
@@ -537,8 +482,6 @@ const StockScreenerPage = () => {
             </Select>
           </div>
         </Card>
-
-        {/* Heatmap (Moved inside View Toggles) */}
 
         {error && (
           <Card className="p-4 mb-4 border-destructive/50 bg-destructive/5">
@@ -611,7 +554,7 @@ const StockScreenerPage = () => {
                   rows={filtered}
                   metricRows={metricRows}
                   columns={customColumns}
-                  note={rules.length > 0 ? "Columns follow the metrics in your custom screen." : "Add a rule above to screen on any metric; its column appears here."}
+                  note={rules.length > 0 ? "Columns follow the metrics in your custom screen." : "Add a rule below to screen on any metric; its column appears here."}
                   onOpen={(symbol) => navigate(`/stock/${encodeURIComponent(symbol)}`)}
                 />
               ) : viewMode === "risk" ? (
@@ -621,12 +564,14 @@ const StockScreenerPage = () => {
                   <StockHeatmap stocks={filtered} maxItems={150} />
                 </motion.div>
               ) : (
-              <Card className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead className="sticky top-0 z-10 bg-card/95 backdrop-blur-sm">
+              <Card className="max-h-[75vh] overflow-auto">
+                {/* The card scrolls both ways, so the header row sticks inside it;
+                    with overflow-x only it clipped the sticky header and never stuck. */}
+                <table className="w-full text-sm tabular-nums">
+                  <thead className="sticky top-0 z-10 bg-card">
                     <tr className="border-b border-border bg-muted/50">
                       {([["symbol", "Stock"], ["price", "Price"], ["change_pct", "Change"], ["market_cap", "Market Cap"], ["pe", "P/E"]] as [SortKey, string][]).map(([key, label]) => (
-                        <th key={key} className="text-left px-4 py-3 font-medium text-muted-foreground">
+                        <th key={key} className={`${key === "symbol" ? "text-left" : "text-right"} whitespace-nowrap px-4 py-3 font-medium text-muted-foreground`}>
                           <button type="button" onClick={() => toggleSort(key)} className="inline-flex items-center gap-1 rounded-sm transition-colors hover:text-foreground">
                             {label} <ArrowUpDown className="w-3 h-3" aria-hidden />
                           </button>
@@ -634,7 +579,7 @@ const StockScreenerPage = () => {
                       ))}
                       <th className="text-left px-4 py-3 font-medium text-muted-foreground">52W Range</th>
                       <th className="text-right px-4 py-3 font-medium text-muted-foreground">Volume</th>
-                      <th className="text-right px-4 py-3 font-medium text-muted-foreground" title="Delivery % (EOD)">Deliv %</th>
+                      <th className="whitespace-nowrap text-right px-4 py-3 font-medium text-muted-foreground" title="Delivery % (EOD)">Deliv %</th>
                       <th className="text-right px-4 py-3 font-medium text-muted-foreground">Action</th>
                     </tr>
                   </thead>
@@ -664,34 +609,33 @@ const StockScreenerPage = () => {
                             </Link>
                             </div>
                           </td>
-                          <td className="px-4 py-3 font-mono font-medium text-foreground">₹{s.price.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                          <td className="px-4 py-3">
+                          <td className="px-4 py-3 text-right font-medium text-foreground">₹{s.price.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                          <td className="px-4 py-3 text-right">
                             <span className={`inline-flex items-center gap-1 font-medium ${s.change_pct >= 0 ? "text-secondary" : "text-destructive"}`}>
                               {s.change_pct >= 0 ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
                               {s.change_pct >= 0 ? "+" : ""}{s.change_pct.toFixed(2)}%
                             </span>
                           </td>
-                          <td className="px-4 py-3 text-foreground">{formatMarketCap(s.market_cap)}</td>
-                          <td className="px-4 py-3">
-                            {s.pe > 0 ? (
-                              <Badge variant={s.pe < 20 ? "default" : s.pe <= 40 ? "secondary" : "outline"} className="text-xs">{s.pe.toFixed(1)}</Badge>
-                            ) : <span className="text-muted-foreground text-xs">-</span>}
+                          <td className="px-4 py-3 text-right text-foreground">{formatMarketCap(s.market_cap)}</td>
+                          {/* Plain figure: badge colours by P/E band read as cheap / expensive. */}
+                          <td className="px-4 py-3 text-right">
+                            {s.pe > 0 ? s.pe.toFixed(1) : <span className="text-muted-foreground text-xs">-</span>}
                           </td>
                           <td className="px-4 py-3 min-w-[180px]">
                             {s.high_52 > 0 ? (
                               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                                 <span>₹{s.low_52.toLocaleString("en-IN")}</span>
                                 <div className="flex-1 h-1.5 bg-muted rounded-full relative">
-                                  <div className="absolute left-0 top-0 h-full bg-gradient-to-r from-destructive to-secondary rounded-full" style={{ width: `${Math.min(100, Math.max(0, pct52))}%` }} />
+                                  <div className="absolute left-0 top-0 h-full bg-muted-foreground/50 rounded-full" style={{ width: `${Math.min(100, Math.max(0, pct52))}%` }} />
                                 </div>
                                 <span>₹{s.high_52.toLocaleString("en-IN")}</span>
                               </div>
                             ) : <span className="text-muted-foreground text-xs">-</span>}
                           </td>
-                          <td className="px-4 py-3 text-right font-mono text-muted-foreground">
+                          <td className="px-4 py-3 text-right text-muted-foreground">
                             {s.volume > 0 ? `${(s.volume / 1000000).toFixed(1)}M` : "-"}
                           </td>
-                          <td className="px-4 py-3 text-right font-mono">
+                          <td className="px-4 py-3 text-right">
                             {deliveryMap[s.symbol] != null
                               ? <span className={deliveryMap[s.symbol] >= 60 ? "text-secondary font-semibold" : "text-muted-foreground"}>{deliveryMap[s.symbol].toFixed(1)}%</span>
                               : <span className="text-muted-foreground text-xs">-</span>}
@@ -743,6 +687,61 @@ const StockScreenerPage = () => {
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* Screening tools that feed the table above: thematic baskets, scanners, custom rules. */}
+        <div className="mt-10 mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-heading font-bold flex items-center gap-2">
+              <LayoutGrid className="w-5 h-5 text-brand-orange" />
+              Thematic Baskets
+            </h2>
+            {activeBasket && (
+              <Button variant="ghost" size="sm" onClick={() => setActiveBasket(null)} className="h-8 text-muted-foreground hover:text-foreground">
+                Clear Selection
+              </Button>
+            )}
+          </div>
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+            {THEMATIC_BASKETS.map(b => {
+              const Icon = b.icon;
+              const isActive = activeBasket === b.id;
+              return (
+                <Card 
+                  key={b.id} 
+                  className={`p-4 flex flex-col cursor-pointer transition-transform ease-out active:scale-[0.97] ${isActive ? "ring-2 ring-brand-orange bg-brand-orange/5 border-brand-orange/50" : "hover:border-primary/50"}`}
+                  onClick={() => setActiveBasket(isActive ? null : b.id)}
+                  aria-pressed={isActive}
+                  {...pressable(() => setActiveBasket(isActive ? null : b.id))}
+                >
+                  <Icon className={`w-6 h-6 mb-3 ${isActive ? "text-brand-orange" : "text-muted-foreground"}`} />
+                  <h3 className="font-semibold text-sm mb-1 text-foreground">{b.name}</h3>
+                  <p className="text-xs text-muted-foreground line-clamp-2">{b.desc}</p>
+                </Card>
+              );
+            })}
+          </div>
+        </div>
+
+        <ScannerLibrary active={activeScans} counts={counts} onToggle={toggleScan} onClear={() => setActiveScans([])} />
+
+        <CustomFilterBuilder rules={rules} onChange={changeRules} matches={ruleMatches} query={query} onQueryChange={changeQuery} queryMatches={queryMatches} />
+
+        {/* Market context, after the screener: any-stock search, snapshot, movers, deals, circuits. */}
+        <GlobalStockSearch className="mb-6" />
+
+        {/* Exchange-style market snapshot */}
+        <MarketSnapshot />
+
+        {/* Exchange-homepage-style movers board */}
+        {!loading && stocks.length > 0 && (
+          <MarketMovers stocks={stocks} onPick={addToChart} />
+        )}
+
+        {/* EOD smart-money boards: bulk/block deals + circuit hitters */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 empty:hidden">
+          <BulkBlockDeals />
+          <CircuitWatch rows={bhavRows} asOf={bhavAsOf} loading={bhavLoading} />
+        </div>
 
         {/* Lazy: recharts only downloads when an analysis is opened */}
         {analyzingStock && (

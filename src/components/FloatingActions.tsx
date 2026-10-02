@@ -105,8 +105,9 @@ const FloatingActions = () => {
     },
   ];
 
+  // Steps aside while the mobile menu is open (it sets <html data-menu-open>).
   return (
-    <div className="fixed bottom-[calc(6rem+var(--consent-dock-height,0px))] md:bottom-[calc(1.5rem+var(--consent-dock-height,0px))] right-6 z-50 transition-[bottom] duration-base flex flex-col items-end gap-3 pb-[env(safe-area-inset-bottom)]">
+    <div className="[html[data-menu-open]_&]:hidden fixed bottom-[calc(6rem+var(--consent-dock-height,0px))] md:bottom-[calc(1.5rem+var(--consent-dock-height,0px))] right-6 z-50 transition-[bottom] duration-base flex flex-col items-end gap-3 pb-[env(safe-area-inset-bottom)]">
       {/* Back to top button */}
       <AnimatePresence>
         {showBackToTop && !expanded && (

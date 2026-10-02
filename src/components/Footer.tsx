@@ -2,7 +2,7 @@ import { useState, ReactNode } from "react";
 import { useT } from "@/i18n/LanguageContext";
 import { ExternalLink, Instagram, Phone, Mail, Facebook, ArrowUp, Twitter, Github, Shield, AlertCircle, ChevronDown, ArrowRight, BadgeCheck } from "lucide-react";
 import { motion } from "motion/react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import logo80 from "@/assets/logo-80.webp";
 import logo160 from "@/assets/logo-160.webp";
 import { TRADING_APPS } from "@/lib/trading-apps";
@@ -28,12 +28,15 @@ const investLinks: FooterLink[] = [
 const toolLinks: FooterLink[] = [
   { label: "Market Pulse", href: "/market-pulse" },
   { label: "Indices", href: "/indices" },
+  { label: "Commodities", href: "/commodities" },
+  { label: "Global Markets", href: "/global-markets" },
   { label: "Stock Screener", href: "/screener" },
   { label: "F&O Dashboard", href: "/fno" },
   { label: "52-Week Tracker", href: "/52-week-tracker" },
   { label: "Brokerage Calculator", href: "/brokerage-calculator" },
   { label: "Margin Calculator", href: "/margin-calculator" },
   { label: "SIP Calculator", href: "/sip-calculator" },
+  { label: "All Calculators", href: "/calculators" },
   { label: "Holiday Calendar", href: "/holidays" },
   { label: "Reports & Downloads", href: "/reports" },
 ];
@@ -66,9 +69,6 @@ const LEGAL_LINKS: FooterLink[] = [
   { label: "Cookie Settings", href: "#cookies" },
   { label: "Terms of Use", href: "/terms" },
   { label: "Disclaimer", href: "/disclaimer" },
-  { label: "Investor Corner", href: "/investor-corner" },
-  { label: "Sitemap", href: "/sitemap.xml", external: true },
-  { label: "Investor Charter", href: "https://www.parasramindia.com/investor-charter/", external: true },
 ];
 
 const regBadges = [
@@ -102,7 +102,7 @@ const FooterColumn = ({
     {/* Phones collapse the column, so the heading is a real button there; md+
         always shows it open and a button would be a tab stop that does nothing. */}
     <h4 className="font-heading font-semibold mb-4">
-      <button type="button" onClick={onToggle} aria-expanded={open} className="flex w-full items-center justify-between text-left md:hidden">
+      <button type="button" onClick={onToggle} aria-expanded={open} className="flex min-h-11 w-full items-center justify-between text-left md:hidden">
         {title}
         <ChevronDown className={`w-4 h-4 transition-transform ${open ? "rotate-180" : ""}`} aria-hidden />
       </button>
@@ -142,6 +142,9 @@ const FooterLinks = ({ links }: { links: FooterLink[] }) => (
 
 const Footer = () => {
   const { t } = useT();
+  // The band links to /open-account; on that page and /contact it points back at itself.
+  const { pathname } = useLocation();
+  const showCtaBand = pathname !== "/open-account" && pathname !== "/contact";
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({});
   const toggleSection = (section: string) =>
     setOpenSections((prev) => ({ ...prev, [section]: !prev[section] }));
@@ -155,6 +158,7 @@ const Footer = () => {
       <div className="h-0.5 bg-secondary" aria-hidden />
 
       {/* CTA band - the footer's conversion anchor */}
+      {showCtaBand && (
       <div className="border-b border-primary-foreground/10">
         <div className="container mx-auto px-4 py-6 md:py-8">
           <motion.div
@@ -186,6 +190,7 @@ const Footer = () => {
           </motion.div>
         </div>
       </div>
+      )}
 
       <div className="container mx-auto px-4 py-8 md:py-12">
         <div className="mb-8 grid gap-6 md:grid-cols-2 lg:grid-cols-6 md:gap-8">
@@ -331,7 +336,7 @@ const Footer = () => {
           {regBadges.map((badge) => (
             <span
               key={badge}
-              className="inline-flex items-center gap-1.5 text-[11px] font-medium text-primary-foreground/60 bg-primary-foreground/5 border border-primary-foreground/10 rounded-full px-3 py-1.5 hover:border-secondary/40 hover:text-primary-foreground/90 transition-colors"
+              className="inline-flex items-center gap-1.5 text-xs font-medium text-primary-foreground/85 bg-primary-foreground/5 border border-primary-foreground/10 rounded-full px-3 py-1.5 hover:border-secondary/40 hover:text-primary-foreground/90 transition-colors"
             >
               <BadgeCheck className="w-3 h-3 text-secondary" />
               {badge}
@@ -367,7 +372,8 @@ const Footer = () => {
                   ))}
                 </ul>
               </nav>
-              <p className="text-primary-foreground/40">
+              {/* Compliance text must be readable: at /40 it measured 3.82:1. */}
+              <p className="text-sm text-primary-foreground/75">
                 Investments in securities market are subject to market risks. Read all related documents carefully before investing.
               </p>
               <p className="mt-2">

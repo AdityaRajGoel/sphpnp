@@ -94,7 +94,8 @@ export const DOWNLOAD_SECTIONS: DownloadSection[] = [
     title: "Trading software",
     intro: "Desktop setups and the files they need. The apps themselves, with guides, are on the Apps page.",
     items: [
-      { title: "Parasram Money Dealer (desktop, ClickOnce)", date: "2026", href: "https://money.parasramindia.com:8088/CTCL/ClientStation.application", kind: "App" },
+      // The client's terminal. ClientStation (CTCL) is the dealer build, not for clients.
+      { title: "MoneyMaker Solo for clients (Windows desktop, ClickOnce)", date: "2026", href: "https://money.parasramindia.com:8088/IBT/MoneyMakerSolo.application", kind: "App" },
       { title: "NEAT contract files", date: "2026", href: `${PI}/downloads/contract.zip`, kind: "ZIP" },
       { title: "XTS update", date: "2026", href: `${PI}/downloads/XTSTWSConfig.exe`, kind: "EXE" },
       { title: ".NET Framework 4.7.2", date: "2025", href: `${PI}/downloads/Dotnet-framework-472.zip`, kind: "ZIP" },

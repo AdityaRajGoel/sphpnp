@@ -23,7 +23,7 @@ const row = (f: Partial<FundamentalsSummary> = {}, quote: Partial<MetricRow["quo
 
 const passes = (q: string, r: MetricRow) => {
   const p = parseQuery(q);
-  if (!p.ok) throw new Error(p.error);
+  if (p.ok === false) throw new Error(p.error);
   return evaluateQuery(p.cond, r);
 };
 
@@ -37,7 +37,7 @@ describe("tokenize", () => {
   it("names an unknown metric in the error", () => {
     const t = tokenize("Frobnication > 3");
     expect(t.ok).toBe(false);
-    if (!t.ok) expect(t.error).toMatch(/Frobnication/);
+    if (t.ok === false) expect(t.error).toMatch(/Frobnication/);
   });
 });
 
@@ -66,7 +66,7 @@ describe("parseQuery and evaluateQuery", () => {
     expect(missingOp.ok).toBe(false);
     const dangling = parseQuery("ROCE > 20 AND");
     expect(dangling.ok).toBe(false);
-    if (!dangling.ok) expect(dangling.error).toMatch(/ends too early/);
+    if (dangling.ok === false) expect(dangling.error).toMatch(/ends too early/);
     expect(parseQuery("(ROCE > 20").ok).toBe(false);
   });
 

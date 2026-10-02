@@ -3,11 +3,13 @@ import { motion } from "motion/react";
 import { LineChart as LineChartIcon, AlertCircle, CandlestickChart } from "lucide-react";
 import PriceChart from "@/components/charts/PriceChart";
 import { Skeleton } from "@/components/ui/skeleton";
-import { zipSeries, type ApiChartPoint } from "@/lib/chart-data";
+import { snapEvents, toCandles, zipSeries, type ApiChartPoint, type PriceEvent } from "@/lib/chart-data";
 import { periodReturnPct, rsi, rsiZone } from "@/lib/technicals";
 import { supabase } from "@/integrations/supabase/client";
 import { revealItem } from "@/lib/motion";
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { segmentItem, segmentTrack } from "@/components/ui/segmented";
 
 /**
  * Price history and indicators for one scrip.
@@ -39,7 +41,10 @@ type Point = ApiChartPoint;
 // advanced view downloads it.
 const AdvancedChart = lazy(() => import("@/components/charts/AdvancedChart"));
 
-const StockPriceChart = ({ symbol, name }: { symbol: string; name: string }) => {
+const NO_EVENTS: readonly PriceEvent[] = [];
+
+/** `events` must keep its identity between renders (useMemo it): a new array redraws the chart. */
+const StockPriceChart = ({ symbol, name, events = NO_EVENTS }: { symbol: string; name: string; events?: readonly PriceEvent[] }) => {
   const [range, setRange] = useState<Range>(RANGES[1]);
   const [advanced, setAdvanced] = useState(false);
   const [points, setPoints] = useState<Point[] | null>(null);
@@ -75,6 +80,14 @@ const StockPriceChart = ({ symbol, name }: { symbol: string; name: string }) => 
   }, [symbol, range]);
 
   const closes = useMemo(() => (points ?? []).map((p) => p.c), [points]);
+  // Built once per fetch: the chart redraws whenever this array changes identity.
+  const chartData = useMemo(
+    () => (points ? zipSeries(points.map((p) => p.c), points.map((p) => p.v), points.map((p) => p.t)) : []),
+    [points],
+  );
+  const markers = useMemo(() => snapEvents(events, toCandles(chartData).map((k) => k.time)), [events, chartData]);
+  const hasResults = markers.some((m) => m.event.kind === "results");
+  const hasDividends = markers.some((m) => m.event.kind === "dividend");
 
   // RSI needs 15 closes for its 14-period default; below that it returns null
   // and the badge stays away rather than showing a figure built from too little.
@@ -88,43 +101,30 @@ const StockPriceChart = ({ symbol, name }: { symbol: string; name: string }) => 
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <LineChartIcon className="h-4 w-4 text-secondary" aria-hidden="true" />
-            <h2 id={`chart-${symbol}`} className="font-heading text-base font-bold">
+            <h2 id={`chart-${symbol}`} className="font-heading text-lg font-bold">
               Price history
             </h2>
           </div>
 
           <div className="flex items-center gap-2 min-w-0">
-          <button
+          <Button
             type="button"
+            variant="outline"
+            size="sm"
             aria-pressed={advanced}
             onClick={() => setAdvanced((a) => !a)}
             title="Candles with 28 indicators and drawing tools"
-            className={`shrink-0 inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors duration-fast ${
-              advanced ? "border-secondary/50 bg-secondary/10 text-secondary" : "border-border text-muted-foreground hover:text-foreground"
+            className={`min-h-11 shrink-0 gap-1.5 text-xs font-semibold md:min-h-0 ${
+              advanced ? "border-secondary/60 bg-secondary/10 text-secondary hover:bg-secondary/15 hover:text-secondary" : "text-muted-foreground"
             }`}
           >
-            <CandlestickChart className="h-3.5 w-3.5" aria-hidden="true" /> Advanced
-          </button>
+            <CandlestickChart aria-hidden="true" /> Advanced
+          </Button>
           {/* Scrolls rather than wraps: four labels fit at 375px today, but a
               fifth range must push sideways, not reflow the header. */}
-          <div
-            role="tablist"
-            aria-label="Chart range"
-            className="-mx-1 flex gap-1 overflow-x-auto px-1"
-          >
+          <div role="group" aria-label="Chart range" className={`${segmentTrack} max-w-full overflow-x-auto`}>
             {RANGES.map((r) => (
-              <button
-                key={r.label}
-                role="tab"
-                type="button"
-                aria-selected={r.label === range.label}
-                onClick={() => setRange(r)}
-                className={`shrink-0 rounded-lg px-3 py-1.5 text-xs font-semibold transition-[background-color,color] duration-fast ${
-                  r.label === range.label
-                    ? "bg-secondary text-secondary-foreground"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                }`}
-              >
+              <button key={r.label} type="button" aria-pressed={r.label === range.label} onClick={() => setRange(r)} className={segmentItem(r.label === range.label)}>
                 {r.label}
               </button>
             ))}
@@ -170,7 +170,12 @@ const StockPriceChart = ({ symbol, name }: { symbol: string; name: string }) => 
                   </span>
                 </span>
               )}
-              <span className="text-muted-foreground">SMA 20 · 50 overlaid</span>
+              {/* Swatches in PriceChart's SMA_COLOURS order. */}
+              <span className="inline-flex items-center gap-1.5 text-muted-foreground"><span aria-hidden="true" className="h-0.5 w-3 rounded bg-[hsl(var(--chart-4))]" />SMA 20</span>
+              <span className="inline-flex items-center gap-1.5 text-muted-foreground"><span aria-hidden="true" className="w-3 border-t-2 border-dashed border-muted-foreground" />SMA 50</span>
+              {/* The advanced view is a different chart and draws no markers. */}
+              {!advanced && hasResults && <span className="text-muted-foreground"><span className="font-semibold text-[hsl(var(--chart-3))]">R</span> results filed</span>}
+              {!advanced && hasDividends && <span className="text-muted-foreground"><span className="font-semibold text-[hsl(var(--chart-2))]">D</span> ex-dividend</span>}
             </div>
 
             {advanced ? (
@@ -182,11 +187,8 @@ const StockPriceChart = ({ symbol, name }: { symbol: string; name: string }) => 
             ) : (
             <div className="mt-2">
               <PriceChart
-                data={zipSeries(
-                  points.map((p) => p.c),
-                  points.map((p) => p.v),
-                  points.map((p) => p.t),
-                )}
+                data={chartData}
+                markers={markers}
                 mode="area"
                 height={260}
                 watermark={symbol}

@@ -1,0 +1,28 @@
+{
+ "timestamp": "28-Sep-2026 16:00:00",
+ "total": {
+  "count": {
+   "Advances": 869,
+   "Unchange": 91,
+   "Declines": 2716,
+   "Total": 3676
+  },
+  "data": [
+   {
+    "identifier": "CLEANMAXEQN",
+    "symbol": "CLEANMAX",
+    "series": "EQ",
+    "marketType": "N",
+    "pchange": -2.04,
+    "change": -28.4,
+    "basePrice": 0,
+    "previousClose": 1393.4,
+    "lastPrice": 1365,
+    "totalTradedVolume": 152.72105,
+    "issuedCap": 117549370,
+    "totalTradedValue": 2047.9587362900002,
+    "totalMarketCap": 16045.489005
+   }
+  ]
+ }
+}

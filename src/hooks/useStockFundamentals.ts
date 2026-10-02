@@ -87,6 +87,8 @@ export type StockFundamentalsState = {
   income: IncomeRow[];
   actions: CorporateAction[];
   filing: FilingMeta | null;
+  /** When each results filing reached the exchange, newest first; for the price-chart markers. */
+  resultDates: string[];
   derived: DerivedRow[];
   /** False when the symbol is tracked but the cursor has not reached it yet. */
   synced: boolean;
@@ -99,7 +101,7 @@ const table = (name: string) =>
 
 const EMPTY: StockFundamentalsState = {
   loading: true, notFound: false, error: null, header: null, basis: null,
-  bothAvailable: false, income: [], actions: [], filing: null, derived: [],
+  bothAvailable: false, income: [], actions: [], filing: null, resultDates: [], derived: [],
   synced: false,
 };
 
@@ -130,7 +132,7 @@ export function useStockFundamentals(symbol: string | undefined): StockFundament
         }
 
         // Independent of each other - fetched in parallel, no waterfall.
-        const [incomeRes, actionsRes, filingRes, derivedRes] = await Promise.all([
+        const [incomeRes, actionsRes, filingRes, resultsRes, derivedRes] = await Promise.all([
           table("fundamentals_income").select("*").eq("symbol", upper),
           table("fundamentals_corporate_actions")
             .select("ex_date,record_date,action_type,value,description")
@@ -143,6 +145,13 @@ export function useStockFundamentals(symbol: string | undefined): StockFundament
             .order("to_date", { ascending: false })
             .limit(1)
             .maybeSingle(),
+          // Forty rows is five years of quarters on both bases, the chart's longest range.
+          table("fundamentals_filings")
+            .select("filing_date")
+            .eq("symbol", upper)
+            .not("filing_date", "is", null)
+            .order("filing_date", { ascending: false })
+            .limit(40),
           // Twelve periods is three years of quarters - enough for the panel to
           // show a trend without paying for rows it will never render.
           table("fundamentals_derived")
@@ -156,7 +165,7 @@ export function useStockFundamentals(symbol: string | undefined): StockFundament
         if (cancelled) return;
 
         const firstError =
-          incomeRes.error || actionsRes.error || filingRes.error || derivedRes.error;
+          incomeRes.error || actionsRes.error || filingRes.error || resultsRes.error || derivedRes.error;
         if (firstError) throw new Error(firstError.message);
 
         const rows = (incomeRes.data ?? []) as unknown as IncomeRow[];
@@ -189,6 +198,7 @@ export function useStockFundamentals(symbol: string | undefined): StockFundament
           income: picked.rows,
           actions: (actionsRes.data ?? []) as unknown as CorporateAction[],
           filing: (filingRes.data as unknown as FilingMeta) ?? null,
+          resultDates: ((resultsRes.data ?? []) as unknown as { filing_date: string }[]).map((r) => r.filing_date),
           derived: (derivedRes.data ?? []) as unknown as DerivedRow[],
           // Tracked but unreached by the cursor is an ordinary state, not a fault.
           synced: rows.length > 0,

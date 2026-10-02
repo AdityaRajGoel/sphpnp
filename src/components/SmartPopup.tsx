@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button';
 import { useLocation, Link } from 'react-router-dom';
 import { BRANCH_EMAILS, PRIMARY_EMAIL } from "@/lib/contact";
 
+const MARKET_PAGE = /^\/(market-pulse|screener|fno|ipo|ipo-pipeline|indices|sectors|52-week-tracker|compare|watchlist|portfolio|stock)(\/|$)/;
+
 const SmartPopup = () => {
   const { timeOnPage, scrollDepth } = useEngagement();
   const [isVisible, setIsVisible] = useState(false);
@@ -77,6 +79,8 @@ const SmartPopup = () => {
   if (['/', '/admin', '/auth', '/reset-password', '/banner-manager', '/open-account'].includes(location.pathname)) {
     return null;
   }
+  // Nor over data a reader is working through: on market pages it covered tables mid-read.
+  if (MARKET_PAGE.test(location.pathname)) return null;
 
   return (
     <AnimatePresence>

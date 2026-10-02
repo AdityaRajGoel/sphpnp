@@ -220,7 +220,8 @@ const FnODashboardPage = () => {
   const chain = data?.chain || [];
   const spot = data?.spot || 0;
   const maxPain = data?.maxPain || 0;
-  const pcr = data?.pcr || 0;
+  // Null, not 0, when the feed has no figure: a zero would print as a real ratio.
+  const pcr = Number.isFinite(data?.pcr) && data!.pcr > 0 ? data!.pcr : null;
   const totalCallOI = data?.totalCallOI || 0;
   const totalPutOI = data?.totalPutOI || 0;
   const maxCallOI = chain.length > 0 ? Math.max(...chain.map(r => r.callOI)) : 1;
@@ -262,7 +263,7 @@ const FnODashboardPage = () => {
           ]
         }}
         faqItems={[
-          { question: "What is Put-Call Ratio (PCR) in F&O?", answer: "PCR is the ratio of total put open interest to total call open interest. A PCR above 1 indicates more put buying (bearish sentiment), while below 0.8 suggests more call buying (bullish sentiment)." },
+          { question: "What is Put-Call Ratio (PCR) in F&O?", answer: "PCR is total put open interest divided by total call open interest. Above 1 means more puts are open than calls. Traders read it both ways: some see a high PCR as hedging against a fall, others as a contrarian sign, so this page shows the number without a label." },
           { question: "What is Max Pain in options trading?", answer: "Max Pain is the strike price at which the maximum number of options (both calls and puts) expire worthless. It is the price at which option sellers gain the most, and is often used as a price target indicator." },
           { question: "How often is the F&O data updated?", answer: "The options chain data refreshes automatically every 30 seconds. You can also manually refresh using the Refresh button." },
           { question: "Which indices are available in the F&O dashboard?", answer: "Currently NIFTY 50, BANK NIFTY, and FIN NIFTY are available. You can switch between them using the dropdown selector." },
@@ -344,8 +345,9 @@ const FnODashboardPage = () => {
                   <Card className="p-4 text-center">
                     <Activity className="w-5 h-5 mx-auto mb-1 text-muted-foreground" />
                     <p className="text-xs text-muted-foreground">Put-Call Ratio</p>
-                    <p className={`text-2xl font-bold font-mono ${pcr > 1 ? "text-secondary" : "text-destructive"}`}>{pcr.toFixed(2)}</p>
-                    <p className="text-[10px] text-muted-foreground">{pcr > 1.2 ? "Bullish" : pcr > 0.8 ? "Neutral" : "Bearish"}</p>
+                    {/* A number, not a mood: traders read a high PCR as bearish or, contrarian, as bullish. */}
+                    <p className="text-2xl font-bold font-mono text-foreground">{pcr === null ? "—" : pcr.toFixed(2)}</p>
+                    <p className="text-xs text-muted-foreground">Put OI ÷ call OI</p>
                   </Card>
                 </motion.div>
                 <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
@@ -353,7 +355,7 @@ const FnODashboardPage = () => {
                     <Target className="w-5 h-5 mx-auto mb-1 text-muted-foreground" />
                     <p className="text-xs text-muted-foreground">Max Pain</p>
                     <p className="text-2xl font-bold font-mono text-foreground">₹{maxPain.toLocaleString("en-IN")}</p>
-                    <p className="text-[10px] text-muted-foreground">{maxPain > spot ? "Above Spot" : "Below Spot"}</p>
+                    <p className="text-xs text-muted-foreground">{maxPain > spot ? "Above Spot" : "Below Spot"}</p>
                   </Card>
                 </motion.div>
                 <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>

@@ -7,27 +7,27 @@ import Footer from "@/components/Footer";
 import SEOHead from "@/components/SEOHead";
 import PageTransition from "@/components/PageTransition";
 import VisibleBreadcrumbs from "@/components/VisibleBreadcrumbs";
+import PageHeader from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { useScreenerUniverse } from "@/hooks/useScreenerUniverse";
-import { parseHoldings, type Holding } from "@/lib/portfolio-csv";
+import { MAX_HOLDINGS, PORTFOLIO_STORAGE_KEY as STORAGE_KEY, loadSavedHoldings, parseHoldings, type Holding } from "@/lib/portfolio-csv";
 import { fetchRedFlagInputsMany, redFlags, type RedFlag } from "../../supabase/functions/_shared/red-flags";
 
-const STORAGE_KEY = "panipat_portfolio";
-
-// Per-viewer convenience only: the holdings live in this browser, nowhere else.
-function loadSaved(): Holding[] {
-  try { return parseHoldingsJson(localStorage.getItem(STORAGE_KEY)); } catch { return []; }
-}
-function parseHoldingsJson(raw: string | null): Holding[] {
-  const v: unknown = JSON.parse(raw ?? "[]");
-  if (!Array.isArray(v)) return [];
-  return v.filter((h): h is Holding => !!h && typeof h.symbol === "string" && typeof h.qty === "number" && h.qty > 0).slice(0, 200);
-}
+const loadSaved = loadSavedHoldings;
 function save(h: Holding[]) {
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(h)); } catch { /* private mode: the page still works for this visit */ }
 }
+
+// What the page produces once a file is in, shown until then. Each line is
+// something the code below computes; keep them in step.
+const OUTPUT: [string, string][] = [
+  ["Totals", "Current value at our latest prices, overall P&L against your average cost, the number of holdings, and how many carry red flags."],
+  ["A row per stock", "Quantity, average cost, price, value, weight in the portfolio and P&L, largest position first. Stocks outside our coverage are listed without a price."],
+  ["Red flags", "From NSE and BSE data: promoter pledges, promoter selling or a falling promoter stake, ASM or GSM surveillance, the F&O ban, a weak Piotroski score and material exchange filings."],
+  ["Kept on this device", `Up to ${MAX_HOLDINGS} holdings. The list stays in this browser until you clear it.`],
+];
 
 const inr = (v: number) => `₹${Math.round(v).toLocaleString("en-IN")}`;
 const signed = (v: number) => `${v >= 0 ? "+" : ""}${v.toFixed(1)}%`;
@@ -75,21 +75,27 @@ export default function PortfolioPage() {
       <Header />
       <main className="container mx-auto max-w-6xl px-4 py-8">
         <VisibleBreadcrumbs items={[{ name: "Home", url: "/" }, { name: "My Watchlist", url: "/watchlist" }, { name: "Portfolio check" }]} />
-        <div className="mt-2 flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <h1 className="flex items-center gap-2 font-heading text-3xl font-bold"><Briefcase className="h-7 w-7 text-secondary" aria-hidden="true" /> Portfolio check</h1>
-            <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-              Upload the holdings CSV from Zerodha, Groww, Upstox, Angel or any broker. It is read in your browser and never uploaded;
-              we only look up public filings for the symbols in it.
-            </p>
-          </div>
-          <div className="flex gap-2">
-            <input ref={input} type="file" accept=".csv,text/csv" className="sr-only" aria-label="Holdings CSV file" onChange={(e) => onFile(e.target.files?.[0])} />
-            <Button onClick={() => input.current?.click()}><Upload className="mr-1.5 h-4 w-4" aria-hidden="true" /> {holdings.length ? "Replace file" : "Upload holdings CSV"}</Button>
-            {holdings.length > 0 && <Button variant="outline" onClick={() => { setHoldings([]); save([]); }}><Trash2 className="mr-1.5 h-4 w-4" aria-hidden="true" /> Clear</Button>}
-          </div>
-        </div>
+        <PageHeader
+          eyebrow={<><Briefcase className="h-3.5 w-3.5" aria-hidden="true" /> Your holdings</>}
+          title="Portfolio check"
+          description="Upload the holdings CSV from Zerodha, Groww, Upstox, Angel or any broker. It is read in your browser and never uploaded; we only look up public filings for the symbols in it."
+        >
+          <input ref={input} type="file" accept=".csv,text/csv" className="sr-only" aria-label="Holdings CSV file" onChange={(e) => onFile(e.target.files?.[0])} />
+          <Button onClick={() => input.current?.click()}><Upload className="mr-1.5 h-4 w-4" aria-hidden="true" /> {holdings.length ? "Replace file" : "Upload holdings CSV"}</Button>
+          {holdings.length > 0 && <Button variant="outline" onClick={() => { setHoldings([]); save([]); }}><Trash2 className="mr-1.5 h-4 w-4" aria-hidden="true" /> Clear</Button>}
+        </PageHeader>
         {error && <p role="alert" className="mt-4 rounded-lg border border-destructive/40 bg-destructive/5 px-4 py-3 text-sm text-destructive">{error}</p>}
+
+        {holdings.length === 0 && (
+          <Card className="mt-4 p-5 md:p-6">
+            <h2 className="font-heading text-lg font-semibold">What you&apos;ll see</h2>
+            <ul className="mt-4 grid gap-4 text-sm text-muted-foreground md:grid-cols-2">
+              {OUTPUT.map(([lead, text]) => (
+                <li key={lead}><span className="font-semibold text-foreground">{lead}.</span> {text}</li>
+              ))}
+            </ul>
+          </Card>
+        )}
 
         {holdings.length > 0 && (
           <>

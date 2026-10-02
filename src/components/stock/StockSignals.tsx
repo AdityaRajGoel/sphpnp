@@ -1,4 +1,4 @@
-import { AlertTriangle, CalendarClock, Layers, Lock, ShieldAlert } from "lucide-react";
+import { AlertTriangle, CalendarClock, Lock, ShieldAlert } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { useStockMarketData } from "@/hooks/useStockMarketData";
 import { SURVEILLANCE_LABEL, shortDate } from "@/lib/market-data";
@@ -13,11 +13,12 @@ type Props = { symbol: string; price: number | null };
 export default function StockSignals({ symbol, price }: Props) {
   const { data } = useStockMarketData(symbol);
   if (!data) return null;
-  const { flags, pledge, indices, lotSize, week52, events } = data;
+  const { flags, pledge, week52, events } = data;
   const pledged = pledge?.pledged_pct_of_promoter ?? 0;
   const range = week52?.adj_high && week52.adj_low ? week52.adj_high - week52.adj_low : null;
   const position = range && price !== null ? Math.min(100, Math.max(0, ((price - week52!.adj_low!) / range) * 100)) : null;
-  const hasAnything = flags.length > 0 || pledged > 0 || indices.length > 0 || lotSize || week52 || events.length > 0;
+  // Index membership and the F&O lot are StockIndexLinks' job, as links, further down the page.
+  const hasAnything = flags.length > 0 || pledged > 0 || week52 || events.length > 0;
   if (!hasAnything) return null;
 
   return (
@@ -41,27 +42,19 @@ export default function StockSignals({ symbol, price }: Props) {
         </div>
       )}
 
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+      <div className="grid grid-cols-1 gap-3 md:grid-flow-col md:auto-cols-fr">
         {week52?.adj_high && week52.adj_low && (
           <Card className="min-w-0 p-3">
             <div className="text-xs text-muted-foreground mb-2">52-week range, adjusted for splits and bonuses</div>
             <div className="flex items-center gap-2 text-xs tabular-nums">
-              <span className="text-destructive font-semibold">₹{week52.adj_low.toLocaleString("en-IN")}</span>
-              <div className="relative h-2 flex-1 rounded-full bg-gradient-to-r from-destructive/60 via-muted to-secondary/60" role="img" aria-label={position === null ? "52-week range" : `Price at ${position.toFixed(0)}% of its 52-week range`}>
+              {/* Neutral: a low is not bad and a high is not good. */}
+              <span className="font-semibold">₹{week52.adj_low.toLocaleString("en-IN")}</span>
+              <div className="relative h-2 flex-1 rounded-full bg-muted" role="img" aria-label={position === null ? "52-week range" : `Price at ${position.toFixed(0)}% of its 52-week range`}>
                 {position !== null && <span className="absolute top-1/2 h-4 w-1.5 -translate-y-1/2 rounded-full bg-foreground" style={{ left: `calc(${position}% - 3px)` }} />}
               </div>
-              <span className="text-secondary font-semibold">₹{week52.adj_high.toLocaleString("en-IN")}</span>
+              <span className="font-semibold">₹{week52.adj_high.toLocaleString("en-IN")}</span>
             </div>
             <div className="mt-1 flex justify-between text-[11px] text-muted-foreground"><span>{shortDate(week52.low_date)}</span><span>{shortDate(week52.high_date)}</span></div>
-          </Card>
-        )}
-        {(indices.length > 0 || lotSize) && (
-          <Card className="min-w-0 p-3">
-            <div className="text-xs text-muted-foreground mb-2 flex items-center gap-1.5"><Layers className="w-3.5 h-3.5" aria-hidden="true" />Index membership{lotSize ? " & F&O" : ""}</div>
-            <div className="flex flex-wrap gap-1.5">
-              {indices.map((i) => <span key={i} className="rounded-md bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">{i}</span>)}
-              {lotSize && <span className="rounded-md bg-muted px-2 py-0.5 text-[11px] font-semibold">F&amp;O lot {lotSize.toLocaleString("en-IN")}</span>}
-            </div>
           </Card>
         )}
         {events.length > 0 && (

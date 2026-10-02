@@ -7,7 +7,7 @@
  */
 export const FUND_TRANSFER_SOURCE = "https://www.parasramindia.com/fund-transfer/";
 export const CLIENT_BANK_ACCOUNTS_PDF = "https://www.parasramindia.com/wp-content/uploads/2025/07/CLIENT-BANK-ACCOUNTS-2025.pdf";
-export const CHECKED_ON = "24 Sep 2026";
+export const CHECKED_ON = "2 Oct 2026";
 
 /*
  * The firm's online gateway (NetBanking or UPI, via Atom Paynetz) is served only
@@ -21,6 +21,17 @@ export const CHECKED_ON = "24 Sep 2026";
 export const GATEWAY_CHARGE = "₹8.26 per transaction (₹7 + 18% GST)";
 
 export const WITHDRAWAL_EMAIL = "accounts@sphpl.com";
+
+/*
+ * UPI handles from the two QR posters on the parent page (checked 2 Oct 2026).
+ * The handles were read off each QR's own payload (upi://pay?pa=…), not only
+ * the printed text, and both matched. The images in src/assets/fund-transfer
+ * are those posters; replace them and these handles together.
+ */
+export const UPI_HANDLES = [
+  { id: "trading", handle: "parasram.brk@validhdfc", label: "Trading account", note: "Funds for your trading account." },
+  { id: "demat", handle: "parasram.dp@validhdfc", label: "Demat account only", note: "For demat accounts only, as the firm's poster says." },
+] as const;
 
 export const BANK = {
   beneficiary: "SHRI PARASRAM HOLDINGS PVT. LTD.",

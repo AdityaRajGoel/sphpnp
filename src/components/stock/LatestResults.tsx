@@ -20,7 +20,7 @@ export default function LatestResults({ symbol }: { symbol: string }) {
   if (!data) return null;
   const tone = (v: number | null) => (v === null ? "" : v >= 0 ? "text-secondary" : "text-destructive");
   return (
-    <p className="mt-6 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border bg-card px-4 py-3 text-sm">
+    <p className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-surface border bg-card px-4 py-3 text-sm shadow-sm">
       <FileBarChart className="h-4 w-4 shrink-0 text-secondary" aria-hidden="true" />
       <span className="font-semibold">Latest results · {data.label}</span>
       <span className="text-muted-foreground">({data.basis})</span>

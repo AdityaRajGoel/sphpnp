@@ -1,0 +1,40 @@
+{
+ "timestamp": "28-Sep-2026 16:00:28",
+ "dataLtpGreater20": [
+  {
+   "symbol": "3BBLACKBIO",
+   "comapnyName": "3B Blackbio Dx Limited",
+   "new52WHL": 1599,
+   "prev52WHL": 1588.9,
+   "prevHLDate": "02-Sep-2026",
+   "ltp": 1580.2,
+   "prevClose": "1456.2",
+   "change": 124,
+   "pChange": 8.515313830517787
+  },
+  {
+   "symbol": "AARNAV",
+   "comapnyName": "Aarnav Fashions Limited",
+   "new52WHL": 37.6,
+   "prev52WHL": 37.4,
+   "prevHLDate": "17-Jul-2026",
+   "ltp": 36,
+   "prevClose": "36.05",
+   "change": -0.05,
+   "pChange": -0.13869625520110956
+  }
+ ],
+ "dataLtpLess20": [
+  {
+   "symbol": "IMPEXFERRO",
+   "comapnyName": "Impex Ferro Tech Limited",
+   "new52WHL": 6.26,
+   "prev52WHL": 6.14,
+   "prevHLDate": "25-Sep-2026",
+   "ltp": 6.26,
+   "prevClose": "6.14",
+   "change": 0.12,
+   "pChange": 1.9543973941368078
+  }
+ ]
+}

@@ -18,6 +18,13 @@ export function indexNames(source = fs.readFileSync(path.resolve(__dirname, '../
   return names;
 }
 
+/** MOVER_LISTS slugs in src/lib/market-movers.ts, plus GIFT Nifty - a test holds them together. */
+export const MARKET_MOVER_ROUTES = [
+  '/markets/gift-nifty',
+  ...['top-gainers', 'top-losers', 'most-active', 'volume-shockers', '52-week-high', '52-week-low', 'upper-circuit', 'lower-circuit']
+    .map((slug) => `/markets/${slug}`),
+];
+
 /** /indices, one page per index, and one per sector in the tracked universe ("General" is no sector). */
 export async function fetchMarketListRoutes() {
   const { url, key } = readSupabaseConfig();

@@ -1,0 +1,85 @@
+{
+ "legends": [
+  [
+   "NIFTY",
+   "NIFTY 50"
+  ],
+  [
+   "BANKNIFTY",
+   "BANK NIFTY"
+  ],
+  [
+   "NIFTYNEXT50",
+   "NIFTY NEXT 50"
+  ],
+  [
+   "SecGtr20",
+   "Securities > Rs 20"
+  ],
+  [
+   "SecLwr20",
+   "Securities < Rs 20"
+  ],
+  [
+   "FOSec",
+   "F&O Securities"
+  ],
+  [
+   "allSec",
+   "All Securities"
+  ]
+ ],
+ "allSec": {
+  "data": [
+   {
+    "symbol": "RSYSTEMS",
+    "series": "EQ",
+    "open_price": 250,
+    "high_price": 282.74,
+    "low_price": 245.45,
+    "ltp": 282.74,
+    "prev_price": 235.62,
+    "net_price": 20,
+    "trade_quantity": 61311130,
+    "turnover": 163394.16145,
+    "market_type": "N",
+    "ca_ex_dt": "12-Mar-2026",
+    "ca_purpose": "Interim Dividend - Rs 6 Per Share",
+    "perChange": 20
+   },
+   {
+    "symbol": "STARTECK",
+    "series": "EQ",
+    "open_price": 269,
+    "high_price": 315,
+    "low_price": 261.95,
+    "ltp": 315,
+    "prev_price": 262.5,
+    "net_price": 20,
+    "trade_quantity": 14621,
+    "turnover": 44.013596299999996,
+    "market_type": "N",
+    "ca_ex_dt": "11-Sep-2026",
+    "ca_purpose": "Dividend - Re 0.25 Per Share",
+    "perChange": 20
+   },
+   {
+    "symbol": "RETAIL",
+    "series": "EQ",
+    "open_price": 23,
+    "high_price": 24.07,
+    "low_price": 22.13,
+    "ltp": 24.07,
+    "prev_price": 20.06,
+    "net_price": 19.99,
+    "trade_quantity": 125527,
+    "turnover": 29.687135499999997,
+    "market_type": "N",
+    "ca_ex_dt": "-",
+    "ca_purpose": "-",
+    "perChange": 19.99
+   }
+  ],
+  "timestamp": "28-Sep-2026 16:00:00"
+ }
+}

@@ -11,9 +11,13 @@ import ScrollProgress from "@/components/ScrollProgress";
 import WhatsAppButton from "@/components/WhatsAppButton";
 import { Button } from "@/components/ui/button";
 import {
-  BANK, CHECKED_ON, CLIENT_BANK_ACCOUNTS_PDF, FUND_TRANSFER_SOURCE, GATEWAY_CHARGE, WITHDRAWAL_EMAIL,
+  BANK, CHECKED_ON, CLIENT_BANK_ACCOUNTS_PDF, FUND_TRANSFER_SOURCE, GATEWAY_CHARGE, UPI_HANDLES, WITHDRAWAL_EMAIL,
   virtualAccountFor,
 } from "@/lib/fund-transfer";
+import upiQrTrading from "@/assets/fund-transfer/upi-qr-trading.webp";
+import upiQrDemat from "@/assets/fund-transfer/upi-qr-demat.webp";
+
+const UPI_QR: Record<(typeof UPI_HANDLES)[number]["id"], string> = { trading: upiQrTrading, demat: upiQrDemat };
 
 const CRUMBS = [{ name: "Home", url: "/" }, { name: "Fund Transfer" }];
 
@@ -104,7 +108,7 @@ const FundTransferPage = () => {
                   {result === null && (
                     <p className="text-sm text-muted-foreground">It is printed on every contract note you receive.</p>
                   )}
-                  {result !== null && !result.ok && <p className="text-sm text-destructive">{result.error}</p>}
+                  {result !== null && result.ok === false && <p className="text-sm text-destructive">{result.error}</p>}
                   {result?.ok && (
                     <div className="flex flex-wrap items-center justify-between gap-3">
                       <div>
@@ -173,6 +177,37 @@ const FundTransferPage = () => {
               </section>
             </aside>
           </div>
+
+          <section aria-labelledby="pay-upi" className="mt-12 min-w-0">
+            <h2 id="pay-upi" className="text-xl font-bold">Pay by UPI</h2>
+            <p className="mt-1 max-w-prose text-sm text-muted-foreground">
+              Scan with any UPI app, or enter the UPI ID in it. Pay only from your bank account registered with Parasram; payments from any other account are not accepted.
+            </p>
+            <ul className="mt-5 grid gap-5 sm:grid-cols-2">
+              {UPI_HANDLES.map((u) => (
+                <li key={u.id} className="flex flex-col rounded-lg border border-border bg-card p-4 sm:p-5">
+                  <h3 className="font-semibold">{u.label}</h3>
+                  <p className="text-sm text-muted-foreground">{u.note}</p>
+                  <img
+                    src={UPI_QR[u.id]}
+                    width={720}
+                    height={720}
+                    loading="lazy"
+                    decoding="async"
+                    alt={`Parasram UPI QR code for ${u.label.toLowerCase()}, UPI ID ${u.handle}`}
+                    className="mx-auto mt-4 w-full max-w-[18rem] rounded-md border border-border bg-white"
+                  />
+                  <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-3">
+                    <div>
+                      <div className="text-xs text-muted-foreground">UPI ID</div>
+                      <div className="font-mono text-base font-medium">{u.handle}</div>
+                    </div>
+                    <CopyButton value={u.handle} label={`the ${u.label.toLowerCase()} UPI ID`} />
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </section>
         </main>
         <Footer />
         <WhatsAppButton />

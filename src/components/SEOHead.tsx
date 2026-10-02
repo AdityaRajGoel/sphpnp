@@ -104,7 +104,7 @@ const SEOHead = ({
         "@type": "OpeningHoursSpecification",
         "dayOfWeek": "Saturday",
         "opens": "09:00",
-        "closes": "14:00"
+        "closes": "16:00"
       }
     ],
     "priceRange": "₹₹",

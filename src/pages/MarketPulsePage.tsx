@@ -11,6 +11,8 @@ import DerivativesSection from "@/components/markets/DerivativesSection";
 import FlowsSection from "@/components/markets/FlowsSection";
 import ActivitySection from "@/components/markets/ActivitySection";
 import BreadthSection from "@/components/markets/BreadthSection";
+import SectorHeatmapSection from "@/components/markets/SectorHeatmapSection";
+import MarketHistorySection from "@/components/markets/MarketHistorySection";
 import StockTicker from "@/components/StockTicker";
 import PageHeader from "@/components/PageHeader";
 import MacroRegimeSection from "@/components/markets/MacroRegimeSection";
@@ -67,6 +69,8 @@ export default function MarketPulsePage() {
           <GlobalCuesSection />
           <WorldMarketsSection />
           <BreadthSection />
+          <SectorHeatmapSection />
+          <MarketHistorySection />
           <ValuationSection />
           <DerivativesSection />
           <div className="space-y-4">

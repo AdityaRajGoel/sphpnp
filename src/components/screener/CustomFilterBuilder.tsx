@@ -134,7 +134,7 @@ export default function CustomFilterBuilder({ rules, onChange, matches, query, o
             <p id="screen-query-status" aria-live="polite" className={`text-xs ${parsed && !parsed.ok ? "text-destructive" : "text-muted-foreground"}`}>
               {!parsed
                 ? "Use metric names or labels, AND / OR / NOT, brackets, and + - * /. Ctrl+Enter runs it."
-                : parsed.ok
+                : parsed.ok === true
                   ? `Reads ${parsed.metrics.length} metric${parsed.metrics.length === 1 ? "" : "s"}: ${parsed.metrics.map((m) => m.label).join(", ")}`
                   : `${parsed.error} (at character ${parsed.at + 1})`}
             </p>

@@ -4,7 +4,7 @@ import { fileURLToPath } from 'url';
 import express from 'express';
 import { fetchStockRoutes, assertStockPageCaptured } from './lib/stock-routes.mjs';
 import { fetchIpoRoutes, assertIpoPageCaptured } from './lib/ipo-routes.mjs';
-import { fetchMarketListRoutes, assertListPageCaptured } from './lib/market-list-routes.mjs';
+import { fetchMarketListRoutes, assertListPageCaptured, MARKET_MOVER_ROUTES } from './lib/market-list-routes.mjs';
 import { routeToFilePath } from './lib/route-paths.mjs';
 import { assertHeadCaptured, cleanCapturedHtml, expectedCanonical } from './lib/prerender-html.mjs';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -48,7 +48,10 @@ const routes = [
   '/learn/recommendations',
   ...learnArticleRoutes,
   '/52-week-tracker',
+  ...MARKET_MOVER_ROUTES,
   '/market-pulse',
+  '/commodities',
+  '/global-markets',
   '/compare',
   '/products',
   '/depository-services',
@@ -57,6 +60,18 @@ const routes = [
   '/brokerage-calculator',
   '/margin-calculator',
   '/sip-calculator',
+  '/calculators',
+  '/lumpsum-calculator',
+  '/step-up-sip-calculator',
+  '/swp-calculator',
+  '/cagr-calculator',
+  '/xirr-calculator',
+  '/stock-average-calculator',
+  '/capital-gains-tax-calculator',
+  '/option-value-calculator',
+  '/income-tax-calculator',
+  '/tax-loss-harvesting-calculator',
+  '/tax-saving-investments',
   '/team',
   '/contact',
   '/holidays',
@@ -180,7 +195,7 @@ async function captureOnce(browser, port, route) {
         .catch(() => {});
     }
 
-    if (route === '/indices' || route.startsWith('/indices/') || route.startsWith('/sectors/')) {
+    if (route === '/indices' || route === '/commodities' || route.startsWith('/indices/') || route.startsWith('/sectors/')) {
       await page.waitForSelector('[data-list-state="ready"]', { timeout: 25000 }).catch(() => {});
     }
     // Panels below the page's own data (results, red flags, peers, news) load

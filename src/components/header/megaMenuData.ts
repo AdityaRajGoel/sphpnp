@@ -1,8 +1,8 @@
 import {
   Gauge, TrendingUp, BarChart3, PieChart, Landmark, FileText, Calculator, GitCompare, Calendar, ArrowUpDown,
   Activity, GraduationCap, Radio, Newspaper, Users, Building2, Phone, Mail, Award, ShieldCheck, Search, Flame,
-  Briefcase, Globe, KeyRound, Banknote, Percent, LifeBuoy, LineChart, Star, Wallet, Smartphone, UserPlus, Rocket,
-  BookOpen, History, FolderDown,
+  Briefcase, Gem, Globe, KeyRound, Banknote, Percent, LifeBuoy, LineChart, Star, Wallet, Smartphone, UserPlus, Rocket,
+  BookOpen, History, FolderDown, ReceiptIndianRupee, LayoutGrid,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -83,7 +83,11 @@ export const megaMenuItems: MegaMenuItem[] = [
         title: "Overview",
         items: [
           { label: "Market Pulse", href: "/market-pulse", icon: Gauge, description: "Valuations, FII flows and deals" },
-          { label: "Indices", href: "/indices", icon: LineChart, description: "Nifty, Sensex and sector indices" },
+          { label: "Indices", href: "/indices", icon: LineChart, description: "Nifty and sector index levels, returns, P/E" },
+          { label: "Commodities", href: "/commodities", icon: Gem, description: "MCX gold, silver, crude and metals" },
+          { label: "Global Markets", href: "/global-markets", icon: Globe, description: "World indices, and investing in US stocks" },
+          { label: "Market Movers", href: "/markets/top-gainers", icon: TrendingUp, description: "Gainers, losers, circuits, 52-week highs" },
+          { label: "GIFT Nifty", href: "/markets/gift-nifty", icon: Globe, description: "Pre-market cue and pre-open prices" },
           { label: "Reports & Downloads", href: "/reports", icon: FileText, description: "Bhavcopy, delivery and exchange data" },
         ],
       },
@@ -124,6 +128,9 @@ export const megaMenuItems: MegaMenuItem[] = [
           { label: "Brokerage Calculator", href: "/brokerage-calculator", icon: Calculator, description: "Charges and net P&L on a trade" },
           { label: "Margin Calculator", href: "/margin-calculator", icon: Wallet, description: "SPAN margin for F&O and MCX" },
           { label: "SIP Calculator", href: "/sip-calculator", icon: TrendingUp, description: "What a monthly SIP can grow to" },
+          { label: "Capital Gains Tax", href: "/capital-gains-tax-calculator", icon: ReceiptIndianRupee, description: "Tax on selling shares and equity funds" },
+          { label: "Income Tax", href: "/income-tax-calculator", icon: Landmark, description: "Old and new regime, FY 2026-27" },
+          { label: "All Calculators", href: "/calculators", icon: LayoutGrid, description: "XIRR, CAGR, SWP, option value and more" },
         ],
       },
       {
@@ -174,7 +181,7 @@ export const megaMenuItems: MegaMenuItem[] = [
     feature: {
       eyebrow: "Research",
       title: "Stock Recommendations",
-      body: "Our analysts' calls, each with an entry price, a target and a stop-loss.",
+      body: "Calls from StockAnts' research analysts, each with an entry price, a target and a stop-loss.",
       href: "/learn/recommendations",
       cta: "See the picks",
     },
@@ -216,7 +223,7 @@ const pathOf = (href: string) => href.split("#")[0];
 // Deep pages that belong to a section without being listed in its menu.
 const SECTION_PREFIXES: Record<string, string[]> = {
   IPO: ["/ipo"],
-  Markets: ["/stock/", "/indices", "/sectors/", "/ipo-pipeline"],
+  Markets: ["/stock/", "/indices", "/sectors/", "/ipo-pipeline", "/markets/", "/commodities", "/global-markets"],
   Learn: ["/learn"],
 };
 

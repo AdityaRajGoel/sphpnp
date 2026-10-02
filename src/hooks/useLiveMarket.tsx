@@ -62,6 +62,8 @@ type LiveMarketContextType = {
   marketOverview: MarketOverviewData | null;
   marketOpen: boolean;
   marketStatusText: string;
+  /** The exchange holiday's name when today is one, else null. */
+  marketHoliday: string | null;
   lastTradingDate: string | null;
   nextMarketOpen: string | null;
   marketClose: string | null;
@@ -80,6 +82,7 @@ const LiveMarketContext = createContext<LiveMarketContextType>({
   marketOverview: null,
   marketOpen: false,
   marketStatusText: "Market Closed",
+  marketHoliday: null,
   lastTradingDate: null,
   nextMarketOpen: null,
   marketClose: null,
@@ -120,6 +123,7 @@ export const LiveMarketProvider = ({ children }: { children: ReactNode }) => {
   const [marketOverview, setMarketOverview] = useState<MarketOverviewData | null>(null);
   const [marketOpen, setMarketOpen] = useState(false);
   const [marketStatusText, setMarketStatusText] = useState("Market Closed");
+  const [marketHoliday, setMarketHoliday] = useState<string | null>(null);
   const [lastTradingDate, setLastTradingDate] = useState<string | null>(null);
   const [nextMarketOpen, setNextMarketOpen] = useState<string | null>(null);
   const [marketClose, setMarketClose] = useState<string | null>(null);
@@ -161,6 +165,7 @@ export const LiveMarketProvider = ({ children }: { children: ReactNode }) => {
         if (data.fetchedAt) setFetchedAt(data.fetchedAt);
         if (typeof data.marketOpen === 'boolean') setMarketOpen(data.marketOpen);
         if (data.marketStatusText) setMarketStatusText(data.marketStatusText);
+        setMarketHoliday(typeof data.marketHoliday === "string" ? data.marketHoliday : null);
         if (data.lastTradingDate) setLastTradingDate(data.lastTradingDate);
         setNextMarketOpen(data.nextMarketOpen || null);
         setMarketClose(data.marketClose || null);
@@ -239,7 +244,7 @@ export const LiveMarketProvider = ({ children }: { children: ReactNode }) => {
   }, [fetchData]);
 
   return (
-    <LiveMarketContext.Provider value={{ indices, stocks, commodities, globalMarkets, sectors, vix, marketOverview, marketOpen, marketStatusText, lastTradingDate, nextMarketOpen, marketClose, fetchedAt, loading, refresh: fetchData }}>
+    <LiveMarketContext.Provider value={{ indices, stocks, commodities, globalMarkets, sectors, vix, marketOverview, marketOpen, marketStatusText, marketHoliday, lastTradingDate, nextMarketOpen, marketClose, fetchedAt, loading, refresh: fetchData }}>
       {children}
     </LiveMarketContext.Provider>
   );

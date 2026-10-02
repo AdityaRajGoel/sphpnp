@@ -531,6 +531,8 @@ const LearningCenterPage = () => {
           {/* ARTICLES */}
           {activeSection === "articles" && (
             <motion.div key="articles" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
+              {/* The tab buttons are the visible titles; this keeps H1 > H2 > H3 card titles. */}
+              <h2 className="sr-only">Articles &amp; Guides</h2>
               {/* Filters row */}
               <div className="flex flex-col sm:flex-row gap-3 mb-6 flex-wrap">
                 <div className="relative w-full flex-1 min-w-0 max-w-md">
@@ -695,6 +697,7 @@ const LearningCenterPage = () => {
           {/* NEWS */}
           {activeSection === "news" && (
             <motion.div key="news" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
+              <h2 className="sr-only">Live Market News</h2>
               <div className="flex items-center justify-between mb-6">
                 <div className="flex gap-2">
                   <button onClick={() => setNewsTab("indian")}
@@ -756,6 +759,7 @@ const LearningCenterPage = () => {
           {/* LIVE TV */}
           {activeSection === "live" && (
             <motion.div key="live" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
+              <h2 className="sr-only">Live Business TV</h2>
               <div className="flex justify-end mb-4">
                 <button
                   onClick={fetchLiveBroadcasts}

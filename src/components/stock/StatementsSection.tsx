@@ -31,7 +31,9 @@ function StatementTable({ grid, caption }: { grid: StatementGrid; caption: strin
   }, [grid]);
   return (
     <Card className="p-0 overflow-hidden">
-      <div ref={scroller} className="overflow-x-auto">
+      {/* A focusable scroll region (keyboard users scroll it with arrows); the ring is inset
+          because the card's overflow-hidden clipped an outside outline completely. */}
+      <div ref={scroller} tabIndex={0} role="region" aria-label={caption} className="overflow-x-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring">
       <table className="w-full text-sm min-w-[640px]">
         <caption className="sr-only">{caption}, oldest period first, figures in rupees crore</caption>
         <thead>
@@ -104,9 +106,9 @@ export default function StatementsSection({ statements, symbol }: { statements: 
       <div className="flex flex-wrap items-baseline justify-between gap-3 mb-4">
         <h2 id="statements-heading" className="text-2xl font-bold">Financial statements</h2>
         <div className="flex items-center gap-2">
-          <Badge variant="secondary">₹ Crore</Badge>
+          <Badge variant="outline">₹ Crore</Badge>
           <Button type="button" variant="outline" size="sm" onClick={exportCsv} aria-label={`Download ${current.label} as CSV`}>
-            <Download className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" /> CSV
+            <Download aria-hidden="true" /> CSV
           </Button>
         </div>
       </div>
@@ -124,7 +126,7 @@ export default function StatementsSection({ statements, symbol }: { statements: 
       </Tabs>
       <p className="text-xs text-muted-foreground mt-3">
         From {statementSourceLabel(statements)}, updated {asOf(fetchedAt)}.
-        {source === "indianapi" ? " Consolidated figures where the company reports them." : " Rupee amounts converted to crore."}
+        {source === "indianapi" ? " Consolidated figures where the company reports them." : " Rupee amounts converted to crore."}{" "}
         Information only, not investment advice.
       </p>
     </motion.section>

@@ -3,7 +3,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { fetchStockRoutes } from './lib/stock-routes.mjs';
 import { fetchIpoRoutes } from './lib/ipo-routes.mjs';
-import { fetchMarketListRoutes } from './lib/market-list-routes.mjs';
+import { fetchMarketListRoutes, MARKET_MOVER_ROUTES } from './lib/market-list-routes.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const today = new Date().toISOString().split('T')[0];
@@ -76,12 +76,27 @@ const urls = [
   // Learning Center articles (original content)
   ...learnArticleSlugs.map(slug => ({ loc: `/learn/${slug}`, changefreq: 'monthly', priority: '0.7', lastmod: learnUpdated.get(slug) ?? null })),
   { loc: '/52-week-tracker',     changefreq: 'daily',   priority: '0.8',  lastmod: today },
+  ...MARKET_MOVER_ROUTES.map(route => ({ loc: route, changefreq: 'daily', priority: '0.7', lastmod: today })),
   { loc: '/market-pulse',        changefreq: 'daily',   priority: '0.9',  lastmod: today },
+  { loc: '/commodities',         changefreq: 'daily',   priority: '0.8',  lastmod: today },
+  { loc: '/global-markets',      changefreq: 'daily',   priority: '0.8',  lastmod: today },
   { loc: '/compare',             changefreq: 'weekly',  priority: '0.7',  lastmod: null },
   { loc: '/products',            changefreq: 'monthly', priority: '0.7',  lastmod: null },
   { loc: '/brokerage-calculator', changefreq: 'monthly', priority: '0.7', lastmod: null },
   { loc: '/margin-calculator',   changefreq: 'monthly', priority: '0.7',  lastmod: null },
   { loc: '/sip-calculator',      changefreq: 'monthly', priority: '0.7',  lastmod: null },
+  { loc: '/calculators', changefreq: 'monthly', priority: '0.7', lastmod: '2026-09-29' },
+  { loc: '/lumpsum-calculator', changefreq: 'monthly', priority: '0.7', lastmod: '2026-09-29' },
+  { loc: '/step-up-sip-calculator', changefreq: 'monthly', priority: '0.7', lastmod: '2026-09-29' },
+  { loc: '/swp-calculator', changefreq: 'monthly', priority: '0.7', lastmod: '2026-09-29' },
+  { loc: '/cagr-calculator', changefreq: 'monthly', priority: '0.7', lastmod: '2026-09-29' },
+  { loc: '/xirr-calculator', changefreq: 'monthly', priority: '0.7', lastmod: '2026-09-29' },
+  { loc: '/stock-average-calculator', changefreq: 'monthly', priority: '0.7', lastmod: '2026-09-29' },
+  { loc: '/capital-gains-tax-calculator', changefreq: 'monthly', priority: '0.7', lastmod: '2026-09-29' },
+  { loc: '/option-value-calculator', changefreq: 'monthly', priority: '0.7', lastmod: '2026-09-29' },
+  { loc: '/income-tax-calculator', changefreq: 'monthly', priority: '0.7', lastmod: '2026-09-29' },
+  { loc: '/tax-loss-harvesting-calculator', changefreq: 'monthly', priority: '0.7', lastmod: '2026-10-02' },
+  { loc: '/tax-saving-investments', changefreq: 'monthly', priority: '0.7', lastmod: '2026-10-02' },
   { loc: '/contact',             changefreq: 'monthly', priority: '0.7',  lastmod: null },
   { loc: '/team',                changefreq: 'monthly', priority: '0.6',  lastmod: null },
   { loc: '/holidays',            changefreq: 'monthly', priority: '0.6',  lastmod: today },

@@ -11,10 +11,11 @@ import FAQ from "@/components/FAQ";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import NotFound from "@/pages/NotFound";
+import IndexOverview from "@/components/markets/IndexOverview";
 import { useScreenerUniverse } from "@/hooks/useScreenerUniverse";
 import { displayMetric, formatMetric, METRIC_BY_ID, type MetricRow } from "@/lib/screener-metrics";
 import { median } from "@/lib/stock-peers";
-import { INDEX_NAMES, indexBySlug, indexTitle, listSlug, loadConstituents, loadIndexValuation, tally } from "@/lib/market-lists";
+import { INDEX_NAMES, indexBySlug, indexTitle, listSlug, loadConstituents, loadIndexHistory, loadIndexValuation, tally } from "@/lib/market-lists";
 
 const COLUMNS = ["price", "market_cap", "pe", "pb", "roe", "sales_growth_yoy"].map((id) => METRIC_BY_ID.get(id)!);
 const BASE = "https://www.sphpnp.com";
@@ -52,6 +53,15 @@ export default function MarketListPage({ kind }: { kind: "index" | "sector" }) {
     staleTime: 60 * 60_000,
   });
 
+  // Same key as IndexOverview's query, so one request; read here only so the
+  // page reports "ready" to the prerenderer once the overview has its data.
+  const history = useQuery({
+    queryKey: ["index-history", indexName],
+    queryFn: () => loadIndexHistory(indexName!),
+    enabled: indexName !== null,
+    staleTime: 60 * 60_000,
+  });
+
   const sectorName = useMemo(() => {
     if (kind !== "sector" || !universe.data) return null;
     for (const r of universe.data.values()) {
@@ -69,7 +79,7 @@ export default function MarketListPage({ kind }: { kind: "index" | "sector" }) {
     return list.sort((a, b) => cap(b) - cap(a) || a.name.localeCompare(b.name));
   }, [kind, constituents.data, universe.data, sectorName]);
 
-  const loading = universe.isLoading || constituents.isLoading || valuation.isLoading;
+  const loading = universe.isLoading || constituents.isLoading || valuation.isLoading || history.isLoading;
   if (kind === "index" && !indexName) return <NotFound />;
   if (kind === "sector" && !loading && !sectorName) return <NotFound />;
 
@@ -131,6 +141,14 @@ export default function MarketListPage({ kind }: { kind: "index" | "sector" }) {
           <h1 className="text-3xl md:text-4xl font-bold tracking-tight">{heading}</h1>
           {loading ? <Skeleton className="mt-4 h-16 w-full max-w-3xl" /> : <p className="mt-4 max-w-3xl text-lg leading-relaxed">{answer}</p>}
 
+          {kind === "index" && (
+            <IndexOverview
+              indexName={indexName!}
+              title={title}
+              movers={rows.map((r) => ({ symbol: r.symbol, name: r.name, change_pct: r.metrics ? METRIC_BY_ID.get("change_pct")!.get(r.metrics) : null, linked: Boolean(r.metrics) }))}
+            />
+          )}
+
           {industries.length > 1 && (
             <section aria-labelledby="industries" className="mt-8">
               <h2 id="industries" className="text-xl font-bold">Industry breakdown</h2>
@@ -147,12 +165,13 @@ export default function MarketListPage({ kind }: { kind: "index" | "sector" }) {
             <Card className="mt-3 overflow-hidden p-0">
               {loading ? <Skeleton className="h-96 w-full" /> : (
                 <div className="overflow-x-auto">
-                  <table className="w-full min-w-[760px] text-sm">
+                  <table className="w-full text-sm sm:min-w-[760px]">
                     <thead>
                       <tr className="border-b bg-muted/40">
                         <th scope="col" className="p-3 text-left font-medium">#</th>
-                        <th scope="col" className="p-3 text-left font-medium">Company</th>
-                        {kind === "index" && <th scope="col" className="p-3 text-left font-medium">Industry</th>}
+                        <th scope="col" className="sticky left-0 z-10 bg-card p-3 text-left font-medium">Company</th>
+                        {/* Industry is the widest column and the least needed on a phone. */}
+                        {kind === "index" && <th scope="col" className="hidden p-3 text-left font-medium sm:table-cell">Industry</th>}
                         {COLUMNS.map((m) => <th key={m.id} scope="col" title={m.title} className="whitespace-nowrap p-3 text-right font-medium">{m.label}</th>)}
                       </tr>
                     </thead>
@@ -160,13 +179,13 @@ export default function MarketListPage({ kind }: { kind: "index" | "sector" }) {
                       {rows.map((r, i) => (
                         <tr key={r.symbol} className="border-b last:border-0 hover:bg-muted/30">
                           <td className="p-3 tabular-nums text-muted-foreground">{i + 1}</td>
-                          <th scope="row" className="p-3 text-left font-normal">
+                          <th scope="row" className="sticky left-0 z-10 bg-card p-3 text-left font-normal">
                             {r.metrics
                               ? <Link to={`/stock/${encodeURIComponent(r.symbol)}`} className="font-medium hover:text-secondary hover:underline underline-offset-4">{r.name}</Link>
                               : <span>{r.name}</span>}
                             <span className="ml-2 font-mono text-[0.6875rem] text-muted-foreground">{r.symbol}</span>
                           </th>
-                          {kind === "index" && <td className="p-3 text-muted-foreground">{r.industry ?? "—"}</td>}
+                          {kind === "index" && <td className="hidden p-3 text-muted-foreground sm:table-cell">{r.industry ?? "—"}</td>}
                           {COLUMNS.map((m) => <td key={m.id} className="whitespace-nowrap p-3 text-right tabular-nums">{r.metrics ? displayMetric(m, r.metrics) : formatMetric(null, m.unit)}</td>)}
                         </tr>
                       ))}

@@ -1,0 +1,92 @@
+{
+ "count": {
+  "TOTAL": "285",
+  "UPPER": "120",
+  "LOWER": "144",
+  "BOTH": "21"
+ },
+ "upper": {
+  "AllSec": {
+   "data": [
+    {
+     "symbol": "RSYSTEMS",
+     "series": "EQ",
+     "ltp": "282.74",
+     "change": "47.12",
+     "pChange": "  20.00",
+     "priceBand": "20",
+     "highPrice": 282.74,
+     "lowPrice": 245.45,
+     "yearHigh": 435.9,
+     "yearLow": 213.52,
+     "totalTradedVol": 613.1113,
+     "turnover": 1633.9416145
+    },
+    {
+     "symbol": "BLISSGVS",
+     "series": "BE",
+     "ltp": "739.9",
+     "change": "35.2",
+     "pChange": "   5.00",
+     "priceBand": "5",
+     "highPrice": 739.9,
+     "lowPrice": 705,
+     "yearHigh": 739.9,
+     "yearLow": 118,
+     "totalTradedVol": 28.25169,
+     "turnover": 205.030989837
+    }
+   ],
+   "timestamp": "28-Sep-2026 16:00:00",
+   "indetifier": "upperAllSec",
+   "count": {
+    "TOTAL": "285",
+    "UPPER": "120",
+    "LOWER": "144",
+    "BOTH": "21"
+   }
+  }
+ },
+ "lower": {
+  "AllSec": {
+   "data": [
+    {
+     "symbol": "LALITHAA",
+     "series": "EQ",
+     "ltp": "359.35",
+     "change": "-7",
+     "pChange": "  -1.91",
+     "priceBand": "5",
+     "highPrice": 370.5,
+     "lowPrice": 348.05,
+     "yearHigh": 389,
+     "yearLow": 240.35,
+     "totalTradedVol": 74.23508,
+     "turnover": 263.475145936
+    },
+    {
+     "symbol": "STLNETWORK",
+     "series": "EQ",
+     "ltp": "51.88",
+     "change": "-2.73",
+     "pChange": "  -5.00",
+     "priceBand": "5",
+     "highPrice": 56.5,
+     "lowPrice": 51.88,
+     "yearHigh": 56.5,
+     "yearLow": 15.75,
+     "totalTradedVol": 185.8969,
+     "turnover": 98.72984359
+    }
+   ],
+   "timestamp": "28-Sep-2026 16:00:00",
+   "indetifier": "lowerAllSec",
+   "count": {
+    "TOTAL": "285",
+    "UPPER": "120",
+    "LOWER": "144",
+    "BOTH": "21"
+   }
+  }
+ }
+}

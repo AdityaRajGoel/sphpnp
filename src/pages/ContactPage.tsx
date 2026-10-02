@@ -16,7 +16,7 @@ import { Button } from "@/components/ui/button";
 import { revealItemX, revealSection } from "@/lib/motion";
 import { BRANCH_EMAILS, PRIMARY_EMAIL } from "@/lib/contact";
 const contactFAQs = [
-  { q: "What are your office timings?", a: "Our Panipat branch is open Monday to Friday from 9:00 AM to 6:00 PM, and Saturday from 9:00 AM to 2:00 PM. We are closed on Sundays and market holidays." },
+  { q: "What are your office timings?", a: "Our Panipat branch is open Monday to Friday from 9:00 AM to 6:00 PM, and Saturday from 9:00 AM to 4:00 PM. We are closed on Sundays and market holidays." },
   { q: "Can I visit without an appointment?", a: "Yes! Walk-ins are welcome during office hours. However, for detailed portfolio consultations, we recommend calling ahead to schedule an appointment so our advisors can dedicate proper time to you." },
   { q: "How quickly will you respond to my inquiry?", a: "We aim to respond to all inquiries within 24 hours on business days. For urgent matters, please call us directly at +91 9416400314." },
   { q: "Do you provide services outside Panipat?", a: "Yes, while our physical branch is in Panipat, we serve clients across Haryana and India through our online trading platforms and phone/video consultations." },
@@ -27,7 +27,7 @@ const quickContacts = [
   { icon: MapPin, label: "Visit Us", value: "Shakuntala Complex, Palika Bazaar, Panipat - 132103", href: "https://maps.app.goo.gl/dvR1a5LPc5xAq4Va8" },
   { icon: Phone, label: "Call Us", value: "+91 9416400314", href: "tel:+919416400314" },
   { icon: Mail, label: "Email Us", value: BRANCH_EMAILS.join(" · "), href: `mailto:${PRIMARY_EMAIL}` },
-  { icon: Clock, label: "Working Hours", value: "Mon–Fri 9AM–6PM, Sat 9AM–2PM", href: undefined },
+  { icon: Clock, label: "Working Hours", value: "Mon–Fri 9AM–6PM, Sat 9AM–4PM", href: undefined },
 ];
 
 const ContactPage = () => {
@@ -83,8 +83,9 @@ const ContactPage = () => {
       </section>
 
       {/* Quick contact cards */}
-      <section className="relative z-20 -mt-8">
+      <section aria-labelledby="reach-us" className="relative z-20 -mt-8">
         <div className="container mx-auto px-4">
+          <h2 id="reach-us" className="sr-only">How to reach us</h2>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
             {quickContacts.map((item, i) => (
               <motion.div

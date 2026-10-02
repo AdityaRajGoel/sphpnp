@@ -5,13 +5,17 @@ import {
   HistogramSeries,
   AreaSeries,
   LineSeries,
+  LineStyle,
   createTextWatermark,
+  createSeriesMarkers,
   type IChartApi,
+  type ISeriesMarkersPluginApi,
+  type SeriesMarker,
   type ISeriesApi,
   TickMarkType,
   type UTCTimestamp,
 } from "lightweight-charts";
-import { toCandles, toVolume, sma, type ApiChartPoint } from "@/lib/chart-data";
+import { toCandles, toVolume, sma, type ApiChartPoint, type PriceEvent } from "@/lib/chart-data";
 
 /**
  * Financial price chart: candlesticks (or an area line) over a volume pane.
@@ -41,10 +45,29 @@ interface PriceChartProps {
   smaPeriods?: readonly number[];
   /** Hide the volume pane where the caller has no volume worth showing. */
   showVolume?: boolean;
+  /** Events already pinned to bar times (see snapEvents); any other time is dropped by the library. */
+  markers?: readonly { time: UTCTimestamp; event: PriceEvent }[];
 }
 
-/** Distinct, deliberately secondary colours so overlays never outrank price. */
-const SMA_COLORS = ["hsl(43 96% 56%)", "hsl(210 80% 60%)", "hsl(280 65% 65%)"];
+const RUPEES = {
+  type: "custom",
+  minMove: 0.01,
+  formatter: (p: number) => `₹${p.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+} as const;
+
+/**
+ * Overlay colours, as theme tokens: magenta, then neutral grey. Not blue or
+ * orange, which the results and dividend markers use, and not green or red,
+ * which mean up and down. The old hardcoded amber was 1.7:1 on white, under
+ * the 3:1 a line needs; both of these clear it in both themes.
+ */
+const SMA_COLOURS = [["--chart-4", "hsl(330 50% 46%)"], ["--muted-foreground", "hsl(213 30% 40%)"]] as const;
+/** The second overlay is dashed too: magenta and grey are close for deuteranopes (ΔE 3.9). */
+const SMA_STYLES = [LineStyle.Solid, LineStyle.Dashed];
+const smaColour = (i: number) => {
+  const [name, fallback] = SMA_COLOURS[i % SMA_COLOURS.length];
+  return token(name, fallback);
+};
 
 /** India-wide: NSE/BSE sessions are quoted in IST, not the viewer's zone. */
 const IST = "Asia/Kolkata";
@@ -85,6 +108,23 @@ function palette() {
   };
 }
 
+/**
+ * Results below the bar, dividends above, in the chart palette's blue and
+ * orange: green and red already mean up and down on this chart. Letters, not
+ * arrows, because an arrow on a broker's price chart reads as a trade signal.
+ */
+const MARKER_STYLE = {
+  results: { position: "belowBar", shape: "circle", text: "R", colour: ["--chart-3", "hsl(212 64% 40%)"] },
+  dividend: { position: "aboveBar", shape: "square", text: "D", colour: ["--chart-2", "hsl(21 76% 43%)"] },
+} as const;
+
+function toMarkers(markers: PriceChartProps["markers"]): SeriesMarker<UTCTimestamp>[] {
+  return (markers ?? []).map(({ time, event }) => {
+    const { position, shape, text, colour } = MARKER_STYLE[event.kind];
+    return { time, position, shape, text, id: event.kind, color: token(colour[0], colour[1]) };
+  });
+}
+
 /** An hsl() colour at the given opacity. */
 const withAlpha = (hsl: string, alpha: number) => hsl.replace("hsl(", "hsla(").replace(/\)$/, ` / ${alpha})`);
 
@@ -106,12 +146,14 @@ const PriceChart = ({
   watermark,
   smaPeriods,
   showVolume = true,
+  markers,
 }: PriceChartProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const priceRef = useRef<ISeriesApi<"Candlestick" | "Area", UTCTimestamp> | null>(null);
   const volumeRef = useRef<ISeriesApi<"Histogram", UTCTimestamp> | null>(null);
   const smaRefs = useRef<ISeriesApi<"Line", UTCTimestamp>[]>([]);
+  const markersRef = useRef<ISeriesMarkersPluginApi<UTCTimestamp> | null>(null);
   // Read inside the create-once effect without making it a dependency, so
   // changing the overlay list never tears down and rebuilds the whole chart.
   const smaKey = (smaPeriods ?? []).join(",");
@@ -152,9 +194,10 @@ const PriceChart = ({
             ? istTime.format(new Date(t * 1000))
             : istDate.format(new Date(t * 1000)),
       },
+      // No chart-wide priceFormatter: it overrides every series' own priceFormat,
+      // which labelled the volume axis "₹1,00,00,00,000.00". Rupees are set on
+      // the price series instead (RUPEES below).
       localization: {
-        priceFormatter: (p: number) =>
-          `₹${p.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
         timeFormatter: (t: UTCTimestamp) => istDateTime.format(new Date(t * 1000)),
       },
       crosshair: { mode: 1 },
@@ -169,17 +212,20 @@ const PriceChart = ({
             borderDownColor: c.down,
             wickUpColor: c.up,
             wickDownColor: c.down,
+            priceFormat: RUPEES,
           })
         : chart.addSeries(AreaSeries, {
             lineColor: c.up,
             topColor: withAlpha(c.up, 0.28),
             bottomColor: withAlpha(c.up, 0),
             lineWidth: 2,
+            priceFormat: RUPEES,
           });
 
     smaRefs.current = (smaKey ? smaKey.split(",") : []).map((_, i) =>
       chart.addSeries(LineSeries, {
-        color: SMA_COLORS[i % SMA_COLORS.length],
+        color: smaColour(i),
+        lineStyle: SMA_STYLES[i % SMA_STYLES.length],
         lineWidth: 1,
         priceLineVisible: false,
         lastValueVisible: false,
@@ -192,12 +238,9 @@ const PriceChart = ({
       const volume = chart.addSeries(
         HistogramSeries,
         {
-          // A custom format, because the chart-wide rupee formatter would
-          // otherwise label the volume axis "₹4,00,00,000.00".
+          // Shares in crore and lakh, never rupees.
           priceFormat: { type: "custom", minMove: 1, formatter: (v: number) => (v >= 1e7 ? `${(v / 1e7).toFixed(1)} Cr` : v >= 1e5 ? `${(v / 1e5).toFixed(1)} L` : Math.round(v).toLocaleString("en-IN")) },
-          // Without these the pane shows a last-value tag rendered through the
-          // chart-wide rupee formatter, so a volume of zero reads as "₹0.00"
-          // floating against the price axis.
+          // A last-value tag and price line would float against the price axis.
           priceLineVisible: false,
           lastValueVisible: false,
         },
@@ -209,12 +252,14 @@ const PriceChart = ({
 
     chartRef.current = chart;
     priceRef.current = price as ISeriesApi<"Candlestick" | "Area", UTCTimestamp>;
+    markersRef.current = createSeriesMarkers(priceRef.current, []);
 
     return () => {
       chartRef.current = null;
       priceRef.current = null;
       volumeRef.current = null;
       smaRefs.current = [];
+      markersRef.current = null;
       chart.remove();
     };
   }, [mode, height, smaKey, showVolume]);
@@ -240,6 +285,12 @@ const PriceChart = ({
         const area = price as ISeriesApi<"Area", UTCTimestamp>;
         colourArea(area, area.data().map((d) => ("value" in d ? d.value : 0)));
       }
+      smaRefs.current.forEach((series, i) => series.applyOptions({ color: smaColour(i) }));
+      const m = markersRef.current;
+      m?.setMarkers(m.markers().map((mk) => {
+        const [name, fallback] = MARKER_STYLE[mk.id as PriceEvent["kind"]].colour;
+        return { ...mk, color: token(name, fallback) };
+      }));
     });
     observer.observe(target, { attributes: true, attributeFilter: ["class"] });
     return () => observer.disconnect();
@@ -264,7 +315,8 @@ const PriceChart = ({
       );
       colourArea(price as ISeriesApi<"Area", UTCTimestamp>, candles.map((k) => k.close));
     }
-    volume?.setData(toVolume(data, { up: c.up, down: c.down }));
+    // Volume is context, not the subject: half strength, as LiveChart's legend swatches show it.
+    volume?.setData(toVolume(data, { up: withAlpha(c.up, 0.45), down: withAlpha(c.down, 0.45) }));
 
     // Overlays are computed from the same normalised candles, so their times
     // line up with the price series exactly.
@@ -280,8 +332,10 @@ const PriceChart = ({
       );
     });
 
+    markersRef.current?.setMarkers(toMarkers(markers));
+
     chartRef.current?.timeScale().fitContent();
-  }, [data, mode, smaKey]);
+  }, [data, mode, smaKey, markers]);
 
   // v5 has no `watermark` chart option; it is a pane primitive.
   useEffect(() => {

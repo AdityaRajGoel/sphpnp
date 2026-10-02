@@ -133,11 +133,10 @@ const MarginCalculatorPage = () => {
       <Header />
       <VisibleBreadcrumbs items={[{ name: "Home", url: "/" }, { name: "F&O Margin Calculator" }]} />
       <main>
-        {/* Header in the style of the group's webtrade calculator (see SpanCalculator). */}
-        <section className="bg-[#F4F7FB] px-4 pb-12 pt-10 text-center font-sans text-[#445A64]">
-          <h1 className="text-3xl font-light md:text-[36px]">F&amp;O Margin Calculator</h1>
-          <div className="mx-auto mt-5 h-[3px] w-[100px] bg-[#E9671D]" aria-hidden="true" />
-          <div className="mx-auto mt-6 max-w-[830px] space-y-4 text-sm leading-6">
+        <div className="container mx-auto max-w-4xl px-4 py-8 md:py-10">
+        <header>
+          <h1 className="font-heading text-3xl font-bold tracking-tight text-foreground md:text-4xl">F&amp;O Margin Calculator</h1>
+          <div className="mt-4 max-w-3xl space-y-3 leading-relaxed text-muted-foreground">
             <p>
               Calculate the SPAN margin and exposure margin the exchange requires for futures and option writing, with the
               premium for options you buy. Add every leg of your strategy: the margin is worked out for the whole portfolio,
@@ -148,12 +147,13 @@ const MarginCalculatorPage = () => {
               Covers NSE F&amp;O, NSE currency and MCX commodity contracts; buying an option needs only its premium.
             </p>
           </div>
-        </section>
+        </header>
 
-        <SpanCalculator seed={seed} />
+        <div className="mt-8">
+          <SpanCalculator seed={seed} />
+        </div>
 
-        <div className="container mx-auto max-w-4xl px-4 py-10">
-        <section aria-labelledby="equity-margin">
+        <section aria-labelledby="equity-margin" className="mt-12">
           <h2 id="equity-margin" className="text-2xl font-heading font-bold">Equity delivery and intraday margin</h2>
           <p className="mt-1 mb-4 text-sm text-muted-foreground">Cash-market trades: delivery needs the full value; intraday needs a fraction set by the exchange&apos;s peak-margin rules.</p>
             <div className="grid md:grid-cols-2 gap-6">
@@ -224,7 +224,7 @@ const MarginCalculatorPage = () => {
                   <th scope="col" className="px-3 py-2 text-right font-medium">Lot size</th>
                   <th scope="col" className="px-3 py-2 text-right font-medium">Last close</th>
                   <th scope="col" className="px-3 py-2 text-right font-medium">1 lot value</th>
-                  <th scope="col" className="px-4 py-2 text-right font-medium" title="SPAN + exposure at the approximate rates above; your broker's figure will differ">Approx. margin / lot</th>
+                  <th scope="col" className="px-4 py-2 text-right font-medium" title="SPAN + exposure at the approximate rates above; Parasram's figure may differ">Approx. margin / lot</th>
                 </tr>
               </thead>
               <tbody>
@@ -263,7 +263,7 @@ const MarginCalculatorPage = () => {
         {/* Disclaimer */}
         <Card className="mt-8 p-4 bg-muted/30 border-muted">
           <p className="text-xs text-muted-foreground">
-            <strong>Disclaimer:</strong> The SPAN calculator above uses the exchanges' SPAN files through Parasram's trading platform; your broker may collect more than the exchange minimum. The margin list's per-lot figures are quick approximations at typical SPAN and exposure rates ({STOCK_RATE.span}% + {STOCK_RATE.exposure}% for stock futures, index-specific for indices); use the calculator for the exact figure. Lot sizes are NSE's current sizes. Not investment advice.
+            <strong>Disclaimer:</strong> The SPAN calculator above uses the exchanges' SPAN files through Parasram's trading platform; Parasram may collect more than the exchange minimum. The margin list's per-lot figures are quick approximations at typical SPAN and exposure rates ({STOCK_RATE.span}% + {STOCK_RATE.exposure}% for stock futures, index-specific for indices); use the calculator for the exact figure. Lot sizes are NSE's current sizes. Not investment advice.
           </p>
         </Card>
         </div>

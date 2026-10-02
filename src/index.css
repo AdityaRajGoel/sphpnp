@@ -40,15 +40,16 @@
     --muted: 210 30% 95%;
     --muted-foreground: 213 30% 40%;
 
-    --accent: 150 55% 42%;
-    --accent-foreground: 0 0% 100%;
+    /* Neutral, as in dark mode: white on the old green accent was 3.09:1 on every outline/ghost hover. */
+    --accent: 210 30% 95%;
+    --accent-foreground: 213 70% 15%;
 
     --destructive: 0 72% 42%;
     --destructive-foreground: 210 40% 98%;
 
     --border: 210 30% 90%;
     --input: 210 30% 90%;
-    --ring: 210 100% 20%;
+    --ring: 150 60% 29%; /* the green of the global focus outline, so every control rings alike */
 
     --radius: 0.5rem;
 
@@ -167,7 +168,7 @@
     --accent-foreground: 210 25% 94%;
 
     --destructive: 0 80% 66%; /* 5.6:1 as text on cards */
-    --destructive-foreground: 210 40% 98%;
+    --destructive-foreground: 220 50% 8%; /* dark ink: white on the lighter dark-mode red was 3.04:1 */
 
     --border: 216 16% 20%;
     --input: 216 16% 20%;
@@ -550,4 +551,13 @@ input[type="range"]::-moz-range-thumb {
     animation: none !important;
     transition: none !important;
   }
+}
+
+/* Phones: 9-10px text (215 uses) measured as the commonest mobile complaint in
+   the 2 Oct audit - 100 elements on the homepage alone. Raised to 11px below
+   the sm breakpoint in one place rather than in every component; desktop keeps
+   the dense sizes. :root raises specificity over the generated utility. */
+@media (max-width: 639px) {
+  :root .text-\[9px\],
+  :root .text-\[10px\] { font-size: 11px; }
 }

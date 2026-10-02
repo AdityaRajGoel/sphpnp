@@ -43,9 +43,11 @@ export default function SymbolSwitcher() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="text-xs text-muted-foreground border rounded-md px-2 py-1 hover:bg-muted transition-colors"
+        aria-haspopup="dialog"
+        aria-keyshortcuts="Meta+K"
+        className="inline-flex h-11 items-center gap-1.5 rounded-md border px-2.5 text-xs font-medium text-muted-foreground transition-[transform,background-color,color] duration-fast ease-out hover:bg-muted hover:text-foreground active:scale-[0.97] md:h-8"
       >
-        Switch stock <kbd className="ml-1 font-mono">⌘K</kbd>
+        Switch stock <kbd aria-hidden="true" className="hidden font-mono md:inline">⌘K</kbd>
       </button>
 
       <CommandDialog open={open} onOpenChange={setOpen} title="Search tracked stocks">

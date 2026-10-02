@@ -3,7 +3,8 @@ import { useQuery } from "@tanstack/react-query";
 import { getContract, getExpiries, getStrikes, type ContractOption, type Kind } from "@/lib/span-margin";
 import { isPrerender } from "@/lib/prerender";
 
-const FIELD = "h-[46px] w-full border border-[#EEEEEE] bg-white px-3 text-sm text-[#445A64] outline-none transition-colors focus:border-[#E9671D] disabled:bg-[#F4F7FB] disabled:text-[#9AA9B0]";
+// The Input primitive's field, on theme tokens (it had another site's hex colours and no dark mode).
+const FIELD = "h-[46px] w-full border border-input bg-background px-3 text-sm text-foreground outline-none transition-colors focus-visible:border-secondary focus-visible:ring-1 focus-visible:ring-secondary disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground";
 const KIND_LABEL: Record<Kind, string> = { FUT: "Future", CE: "Call", PE: "Put" };
 const dateLabel = (iso: string) => new Date(`${iso}T00:00:00Z`).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
 
@@ -48,28 +49,28 @@ export default function ContractPicker({ seed, onPick }: { seed?: string; onPick
   return (
     <div className="grid gap-4 md:grid-cols-4">
       <div>
-        <label htmlFor="pick-symbol" className="mb-1 block text-sm">Symbol</label>
+        <label htmlFor="pick-symbol" className="mb-1 block text-sm font-medium">Symbol</label>
         <input id="pick-symbol" className={`${FIELD} uppercase`} value={symbol} autoComplete="off" onChange={(e) => setSymbol(e.target.value.toUpperCase().replace(/[^A-Z0-9&-]/g, ""))} placeholder="NIFTY" />
       </div>
       <div>
-        <span id="pick-kind" className="mb-1 block text-sm">Instrument</span>
-        <div role="radiogroup" aria-labelledby="pick-kind" className="grid h-[46px] grid-cols-3 border border-[#EEEEEE]">
+        <span id="pick-kind" className="mb-1 block text-sm font-medium">Instrument</span>
+        <div role="radiogroup" aria-labelledby="pick-kind" className="grid h-[46px] grid-cols-3 border border-input">
           {(["FUT", "CE", "PE"] as Kind[]).map((k) => (
-            <button key={k} type="button" role="radio" aria-checked={kind === k} onClick={() => setKind(k)} className={`text-sm transition-colors ${kind === k ? "bg-[#E9671D] text-white" : "bg-white hover:bg-[#F4F7FB]"}`}>
+            <button key={k} type="button" role="radio" aria-checked={kind === k} onClick={() => setKind(k)} className={`text-sm transition-colors ${kind === k ? "bg-secondary font-medium text-secondary-foreground" : "bg-background text-foreground hover:bg-muted"}`}>
               {KIND_LABEL[k]}
             </button>
           ))}
         </div>
       </div>
       <div>
-        <label htmlFor="pick-expiry" className="mb-1 block text-sm">Expiry</label>
+        <label htmlFor="pick-expiry" className="mb-1 block text-sm font-medium">Expiry</label>
         <select id="pick-expiry" className={FIELD} value={expiry} onChange={(e) => { setExpiry(e.target.value); setStrike(""); }} disabled={expiries.length === 0}>
           {expiries.length === 0 && <option value="">{exp.isFetching ? "Loading…" : sym.length < 2 ? "Type a symbol" : "No F&O contracts"}</option>}
           {expiries.map((d) => <option key={d} value={d}>{dateLabel(d)}</option>)}
         </select>
       </div>
       <div>
-        <label htmlFor="pick-strike" className="mb-1 block text-sm">Strike</label>
+        <label htmlFor="pick-strike" className="mb-1 block text-sm font-medium">Strike</label>
         <select id="pick-strike" className={FIELD} value={strike} onChange={(e) => setStrike(e.target.value)} disabled={kind === "FUT" || !str.data?.length}>
           <option value="">{kind === "FUT" ? "Not for futures" : str.isFetching ? "Loading…" : "Choose a strike"}</option>
           {kind !== "FUT" && str.data?.map((s) => <option key={s} value={s}>{s.toLocaleString("en-IN")}</option>)}

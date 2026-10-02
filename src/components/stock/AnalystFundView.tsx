@@ -154,9 +154,10 @@ export default function AnalystFundView({ tickertape, pe }: { tickertape: Ticker
                 <h3 className="font-semibold text-sm mb-3">Scorecard</h3>
                 <dl className="grid grid-cols-2 gap-2">
                   {scorecard.map((s) => (
-                    <div key={s.name} className="rounded-lg border p-2" title={s.description ?? undefined}>
+                    <div key={s.name} className="rounded-md bg-muted/50 p-2" title={s.description ?? undefined}>
                       <dt className="text-xs text-muted-foreground">{s.name}</dt>
-                      <dd className={`text-sm font-semibold ${s.tone === "good" ? "text-secondary" : s.tone === "bad" ? "text-destructive" : ""}`}>{s.tag}</dd>
+                      {/* No good/bad colour: a green "Entry point: Good" on a broker's page reads as a buy call. */}
+                      <dd className="text-sm font-semibold">{s.tag}</dd>
                     </div>
                   ))}
                 </dl>

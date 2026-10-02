@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { motion } from "motion/react";
 import { ExternalLink, Gavel, Landmark } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { revealSection } from "@/lib/motion";
@@ -20,7 +21,7 @@ function ActionList({ actions }: { actions: SebiAction[] }) {
       <ul className="space-y-2">
         {shown.map((a) => (
           <li key={a.url}>
-            <Card className="flex flex-wrap items-start justify-between gap-3 p-4 transition-colors hover:bg-muted/30">
+            <Card className="flex flex-wrap items-start justify-between gap-3 p-4">
               <div className="min-w-0">
                 <Badge variant="outline" className="mb-1.5">{a.kind}</Badge>
                 <p className="text-sm break-words">{a.title}</p>
@@ -38,9 +39,9 @@ function ActionList({ actions }: { actions: SebiAction[] }) {
         ))}
       </ul>
       {actions.length > INITIAL && (
-        <button type="button" onClick={() => setExpanded((v) => !v)} aria-expanded={expanded} className="mt-2 text-sm font-semibold text-secondary hover:underline">
+        <Button variant="ghost" size="sm" className="-ml-3 mt-2" onClick={() => setExpanded((v) => !v)} aria-expanded={expanded}>
           {expanded ? "Show fewer" : `Show all ${actions.length}`}
-        </button>
+        </Button>
       )}
     </>
   );

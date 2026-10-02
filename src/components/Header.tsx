@@ -196,7 +196,7 @@ const Header = () => {
               width={80}
               height={80}
               decoding="async"
-              className={`h-full w-auto origin-left transition-transform duration-base ease-out ${scrolled ? "scale-90" : "scale-100"}`}
+              className={`h-full w-auto origin-left transition-transform duration-base ease-out dark:brightness-0 dark:invert ${scrolled ? "scale-90" : "scale-100"}`}
             />
           </Link>
 
@@ -294,6 +294,7 @@ const Header = () => {
               className="p-2 text-foreground transition-colors hover:text-secondary xl:hidden"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               aria-expanded={mobileMenuOpen}
+              aria-controls="mobile-menu"
               aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
             >
               {mobileMenuOpen ? <XIcon className="h-6 w-6" aria-hidden /> : <Menu className="h-6 w-6" aria-hidden />}
@@ -313,24 +314,40 @@ const Header = () => {
             </div>
           )}
         </AnimatePresence>
-
-        <AnimatePresence>
-          {mobileMenuOpen && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.3 }}
-              // Overlays the page rather than pushing it: an in-flow menu inside the
-              // sticky header added its height to the document, and closing it on a
-              // same-page link pulled the target ~540px up mid-scroll.
-              className="absolute inset-x-0 top-full max-h-[80vh] overflow-y-auto border-t border-border bg-card shadow-xl xl:hidden"
-            >
-              <MobileMenu activeLabel={current} navLabel={navLabel} onNavigate={() => setMobileMenuOpen(false)} />
-            </motion.div>
-          )}
-        </AnimatePresence>
       </div>
+
+      {/* Mobile menu, over a dimmed page. It overlays rather than pushes: an in-flow
+          menu inside the sticky header added its height to the document, and closing
+          it on a same-page link pulled the target ~540px up mid-scroll. A child of
+          the <header> itself, so top-full is the header's bottom edge and 100% is the
+          header's height: the panel ends at the viewport bottom (above any cookie
+          dock) and scrolls inside, keeping Open Account in view. */}
+      <AnimatePresence>
+        {mobileMenuOpen && (
+          <motion.div
+            key="mobile-menu-backdrop"
+            aria-hidden
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            onClick={() => setMobileMenuOpen(false)}
+            className="absolute inset-x-0 top-full h-dvh bg-black/50 xl:hidden"
+          />
+        )}
+        {mobileMenuOpen && (
+          <motion.div
+            key="mobile-menu-panel"
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.2 }}
+            className="absolute inset-x-0 top-full flex max-h-[calc(100dvh-100%-var(--consent-dock-height,0px))] flex-col border-t border-border bg-card shadow-xl xl:hidden"
+          >
+            <MobileMenu activeLabel={current} navLabel={navLabel} onClose={() => setMobileMenuOpen(false)} />
+          </motion.div>
+        )}
+      </AnimatePresence>
     </header>
   );
 };

@@ -83,7 +83,7 @@ const BecomePartner = () => {
       }
 
       setSubmitted(true);
-      toast({ title: "Application received! ✅", description: "Our team will reach out within 24 hours." });
+      toast({ title: "Application received", description: "Our team will reach out within 24 hours." });
     } catch {
       toast({ title: "Something went wrong", description: "Please call us directly at +91 9416400314.", variant: "destructive" });
     } finally {

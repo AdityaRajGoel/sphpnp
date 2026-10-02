@@ -119,7 +119,7 @@ const HolidayCalendarPage = () => {
                     <th scope="col" className="px-4 py-2 text-left font-medium">Date</th>
                     <th scope="col" className="px-3 py-2 text-left font-medium">Exchange</th>
                     <th scope="col" className="px-3 py-2 text-left font-medium">Type</th>
-                    <th scope="col" className="px-4 py-2 text-left font-medium">Contracts</th>
+                    <th scope="col" className="hidden px-4 py-2 text-left font-medium sm:table-cell">Contracts</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -129,10 +129,12 @@ const HolidayCalendarPage = () => {
                         <span className="font-semibold tabular-nums">{dayMonth(e.date)}</span>
                         <span className="ml-2 text-xs text-muted-foreground">{dayName(e.date).slice(0, 3)}</span>
                         {e.shifted && <span className="ml-2 rounded bg-brand-orange/15 px-1.5 py-0.5 text-[10px] font-semibold text-brand-orange" title={`Scheduled ${dayMonth(e.scheduled)}, a holiday`}>shifted</span>}
+                        {/* Phones: four columns overflowed 375px, so Contracts stacks here. */}
+                        <span className="mt-0.5 block whitespace-normal text-xs text-muted-foreground sm:hidden">{e.contracts}</span>
                       </td>
                       <td className="px-3 py-2"><Badge className={`text-[10px] ${EXCHANGE_BADGE[e.exchange]}`}>{e.exchange}</Badge></td>
                       <td className={`px-3 py-2 text-xs font-semibold ${e.kind === "monthly" ? "text-secondary" : "text-muted-foreground"}`}>{e.kind === "monthly" ? "Monthly" : "Weekly"}</td>
-                      <td className="px-4 py-2 text-xs text-muted-foreground">{e.contracts}</td>
+                      <td className="hidden px-4 py-2 text-xs text-muted-foreground sm:table-cell">{e.contracts}</td>
                     </tr>
                   ))}
                 </tbody>

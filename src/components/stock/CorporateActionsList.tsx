@@ -32,7 +32,7 @@ export default function CorporateActionsList({ actions }: { actions: CorporateAc
             const value = toCell(a.value, formatActionValue);
             return (
             <motion.li key={`${a.ex_date}-${a.action_type}-${i}`} {...revealItem(i)}>
-              <Card className="p-4 flex items-start justify-between gap-4 hover:bg-muted/30 transition-colors">
+              <Card className="p-4 flex items-start justify-between gap-4">
                 <div className="min-w-0">
                   <div className="flex items-center gap-2 mb-1">
                     <Badge variant="outline" className="capitalize">{a.action_type}</Badge>

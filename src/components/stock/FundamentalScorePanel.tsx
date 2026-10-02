@@ -58,12 +58,12 @@ export default function FundamentalScorePanel({ scores }: { scores: FundamentalS
 
   return (
     <motion.section {...revealSection} className="mt-8" aria-labelledby="quality-heading">
-      <Card className="p-5 md:p-6">
+      <Card className="p-4 sm:p-5">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="flex items-center gap-2">
             <ShieldCheck className="w-5 h-5 text-secondary" />
             <div>
-              <h2 id="quality-heading" className="font-heading text-xl font-bold">Financial quality</h2>
+              <h2 id="quality-heading" className="font-heading text-lg font-bold">Financial quality</h2>
               <p className="text-xs text-muted-foreground">
                 From {scores.basis} statements to {new Intl.DateTimeFormat("en-IN", { dateStyle: "medium" }).format(new Date(scores.period_end))}.
               </p>
@@ -73,7 +73,7 @@ export default function FundamentalScorePanel({ scores }: { scores: FundamentalS
         </div>
 
         {hasScore && (
-          <div className="mt-5 rounded-lg border border-border p-4">
+          <div className="mt-5 border-t border-border pt-5">
             <div className="flex flex-wrap items-baseline justify-between gap-2">
               <div>
                 <h3 className="text-sm font-semibold">Piotroski F-Score</h3>

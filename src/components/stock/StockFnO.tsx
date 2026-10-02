@@ -41,10 +41,10 @@ export default function StockFnO({ symbol }: { symbol: string }) {
   ];
 
   return (
-    <Card className="min-w-0 p-4">
+    <Card className="min-w-0 p-4 sm:p-5">
       <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
         <div>
-          <h2 className="text-xl font-bold">Futures &amp; options</h2>
+          <h2 className="font-heading text-lg font-bold">Futures &amp; options</h2>
           <p className="text-xs text-muted-foreground">NSE F&amp;O close, {shortDate(c.trade_date)} · options expiring {shortDate(c.expiry)}</p>
         </div>
         <BuildUpBadge value={c.build_up} />

@@ -42,7 +42,9 @@ export function isNoise(report: ClientErrorReport): boolean {
   const text = `${report.message} ${report.source ?? ""} ${report.stack ?? ""}`;
   // "Script error." is what browsers report for a cross-origin script: no detail to act on.
   return /ResizeObserver loop|chrome-extension:\/\/|moz-extension:\/\/|safari-web-extension:\/\//i.test(text)
-    || /^Script error\.?$/i.test(report.message.trim());
+    || /^Script error\.?$/i.test(report.message.trim())
+    // Outlook Safe Links' scanner opens mailed links in a harness that rejects this.
+    || /^Object Not Found Matching Id:\d+/.test(report.message);
 }
 
 export function shouldReport(hostname: string, isAutomated: boolean): boolean {

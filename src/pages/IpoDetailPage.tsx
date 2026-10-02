@@ -13,6 +13,7 @@ import { ipoDataset, ipoFaqItems, ipoMetaDescription } from "@/lib/ipo-structure
 import IPOGmpChart from "@/components/ipo/IPOGmpChart";
 import IPOGmpHistoryTable from "@/components/ipo/IPOGmpHistoryTable";
 import IPOIssueDetailsCard from "@/components/ipo/IPOIssueDetailsCard";
+import IPOAllotmentCard from "@/components/ipo/IPOAllotmentCard";
 import NseExchangeCard from "@/components/ipo/NseExchangeCard";
 import IPOPageSections from "@/components/ipo/IPOPageSections";
 import { Badge } from "@/components/ui/badge";
@@ -54,7 +55,7 @@ export default function IpoDetailPage() {
         <section className="grid grid-cols-2 lg:grid-cols-5 gap-3 md:gap-4 mt-8">
           <MinInvestmentCard ipo={ipo} />
           <SummaryCard label="Price band" value={ipo.price} />
-          <SummaryCard label="Latest GMP" value={formatGmp(ipo.gmp)} note={gmpPercent(ipo) === null ? undefined : `${formatGmpPercent(gmpPercent(ipo))} of the ₹${ipo.price_band_max} upper band`} tone={ipo.gmp === null ? undefined : ipo.gmp >= 0 ? "up" : "down"} />
+          <SummaryCard label="Latest GMP" value={formatGmp(ipo.gmp)} note={gmpPercent(ipo) === null ? undefined : `${formatGmpPercent(gmpPercent(ipo))} of the ₹${ipo.price_band_max} upper band`} tone={ipo.gmp === null || ipo.gmp === 0 ? undefined : ipo.gmp > 0 ? "up" : "down"} />
           <SummaryCard label="Est. listing price" value={formatRupees(ipo.est_listing_price)} />
           <SummaryCard label="Issue size" value={ipo.size} />
         </section>
@@ -72,6 +73,7 @@ export default function IpoDetailPage() {
           </section>
         )}
         <div className="mt-6"><NseExchangeCard ipo={ipo} /></div>
+        <div className="mt-6"><IPOAllotmentCard ipo={ipo} /></div>
         <section className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-8">
           <Card className="min-w-0 lg:col-span-2"><CardContent className="p-4 md:p-6">
             <SectionTitle icon={BarChart3} title="GMP history" subtitle="Each point is a recorded observation from the scheduled data sync." />

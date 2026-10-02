@@ -24,6 +24,13 @@ export const CHART = {
 
 export const axisTick = { fill: CHART.axis, fontSize: 11 };
 
+/** Heatmap cells: the loss red or gain green mixed into the neutral muted grey, by a signed step of -3..3. */
+const DIVERGING_MIX = [0, 22, 40, 58];
+export const divergingFill = (step: number) =>
+  step === 0
+    ? "hsl(var(--muted))"
+    : `color-mix(in oklab, ${step > 0 ? CHART.up : CHART.down} ${DIVERGING_MIX[Math.min(3, Math.abs(step))]}%, hsl(var(--muted)))`;
+
 export const tooltipStyle = {
   contentStyle: { background: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12, color: "hsl(var(--popover-foreground))" },
   labelStyle: { color: "hsl(var(--popover-foreground))", fontWeight: 600 },

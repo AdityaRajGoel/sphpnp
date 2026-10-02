@@ -1,74 +1,66 @@
-import { AnimatePresence, motion } from "motion/react";
+import { motion } from "motion/react";
 import { useState, useRef } from "react";
 import { Send, Loader2, CheckCircle2, User, Phone, Mail, MessageSquare } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { RippleButton } from "@/components/ui/ripple-button";
+import { FieldMessage, fieldStateClass } from "@/components/ui/form-field";
+import { validateAll, validateEmail, validateName, validatePhone, type FieldCheck } from "@/lib/form-validation";
 
-import { DURATION, EASE_OUT, revealSection } from "@/lib/motion";
+import { revealSection } from "@/lib/motion";
 
-/**
- * Validation messages used to appear and vanish instantly, which shifts every
- * field below them by a line with no bridge — the classic teleporting-state
- * problem, and worst on the field you are still typing in.
- *
- * Height is animated here rather than transformed. That is normally the wrong
- * call, but the point of the motion is to open the gap the text will occupy,
- * and a transform cannot reserve layout space. The cost is one line of text in
- * a form that is idle between keystrokes, and `role="alert"` keeps the message
- * announced the moment it renders rather than when the animation finishes.
- */
-const FieldError = ({ message }: { message?: string }) => (
-  <AnimatePresence initial={false}>
-    {message && (
-      <motion.p
-        role="alert"
-        className="text-destructive text-xs mt-1 overflow-hidden"
-        initial={{ opacity: 0, height: 0 }}
-        animate={{ opacity: 1, height: "auto" }}
-        exit={{ opacity: 0, height: 0 }}
-        transition={{ duration: DURATION.fast, ease: [...EASE_OUT] }}
-      >
-        {message}
-      </motion.p>
-    )}
-  </AnimatePresence>
+type Field = "name" | "phone" | "email" | "message";
+
+// Same checks as the /open-account form, so a number accepted there is accepted here.
+const CHECKS: Partial<Record<Field, FieldCheck>> = {
+  name: validateName,
+  phone: validatePhone,
+  email: validateEmail({ optional: true }),
+};
+
+const RequiredMark = () => (
+  <>
+    <span className="text-destructive" aria-hidden="true"> *</span>
+    <span className="sr-only"> (required)</span>
+  </>
 );
-const PHONE_REGEX = /^(\+?91)?[6-9]\d{9}$/;
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const ContactForm = () => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [form, setForm] = useState({ name: "", phone: "", email: "", message: "" });
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [touched, setTouched] = useState<Partial<Record<Field, boolean>>>({});
   const formRenderTime = useRef(Date.now());
+
+  const errors = validateAll(form, CHECKS);
+  const shownError = (field: Field) => (touched[field] ? errors[field] ?? null : null);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
-    if (errors[name]) setErrors((prev) => ({ ...prev, [name]: "" }));
   };
 
-  const validate = (): boolean => {
-    const newErrors: Record<string, string> = {};
-    const trimName = form.name.trim();
-    const trimPhone = form.phone.trim().replace(/[\s-]/g, '');
-
-    if (!trimName || trimName.length < 2) newErrors.name = "Name is required (min 2 chars)";
-    if (trimName.length > 100) newErrors.name = "Name is too long (max 100 chars)";
-    if (!trimPhone || !PHONE_REGEX.test(trimPhone)) newErrors.phone = "Valid Indian phone number required";
-    if (form.email.trim() && !EMAIL_REGEX.test(form.email.trim())) newErrors.email = "Invalid email address";
-    if (form.email.trim().length > 255) newErrors.email = "Email is too long";
-    if (form.message.trim().length > 1000) newErrors.message = "Message too long (max 1000 chars)";
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+  // Judge a field once it has been left with something in it, so tabbing past an
+  // empty field does not shout; submit marks every field.
+  const handleBlur = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const name = e.target.name as Field;
+    if (form[name].trim()) setTouched((prev) => ({ ...prev, [name]: true }));
   };
+
+  const fieldProps = (field: "name" | "phone" | "email") => ({
+    id: `contact-${field}`,
+    name: field,
+    value: form[field],
+    onChange: handleChange,
+    onBlur: handleBlur,
+    "aria-invalid": shownError(field) ? true : undefined,
+    "aria-describedby": `contact-${field}-message`,
+    className: `pl-10 ${fieldStateClass(shownError(field), touched[field] && !errors[field] && !!form[field].trim())}`,
+  });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -77,7 +69,12 @@ const ContactForm = () => {
     const honeypot = (e.target as HTMLFormElement).querySelector<HTMLInputElement>('[name="_website"]');
     if (honeypot && honeypot.value) return;
 
-    if (!validate()) return;
+    const invalid = Object.keys(validateAll(form, CHECKS));
+    if (invalid.length > 0) {
+      setTouched({ name: true, phone: true, email: true });
+      document.getElementById(`contact-${invalid[0]}`)?.focus();
+      return;
+    }
 
     setLoading(true);
     try {
@@ -111,7 +108,7 @@ const ContactForm = () => {
       }
 
       setSubmitted(true);
-      toast({ title: "Message sent! ✅", description: "We'll get back to you shortly." });
+      toast({ title: "Message sent", description: "We'll get back to you shortly." });
       if (data?.whatsappUrl) {
         window.open(data.whatsappUrl, "_blank");
       }
@@ -145,6 +142,7 @@ const ContactForm = () => {
   return (
     <motion.form
       onSubmit={handleSubmit}
+      noValidate
       className="bg-card border border-border/50 rounded-2xl p-6 md:p-8 shadow-lg space-y-4"
       {...revealSection}
     >
@@ -156,38 +154,54 @@ const ContactForm = () => {
         <Input name="_website" tabIndex={-1} autoComplete="off" />
       </div>
 
-      <div className="grid sm:grid-cols-2 gap-4">
+      <p className="text-xs text-muted-foreground">
+        Fields marked <span className="text-destructive" aria-hidden="true">*</span><span className="sr-only">with an asterisk</span> are required.
+      </p>
+
+      <div className="grid sm:grid-cols-2 gap-x-4 gap-y-2">
         <div>
+          <Label htmlFor="contact-name" className="text-xs font-semibold text-foreground mb-1.5 block">
+            Your name<RequiredMark />
+          </Label>
           <div className="relative">
-            <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input name="name" aria-label="Your Name" placeholder="Your Name *" value={form.name} onChange={handleChange} className="pl-10" maxLength={100} required aria-invalid={!!errors.name} />
+            <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
+            <Input {...fieldProps("name")} placeholder="As on your PAN card" maxLength={100} required aria-required="true" autoComplete="name" />
           </div>
-          <FieldError message={errors.name} />
+          <FieldMessage id="contact-name-message" error={shownError("name")} />
         </div>
         <div>
+          <Label htmlFor="contact-phone" className="text-xs font-semibold text-foreground mb-1.5 block">
+            Mobile number<RequiredMark />
+          </Label>
           <div className="relative">
-            <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input name="phone" aria-label="Phone Number" placeholder="Phone Number *" value={form.phone} onChange={handleChange} className="pl-10" maxLength={15} required type="tel" inputMode="tel" autoComplete="tel" aria-invalid={!!errors.phone} />
+            <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
+            <Input {...fieldProps("phone")} placeholder="98765 43210" maxLength={20} required aria-required="true" type="tel" inputMode="tel" autoComplete="tel" />
           </div>
-          <FieldError message={errors.phone} />
+          <FieldMessage id="contact-phone-message" error={shownError("phone")} />
         </div>
       </div>
 
       <div>
+        <Label htmlFor="contact-email" className="text-xs font-semibold text-foreground mb-1.5 block">
+          Email <span className="font-normal text-muted-foreground">(optional)</span>
+        </Label>
         <div className="relative">
-          <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input name="email" aria-label="Email Address" type="email" placeholder="Email (optional)" value={form.email} onChange={handleChange} className="pl-10" maxLength={255} autoComplete="email" aria-invalid={!!errors.email} />
+          <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
+          <Input {...fieldProps("email")} type="email" inputMode="email" placeholder="name@example.com" maxLength={255} autoComplete="email" />
         </div>
-        <FieldError message={errors.email} />
+        <FieldMessage id="contact-email-message" error={shownError("email")} />
       </div>
 
       <div>
+        <Label htmlFor="contact-message" className="text-xs font-semibold text-foreground mb-1.5 block">
+          Message <span className="font-normal text-muted-foreground">(optional)</span>
+        </Label>
         <div className="relative">
-          <MessageSquare className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
-          <Textarea name="message" aria-label="Your Message" placeholder="Your message..." value={form.message} onChange={handleChange} className="pl-10 min-h-[100px]" maxLength={1000} aria-invalid={!!errors.message} />
+          <MessageSquare className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" aria-hidden="true" />
+          {/* text-base below md: iOS zooms into any field under 16px. */}
+          <Textarea id="contact-message" name="message" aria-describedby="contact-message-count" placeholder="How can we help?" value={form.message} onChange={handleChange} className="pl-10 min-h-[100px] text-base md:text-sm" maxLength={1000} />
         </div>
-        <FieldError message={errors.message} />
-        <p className="text-muted-foreground text-[10px] mt-1 text-right">{form.message.length}/1000</p>
+        <p id="contact-message-count" className="text-muted-foreground text-xs mt-1 text-right tabular-nums">{form.message.length} / 1000</p>
       </div>
 
       <RippleButton type="submit" disabled={loading} className="w-full bg-secondary hover:bg-secondary/90 text-secondary-foreground font-bold">

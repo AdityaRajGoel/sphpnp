@@ -494,7 +494,7 @@ const UnlistedShares = () => {
                     <li>Risk of total loss of investment</li>
                   </ul>
                   <p className="pt-2"><strong>Parasram India acts only as a facilitator</strong> for unlisted share transactions. We do not guarantee returns, listing timelines, or the accuracy of company information. Investors are advised to perform their own due diligence and consult a qualified financial advisor before investing.</p>
-                  <p className="text-xs text-muted-foreground/70 pt-2">By proceeding, you acknowledge that you understand the risks involved in trading unlisted securities and that such investments are made at your own risk.</p>
+                  <p className="text-xs text-foreground/80 pt-2">By proceeding, you acknowledge that you understand the risks involved in trading unlisted securities and that such investments are made at your own risk.</p>
                 </div>
               </div>
             </div>

@@ -15,7 +15,7 @@ export default function RedFlagsCard({ symbol }: { symbol: string }) {
 
   if (flags.length === 0) {
     return (
-      <p className="mt-6 flex items-center gap-2 rounded-lg border border-secondary/30 bg-secondary/5 px-4 py-3 text-sm">
+      <p className="flex items-center gap-2 rounded-surface border border-secondary/30 bg-secondary/5 px-4 py-3 text-sm shadow-sm">
         <ShieldCheck className="h-4 w-4 shrink-0 text-secondary" aria-hidden="true" />
         No red flags in exchange filings: no rising pledge, promoter selling, surveillance or critical filing on record.
       </p>
@@ -23,7 +23,7 @@ export default function RedFlagsCard({ symbol }: { symbol: string }) {
   }
 
   return (
-    <Card className="mt-6 border-destructive/30 p-5" aria-labelledby="red-flags-heading">
+    <Card className="border-destructive/30 p-5" aria-labelledby="red-flags-heading">
       <h2 id="red-flags-heading" className="flex items-center gap-2 font-heading text-lg font-bold">
         <AlertTriangle className="h-5 w-5 text-destructive" aria-hidden="true" />
         {flags.length} red flag{flags.length === 1 ? "" : "s"} to read up on

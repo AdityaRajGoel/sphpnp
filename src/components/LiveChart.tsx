@@ -1,3 +1,4 @@
+import { istToday, shortDate } from "@/lib/market-data";
 import { motion } from "motion/react";
 import { useState, useMemo, useCallback, useEffect, memo } from "react";
 import { TrendingUp, TrendingDown, BarChart3, Activity, ArrowUpRight, ArrowDownRight, Clock, Layers, Gauge, LineChart, Maximize2 } from "lucide-react";
@@ -296,6 +297,8 @@ const LiveChart = () => {
   const [volumeData, setVolumeData] = useState<number[]>([]);
   const [timestamps, setTimestamps] = useState<number[]>([]);
   const [loadingChart, setLoadingChart] = useState(false);
+  // The trading day a 1D chart shows: the last session on a holiday or before the open.
+  const [session, setSession] = useState<string | null>(null);
   // Set when the feed fails or returns nothing. The chart previously filled
   // this case with a seeded random walk, which rendered as real NIFTY movement
   // with no way for a visitor to tell. Showing nothing is the only honest
@@ -327,6 +330,7 @@ const LiveChart = () => {
           setChartData(data.dataPoints.map((dp: { c: number }) => dp.c));
           setVolumeData(data.dataPoints.map((dp: { v: number }) => dp.v));
           setTimestamps(data.dataPoints.map((dp: { t: number }) => dp.t));
+          setSession(typeof data.session === "string" ? data.session : null);
           setChartError(false);
         } else if (active) {
           setChartData([]);
@@ -444,9 +448,11 @@ const LiveChart = () => {
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="text-xs text-muted-foreground font-medium">{idx.name}</div>
-                    <div className="text-sm font-bold text-foreground">₹{idx.price}</div>
+                    <div className="whitespace-nowrap text-sm font-bold tabular-nums text-foreground">₹{idx.price}</div>
+                    {/* Under the price on a phone: beside it, an 11-character Sensex level ran into the pill. */}
+                    <div className={`sm:hidden text-[11px] font-bold tabular-nums ${idx.up ? "text-secondary" : "text-destructive"}`}>{idx.change}</div>
                   </div>
-                  <div className={`text-xs font-bold px-2 py-1 rounded-full ${idx.up ? "bg-secondary/10 text-secondary" : "bg-destructive/10 text-destructive"}`}>{idx.change}</div>
+                  <div className={`hidden sm:block shrink-0 text-xs font-bold tabular-nums px-2 py-1 rounded-full ${idx.up ? "bg-secondary/10 text-secondary" : "bg-destructive/10 text-destructive"}`}>{idx.change}</div>
                 </motion.button>
               );
             })}
@@ -458,6 +464,9 @@ const LiveChart = () => {
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
                   <div>
                     <h3 className="font-heading text-lg font-bold text-foreground">{activeIndex?.name}</h3>
+                    {activeTimeframe === "1D" && session && session !== istToday() && (
+                      <p className="text-xs text-muted-foreground">Last session, {shortDate(session)}</p>
+                    )}
                     <div className="flex items-center gap-3 mt-1">
                       <span className="text-xl sm:text-2xl font-bold text-foreground">₹{activeIndex?.price}</span>
                       <span className={`text-sm font-bold px-2.5 py-1 rounded-full ${currentUp ? "bg-secondary/10 text-secondary" : "bg-destructive/10 text-destructive"}`}>
@@ -562,11 +571,11 @@ const LiveChart = () => {
                     {showIndicators && (
                       <>
                         <div className="flex items-center gap-1">
-                          <div className="w-4 h-0.5 bg-brand-gold rounded" />
+                          <div className="w-4 h-0.5 bg-[hsl(var(--chart-4))] rounded" />
                           <span className="text-[10px] text-muted-foreground">SMA 20</span>
                         </div>
                         <div className="flex items-center gap-1">
-                          <div className="w-4 h-0.5 rounded" style={{ background: "hsl(210, 80%, 60%)" }} />
+                          <div className="w-4 border-t-2 border-dashed border-muted-foreground" />
                           <span className="text-[10px] text-muted-foreground">SMA 50</span>
                         </div>
                       </>

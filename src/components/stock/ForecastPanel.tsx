@@ -37,12 +37,12 @@ export default function ForecastPanel({ forecast }: { forecast: Forecast | null 
 
   return (
     <motion.section {...revealSection} className="mt-8" aria-labelledby="forecast-heading">
-      <Card className="p-5 md:p-6">
+      <Card className="p-4 sm:p-5">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="flex items-center gap-2">
             <FlaskConical className="w-5 h-5 text-secondary" />
             <div>
-              <h2 id="forecast-heading" className="font-heading text-xl font-bold">Model simulation</h2>
+              <h2 id="forecast-heading" className="font-heading text-lg font-bold">Model simulation</h2>
               <p className="text-xs text-muted-foreground">
                 {forecast.samples} independent runs of {forecast.model}, conditioned on daily bars to {asOf},
                 simulating {forecast.horizon_days} sessions ahead.
@@ -54,7 +54,7 @@ export default function ForecastPanel({ forecast }: { forecast: Forecast | null 
 
         {/* The disclaimer sits ABOVE the numbers, not under them: a reader who
             stops after the figures should already have read it. */}
-        <div className="mt-5 rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm">
+        <div className="mt-5 rounded-md border border-brand-gold/30 bg-brand-gold/10 p-4 text-sm">
           <strong>Research output, not advice.</strong> {forecast.disclaimer}
         </div>
 

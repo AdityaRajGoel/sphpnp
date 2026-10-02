@@ -36,7 +36,7 @@ export default function KeyMetricsGrid({ keyMetrics, roe, ratios, movingAverages
         {cards.map((card, i) => (
           // One wrapper, styled as the Card primitive: <dl> allows a single
           // <div> between itself and its <dt>/<dd> pairs.
-          <motion.div key={card.label} {...revealItem(i)} className="rounded-lg border bg-card text-card-foreground shadow-sm p-4 h-full" title={card.hint}>
+          <motion.div key={card.label} {...revealItem(i)} className="rounded-surface border bg-card text-card-foreground shadow-sm p-4 h-full" title={card.hint}>
             <dt className="text-xs text-muted-foreground">{card.label}</dt>
             <dd className="mt-1 text-lg font-semibold tabular-nums">{card.value}</dd>
           </motion.div>

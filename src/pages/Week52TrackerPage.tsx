@@ -42,7 +42,7 @@ const buildRows = (stocks: ScreenerStock[], universe: Map<string, MetricRow> | u
 
 function RangeBar({ position }: { position: number }) {
   return (
-    <div className="relative h-1.5 w-28 rounded-full bg-gradient-to-r from-destructive/60 via-brand-gold/60 to-secondary/60" aria-hidden="true">
+    <div className="relative h-1.5 w-28 rounded-full bg-muted" aria-hidden="true">
       <span className="absolute top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-foreground bg-card" style={{ left: `${Math.min(100, Math.max(0, position))}%` }} />
     </div>
   );
@@ -149,7 +149,8 @@ const Week52TrackerPage = () => {
           title="52-Week High / Low Tracker"
           description="Which stocks sit at their yearly extremes, which sectors they cluster in, and what their trend, momentum and participation look like."
         >
-          {updatedAt && <HeaderStat label="Updated" value={new Date(updatedAt).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })} />}
+          {/* Date and time: a bare "09:06 am" could be today or last week. */}
+          {updatedAt && <HeaderStat label="Updated" value={new Date(updatedAt).toLocaleString("en-IN", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })} />}
           <Button variant="outline" size="sm" onClick={handleRefresh} disabled={refreshing} className="h-9">
             {refreshing ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}<span className="ml-1.5">Refresh</span>
           </Button>

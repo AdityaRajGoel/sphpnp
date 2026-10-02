@@ -1,0 +1,55 @@
+{
+ "allSec": {
+  "data": [
+   {
+    "symbol": "KOTYARK",
+    "series": "EQ",
+    "open_price": 31.69,
+    "high_price": 31.69,
+    "low_price": 24.96,
+    "ltp": 26.5,
+    "prev_price": 31.2,
+    "net_price": -15.06,
+    "trade_quantity": 1861015,
+    "turnover": 488.88864049999995,
+    "market_type": "N",
+    "ca_ex_dt": "14-Aug-2026",
+    "ca_purpose": "Dividend - Re 0.4545 Per Share",
+    "perChange": -15.06
+   },
+   {
+    "symbol": "MEDICO",
+    "series": "EQ",
+    "open_price": 26.2,
+    "high_price": 26.21,
+    "low_price": 20.89,
+    "ltp": 22.3,
+    "prev_price": 26,
+    "net_price": -14.23,
+    "trade_quantity": 3562547,
+    "turnover": 801.573075,
+    "market_type": "N",
+    "ca_ex_dt": "29-Aug-2024",
+    "ca_purpose": "Annual General Meeting",
+    "perChange": -14.23
+   },
+   {
+    "symbol": "PAISALO",
+    "series": "EQ",
+    "open_price": 87.01,
+    "high_price": 88.71,
+    "low_price": 73.42,
+    "ltp": 78.66,
+    "prev_price": 89.02,
+    "net_price": -11.64,
+    "trade_quantity": 37593061,
+    "turnover": 29841.3718218,
+    "market_type": "N",
+    "ca_ex_dt": "11-Sep-2026",
+    "ca_purpose": "Dividend - Re 0.10 Per Share",
+    "perChange": -11.64
+   }
+  ],
+  "timestamp": "28-Sep-2026 16:00:00"
+ }
+}

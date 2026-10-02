@@ -26,7 +26,8 @@ jobs:
           cache: npm
       - run: npm ci --no-audit --no-fund
       - name: Typecheck
-        run: npx tsc --noEmit
+        # The root tsconfig is references-only (files: []), so check each project.
+        run: npx tsc --noEmit -p tsconfig.app.json && npx tsc --noEmit -p tsconfig.node.json
       - name: Tests
         run: npm test
       - name: Build (vite only, no prerender)

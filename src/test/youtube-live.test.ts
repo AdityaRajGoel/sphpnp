@@ -467,3 +467,40 @@ describe("extractLiveVideoFromHtml", () => {
     expect(extractLiveVideoFromHtml(html)?.title).toBe("Right Title");
   });
 });
+
+/*
+ * What YouTube served the VPS (a German IP) on 29 Sep 2026 while both channels
+ * were live: a watch page whose canonical link reads href="undefined". The page's
+ * own video is named only by currentVideoEndpoint; the nearer watchEndpoint ids
+ * belong to related videos.
+ */
+describe("extractLiveVideoFromHtml on a watch page with no usable canonical link", () => {
+  const page = (primaryLive: boolean, canonical = "undefined") => `
+    <link rel="canonical" href="${canonical}">
+    {"currentVideoEndpoint":{"clickTrackingParams":"x","commandMetadata":{"webCommandMetadata":{"url":"/watch?v=6iWxdbKNkNc"}},"watchEndpoint":{"videoId":"6iWxdbKNkNc"}},
+     "related":[{"watchEndpoint":{"videoId":"viz-EQs5YLM"}}],
+     "contents":[{"videoPrimaryInfoRenderer":{"title":{"runs":[{"text":"Market LIVE"}]},"viewCount":{"videoViewCountRenderer":{"viewCount":{"runs":[{"text":"130"}]},"isLive":${primaryLive}}}}}]}
+    <meta name="title" content="Market LIVE">`;
+
+  it("takes the page's own video, not a related one, when its info block says live", () => {
+    expect(extractLiveVideoFromHtml(page(true))).toEqual({ videoId: "6iWxdbKNkNc", title: "Market LIVE" });
+  });
+
+  it("reads a recording on the same kind of page as not live", () => {
+    expect(extractLiveVideoFromHtml(page(false))).toBeNull();
+  });
+
+  // The real 2 Oct 2026 pages had an empty meta title, and a videoDetails block
+  // for the same id whose first "title" was the like count ("23").
+  it("titles the video from its own info block, not a like count or an empty meta tag", () => {
+    const html = page(true)
+      .replace('<meta name="title" content="Market LIVE">', '<meta name="title" content="">')
+      .concat('{"videoDetails":{"videoId":"6iWxdbKNkNc","likeCount":{"title":"23"}}}')
+      .replace('"runs":[{"text":"Market LIVE"}]', '"runs":[{"text":"Market "},{"text":"LIVE \\u0026 Nifty"}]');
+    expect(extractLiveVideoFromHtml(html)).toEqual({ videoId: "6iWxdbKNkNc", title: "Market LIVE & Nifty" });
+  });
+
+  it("still trusts a real canonical link over the fallback: an off-air channel page stays offline", () => {
+    expect(extractLiveVideoFromHtml(page(true, "https://www.youtube.com/channel/UCQIycDaLsBpMKjOCeaKUYVg"))).toBeNull();
+  });
+});

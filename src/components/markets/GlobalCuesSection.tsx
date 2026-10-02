@@ -98,7 +98,7 @@ export default function GlobalCuesSection() {
                 </AreaChart>
               </ResponsiveContainer>
             )}
-            <p className="mt-2 text-xs text-muted-foreground">End-of-day closes. Brent is tracked through the BNO ETF.</p>
+            <p className="mt-2 text-xs text-muted-foreground">End-of-day closes. Brent, WTI and Henry Hub are spot prices from the US EIA; BNO is a fund that tracks Brent.</p>
           </Card>
         </div>
       )}

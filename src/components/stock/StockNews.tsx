@@ -42,14 +42,14 @@ export default function StockNews({ symbol, name }: Props) {
             const href = safeHref(item.url);
             return (
               <motion.li key={item.url} {...revealItem(i)}>
-                <Card className="h-full p-4 transition-colors hover:border-primary/50 group">
+                <Card className="group h-full p-0 transition-colors hover:border-secondary/50">
                   <a
                     href={href}
                     target="_blank"
                     rel="noopener noreferrer nofollow"
-                    className="flex h-full flex-col gap-2 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    className="flex h-full flex-col gap-2 rounded-surface p-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   >
-                    <span className="font-medium leading-snug group-hover:text-primary transition-colors line-clamp-3">{item.title}</span>
+                    <span className="font-medium leading-snug group-hover:text-secondary transition-colors line-clamp-3">{item.title}</span>
                     <span className="mt-auto flex items-center gap-2 text-xs text-muted-foreground">
                       <span className="font-semibold text-foreground/70">{item.source || "News"}</span>
                       <span aria-hidden="true">·</span>

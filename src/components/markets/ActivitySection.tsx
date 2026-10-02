@@ -10,7 +10,7 @@ import {
 import { SectionHeading, EmptyState } from "./chart-kit";
 import { insiderBoard, recentInsiderTrades, type InsiderNet } from "@/lib/insider-board";
 
-function SymbolLink({ symbol, tracked }: { symbol: string; tracked: Set<string> | undefined }) {
+export function SymbolLink({ symbol, tracked }: { symbol: string; tracked: Set<string> | undefined }) {
   return tracked?.has(symbol)
     ? <Link to={`/stock/${encodeURIComponent(symbol)}`} className="font-semibold hover:text-primary hover:underline underline-offset-2">{symbol}</Link>
     : <span className="font-semibold">{symbol}</span>;
@@ -133,7 +133,7 @@ function DealsTable({ deals, tracked }: { deals: Deal[]; tracked?: Set<string> }
 export default function ActivitySection() {
   const today = istToday();
   const tracked = useQuery({ queryKey: ["tracked-symbols"], queryFn: trackedSymbols, staleTime: 60 * 60_000 });
-  const snaps = useQuery({ queryKey: ["market-snapshots"], queryFn: marketSnapshots, staleTime: 5 * 60_000 });
+  const snaps = useQuery({ queryKey: ["market-snapshots"], queryFn: () => marketSnapshots(["most_active_value", "volume_gainers"]), staleTime: 5 * 60_000 });
   const deals = useQuery({ queryKey: ["recent-deals"], queryFn: () => recentDeals(300), staleTime: 10 * 60_000 });
   const flags = useQuery({ queryKey: ["surveillance"], queryFn: surveillanceFlags, staleTime: 30 * 60_000 });
   const events = useQuery({ queryKey: ["calendar", today], queryFn: () => upcomingEvents(today, 30), staleTime: 30 * 60_000 });

@@ -61,7 +61,7 @@ const contactItems = [
     content: (
       <>
         Monday – Friday: 9:00 AM – 6:00 PM<br />
-        Saturday: 9:00 AM – 2:00 PM<br />
+        Saturday: 9:00 AM – 4:00 PM<br />
         Sunday: Closed
       </>
     ),

@@ -12,8 +12,9 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-  IndianRupee, ArrowRight, TrendingUp, TrendingDown, Info, Calculator, BarChart3, ExternalLink, ChevronDown, ChevronUp, Scale,
+  IndianRupee, ArrowRight, TrendingUp, TrendingDown, Info, Calculator, BarChart3, ExternalLink, ChevronDown, ChevronUp, Scale, Minus, AlertCircle,
 } from "lucide-react";
+import { FieldMessage, fieldStateClass } from "@/components/ui/form-field";
 import PageTransition from "@/components/PageTransition";
 import { revealFade } from "@/lib/motion";
 import {
@@ -40,6 +41,40 @@ const num = (s: string) => {
   const n = parseFloat(s);
   return Number.isFinite(n) && n > 0 ? n : 0;
 };
+
+// Far above any real price, lot or share count; keeps turnover finite.
+export const MAX_INPUT = 1e7;
+
+/**
+ * Why a trade field cannot be priced, or null when it can. Prices must be above
+ * zero; share, lot and lot-size counts must be whole numbers of 1 or more.
+ */
+export function checkTradeField(raw: string, kind: "price" | "count"): string | null {
+  if (!raw.trim()) return kind === "price" ? "Enter a price above 0" : "Enter 1 or more";
+  const n = Number(raw);
+  if (!Number.isFinite(n)) return "Enter a number";
+  if (kind === "price" && n <= 0) return "Must be more than 0";
+  if (kind === "count" && n < 1) return "Must be 1 or more";
+  if (kind === "count" && !Number.isInteger(n)) return "Whole numbers only";
+  if (n > MAX_INPUT) return "Must be 1,00,00,000 or less";
+  return null;
+}
+
+export type PnLTone = "profit" | "loss" | "flat" | "invalid";
+
+/** Judged at paise, the precision shown, so "₹0.00" is never called a profit or a loss. */
+export const pnlTone = (netPnL: number, isValid: boolean): PnLTone => {
+  if (!isValid) return "invalid";
+  const paise = Math.round(netPnL * 100);
+  return paise > 0 ? "profit" : paise < 0 ? "loss" : "flat";
+};
+
+const TONE = {
+  profit: { card: "bg-secondary/5", badge: "bg-secondary/15 text-secondary", text: "text-secondary", label: "Profit", sign: "+", Icon: TrendingUp },
+  loss: { card: "bg-destructive/5", badge: "bg-destructive/15 text-destructive", text: "text-destructive", label: "Loss", sign: "−", Icon: TrendingDown },
+  flat: { card: "bg-muted/30", badge: "bg-muted text-muted-foreground", text: "text-foreground", label: "Break-even", sign: "", Icon: Minus },
+  invalid: { card: "bg-muted/30", badge: "bg-muted text-muted-foreground", text: "text-muted-foreground", label: "Check inputs", sign: "", Icon: AlertCircle },
+} as const;
 
 const FieldLabel = ({ htmlFor, children }: { htmlFor: string; children: React.ReactNode }) => (
   <Label htmlFor={htmlFor} className="text-xs uppercase tracking-wider text-muted-foreground mb-1 block">
@@ -76,9 +111,24 @@ const BrokerageCalculatorPage = () => {
     [seg, buyPrice, sellPrice, quantity, lotCount],
   );
 
+  const fieldErrors: Record<string, string | null> = {
+    "buy-price": checkTradeField(buyPrice, "price"),
+    "sell-price": checkTradeField(sellPrice, "price"),
+    ...(seg.byLot
+      ? { "lot-size": checkTradeField(lotSize, "count"), lots: checkTradeField(lots, "count") }
+      : { quantity: checkTradeField(qty, "count") }),
+  };
+  const isValid = Object.values(fieldErrors).every((e) => !e);
+
   const grossPnL = charges.sellValue - charges.buyValue;
   const netPnL = grossPnL - charges.total;
-  const isProfit = netPnL >= 0;
+  const tone = TONE[pnlTone(netPnL, isValid)];
+  const grossTone = TONE[pnlTone(grossPnL, isValid)];
+  const invalidProps = (id: string) => ({
+    "aria-invalid": fieldErrors[id] ? true : undefined,
+    "aria-describedby": `${id}-message`,
+    className: `font-mono ${fieldStateClass(fieldErrors[id])}`,
+  });
   const priceWord = seg.isOption ? "premium" : "price";
 
   const chargeRows = [
@@ -170,11 +220,13 @@ const BrokerageCalculatorPage = () => {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <FieldLabel htmlFor="buy-price">Buy {priceWord} (₹)</FieldLabel>
-                  <Input id="buy-price" type="number" inputMode="decimal" min="0" step="0.05" value={buyPrice} onChange={(e) => setBuyPrice(e.target.value)} className="font-mono" />
+                  <Input id="buy-price" type="number" inputMode="decimal" min="0.01" max={MAX_INPUT} step="0.05" value={buyPrice} onChange={(e) => setBuyPrice(e.target.value)} {...invalidProps("buy-price")} />
+                  <FieldMessage id="buy-price-message" error={fieldErrors["buy-price"]} />
                 </div>
                 <div>
                   <FieldLabel htmlFor="sell-price">Sell {priceWord} (₹)</FieldLabel>
-                  <Input id="sell-price" type="number" inputMode="decimal" min="0" step="0.05" value={sellPrice} onChange={(e) => setSellPrice(e.target.value)} className="font-mono" />
+                  <Input id="sell-price" type="number" inputMode="decimal" min="0.01" max={MAX_INPUT} step="0.05" value={sellPrice} onChange={(e) => setSellPrice(e.target.value)} {...invalidProps("sell-price")} />
+                  <FieldMessage id="sell-price-message" error={fieldErrors["sell-price"]} />
                 </div>
               </div>
 
@@ -182,11 +234,13 @@ const BrokerageCalculatorPage = () => {
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <FieldLabel htmlFor="lot-size">Lot size</FieldLabel>
-                    <Input id="lot-size" type="number" inputMode="numeric" min="1" value={lotSize} onChange={(e) => setLotSize(e.target.value)} className="font-mono" />
+                    <Input id="lot-size" type="number" inputMode="numeric" min="1" max={MAX_INPUT} step="1" value={lotSize} onChange={(e) => setLotSize(e.target.value)} {...invalidProps("lot-size")} />
+                    <FieldMessage id="lot-size-message" error={fieldErrors["lot-size"]} />
                   </div>
                   <div>
                     <FieldLabel htmlFor="lots">Lots</FieldLabel>
-                    <Input id="lots" type="number" inputMode="numeric" min="1" step="1" value={lots} onChange={(e) => setLots(e.target.value)} className="font-mono" />
+                    <Input id="lots" type="number" inputMode="numeric" min="1" max={MAX_INPUT} step="1" value={lots} onChange={(e) => setLots(e.target.value)} {...invalidProps("lots")} />
+                    <FieldMessage id="lots-message" error={fieldErrors.lots} />
                   </div>
                   <p className="col-span-2 -mt-1 text-xs text-muted-foreground">
                     Quantity: <span className="font-mono text-foreground">{quantity.toLocaleString("en-IN")}</span> units. Lot size is on the contract in your trading app.
@@ -195,7 +249,8 @@ const BrokerageCalculatorPage = () => {
               ) : (
                 <div>
                   <FieldLabel htmlFor="quantity">Quantity (shares)</FieldLabel>
-                  <Input id="quantity" type="number" inputMode="numeric" min="1" step="1" value={qty} onChange={(e) => setQty(e.target.value)} className="font-mono" />
+                  <Input id="quantity" type="number" inputMode="numeric" min="1" max={MAX_INPUT} step="1" value={qty} onChange={(e) => setQty(e.target.value)} {...invalidProps("quantity")} />
+                  <FieldMessage id="quantity-message" error={fieldErrors.quantity} />
                 </div>
               )}
 
@@ -258,37 +313,31 @@ const BrokerageCalculatorPage = () => {
 
           {/* Results */}
           <div className="lg:col-span-3 space-y-6" aria-live="polite">
-            <Card
-              className={`relative overflow-hidden border-0 shadow-xl ${
-                isProfit
-                  ? "bg-secondary/5"
-                  : "bg-destructive/5"
-              }`}
-            >
+            <Card className={`relative overflow-hidden border-0 shadow-xl ${tone.card}`}>
               <div className="p-6">
                 <div className="flex items-center justify-between mb-4">
                   <span className="text-sm font-medium text-muted-foreground">Net profit / loss after charges</span>
-                  <span
-                    className={`flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full ${
-                      isProfit ? "bg-secondary/15 text-secondary" : "bg-destructive/15 text-destructive"
-                    }`}
-                  >
-                    {isProfit ? <TrendingUp className="w-3.5 h-3.5" aria-hidden /> : <TrendingDown className="w-3.5 h-3.5" aria-hidden />}
-                    {isProfit ? "Profit" : "Loss"}
+                  <span className={`flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full ${tone.badge}`}>
+                    <tone.Icon className="w-3.5 h-3.5" aria-hidden />
+                    {tone.label}
                   </span>
                 </div>
-                <p className={`text-4xl md:text-5xl font-bold font-mono tracking-tight tabular-nums ${isProfit ? "text-secondary" : "text-destructive"}`}>
-                  {isProfit ? "+" : "−"}{fmt(netPnL)}
+                <p className={`text-4xl md:text-5xl font-bold font-mono tracking-tight tabular-nums ${tone.text}`}>
+                  {isValid ? `${tone.sign}${fmt(netPnL)}` : <span aria-hidden="true">₹ –</span>}
                 </p>
-                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-4 text-sm text-muted-foreground">
-                  <span>
-                    Gross: <span className={`font-mono font-medium ${grossPnL >= 0 ? "text-secondary" : "text-destructive"}`}>{grossPnL >= 0 ? "+" : "−"}{fmt(grossPnL)}</span>
-                  </span>
-                  <ArrowRight className="w-3 h-3 opacity-40" aria-hidden />
-                  <span>
-                    Charges: <span className="font-mono font-medium text-foreground">{fmt(charges.total)}</span>
-                  </span>
-                </div>
+                {isValid ? (
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-4 text-sm text-muted-foreground">
+                    <span>
+                      Gross: <span className={`font-mono font-medium ${grossTone.text}`}>{grossTone.sign}{fmt(grossPnL)}</span>
+                    </span>
+                    <ArrowRight className="w-3 h-3 opacity-40" aria-hidden />
+                    <span>
+                      Charges: <span className="font-mono font-medium text-foreground">{fmt(charges.total)}</span>
+                    </span>
+                  </div>
+                ) : (
+                  <p className="mt-4 text-sm text-muted-foreground">Fix the highlighted trade details to see your profit or loss.</p>
+                )}
               </div>
             </Card>
 

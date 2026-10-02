@@ -68,12 +68,28 @@ const ReportsPage = lazy(() => import("./pages/ReportsPage"));
 const StockRecommendationsPage = lazy(() => import("./pages/StockRecommendationsPage"));
 const ArticlePage = lazy(() => import("./pages/ArticlePage"));
 const SIPCalculatorPage = lazy(() => import("./pages/SIPCalculatorPage"));
+const CalculatorsHubPage = lazy(() => import("./pages/calculators/CalculatorsHubPage"));
+const LumpsumCalculatorPage = lazy(() => import("./pages/calculators/LumpsumCalculatorPage"));
+const StepUpSipCalculatorPage = lazy(() => import("./pages/calculators/StepUpSipCalculatorPage"));
+const SwpCalculatorPage = lazy(() => import("./pages/calculators/SwpCalculatorPage"));
+const CagrCalculatorPage = lazy(() => import("./pages/calculators/CagrCalculatorPage"));
+const XirrCalculatorPage = lazy(() => import("./pages/calculators/XirrCalculatorPage"));
+const StockAverageCalculatorPage = lazy(() => import("./pages/calculators/StockAverageCalculatorPage"));
+const CapitalGainsTaxCalculatorPage = lazy(() => import("./pages/calculators/CapitalGainsTaxCalculatorPage"));
+const OptionValueCalculatorPage = lazy(() => import("./pages/calculators/OptionValueCalculatorPage"));
+const IncomeTaxCalculatorPage = lazy(() => import("./pages/calculators/IncomeTaxCalculatorPage"));
+const TaxLossHarvestingCalculatorPage = lazy(() => import("./pages/calculators/TaxLossHarvestingCalculatorPage"));
+const TaxSavingInvestmentsPage = lazy(() => import("./pages/calculators/TaxSavingInvestmentsPage"));
 const StockPage = lazy(() => import("./pages/StockPage"));
 const IpoPage = lazy(() => import("./pages/IpoPage"));
 const IpoDetailPage = lazy(() => import("./pages/IpoDetailPage"));
 const IpoPipelinePage = lazy(() => import("./pages/IpoPipelinePage"));
 const MarketListPage = lazy(() => import("./pages/MarketListPage"));
 const MarketListsHubPage = lazy(() => import("./pages/MarketListsHubPage"));
+const MarketMoversPage = lazy(() => import("./pages/MarketMoversPage"));
+const GiftNiftyPage = lazy(() => import("./pages/GiftNiftyPage"));
+const CommoditiesPage = lazy(() => import("./pages/CommoditiesPage"));
+const GlobalMarketsPage = lazy(() => import("./pages/GlobalMarketsPage"));
 const HelpPage = lazy(() => import("./pages/HelpPage"));
 const WatchlistPage = lazy(() => import("./pages/WatchlistPage"));
 const PortfolioPage = lazy(() => import("./pages/PortfolioPage"));
@@ -183,6 +199,10 @@ const AnimatedRoutes = () => {
         <Route path="/fno" element={<FnODashboardPage />} />
         <Route path="/holidays" element={<HolidayCalendarPage />} />
         <Route path="/52-week-tracker" element={<Week52TrackerPage />} />
+        <Route path="/markets/gift-nifty" element={<GiftNiftyPage />} />
+        <Route path="/commodities" element={<CommoditiesPage />} />
+        <Route path="/global-markets" element={<GlobalMarketsPage />} />
+        <Route path="/markets/:list" element={<MarketMoversPage />} />
         <Route path="/market-pulse" element={<MarketPulsePage />} />
         <Route path="/auth" element={<AuthPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
@@ -212,6 +232,18 @@ const AnimatedRoutes = () => {
         <Route path="/indices/:slug" element={<MarketListPage kind="index" />} />
         <Route path="/sectors/:slug" element={<MarketListPage kind="sector" />} />
         <Route path="/sip-calculator" element={<SIPCalculatorPage />} />
+        <Route path="/calculators" element={<CalculatorsHubPage />} />
+        <Route path="/lumpsum-calculator" element={<LumpsumCalculatorPage />} />
+        <Route path="/step-up-sip-calculator" element={<StepUpSipCalculatorPage />} />
+        <Route path="/swp-calculator" element={<SwpCalculatorPage />} />
+        <Route path="/cagr-calculator" element={<CagrCalculatorPage />} />
+        <Route path="/xirr-calculator" element={<XirrCalculatorPage />} />
+        <Route path="/stock-average-calculator" element={<StockAverageCalculatorPage />} />
+        <Route path="/capital-gains-tax-calculator" element={<CapitalGainsTaxCalculatorPage />} />
+        <Route path="/option-value-calculator" element={<OptionValueCalculatorPage />} />
+        <Route path="/income-tax-calculator" element={<IncomeTaxCalculatorPage />} />
+        <Route path="/tax-loss-harvesting-calculator" element={<TaxLossHarvestingCalculatorPage />} />
+        <Route path="/tax-saving-investments" element={<TaxSavingInvestmentsPage />} />
         <Route path="/help" element={<HelpPage />} />
         <Route path="/watchlist" element={<WatchlistPage />} />
         <Route path="/portfolio" element={<PortfolioPage />} />

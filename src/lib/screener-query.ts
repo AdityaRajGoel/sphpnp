@@ -130,7 +130,7 @@ export function parseQuery(input: string): ParseResult {
   if (!input.trim()) return { ok: false, error: "Type a condition, e.g. ROCE > 20 AND Debt to equity < 0.5", at: 0 };
   if (input.length > MAX_QUERY_LENGTH) return { ok: false, error: `Queries are limited to ${MAX_QUERY_LENGTH} characters`, at: MAX_QUERY_LENGTH };
   const tk = tokenize(input);
-  if (!tk.ok) return tk;
+  if (tk.ok === false) return tk;
   const tokens = tk.tokens;
   if (tokens.length > MAX_QUERY_TOKENS) return { ok: false, error: `Queries are limited to ${MAX_QUERY_TOKENS} terms`, at: tokens[MAX_QUERY_TOKENS].at };
   let depth = 0;

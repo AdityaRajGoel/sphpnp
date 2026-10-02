@@ -77,8 +77,10 @@ const categoryConfig: Record<MessageCategory, {
 function detectCategory(text: string | null): MessageCategory {
   if (!text) return "update";
   const lower = text.toLowerCase();
-  if (/\b(buy|long|accumulate|bullish|entry)\b/i.test(lower)) return "buy";
-  if (/\b(sell|short|exit|bearish|book\s?profit|booked|profit\s?booking)\b/i.test(lower)) return "sell";
+  // "Bullish"/"bearish" are market views, not trade calls: a NIFTY post saying
+  // "Action: BULLISH" was badged BUY. They fall through to a plain update.
+  if (/\b(buy|long|accumulate|entry)\b/i.test(lower)) return "buy";
+  if (/\b(sell|short|exit|book\s?profit|booked|profit\s?booking)\b/i.test(lower)) return "sell";
   if (/\b(hold|wait|neutral|avoid)\b/i.test(lower)) return "hold";
   if (/\b(target\s?(hit|achieved|reached)|tgt\s?(hit|achieved))\b/i.test(lower)) return "target";
   return "update";
@@ -389,7 +391,7 @@ const TelegramChannel = ({ limit = 10, showViewAll = false, showFilters = false 
             {...revealBar}
           />
           <p className="text-muted-foreground max-w-xl mx-auto">
-            Latest stock picks and market updates from our research team, delivered in real-time.
+            Latest stock picks and market updates from StockAnts' research analysts, our research partner, delivered in real time.
           </p>
         </motion.div>
 

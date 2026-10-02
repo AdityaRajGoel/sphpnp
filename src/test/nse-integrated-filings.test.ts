@@ -56,4 +56,16 @@ describe("latestRevisions", () => {
     expect(latestRevisions([f("dated.xml", "2026-04-24T04:16:57.000Z"), f("undated.xml", "")]).map((r) => r.xbrlUrl)).toEqual(["dated.xml"]);
     expect(latestRevisions([f("undated.xml", ""), f("dated.xml", "2026-04-24T04:16:57.000Z")]).map((r) => r.xbrlUrl)).toEqual(["dated.xml"]);
   });
+
+  // NSE lists revisions whose documents it has withdrawn; those 404 forever.
+  // ADANIENT Mar-2025 listed an 11 Jun revision that 404s, while the 1 May one
+  // the table already holds still answers.
+  it("skips a revision NSE has 404'd and falls back to the latest that remains", () => {
+    const rows = [f("may.xml", "2025-05-01T11:47:23.000Z"), f("june.xml", "2025-06-11T02:51:44.000Z")];
+    expect(latestRevisions(rows, new Set(["june.xml"])).map((r) => r.xbrlUrl)).toEqual(["may.xml"]);
+  });
+
+  it("drops a quarter and basis entirely when every revision has 404'd", () => {
+    expect(latestRevisions([f("a.xml", "2025-07-03T07:36:21.000Z")], new Set(["a.xml"]))).toEqual([]);
+  });
 });

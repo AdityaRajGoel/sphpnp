@@ -138,7 +138,8 @@ export default function WorldMarketsSection() {
                       <tr key={r.symbol} className="border-t hover:bg-muted/30">
                         <td className="px-4 py-2"><span className="font-semibold">{r.name}</span>{r.country && <span className="ml-2 text-xs text-muted-foreground">{r.country}</span>}</td>
                         <td className="px-3 py-2 text-right tabular-nums">
-                          {r.last.toLocaleString("en-IN", { maximumFractionDigits: 2 })}
+                          {/* Lakh grouping only for rupees: "27,58,840" misreads an Argentine index. */}
+                          {r.last.toLocaleString(tab !== "world" || r.currency === "INR" ? "en-IN" : "en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           {tab === "world" && r.currency && <span className="ml-1 text-[10px] text-muted-foreground">{r.currency}</span>}
                         </td>
                         {(["day", "week", "month", "quarter"] as SortKey[]).map((k) => (

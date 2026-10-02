@@ -124,7 +124,7 @@ const OpenAccountPage = () => {
       }
 
       setSubmitted(true);
-      toast({ title: "Request Submitted! ✅", description: "Our team will contact you shortly." });
+      toast({ title: "Request submitted", description: "Our team will contact you shortly." });
 
       // Open WhatsApp notification in new tab for the business
       if (data?.whatsappUrl) {
@@ -238,8 +238,10 @@ const OpenAccountPage = () => {
       <Header />
       <VisibleBreadcrumbs items={[{ name: "Home", url: "/" }, { name: "Open Demat Account" }]} />
 
-      <section className="relative py-10 md:py-28 overflow-hidden" style={{ background: "var(--gradient-hero)" }}>
-        <div className="container mx-auto max-w-6xl px-4 relative z-10 grid items-center gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:gap-14">
+      {/* The form sits in the hero: at the old spot, under the illustration and
+          four benefit cards, it started ~1,050px down on desktop, 1,300px on a phone. */}
+      <section className="relative py-10 md:py-16 overflow-hidden" style={{ background: "var(--gradient-hero)" }}>
+        <div className="container mx-auto max-w-6xl px-4 relative z-10 grid items-center gap-8 lg:grid-cols-[1.05fr_0.95fr] lg:gap-14">
           <div className="text-center lg:text-left">
             <motion.span className="inline-flex items-center gap-1.5 bg-white/10 border border-white/20 text-white text-xs font-bold uppercase tracking-wider px-3 py-1.5 rounded-full mb-4" initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }}>
               <TrendingUp className="w-3.5 h-3.5 text-secondary" /> Free Demat Account
@@ -251,13 +253,64 @@ const OpenAccountPage = () => {
               {t("openAccount.subtitle")}
             </motion.p>
           </div>
-          <IllustrationFrame
-            slug="advisor-consultation"
-            priority
-            sizes="(min-width: 1280px) 560px, (min-width: 1024px) 45vw, 92vw"
-            frameClassName="mx-auto w-full max-w-xl lg:max-w-none"
-            badge={<p className="text-sm"><span className="block text-[0.6875rem] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Guided by our Panipat team</span><span className="font-semibold">₹0 account opening</span></p>}
-          />
+
+          <div className="rounded-surface border border-border bg-card p-5 text-card-foreground shadow-lg sm:p-6">
+            <h2 className="font-heading text-xl md:text-2xl font-bold text-foreground mb-1">Fill Your Details</h2>
+            <p className="text-sm text-muted-foreground mb-5">Our team will get in touch with you to complete the account opening process.</p>
+
+            <form onSubmit={handleSubmit} noValidate className="space-y-3">
+              {/* Honeypot - hidden from humans */}
+              <div className="absolute opacity-0 -z-10" style={{ position: 'absolute', left: '-9999px' }} aria-hidden="true">
+                <Input name="_website" tabIndex={-1} autoComplete="off" />
+              </div>
+              <p className="text-xs text-muted-foreground">Fields marked <span className="text-destructive" aria-hidden="true">*</span><span className="sr-only">with an asterisk</span> are required.</p>
+              <div className="grid sm:grid-cols-2 gap-x-4">
+                <div>
+                  <label htmlFor="lead-name" className="text-xs font-semibold text-foreground mb-1.5 block">Full name <span className="text-destructive" aria-hidden="true">*</span></label>
+                  <div className="relative">
+                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
+                    <Input {...fieldProps("name")} placeholder="As on your PAN card" required aria-required="true" maxLength={100} autoComplete="name" />
+                  </div>
+                  <FieldMessage id="lead-name-message" error={shownError("name")} />
+                </div>
+                <div>
+                  <label htmlFor="lead-phone" className="text-xs font-semibold text-foreground mb-1.5 block">Mobile number <span className="text-destructive" aria-hidden="true">*</span></label>
+                  <div className="relative">
+                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
+                    <Input {...fieldProps("phone")} type="tel" inputMode="tel" placeholder="98765 43210" required aria-required="true" maxLength={20} autoComplete="tel" />
+                  </div>
+                  <FieldMessage id="lead-phone-message" error={shownError("phone")} hint="We call from a Panipat number within one working day" />
+                </div>
+              </div>
+              <div className="grid sm:grid-cols-2 gap-x-4">
+                <div>
+                  <label htmlFor="lead-email" className="text-xs font-semibold text-foreground mb-1.5 block">Email <span className="font-normal text-muted-foreground">(optional)</span></label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
+                    <Input {...fieldProps("email")} placeholder="name@example.com" type="email" inputMode="email" maxLength={255} autoComplete="email" />
+                  </div>
+                  <FieldMessage id="lead-email-message" error={shownError("email")} />
+                </div>
+                <div>
+                  <label htmlFor="lead-city" className="text-xs font-semibold text-foreground mb-1.5 block">City <span className="font-normal text-muted-foreground">(optional)</span></label>
+                  <div className="relative">
+                    <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
+                    <Input {...fieldProps("city")} placeholder="Panipat" maxLength={100} autoComplete="address-level2" />
+                  </div>
+                  <FieldMessage id="lead-city-message" error={shownError("city")} />
+                </div>
+              </div>
+              <div>
+                <label htmlFor="lead-message" className="text-xs font-semibold text-foreground mb-1.5 block">Message <span className="font-normal text-muted-foreground">(optional)</span></label>
+                <Textarea id="lead-message" name="message" aria-describedby="lead-message-count" value={form.message} onChange={handleChange} placeholder="Any specific requirements or questions..." rows={4} maxLength={1000} />
+                <p id="lead-message-count" className="pt-1 text-right text-xs tabular-nums text-muted-foreground">{form.message.length} / 1000</p>
+              </div>
+              <RippleButton type="submit" disabled={loading} className="w-full sm:w-auto bg-secondary text-secondary-foreground font-bold text-base px-10 py-6 shadow-lg hover:opacity-90 transition-opacity">
+                {loading ? "Sending..." : "Request a callback"}
+                <ArrowRight className="ml-2 w-5 h-5" />
+              </RippleButton>
+            </form>
+          </div>
         </div>
       </section>
 
@@ -276,67 +329,18 @@ const OpenAccountPage = () => {
 
       <section className="py-8 md:py-16">
         <div className="container mx-auto px-4">
-          <div className="grid lg:grid-cols-5 gap-10">
-            <motion.div className="lg:col-span-3" {...revealItemX("left")}>
-              <h2 className="font-heading text-2xl md:text-3xl font-bold text-foreground mb-2">Fill Your Details</h2>
-              <p className="text-sm text-muted-foreground mb-8">Our team will get in touch with you to complete the account opening process.</p>
-
-              <form onSubmit={handleSubmit} noValidate className="space-y-3">
-                {/* Honeypot - hidden from humans */}
-                <div className="absolute opacity-0 -z-10" style={{ position: 'absolute', left: '-9999px' }} aria-hidden="true">
-                  <Input name="_website" tabIndex={-1} autoComplete="off" />
-                </div>
-                <p className="text-xs text-muted-foreground">Fields marked <span className="text-destructive" aria-hidden="true">*</span><span className="sr-only">with an asterisk</span> are required.</p>
-                <div className="grid sm:grid-cols-2 gap-x-4">
-                  <div>
-                    <label htmlFor="lead-name" className="text-xs font-semibold text-foreground mb-1.5 block">Full name <span className="text-destructive" aria-hidden="true">*</span></label>
-                    <div className="relative">
-                      <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
-                      <Input {...fieldProps("name")} placeholder="As on your PAN card" required aria-required="true" maxLength={100} autoComplete="name" />
-                    </div>
-                    <FieldMessage id="lead-name-message" error={shownError("name")} />
-                  </div>
-                  <div>
-                    <label htmlFor="lead-phone" className="text-xs font-semibold text-foreground mb-1.5 block">Mobile number <span className="text-destructive" aria-hidden="true">*</span></label>
-                    <div className="relative">
-                      <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
-                      <Input {...fieldProps("phone")} type="tel" inputMode="tel" placeholder="98765 43210" required aria-required="true" maxLength={20} autoComplete="tel" />
-                    </div>
-                    <FieldMessage id="lead-phone-message" error={shownError("phone")} hint="We call from a Panipat number within one working day" />
-                  </div>
-                </div>
-                <div className="grid sm:grid-cols-2 gap-x-4">
-                  <div>
-                    <label htmlFor="lead-email" className="text-xs font-semibold text-foreground mb-1.5 block">Email <span className="font-normal text-muted-foreground">(optional)</span></label>
-                    <div className="relative">
-                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
-                      <Input {...fieldProps("email")} placeholder="name@example.com" type="email" inputMode="email" maxLength={255} autoComplete="email" />
-                    </div>
-                    <FieldMessage id="lead-email-message" error={shownError("email")} />
-                  </div>
-                  <div>
-                    <label htmlFor="lead-city" className="text-xs font-semibold text-foreground mb-1.5 block">City <span className="font-normal text-muted-foreground">(optional)</span></label>
-                    <div className="relative">
-                      <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
-                      <Input {...fieldProps("city")} placeholder="Panipat" maxLength={100} autoComplete="address-level2" />
-                    </div>
-                    <FieldMessage id="lead-city-message" error={shownError("city")} />
-                  </div>
-                </div>
-                <div>
-                  <label htmlFor="lead-message" className="text-xs font-semibold text-foreground mb-1.5 block">Message <span className="font-normal text-muted-foreground">(optional)</span></label>
-                  <Textarea id="lead-message" name="message" aria-describedby="lead-message-count" value={form.message} onChange={handleChange} placeholder="Any specific requirements or questions..." rows={4} maxLength={1000} />
-                  <p id="lead-message-count" className="pt-1 text-right text-xs tabular-nums text-muted-foreground">{form.message.length} / 1000</p>
-                </div>
-                <RippleButton type="submit" disabled={loading} className="w-full sm:w-auto bg-secondary text-secondary-foreground font-bold text-base px-10 py-6 shadow-lg hover:opacity-90 transition-opacity">
-                  {loading ? "Submitting..." : "Submit Request"}
-                  <ArrowRight className="ml-2 w-5 h-5" />
-                </RippleButton>
-              </form>
-            </motion.div>
+          <div className="grid lg:grid-cols-5 gap-10 items-center">
+            <IllustrationFrame
+              slug="advisor-consultation"
+              tone="light"
+              reveal="view"
+              sizes="(min-width: 1024px) 55vw, 92vw"
+              frameClassName="mx-auto w-full max-w-xl lg:max-w-none lg:col-span-3"
+              badge={<p className="text-sm"><span className="block text-[0.6875rem] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Guided by our Panipat team</span><span className="font-semibold">₹0 account opening</span></p>}
+            />
 
             <motion.div className="lg:col-span-2" {...revealItemX("right")}>
-              <div className="bg-gradient-to-br from-brand-charcoal to-brand-navy rounded-2xl p-6 text-primary-foreground sticky top-24">
+              <div className="rounded-surface bg-brand-navy p-6 text-primary-foreground sticky top-24">
                 <h3 className="font-heading text-xl font-bold mb-6">Visit Our Branch</h3>
                 <div className="space-y-5">
                   <div className="flex items-start gap-3">
@@ -360,7 +364,7 @@ const OpenAccountPage = () => {
                   </div>
                   <div className="flex items-start gap-3">
                     <div className="w-9 h-9 rounded-lg bg-white/10 flex items-center justify-center shrink-0"><Clock className="w-4 h-4 text-secondary" /></div>
-                    <div><div className="text-sm font-semibold">Office Hours</div><div className="text-xs text-primary-foreground/70 mt-0.5">Mon–Sat: 9:00 AM – 6:00 PM</div></div>
+                    <div><div className="text-sm font-semibold">Office Hours</div><div className="text-xs text-primary-foreground/70 mt-0.5">Mon–Fri 9 AM – 6 PM, Sat 9 AM – 4 PM</div></div>
                   </div>
                 </div>
                 <div className="mt-6 pt-5 border-t border-white/10">

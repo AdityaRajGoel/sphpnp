@@ -50,7 +50,7 @@ const FearGreedGauge = memo(() => {
             <Gauge className="w-4 h-4 text-brand-orange" />
             Fear & Greed Index
           </h3>
-          <span className="text-[10px] text-muted-foreground">Live • VIX Based</span>
+          <span className="text-xs text-muted-foreground">Live • VIX Based</span>
         </div>
         <div className="flex flex-col items-center">
           <svg viewBox="0 0 200 120" className="w-48 h-28">
@@ -76,7 +76,7 @@ const FearGreedGauge = memo(() => {
             </div>
           </div>
           {vix && (
-            <div className="mt-2 text-[10px] text-muted-foreground">
+            <div className="mt-2 text-xs text-muted-foreground">
               India VIX: <b className={`${vix.up ? "text-destructive" : "text-secondary"}`}>{vix.price}</b>
               <span className={`ml-1 ${vix.up ? "text-destructive" : "text-secondary"}`}>({vix.change})</span>
             </div>
@@ -99,7 +99,7 @@ const SectorHeatmap = memo(() => {
             <PieChart className="w-4 h-4 text-brand-gold" />
             Sector Performance
           </h3>
-          <span className="text-[10px] text-brand-orange font-semibold">Live</span>
+          <span className="text-xs text-brand-orange font-semibold">Live</span>
         </div>
         <div className="grid grid-cols-2 gap-2">
           {sectors.length === 0 && Array.from({ length: 8 }, (_, i) => <div key={i} className="h-12 rounded-lg bg-muted/50 animate-pulse" aria-hidden="true" />)}
@@ -114,7 +114,7 @@ const SectorHeatmap = memo(() => {
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="text-xs font-semibold text-foreground truncate">{sector.name}</div>
-                  <div className="text-[10px] text-muted-foreground">{sector.weight}% wt</div>
+                  <div className="text-xs text-muted-foreground">{sector.weight}% wt</div>
                 </div>
                 <span className={`text-xs font-bold ${sector.up ? "text-secondary" : "text-destructive"}`}>{sector.change}</span>
               </motion.div>
@@ -162,7 +162,7 @@ const FIIDIIFlow = memo(() => {
             <Globe className="w-4 h-4 text-brand-copper" />
             FII / DII / MF Activity
           </h3>
-          <span className="text-[10px] text-muted-foreground">
+          <span className="text-xs text-muted-foreground">
             {asOfLabel ? `As of ${asOfLabel} · Provisional` : "Provisional"}
           </span>
         </div>
@@ -182,7 +182,7 @@ const FIIDIIFlow = memo(() => {
                     {item.net}
                   </span>
                 </div>
-                <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
+                <div className="flex items-center gap-3 text-xs text-muted-foreground">
                   <span>Buy: <b className="text-secondary">{item.buy}</b></span>
                   <span>Sell: <b className="text-destructive">{item.sell}</b></span>
                 </div>
@@ -211,9 +211,8 @@ const PutCallRatio = memo(() => {
   // used to be declines / advances x 1.1 - a breadth figure labelled as a PCR.
   const { data: nifty } = useQuery({ queryKey: ["nifty-pcr"], queryFn: latestNiftyPcr, staleTime: 10 * 60_000 });
   const pcr = nifty ? Number(nifty.pcr.toFixed(2)) : null;
-  const mood = !hasBreadth ? null : advances > declines * 1.1 ? "Bullish" : declines > advances * 1.1 ? "Bearish" : "Mixed";
-  const pcrColor = pcr == null ? "text-muted-foreground" : pcr > 1 ? "text-secondary" : pcr > 0.7 ? "text-brand-gold" : "text-destructive";
-  const sentiment = pcr == null ? "" : pcr > 1.2 ? "Bullish" : pcr > 0.8 ? "Neutral" : "Bearish";
+  // No "mood" and no PCR sentiment word: a breadth-based "Bullish" next to a
+  // PCR-based "Bearish" contradicted itself, and either reads as a market call.
   const vixPrice = vix?.price || "—";
   const vixChange = vix?.change || "";
   const vixUp = vix?.up ?? false;
@@ -229,26 +228,26 @@ const PutCallRatio = memo(() => {
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div className="bg-muted/30 rounded-lg p-3 text-center">
-            <div className="text-[10px] text-muted-foreground mb-1">NIFTY PCR</div>
-            <div className={`text-2xl font-bold ${pcrColor}`}>{pcr ?? "—"}</div>
-            <div className={`text-[10px] font-semibold ${pcrColor}`}>{sentiment}{nifty ? ` · ${new Date(nifty.trade_date).toLocaleDateString("en-IN", { day: "numeric", month: "short" })} close` : ""}</div>
+            <div className="text-xs text-muted-foreground mb-1">NIFTY PCR</div>
+            <div className="text-2xl font-bold text-foreground">{pcr ?? "—"}</div>
+            <div className="text-xs text-muted-foreground">{nifty ? `${new Date(nifty.trade_date).toLocaleDateString("en-IN", { day: "numeric", month: "short" })} close` : ""}</div>
           </div>
           <div className="bg-muted/30 rounded-lg p-3 text-center">
-            <div className="text-[10px] text-muted-foreground mb-1">India VIX</div>
+            <div className="text-xs text-muted-foreground mb-1">India VIX</div>
             <div className={`text-2xl font-bold ${vixUp ? "text-destructive" : "text-secondary"}`}>{vixPrice}</div>
-            <div className={`text-[10px] font-semibold ${vixUp ? "text-destructive" : "text-secondary"}`}>{vixChange}</div>
+            <div className={`text-xs font-semibold ${vixUp ? "text-destructive" : "text-secondary"}`}>{vixChange}</div>
           </div>
           <div className="bg-muted/30 rounded-lg p-3 text-center">
-            <div className="text-[10px] text-muted-foreground mb-1">Advances</div>
+            <div className="text-xs text-muted-foreground mb-1">Advances</div>
             <div className="text-lg font-bold text-secondary">{hasBreadth ? advances : "—"}</div>
           </div>
           <div className="bg-muted/30 rounded-lg p-3 text-center">
-            <div className="text-[10px] text-muted-foreground mb-1">Declines</div>
+            <div className="text-xs text-muted-foreground mb-1">Declines</div>
             <div className="text-lg font-bold text-destructive">{hasBreadth ? declines : "—"}</div>
           </div>
         </div>
-        <div className="mt-3 flex items-center justify-between text-[10px] text-muted-foreground">
-          <span>Market Mood: <b className={mood === "Bullish" ? "text-secondary" : mood === "Bearish" ? "text-destructive" : ""}>{mood ?? "—"}</b></span>
+        <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground">
+          <span>{hasBreadth ? `Across the ${advances + declines} stocks this page tracks` : "Breadth loading"}</span>
           <span className="flex items-center gap-1 text-brand-orange font-semibold"><Zap className="w-3 h-3" /> Live</span>
         </div>
       </CardContent>
@@ -276,7 +275,7 @@ const TrendingStocks = memo(() => {
           <h3 className="text-sm font-bold text-primary-foreground">Trending Now</h3>
           <div className="ml-auto flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-brand-orange animate-pulse" />
-            <span className="text-[10px] text-primary-foreground/60 font-medium">Live</span>
+            <span className="text-xs text-primary-foreground/60 font-medium">Live</span>
           </div>
         </div>
         <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-1">
@@ -289,7 +288,7 @@ const TrendingStocks = memo(() => {
               whileHover={{ backgroundColor: "rgba(255,255,255,0.12)" }}>
               <div className="flex items-center justify-between mb-1">
                 <span className="text-xs font-bold text-primary-foreground">{stock.name}</span>
-                <span className={`text-[10px] font-bold flex items-center gap-0.5 ${stock.up ? "text-secondary" : "text-destructive"}`}>
+                <span className={`text-xs font-bold flex items-center gap-0.5 ${stock.up ? "text-secondary" : "text-destructive"}`}>
                   {stock.up ? <ArrowUpRight className="w-2.5 h-2.5" /> : <ArrowDownRight className="w-2.5 h-2.5" />}
                   {stock.change}
                 </span>
@@ -315,15 +314,15 @@ const GlobalMarkets = memo(() => {
             <Globe className="w-4 h-4 text-brand-orange" />
             Global Markets
           </h3>
-          <span className="text-[10px] text-muted-foreground">Live</span>
+          <span className="text-xs text-muted-foreground">Live</span>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
           {globalMarkets.length === 0 && Array.from({ length: 6 }, (_, i) => <div key={i} className="h-16 rounded-lg bg-muted/50 animate-pulse" aria-hidden="true" />)}
           {globalMarkets.map((market) => (
             <motion.div key={market.name} className="bg-muted/30 rounded-lg p-2.5 cursor-pointer hover:bg-muted/50 transition-colors" whileHover={{ y: -2 }}>
-              <div className="text-[10px] text-muted-foreground font-medium">{market.name}</div>
+              <div className="text-xs text-muted-foreground font-medium">{market.name}</div>
               <div className="text-sm font-bold text-foreground">{market.price}</div>
-              <div className={`text-[10px] font-bold flex items-center gap-0.5 ${market.up ? "text-secondary" : "text-destructive"}`}>
+              <div className={`text-xs font-bold flex items-center gap-0.5 ${market.up ? "text-secondary" : "text-destructive"}`}>
                 {market.up ? <ArrowUpRight className="w-2.5 h-2.5" /> : <ArrowDownRight className="w-2.5 h-2.5" />}
                 {market.change}
               </div>
@@ -356,7 +355,7 @@ const GlobalCues = memo(() => {
           <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
             <Globe className="w-4 h-4 text-brand-orange" />
             Global Cues
-            <span className="text-[10px] font-normal text-muted-foreground">Pre-market</span>
+            <span className="text-xs font-normal text-muted-foreground">Pre-market</span>
           </h3>
           <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${tone.bg} ${tone.cls}`}>{tone.label}</span>
         </div>
@@ -371,7 +370,7 @@ const GlobalCues = memo(() => {
           <div className="h-full bg-secondary/60" style={{ width: `${ratio * 100}%` }} />
           <div className="h-full bg-destructive/50" style={{ width: `${(1 - ratio) * 100}%` }} />
         </div>
-        <p className="text-[10px] text-muted-foreground mt-2 leading-relaxed">
+        <p className="text-xs text-muted-foreground mt-2 leading-relaxed">
           Overnight moves in global indices, for context only - not a prediction of the Indian
           market open or investment advice.
         </p>
@@ -401,7 +400,7 @@ const CurrencyDashboard = memo(() => {
             <DollarSign className="w-4 h-4 text-brand-gold" />
             Currency Rates
           </h3>
-          <span className="text-[10px] text-brand-orange font-semibold">Live</span>
+          <span className="text-xs text-brand-orange font-semibold">Live</span>
         </div>
         <div className="space-y-2">
           {displayCurrencies.length === 0 && Array.from({ length: 3 }, (_, i) => <div key={i} className="h-14 rounded-lg bg-muted/50 animate-pulse" aria-hidden="true" />)}
@@ -415,12 +414,12 @@ const CurrencyDashboard = memo(() => {
                 </div>
                 <div>
                   <div className="text-xs font-bold text-foreground">{curr.name}</div>
-                  <div className="text-[10px] text-muted-foreground">Forex</div>
+                  <div className="text-xs text-muted-foreground">Forex</div>
                 </div>
               </div>
               <div className="text-right">
                 <div className="text-sm font-bold text-foreground">₹{curr.price}</div>
-                <div className={`text-[10px] font-bold flex items-center justify-end gap-0.5 ${curr.up ? "text-secondary" : "text-destructive"}`}>
+                <div className={`text-xs font-bold flex items-center justify-end gap-0.5 ${curr.up ? "text-secondary" : "text-destructive"}`}>
                   {curr.up ? <ArrowUpRight className="w-2.5 h-2.5" /> : <ArrowDownRight className="w-2.5 h-2.5" />}
                   {curr.change}
                 </div>
@@ -459,7 +458,7 @@ const MutualFundFlows = memo(() => {
             <Coins className="w-4 h-4 text-brand-gold" />
             Mutual Fund Activity
           </h3>
-          <span className="text-[10px] text-muted-foreground">{asOfLabel ? `As of ${asOfLabel}` : "Daily Data"}</span>
+          <span className="text-xs text-muted-foreground">{asOfLabel ? `As of ${asOfLabel}` : "Daily Data"}</span>
         </div>
 
         {mf ? (
@@ -470,7 +469,7 @@ const MutualFundFlows = memo(() => {
                 {mfNet! >= 0 ? "+" : "-"}₹{Math.abs(mfNet!).toLocaleString("en-IN")} Cr
               </span>
             </div>
-            <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
+            <div className="flex items-center gap-3 text-xs text-muted-foreground">
               <span>Buy: <b className="text-secondary">₹{mf.buy_cr.toLocaleString("en-IN")} Cr</b></span>
               <span>Sell: <b className="text-destructive">₹{mf.sell_cr.toLocaleString("en-IN")} Cr</b></span>
             </div>
@@ -535,13 +534,13 @@ const DataFreshness = memo(() => {
     : null;
 
   return isLive ? (
-    <span className="inline-flex items-center gap-1.5 text-[10px] font-semibold text-secondary">
+    <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-secondary">
       <span className="w-1.5 h-1.5 rounded-full bg-secondary animate-pulse" />
       Live data · {timeLabel}
     </span>
   ) : (
     <span
-      className="inline-flex items-center gap-1.5 text-[10px] font-semibold text-brand-gold"
+      className="inline-flex items-center gap-1.5 text-xs font-semibold text-brand-gold"
       title="The live feed could not be refreshed - figures shown may be indicative or delayed."
     >
       <AlertTriangle className="w-3 h-3" />
@@ -620,7 +619,7 @@ const MarketDashboard = () => {
                     <TrendingUp className="w-4 h-4 text-secondary" />
                     Top Gainers
                   </h3>
-                  <span className="text-[10px] text-brand-orange font-semibold">Live NSE</span>
+                  <span className="text-xs text-brand-orange font-semibold">Live NSE</span>
                 </div>
                 <div className="space-y-2">
                   {/* No hardcoded rows. These used to fall back to invented
@@ -633,7 +632,7 @@ const MarketDashboard = () => {
                     <div key={i} className="flex items-center justify-between py-1.5 border-b border-border/20 last:border-0">
                       <span className="text-xs font-semibold text-foreground">{s.name}</span>
                       <div className="text-right">
-                        {s.price && <div className="text-[10px] text-muted-foreground">{s.price}</div>}
+                        {s.price && <div className="text-xs text-muted-foreground">{s.price}</div>}
                         <span className="text-xs font-bold text-secondary">{s.change}</span>
                       </div>
                     </div>
@@ -651,7 +650,7 @@ const MarketDashboard = () => {
                     <TrendingDown className="w-4 h-4 text-destructive" />
                     Top Losers
                   </h3>
-                  <span className="text-[10px] text-brand-orange font-semibold">Live NSE</span>
+                  <span className="text-xs text-brand-orange font-semibold">Live NSE</span>
                 </div>
                 <div className="space-y-2">
                   {!marketOverview?.losers?.length && (
@@ -661,7 +660,7 @@ const MarketDashboard = () => {
                     <div key={i} className="flex items-center justify-between py-1.5 border-b border-border/20 last:border-0">
                       <span className="text-xs font-semibold text-foreground">{s.name}</span>
                       <div className="text-right">
-                        {s.price && <div className="text-[10px] text-muted-foreground">{s.price}</div>}
+                        {s.price && <div className="text-xs text-muted-foreground">{s.price}</div>}
                         <span className="text-xs font-bold text-destructive">{s.change}</span>
                       </div>
                     </div>
@@ -679,7 +678,7 @@ const MarketDashboard = () => {
                     <Coins className="w-4 h-4 text-brand-gold" />
                     Commodity Snapshot
                   </h3>
-                  <span className="text-[10px] text-muted-foreground">MCX Live</span>
+                  <span className="text-xs text-muted-foreground">MCX Live</span>
                 </div>
                 <div className="space-y-3">
                   {[
@@ -699,7 +698,7 @@ const MarketDashboard = () => {
                         </div>
                         <div className="text-right">
                           <div className="text-sm font-bold text-foreground">{d?.price ?? "—"}</div>
-                          <div className={`text-[10px] font-bold flex items-center justify-end gap-0.5 ${!d ? "text-muted-foreground" : d.up ? "text-secondary" : "text-destructive"}`}>
+                          <div className={`text-xs font-bold flex items-center justify-end gap-0.5 ${!d ? "text-muted-foreground" : d.up ? "text-secondary" : "text-destructive"}`}>
                             {d && (d.up ? <ArrowUpRight className="w-2.5 h-2.5" /> : <ArrowDownRight className="w-2.5 h-2.5" />)}
                             {d?.change ?? "—"}
                           </div>

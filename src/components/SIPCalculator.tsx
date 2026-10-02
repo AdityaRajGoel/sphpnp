@@ -6,6 +6,56 @@ import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 
 import { revealItemX, revealSection } from "@/lib/motion";
+
+const clamp = (n: number, min: number, max: number) => Math.min(max, Math.max(min, n));
+
+type ValueInputProps = {
+  id: string;
+  value: number;
+  min: number;
+  max: number;
+  step: number;
+  onChange: (n: number) => void;
+  className: string;
+};
+
+/*
+ * The editable value chip beside each slider. It keeps the raw text while it has
+ * focus, so clearing the field to type 25000 does not snap to the minimum after
+ * the first keystroke; the calculation follows any in-range value as it is typed,
+ * and leaving the field clamps whatever is there to the slider's range.
+ */
+const ValueInput = ({ id, value, min, max, step, onChange, className }: ValueInputProps) => {
+  const [draft, setDraft] = useState<string | null>(null);
+  return (
+    <input
+      id={id}
+      type="number"
+      inputMode="decimal"
+      min={min}
+      max={max}
+      step={step}
+      value={draft ?? value}
+      onChange={(e) => {
+        setDraft(e.target.value);
+        const n = parseFloat(e.target.value);
+        if (Number.isFinite(n) && n >= min && n <= max) onChange(n);
+      }}
+      onBlur={(e) => {
+        const n = parseFloat(e.target.value);
+        if (Number.isFinite(n)) onChange(clamp(n, min, max));
+        setDraft(null);
+      }}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") e.currentTarget.blur();
+      }}
+      className={`bg-transparent text-right font-bold tabular-nums focus:outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none ${className}`}
+    />
+  );
+};
+
+const CHIP = "flex items-center gap-1 text-lg font-bold px-3 py-1 rounded-lg focus-within:ring-2";
+
 /*
  * Rendered both as the entire /sip-calculator page and as one section inside
  * /services. On the dedicated page its title is the document's main heading; in
@@ -66,21 +116,19 @@ const SIPCalculator = ({ headingLevel = 2 }: SIPCalculatorProps) => {
             {/* Monthly Investment */}
             <div>
               <div className="flex justify-between items-center mb-3">
-                <label className="text-sm font-semibold text-foreground flex items-center gap-2">
-                  <IndianRupee className="w-4 h-4 text-secondary" />
+                <label htmlFor="sip-monthly" className="text-sm font-semibold text-foreground flex items-center gap-2">
+                  <IndianRupee className="w-4 h-4 text-secondary" aria-hidden="true" />
                   Monthly Investment
                 </label>
-                <motion.span
-                  className="text-lg font-bold text-secondary bg-secondary/10 px-3 py-1 rounded-lg"
-                  key={monthlyInvestment}
-                  initial={{ scale: 1.2 }}
-                  animate={{ scale: 1 }}
-                >
-                  ₹{monthlyInvestment.toLocaleString('en-IN')}
-                </motion.span>
+                <span className={`${CHIP} text-secondary bg-secondary/10 focus-within:ring-secondary`}>
+                  <span aria-hidden="true">₹</span>
+                  <ValueInput id="sip-monthly" value={monthlyInvestment} min={500} max={100000} step={500} onChange={setMonthlyInvestment} className="w-[7ch]" />
+                </span>
               </div>
               <input
                 type="range"
+                aria-label="Monthly investment"
+                aria-valuetext={`₹${monthlyInvestment.toLocaleString("en-IN")} a month`}
                 min={500}
                 max={100000}
                 step={500}
@@ -97,21 +145,19 @@ const SIPCalculator = ({ headingLevel = 2 }: SIPCalculatorProps) => {
             {/* Time Period */}
             <div>
               <div className="flex justify-between items-center mb-3">
-                <label className="text-sm font-semibold text-foreground flex items-center gap-2">
-                  <Calendar className="w-4 h-4 text-brand-gold" />
-                  Time Period
+                <label htmlFor="sip-years" className="text-sm font-semibold text-foreground flex items-center gap-2">
+                  <Calendar className="w-4 h-4 text-brand-gold" aria-hidden="true" />
+                  Time Period (years)
                 </label>
-                <motion.span
-                  className="text-lg font-bold text-brand-gold bg-brand-gold/10 px-3 py-1 rounded-lg"
-                  key={years}
-                  initial={{ scale: 1.2 }}
-                  animate={{ scale: 1 }}
-                >
-                  {years} years
-                </motion.span>
+                <span className={`${CHIP} text-brand-gold bg-brand-gold/10 focus-within:ring-brand-gold`}>
+                  <ValueInput id="sip-years" value={years} min={1} max={30} step={1} onChange={setYears} className="w-[3ch]" />
+                  <span aria-hidden="true">years</span>
+                </span>
               </div>
               <input
                 type="range"
+                aria-label="Time period"
+                aria-valuetext={`${years} ${years === 1 ? "year" : "years"}`}
                 min={1}
                 max={30}
                 step={1}
@@ -128,21 +174,19 @@ const SIPCalculator = ({ headingLevel = 2 }: SIPCalculatorProps) => {
             {/* Expected Return */}
             <div>
               <div className="flex justify-between items-center mb-3">
-                <label className="text-sm font-semibold text-foreground flex items-center gap-2">
-                  <Percent className="w-4 h-4 text-primary" />
-                  Expected Return (p.a.)
+                <label htmlFor="sip-return" className="text-sm font-semibold text-foreground flex items-center gap-2">
+                  <Percent className="w-4 h-4 text-primary" aria-hidden="true" />
+                  Expected Return (% p.a.)
                 </label>
-                <motion.span
-                  className="text-lg font-bold text-primary bg-primary/10 px-3 py-1 rounded-lg"
-                  key={expectedReturn}
-                  initial={{ scale: 1.2 }}
-                  animate={{ scale: 1 }}
-                >
-                  {expectedReturn}%
-                </motion.span>
+                <span className={`${CHIP} text-primary bg-primary/10 focus-within:ring-primary`}>
+                  <ValueInput id="sip-return" value={expectedReturn} min={1} max={30} step={0.5} onChange={setExpectedReturn} className="w-[4ch]" />
+                  <span aria-hidden="true">%</span>
+                </span>
               </div>
               <input
                 type="range"
+                aria-label="Expected return"
+                aria-valuetext={`${expectedReturn}% a year`}
                 min={1}
                 max={30}
                 step={0.5}
@@ -173,6 +217,7 @@ const SIPCalculator = ({ headingLevel = 2 }: SIPCalculatorProps) => {
                   >
                     ₹{Math.round(futureValue).toLocaleString('en-IN')}
                   </motion.div>
+                  <p className="text-xs opacity-70 mt-1">Assumed return, not guaranteed.</p>
                 </div>
               </div>
               <CardContent className="p-6">

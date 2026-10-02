@@ -122,7 +122,7 @@ const ProductsPage = () => {
                       </span>
                     </div>
                     <div className="flex-1">
-                      <h3 className="text-2xl font-bold font-heading text-foreground mb-3">{product.title}</h3>
+                      <h2 className="text-2xl font-bold font-heading text-foreground mb-3">{product.title}</h2>
                       <p className="text-muted-foreground text-lg leading-relaxed mb-6">
                         {product.desc}
                       </p>

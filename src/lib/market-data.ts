@@ -43,7 +43,13 @@ export type FpiSector = {
 export type FpiRow = { report_date: string; section: "cash" | "derivatives"; category: string; route: string; buy_cr: number | null; sell_cr: number | null; net_cr: number | null; net_usd_mn: number | null; buy_contracts: number | null; sell_contracts: number | null; oi_contracts: number | null; oi_cr: number | null };
 export type MacroPoint = { series: string; period: string; value: number; change_pct: number | null };
 export type Mover = { symbol: string; name: string | null; price: number | null; change_pct: number | null; value_cr: number | null; volume: number | null; volume_vs_week: number | null };
-export type Snapshot = { kind: string; as_of: string | null; payload: Mover[] };
+export type Snapshot<P = Mover[]> = { kind: string; as_of: string | null; payload: P };
+export type Breadth = { as_of: string | null; advances: number; declines: number; unchanged: number; total: number };
+export type MarketStatus = {
+  gift_nifty: { last: number; change: number | null; change_pct: number | null; expiry: string | null; as_of: string | null } | null;
+  nifty: { last: number; change: number | null; change_pct: number | null; status: string | null; as_of: string | null } | null;
+};
+export type PreOpen = { advances: number | null; declines: number | null; unchanged: number | null; movers: Mover[] };
 export type Deal = { deal_key: string; trade_date: string; kind: "bulk" | "block" | "short"; symbol: string; company: string | null; client: string | null; side: "buy" | "sell" | null; quantity: number | null; price: number | null };
 export type SurveillanceFlag = { symbol: string; flag: "fo_ban" | "asm_long" | "asm_short" | "gsm"; stage: string | null; detail: string | null; as_of: string | null };
 export type CalendarEvent = { event_key: string; symbol: string | null; company: string; event_date: string; purpose: string; detail: string | null; source: "nse" | "bse" };
@@ -139,8 +145,22 @@ export async function macroSeries(): Promise<MacroPoint[]> {
   return rows<MacroPoint>(table("macro_monthly").select("series,period,value,change_pct").order("period"));
 }
 
-export async function marketSnapshots(): Promise<Snapshot[]> {
-  return rows<Snapshot>(table("market_snapshots").select("kind,as_of,payload"));
+export type BreadthDay = { trade_date: string; advances: number; declines: number; unchanged: number };
+
+/** NSE-wide advances and declines for the newest `days` sessions, oldest first (market_breadth_daily). */
+export async function breadthHistory(days = 120): Promise<BreadthDay[]> {
+  const data = await rows<BreadthDay>(table("market_breadth_daily").select("trade_date,advances,declines,unchanged").order("trade_date", { ascending: false }).limit(days));
+  return data.reverse();
+}
+
+/** An index's daily closes, oldest first. ponytail: one request caps at 1,000 rows (about four years); page it when history outgrows that. */
+export async function indexCloses(indexName: string): Promise<{ trade_date: string; close: number | null }[]> {
+  return rows(table("index_valuation_daily").select("trade_date,close").eq("index_name", indexName).order("trade_date"));
+}
+
+/** Snapshots of the given kinds; each kind's payload shape is fixed by sync-market-data's "movers" dataset. */
+export async function marketSnapshots<P = Mover[]>(kinds: string[]): Promise<Snapshot<P>[]> {
+  return rows<Snapshot<P>>(table("market_snapshots").select("kind,as_of,payload").in("kind", kinds));
 }
 
 export async function recentDeals(limit = 200): Promise<Deal[]> {
@@ -327,6 +347,17 @@ export async function globalMarkets(): Promise<GlobalBar[]> {
   const out: GlobalBar[] = [];
   for (let from = 0; from < 20_000; from += 1000) {
     const page = await rows<GlobalBar>(table("global_markets_daily").select("ticker,trade_date,close").gte("trade_date", since).order("trade_date").order("ticker").range(from, from + 999));
+    out.push(...page);
+    if (page.length < 1000) break;
+  }
+  return out;
+}
+
+/** One ticker's stored closes since `since` (ISO date), oldest first, paged: ten years is ~2,500 rows. */
+export async function globalHistory(ticker: string, since: string): Promise<GlobalBar[]> {
+  const out: GlobalBar[] = [];
+  for (let from = 0; from < 20_000; from += 1000) {
+    const page = await rows<GlobalBar>(table("global_markets_daily").select("ticker,trade_date,close").eq("ticker", ticker).gte("trade_date", since).order("trade_date").range(from, from + 999));
     out.push(...page);
     if (page.length < 1000) break;
   }

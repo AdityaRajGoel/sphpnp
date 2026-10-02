@@ -208,9 +208,14 @@ const TickerSkeleton = ({ rows = 2 }: { rows?: number }) => {
   );
 };
 
+const SHORT_STATUS: Record<string, string> = {
+  "Market Open": "Open", "Pre-Market": "Pre-open", "After Hours": "Closed", "Market Holiday": "Holiday", "Market Closed": "Closed",
+};
+
 const StockTicker = () => {
   const isMobile = useIsMobile();
-  const { stocks, commodities, fetchedAt, marketOpen, marketStatusText, lastTradingDate, nextMarketOpen, marketClose, loading } = useLiveMarket();
+  const { stocks, commodities, fetchedAt, marketOpen, marketStatusText, marketHoliday, lastTradingDate, nextMarketOpen, marketClose, loading } = useLiveMarket();
+  const statusLabel = marketHoliday ? `Market holiday: ${marketHoliday}` : marketStatusText;
   const nextOpenCountdown = useCountdown(nextMarketOpen);
   const closeCountdown = useCountdown(marketClose);
 
@@ -240,9 +245,11 @@ const StockTicker = () => {
           bar so it masks only the first of the two rows. The fade runway also
           has to be wide enough that the gradient is fully opaque before the
           badge starts, or text reads through underneath it. */}
-      <div className="absolute top-0 right-0 h-full md:h-7 flex items-center gap-2 z-20 pl-14 pr-2 bg-gradient-to-l from-[#1a1f2e] from-60% via-[#1a1f2e] to-transparent dark:from-brand-charcoal dark:via-brand-charcoal">
+      {/* On a phone the badge alone, one word: the countdowns and a 56px fade used to
+          cover most of the single ticker row. */}
+      <div className="absolute top-0 right-0 h-full md:h-7 flex items-center gap-2 z-20 pl-6 md:pl-14 pr-2 bg-gradient-to-l from-[#1a1f2e] from-60% via-[#1a1f2e] to-transparent dark:from-brand-charcoal dark:via-brand-charcoal">
         {/* Status badge */}
-        <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full ${
+        <div title={statusLabel} aria-label={statusLabel} role="status" className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full ${
           marketOpen 
             ? "bg-secondary/20 border border-secondary/30" 
             : marketStatusText === "Pre-Market"
@@ -263,29 +270,30 @@ const StockTicker = () => {
             : marketStatusText === "After Hours" ? "text-purple-300"
             : "text-[#ff8a8a]"
           }`}>
-            {marketStatusText}
+            <span className="md:hidden" aria-hidden>{SHORT_STATUS[marketStatusText] ?? "Closed"}</span>
+            <span className="hidden md:inline" aria-hidden>{statusLabel}</span>
           </span>
         </div>
 
         {/* Countdown / date info */}
         {marketOpen && closeCountdown && (
-          <span className="text-[8px] text-primary-foreground/50 font-medium flex items-center gap-1">
+          <span className="text-[8px] text-primary-foreground/50 font-medium hidden md:flex items-center gap-1">
             <Clock className="w-2.5 h-2.5" />
             Closes in {closeCountdown}
           </span>
         )}
         {!marketOpen && nextOpenCountdown && (
-          <span className="text-[8px] text-primary-foreground/50 font-medium flex items-center gap-1">
+          <span className="text-[8px] text-primary-foreground/50 font-medium hidden md:flex items-center gap-1">
             <Clock className="w-2.5 h-2.5" />
             Opens in {nextOpenCountdown}
           </span>
         )}
         {!marketOpen && lastTradingDate && !nextOpenCountdown && (
-          <span className="text-[8px] text-primary-foreground/40 font-medium">
+          <span className="text-[8px] text-primary-foreground/40 font-medium hidden md:inline">
             Closing: {formatTradingDate(lastTradingDate)}
           </span>
         )}
-        {marketOpen && (
+        {marketOpen && !isMobile && (
           <CountdownTimer fetchedAt={fetchedAt} marketOpen={marketOpen} />
         )}
       </div>

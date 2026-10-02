@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { Bar, CartesianGrid, ComposedChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { Card } from "@/components/ui/card";
+import { segmentItem, segmentTrack } from "@/components/ui/segmented";
 import { useStockMarketData } from "@/hooks/useStockMarketData";
 import { shortDate } from "@/lib/market-data";
 import { CHART, axisTick, tooltipStyle } from "@/components/markets/chart-kit";
@@ -25,19 +26,19 @@ export default function ExchangeHistory({ symbol }: { symbol: string }) {
   const avgDelivery = series.filter((s) => s.delivery !== null).reduce((a, s, _, arr) => a + s.delivery! / arr.length, 0);
 
   return (
-    <Card className="min-w-0 p-4">
+    <Card className="min-w-0 p-4 sm:p-5">
       <div className="flex flex-wrap items-end justify-between gap-3 mb-3">
         <div>
-          <h2 className="text-xl font-bold">Price &amp; delivery on the exchange</h2>
+          <h2 className="font-heading text-lg font-bold">Price &amp; delivery on the exchange</h2>
           <p className="text-xs text-muted-foreground">
             NSE bhavcopy to {shortDate(last.date)} · delivery {last.delivery?.toFixed(1) ?? "—"}% today vs {avgDelivery.toFixed(1)}% average
             {last.bse !== null ? ` · BSE close ₹${last.bse.toLocaleString("en-IN")}` : ""}
           </p>
         </div>
-        <div className="flex bg-muted rounded-lg p-1" role="group" aria-label="Range">
+        <div className={segmentTrack} role="group" aria-label="Range">
           {RANGES.map((r) => (
             <button key={r.label} type="button" aria-pressed={days === r.days} onClick={() => setDays(r.days)}
-              className={`px-2.5 py-1 rounded-md text-xs font-semibold transition-colors ${days === r.days ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
+              className={segmentItem(days === r.days)}>
               {r.label}
             </button>
           ))}

@@ -116,7 +116,7 @@ const CareersPage = () => {
             <div className="text-center bg-brand-gold/10 border border-brand-gold/30 rounded-2xl p-8">
               <h4 className="text-2xl font-bold text-foreground mb-3">Looking for Opportunities?</h4>
               <p className="text-muted-foreground text-lg mb-8 max-w-2xl mx-auto">While we don't currently have any immediate openings, we are always on the lookout for driven talent. Send us your resume, and we'll reach out when a position opens up!</p>
-              <Button asChild className="bg-brand-gold hover:bg-brand-gold/90 text-primary-foreground font-semibold px-8 py-6 text-lg rounded-full">
+              <Button asChild className="bg-brand-gold hover:bg-brand-gold/90 text-brand-navy font-semibold px-8 py-6 text-lg rounded-full">
                 <a href={`mailto:${PRIMARY_EMAIL}?subject=General Application`}>Submit Your Resume</a>
               </Button>
             </div>

@@ -35,8 +35,8 @@ export function insiderBoard(trades: BoardTrade[], top = 8): { buying: InsiderNe
 /** Open-market insider trades of the last `days` days, across every tracked stock. */
 export async function recentInsiderTrades(days = 30): Promise<BoardTrade[]> {
   const since = new Date(Date.now() - days * 86_400_000).toISOString().slice(0, 10);
-  const { data, error } = await supabase
-    .from("nse_insider_trades")
+  const { data, error } = await (supabase
+    .from("nse_insider_trades" as never) as ReturnType<typeof supabase.from>)
     .select("symbol, category, transaction, mode, value")
     .gte("traded_to", since)
     .in("transaction", ["buy", "sell"])

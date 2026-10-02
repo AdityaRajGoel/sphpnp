@@ -83,7 +83,7 @@ const teamFAQs = [
   { q: "Do your advisors provide personalized recommendations?", a: "Absolutely. Our advisors take the time to understand your financial situation, risk appetite, and goals before making any recommendations. All advice is SEBI-compliant." },
   { q: "How do I schedule a consultation?", a: "You can call any team member directly using the numbers listed above, or visit our branch during office hours. For first-time consultations, we recommend calling ahead." },
   { q: "Is there a minimum investment amount to get started?", a: "No. We welcome investors of all sizes. Whether you want to start a ₹500 monthly SIP or invest ₹50 lakhs in equities, our team is here to help." },
-  { q: "What are your office hours?", a: "Our branch operates Monday to Saturday, 9:30 AM to 5:30 PM IST. We are closed on Sundays and stock exchange holidays." },
+  { q: "What are your office hours?", a: "Our branch is open Monday to Friday from 9:00 AM to 6:00 PM, and Saturday from 9:00 AM to 4:00 PM IST. We are closed on Sundays and stock exchange holidays." },
 ];
 
 const branchStats = [
@@ -147,7 +147,7 @@ const TeamMemberCard = ({ member, index }: { member: typeof teamMembers[0]; inde
             href={`https://wa.me/${member.phone.replace(/\D/g, '')}?text=${encodeURIComponent(`Hi ${member.name.split(' ')[0]}, I'd like to schedule a consultation.`)}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 text-sm text-white bg-green-600 hover:bg-green-700 rounded-lg px-3 py-2 transition-colors"
+            className="inline-flex items-center gap-2 text-sm text-white bg-green-700 hover:bg-green-800 rounded-lg px-3 py-2 transition-colors"
           >
             <MessageCircle className="w-4 h-4" />
             WhatsApp
@@ -284,8 +284,9 @@ const TeamPage = () => {
       </section>
 
       {/* Team Grid */}
-      <section className="py-8 md:py-16 bg-background">
+      <section aria-labelledby="team-members" className="py-8 md:py-16 bg-background">
         <div className="container mx-auto px-4">
+          <h2 id="team-members" className="sr-only">Team members</h2>
           <div className="grid md:grid-cols-2 gap-8">
             {teamMembers.map((member, index) => (
               <TeamMemberCard key={member.name} member={member} index={index} />

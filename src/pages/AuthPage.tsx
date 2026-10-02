@@ -14,6 +14,7 @@ import logo160 from "@/assets/logo-160.webp";
 import PageTransition from "@/components/PageTransition";
 import { validateEmail, validateName, validateNewPassword } from "@/lib/form-validation";
 import { FieldMessage, PasswordMeter, fieldStateClass } from "@/components/ui/form-field";
+import { CLIENT_LOGIN_URL } from "@/lib/contact";
 
 type AuthMode = "login" | "signup" | "forgot";
 
@@ -136,7 +137,7 @@ const AuthPage = () => {
           className="relative z-10 text-center text-primary-foreground"
         >
           <Link to="/">
-            <img src={logo160} alt="Parasram India" className="h-20 mx-auto mb-8" />
+            <img src={logo160} alt="Parasram India" className="h-20 mx-auto mb-8 brightness-0 invert" />
           </Link>
           <h2 className="font-heading text-3xl font-bold mb-4">The Science of Investment</h2>
           <p className="text-primary-foreground/70 text-lg mb-8 max-w-md">
@@ -188,6 +189,13 @@ const AuthPage = () => {
                   ? "Start your investment journey today"
                   : "Enter your email to receive a reset link"}
               </p>
+              {/* "Sign in to your Parasram account" is easily mistaken for the trading login. */}
+              {mode === "login" && (
+                <p className="-mt-4 mb-6 text-sm text-muted-foreground">
+                  This is your account on this website, not your trading login. To trade, use{" "}
+                  <a href={CLIENT_LOGIN_URL} target="_blank" rel="noopener noreferrer" className="font-medium text-secondary underline-offset-4 hover:underline">Client Login</a>.
+                </p>
+              )}
 
               <form onSubmit={mode === "login" ? handleLogin : mode === "signup" ? handleSignup : handleForgot} noValidate className="space-y-3">
                 {mode === "signup" && (
@@ -258,7 +266,6 @@ const AuthPage = () => {
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         onBlur={() => password && setTouched((t) => ({ ...t, password: true }))}
-                        placeholder="••••••••"
                         className={`pl-10 pr-10 ${fieldStateClass(passwordError)}`}
                         required
                         autoComplete={mode === "signup" ? "new-password" : "current-password"}

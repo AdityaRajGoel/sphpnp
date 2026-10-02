@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { parseStatement } from "../../supabase/functions/_shared/indianapi";
 import { financialGrids } from "../../supabase/functions/_shared/google-finance";
 import {
-  quarterlyPerformance, annualPerformance, cashflowSeries, capitalStructure, shareholdingSlices, roeSeries, shortCrore, cagr,
+  quarterlyPerformance, annualPerformance, cashflowSeries, capitalStructure, shareholdingSlices, shareholdingTrend, dividendsByYear, niceTicks, roeSeries, shortCrore, cagr,
 } from "@/lib/stock-charts";
 import type { StatementGrid, StatementKind } from "@/lib/statements";
 
@@ -115,6 +115,25 @@ describe("shortCrore", () => {
     expect(shortCrore(-64706)).toBe("-64.7K Cr");
     expect(shortCrore(512)).toBe("512 Cr");
   });
+
+  it("drops a trailing .0, which made \"-19.0K Cr\" wrap in a 64px axis", () => {
+    expect(shortCrore(-20000)).toBe("-20K Cr");
+    expect(shortCrore(2500)).toBe("2.5K Cr");
+  });
+});
+
+describe("niceTicks", () => {
+  it("steps in 1, 2, 2.5 or 5 x 10^n and always takes in zero", () => {
+    expect(niceTicks([10900, 4200, 0])).toEqual([0, 5000, 10000, 15000]);
+    expect(niceTicks([18700, -17900, 3000])).toEqual([-20000, -10000, 0, 10000, 20000]);
+    expect(niceTicks([26.9, 11, 0])).toEqual([0, 10, 20, 30]);
+    expect(niceTicks([0.8, 0.45])).toEqual([0, 0.2, 0.4, 0.6, 0.8]);
+  });
+
+  it("ignores gaps and falls back to 0-1 with nothing to scale", () => {
+    expect(niceTicks([null, undefined, Number.NaN])).toEqual([0, 1]);
+    expect(niceTicks([null, 40, 29])).toEqual([0, 10, 20, 30, 40]);
+  });
 });
 
 describe("cagr", () => {
@@ -137,5 +156,62 @@ describe("quarterlyPerformance - a bank", () => {
     expect(q.length).toBeGreaterThan(0);
     expect(q.every((p) => p.margin === null)).toBe(true);
     expect(q[q.length - 1].revenue).not.toBeNull();
+  });
+});
+
+describe("shareholdingTrend", () => {
+  const series = [
+    { category: "Public", points: [{ date: "2025-12-31", pct: 30 }, { date: "2026-03-31", pct: 28 }, { date: "2026-06-30", pct: 27 }] },
+    { category: "Promoter", points: [{ date: "2025-12-31", pct: 50 }, { date: "2026-03-31", pct: 50.5 }, { date: "2026-06-30", pct: 51 }] },
+    { category: "FII", points: [{ date: "2025-12-31", pct: 20 }, { date: "2026-03-31", pct: 21.5 }, { date: "2026-06-30", pct: 22 }] },
+    { category: "Government", points: [{ date: "2025-12-31", pct: 0 }] },
+  ];
+
+  it("gives one row per filing, oldest first, and drops holders never above zero", () => {
+    const { categories, rows } = shareholdingTrend(series);
+    expect(rows.map((r) => r.date)).toEqual(["2025-12-31", "2026-03-31", "2026-06-30"]);
+    expect(categories).not.toContain("Government");
+    expect(rows[2]).toMatchObject({ Promoter: 51, FII: 22, Public: 27 });
+  });
+
+  it("orders holders by the latest filing, largest first", () => {
+    expect(shareholdingTrend(series).categories).toEqual(["Promoter", "Public", "FII"]);
+  });
+
+  it("keeps only the last N quarters", () => {
+    expect(shareholdingTrend(series, 2).rows.map((r) => r.date)).toEqual(["2026-03-31", "2026-06-30"]);
+  });
+
+  it("is empty without data", () => {
+    expect(shareholdingTrend([])).toEqual({ categories: [], rows: [] });
+  });
+});
+
+describe("dividendsByYear", () => {
+  const d = (ex_date: string, value: number | null, action_type = "dividend") => ({ ex_date, action_type, value });
+
+  it("sums by fiscal year (April to March), fills a skipped year with zero, and leaves out the oldest year", () => {
+    const { years } = dividendsByYear([
+      d("2026-07-15", 6), d("2026-02-10", 4), d("2025-06-20", 10), // FY27, FY26, FY26
+      d("2023-08-01", 8), // FY24; FY25 paid nothing
+      d("2022-09-01", 3), // FY23, the oldest - maybe cut short by the history window
+      d("2025-01-01", null), d("2024-11-01", 99, "bonus"),
+    ]);
+    expect(years).toEqual([
+      { year: "FY24", dps: 8 },
+      { year: "FY25", dps: 0 },
+      { year: "FY26", dps: 14 },
+      { year: "FY27", dps: 6 },
+    ]);
+  });
+
+  it("names the latest split or bonus inside the charted years", () => {
+    const actions = [d("2026-07-15", 6), d("2025-06-01", 1, "split"), d("2024-06-20", 10), d("2023-06-20", 10), d("2019-01-01", 1, "bonus")];
+    expect(dividendsByYear(actions).reset).toEqual({ type: "split", date: "2025-06-01" });
+    expect(dividendsByYear(actions.filter((a) => a.action_type !== "split")).reset).toBeNull();
+  });
+
+  it("is empty without dividends", () => {
+    expect(dividendsByYear([d("2024-01-01", 1, "split")])).toEqual({ years: [], reset: null });
   });
 });

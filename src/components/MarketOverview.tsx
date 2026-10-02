@@ -13,6 +13,9 @@ import {
 } from "@/components/ui/dialog";
 import type { LucideIcon } from "lucide-react";
 import { useLiveMarket } from "@/hooks/useLiveMarket";
+import { useQuery } from "@tanstack/react-query";
+import { marketSnapshots, type Breadth } from "@/lib/market-data";
+import { istDateTime } from "@/lib/market-movers";
 import { supabase } from "@/integrations/supabase/client";
 // The charts render only after a stock is opened; loading them lazily keeps
 // lightweight-charts (~120 KB gzipped with its helpers) off the home page's first load.
@@ -116,7 +119,7 @@ const StockRow = ({ stock, index, onChartClick }: { stock: Stock; index: number;
       </span>
       <button
         onClick={() => onChartClick(stock)}
-        className="sm:hidden p-1.5 rounded-lg hover:bg-muted transition-colors"
+        className="sm:hidden -my-1 p-2.5 rounded-lg hover:bg-muted transition-colors"
         aria-label={`View chart for ${stock.name}`}
       >
         <Maximize2 className="w-3.5 h-3.5 text-muted-foreground" />
@@ -233,11 +236,22 @@ const MarketOverview = () => {
   // No invented figures: these used to default to 1,456 / 892 / 186 and VIX 13.45,
   // which the prerendered HTML served as if they were today's market. Until real
   // breadth arrives (and always in the static HTML) the tiles show a dash.
-  const hasBreadth = liveData != null;
-  const liveAdvances = liveData?.advances ?? 0;
-  const liveDeclines = liveData?.declines ?? 0;
-  const liveUnchanged = liveData?.unchanged ?? 0;
+  // Every stock NSE traded (sync-market-data's breadth snapshot) when it has
+  // landed; the live feed's tracked large caps are only the fallback.
+  const nseBreadth = useQuery({
+    queryKey: ["market-snapshot", "breadth"],
+    queryFn: async () => (await marketSnapshots<Breadth>(["breadth"]))[0] ?? null,
+    staleTime: 5 * 60_000,
+  }).data;
+  const whole = nseBreadth?.payload ?? null;
+  const hasBreadth = whole != null || liveData != null;
+  const liveAdvances = whole?.advances ?? liveData?.advances ?? 0;
+  const liveDeclines = whole?.declines ?? liveData?.declines ?? 0;
+  const liveUnchanged = whole?.unchanged ?? liveData?.unchanged ?? 0;
   const totalStocks = liveAdvances + liveDeclines + liveUnchanged;
+  const breadthScope = whole
+    ? `All ${whole.total.toLocaleString("en-IN")} NSE stocks traded${nseBreadth?.as_of ? `, ${istDateTime(nseBreadth.as_of)}` : ""}`
+    : totalStocks ? `${totalStocks} tracked NSE stocks` : "NSE";
 
   const liveVix = vix?.price ?? "—";
   const liveMostActive = liveData?.mostActive?.[0]?.name ?? "—";
@@ -257,7 +271,8 @@ const MarketOverview = () => {
   const marketStats = useMemo(() => [
     breadthPct == null
       ? { icon: BarChart3, label: "Breadth (Adv)", value: "—", ...neutral }
-      : { icon: BarChart3, label: "Breadth (Adv)", value: `${breadthPct}%`, color: breadthPct >= 50 ? "text-secondary" : "text-destructive", bgColor: breadthPct >= 50 ? "bg-secondary/10" : "bg-destructive/10" },
+      // A share, not a verdict: no green-above-half, red-below colouring.
+      : { icon: BarChart3, label: "Breadth (Adv)", value: `${breadthPct}%`, ...neutral },
     { icon: Activity, label: "Unchanged", value: hasBreadth ? liveUnchanged.toLocaleString() : "—", color: "text-brand-gold", bgColor: "bg-brand-gold/10" },
     { icon: TrendingUp, label: "Advances", value: hasBreadth ? liveAdvances.toLocaleString() : "—", color: "text-secondary", bgColor: "bg-secondary/10" },
     { icon: TrendingDown, label: "Declines", value: hasBreadth ? liveDeclines.toLocaleString() : "—", color: "text-destructive", bgColor: "bg-destructive/10" },
@@ -375,7 +390,7 @@ const MarketOverview = () => {
                   <span className="w-16 text-center hidden sm:block">Chart</span>
                   <span className="w-20 sm:w-28 text-right">Price</span>
                   <span className="w-[60px] sm:w-[70px] text-center">Change</span>
-                  <span className="w-8 sm:hidden"></span>
+                  <span className="w-9 sm:hidden"></span>
                 </div>
               </div>
             )}
@@ -417,9 +432,9 @@ const MarketOverview = () => {
         <motion.div className="mt-8 bg-card border border-border/50 rounded-xl p-5" {...revealSection}>
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-bold text-foreground">Market Breadth</h3>
-            {/* The live feed covers a tracked set of large caps, not the whole
-                exchange; unlabelled, "0 advances, 20 declines" read as all of NSE. */}
-            <span className="text-[10px] text-muted-foreground">{totalStocks ? `${totalStocks} tracked NSE stocks` : "NSE"}</span>
+            {/* Says which set the counts cover: unlabelled, the live feed's
+                "0 advances, 20 declines" read as all of NSE. */}
+            <span className="text-xs text-muted-foreground">{breadthScope}</span>
           </div>
           <div className="flex items-center gap-3 mb-2">
             <span className="text-xs font-bold text-secondary">{liveAdvances.toLocaleString()} Advances</span>
@@ -431,7 +446,7 @@ const MarketOverview = () => {
             </div>
             <span className="text-xs font-bold text-destructive">{liveDeclines.toLocaleString()} Declines</span>
           </div>
-          <div className="text-center text-[10px] text-muted-foreground">{liveUnchanged} Unchanged</div>
+          <div className="text-center text-xs text-muted-foreground">{liveUnchanged.toLocaleString("en-IN")} Unchanged</div>
         </motion.div>
       </div>
 

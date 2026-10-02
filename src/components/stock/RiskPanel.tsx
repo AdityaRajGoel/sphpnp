@@ -103,12 +103,12 @@ export default function RiskPanel({ analytics }: { analytics: PriceAnalytics | n
 
   return (
     <motion.section {...revealSection} className="mt-8" aria-labelledby="risk-heading">
-      <Card className="p-5 md:p-6">
+      <Card className="p-4 sm:p-5">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="flex items-center gap-2">
             <Activity className="w-5 h-5 text-secondary" />
             <div>
-              <h2 id="risk-heading" className="font-heading text-xl font-bold">Risk &amp; trend</h2>
+              <h2 id="risk-heading" className="font-heading text-lg font-bold">Risk &amp; trend</h2>
               <p className="text-xs text-muted-foreground">
                 From {analytics.observations} daily sessions to {new Intl.DateTimeFormat("en-IN", { dateStyle: "medium" }).format(new Date(analytics.as_of))}.
                 {analytics.actions_applied > 0 && ` Adjusted for ${analytics.actions_applied} corporate action${analytics.actions_applied > 1 ? "s" : ""}.`}

@@ -19,7 +19,7 @@ export default function CompanyInsights({ screener }: { screener: ScreenerProfil
 
       {hasChecklist && (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <Card className="p-4 border-l-4 border-l-secondary">
+          <Card className="p-4">
             <h3 className="font-semibold text-sm mb-2 text-secondary">Strengths</h3>
             {screener.pros.length > 0 ? (
               <ul className="space-y-2">
@@ -29,7 +29,7 @@ export default function CompanyInsights({ screener }: { screener: ScreenerProfil
               </ul>
             ) : <p className="text-sm text-muted-foreground">None flagged by the checklist.</p>}
           </Card>
-          <Card className="p-4 border-l-4 border-l-destructive">
+          <Card className="p-4">
             <h3 className="font-semibold text-sm mb-2 text-destructive">Risks</h3>
             {screener.cons.length > 0 ? (
               <ul className="space-y-2">

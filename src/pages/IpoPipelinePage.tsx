@@ -9,6 +9,7 @@ import ScrollProgress from "@/components/ScrollProgress";
 import WhatsAppButton from "@/components/WhatsAppButton";
 import VisibleBreadcrumbs from "@/components/VisibleBreadcrumbs";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import PipelineOverview from "@/components/ipo/PipelineOverview";
@@ -32,6 +33,9 @@ const VIEWS: { id: PipelineView; label: string }[] = [
   { id: "all", label: "All filings" },
 ];
 
+/** Companies shown at first and added per "Show more"; the rest stay in the HTML, hidden. */
+const BATCH = 20;
+
 const STAGE_TONE: Record<PipelineStage, string> = {
   drhp_filed: "bg-muted text-foreground",
   udrhp_filed: "bg-brand-gold/15 text-foreground",
@@ -42,11 +46,11 @@ const STAGE_TONE: Record<PipelineStage, string> = {
 const formatDate = (iso: string) =>
   new Intl.DateTimeFormat("en-IN", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" }).format(new Date(`${iso}T00:00:00Z`));
 
-function CompanyRow({ company }: { company: PipelineCompany }) {
+function CompanyRow({ company, hidden }: { company: PipelineCompany; hidden: boolean }) {
   const [open, setOpen] = useState(false);
   const latest = company.filings[0];
   return (
-    <Card>
+    <Card hidden={hidden}>
       <CardContent className="p-4 md:p-5">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">
@@ -111,6 +115,7 @@ export default function IpoPipelinePage() {
   const initialView = searchParams.get("view");
   const [view, setView] = useState<PipelineView>(initialView === "launched" || initialView === "all" ? initialView : "pipeline");
   const [query, setQuery] = useState(searchParams.get("q") ?? "");
+  const [limit, setLimit] = useState(BATCH);
 
   useEffect(() => { getPipeline().then(setCompanies).catch((e: Error) => setError(e.message)).finally(() => setLoading(false)); }, []);
 
@@ -180,9 +185,17 @@ export default function IpoPipelinePage() {
           ) : shown.length === 0 ? (
             <Card><CardContent className="p-8 text-center text-muted-foreground">No companies match.</CardContent></Card>
           ) : (
-            shown.map((c) => <CompanyRow key={c.key} company={c} />)
+            // Every company is rendered and those past the limit are only hidden, so
+            // the prerendered page still names each one and links to its filings.
+            shown.map((c, i) => <CompanyRow key={c.key} company={c} hidden={i >= limit} />)
           )}
         </div>
+        {!loading && !error && shown.length > limit && (
+          <div className="mt-6 flex flex-col items-center gap-2">
+            <p className="text-xs text-muted-foreground" aria-live="polite">Showing {limit} of {shown.length}</p>
+            <Button variant="outline" size="sm" onClick={() => setLimit((n) => n + BATCH)}>Show {Math.min(BATCH, shown.length - limit)} more</Button>
+          </div>
+        )}
       </main>
       <WhatsAppButton />
       <Footer />

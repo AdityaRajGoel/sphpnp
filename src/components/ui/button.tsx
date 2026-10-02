@@ -33,7 +33,7 @@ const buttonVariants = cva(
         default: "bg-primary text-primary-foreground hover:bg-primary/90 active:scale-[0.97]",
         destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90 active:scale-[0.97]",
         outline: "border border-input bg-background hover:bg-accent hover:text-accent-foreground active:scale-[0.97]",
-        secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80 active:scale-[0.97]",
+        secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/90 active:scale-[0.97]", // /80 left white text at 3.74:1
         ghost: "hover:bg-accent hover:text-accent-foreground active:scale-[0.97]",
         // A text link is not a surface, so it doesn't compress on press.
         link: "text-primary underline-offset-4 hover:underline",

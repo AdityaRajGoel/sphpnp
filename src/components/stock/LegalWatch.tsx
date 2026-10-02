@@ -67,8 +67,7 @@ export default function LegalWatch({ symbol }: { symbol: string }) {
       <ul className="space-y-2">
         {shown.map((f, i) => (
           <motion.li key={f.id} {...revealItem(Math.min(i, 5))}>
-            <Card className={`relative flex flex-wrap items-start justify-between gap-3 overflow-hidden p-4 transition-colors hover:bg-muted/30 ${f.adverse ? "border-destructive/30" : ""}`}>
-              {f.adverse && <span className="absolute inset-y-0 left-0 w-1 bg-destructive/70" aria-hidden="true" />}
+            <Card className={`flex flex-wrap items-start justify-between gap-3 p-4 ${f.adverse ? "border-destructive/30" : ""}`}>
               <div className="min-w-0 flex-1">
                 <div className="mb-1 flex flex-wrap items-center gap-2 text-[0.6875rem] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
                   {f.topic}
@@ -90,7 +89,7 @@ export default function LegalWatch({ symbol }: { symbol: string }) {
         ))}
       </ul>
       {filtered.length > INITIAL && (
-        <Button variant="ghost" size="sm" className="mt-2" onClick={() => setExpanded((e) => !e)} aria-expanded={expanded}>
+        <Button variant="ghost" size="sm" className="-ml-3 mt-2" onClick={() => setExpanded((e) => !e)} aria-expanded={expanded}>
           {expanded ? "Show fewer" : `Show all ${filtered.length}`}
         </Button>
       )}

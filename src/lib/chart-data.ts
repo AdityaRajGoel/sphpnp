@@ -160,6 +160,52 @@ export function toKLineData(points: readonly ApiChartPoint[]): KLineBar[] {
   }));
 }
 
+/** A dated event drawn on the price chart. `date` is an IST calendar day, YYYY-MM-DD. */
+export type PriceEvent = { date: string; kind: "results" | "dividend" };
+
+/** The IST calendar day of a UTC instant in seconds. IST has no DST, so a fixed offset is exact. */
+const istDay = (seconds: number): string => new Date((seconds + 19_800) * 1000).toISOString().slice(0, 10);
+
+/**
+ * Results filings (timestamps) and dividend ex-dates as chart events, one per
+ * kind per day: a consolidated and a standalone filing minutes apart are one
+ * results day, and an interim plus a special dividend are one ex-date.
+ */
+export function priceEvents(
+  actions: readonly { ex_date: string; action_type: string }[],
+  filingTimes: readonly string[],
+): PriceEvent[] {
+  const results = filingTimes.map((f) => Date.parse(f)).filter(Number.isFinite).map((ms) => istDay(ms / 1000));
+  const dividends = actions.filter((a) => a.action_type === "dividend").map((a) => a.ex_date);
+  return [
+    ...[...new Set(results)].map((date) => ({ date, kind: "results" as const })),
+    ...[...new Set(dividends)].map((date) => ({ date, kind: "dividend" as const })),
+  ];
+}
+
+/**
+ * Each event on the bar whose period holds it (the last bar on or before its
+ * day), oldest first. The library drops a marker whose time is not a bar
+ * without a word, so snapping is what makes the markers show at all; on the
+ * monthly bars of a 5Y chart it also keeps a 24 July result on July's bar.
+ * Events before the first bar or after `today` are left out: an upcoming
+ * ex-date is not price history.
+ */
+export function snapEvents(
+  events: readonly PriceEvent[],
+  times: readonly UTCTimestamp[],
+  today: string = istDay(Date.now() / 1000),
+): { time: UTCTimestamp; event: PriceEvent }[] {
+  const days = times.map(istDay);
+  return events
+    .flatMap((event) => {
+      if (days.length === 0 || event.date < days[0] || event.date > today) return [];
+      const next = days.findIndex((d) => d > event.date);
+      return [{ time: times[next === -1 ? days.length - 1 : next - 1], event }];
+    })
+    .sort((a, b) => a.time - b.time);
+}
+
 // `sma` deliberately lives in technicals.ts alongside rsi/ema/rebase.
 // Re-exported here so chart callers have one import for chart-shaped helpers.
 export { sma } from "./technicals";

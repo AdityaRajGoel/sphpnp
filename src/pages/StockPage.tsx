@@ -1,4 +1,5 @@
-import { lazy, Suspense, useState } from "react";
+import { lazy, Suspense, useMemo, useState } from "react";
+import { priceEvents } from "@/lib/chart-data";
 import { stockPageTitle } from "@/lib/seo-title";
 import { stockDataset, stockFaqItems } from "@/lib/stock-structured-data";
 import FAQ from "@/components/FAQ";
@@ -78,6 +79,7 @@ export default function StockPage() {
   // into the static HTML for search engines (see lib/prerender).
   const interactive = !isPrerender();
   const [askingAI, setAskingAI] = useState(false);
+  const chartEvents = useMemo(() => priceEvents(s.actions, s.resultDates), [s.actions, s.resultDates]);
 
   // `synced` and `basis` are set together by selectBasis() inside the hook
   // (basis is non-null exactly when there are income rows), but that link lives
@@ -203,7 +205,7 @@ export default function StockPage() {
                     {s.header?.name}
                   </h1>
                   <div className="flex items-center gap-2 mt-2">
-                    <Badge variant="secondary">{s.header?.symbol}</Badge>
+                    <Badge variant="outline">{s.header?.symbol}</Badge>
                     {s.header?.sector && (
                       <span className="text-sm text-muted-foreground">{s.header.sector}</span>
                     )}
@@ -233,10 +235,10 @@ export default function StockPage() {
                         variant="outline"
                         size="sm"
                         aria-label={`Ask AI about ${aiStock.name}`}
-                        className="text-brand-orange border-brand-orange/30 hover:bg-brand-orange/10 bg-transparent text-xs min-h-[44px] md:min-h-0 md:h-8 px-3"
+                        className="h-11 gap-1.5 border-brand-orange/30 bg-transparent px-2.5 text-xs text-brand-orange hover:bg-brand-orange/10 hover:text-brand-orange md:h-8"
                         onClick={() => setAskingAI(true)}
                       >
-                        <Bot className="w-3.5 h-3.5 mr-1" /> Ask AI
+                        <Bot aria-hidden="true" /> Ask AI
                       </Button>
                     )}
                   </div>
@@ -259,12 +261,17 @@ export default function StockPage() {
                 showing. Gating it would have hidden the chart on exactly the
                 stocks whose page is otherwise emptiest. */}
             {s.header && interactive && (
-              <StockPriceChart symbol={s.header.symbol} name={s.header.name} />
+              <StockPriceChart symbol={s.header.symbol} name={s.header.name} events={chartEvents} />
             )}
 
-            {s.header && <LatestResults symbol={s.header.symbol} />}
-            {s.header && <RedFlagsCard symbol={s.header.symbol} />}
-            {s.header && <StockIndexLinks symbol={s.header.symbol} />}
+            {/* One group, evenly spaced: each strip had its own mt-6. */}
+            {s.header && (
+              <div className="mt-6 space-y-3">
+                <LatestResults symbol={s.header.symbol} />
+                <RedFlagsCard symbol={s.header.symbol} />
+                <StockIndexLinks symbol={s.header.symbol} />
+              </div>
+            )}
             {s.header && <StockResearchProfile symbol={s.header.symbol} />}
             {s.header && interactive && <StockChecklist symbol={s.header.symbol} />}
             {s.header && <PeerComparison symbol={s.header.symbol} />}
@@ -302,6 +309,7 @@ export default function StockPage() {
                     statements={st.statements}
                     shareholding={st.profile?.shareholding ?? []}
                     roeHistory={st.profile?.roe_history}
+                    actions={s.actions}
                     source={statementSourceLabel(st.statements)}
                   />
                 </Suspense>

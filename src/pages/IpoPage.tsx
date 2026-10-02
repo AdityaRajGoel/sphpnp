@@ -8,6 +8,7 @@ import PageTransition from "@/components/PageTransition";
 import ScrollProgress from "@/components/ScrollProgress";
 import WhatsAppButton from "@/components/WhatsAppButton";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import IPOFilterBar from "@/components/ipo/IPOFilterBar";
@@ -16,7 +17,7 @@ import IPOCompareBar from "@/components/ipo/IPOCompareBar";
 import IPOCompareDialog from "@/components/ipo/IPOCompareDialog";
 import IpoMarketStats from "@/components/ipo/IpoMarketStats";
 import StockTicker from "@/components/StockTicker";
-import SplitHero from "@/components/SplitHero";
+import PageHeader, { HeaderStat } from "@/components/PageHeader";
 import { istToday } from "@/lib/market-data";
 import { formatGmp, formatGmpPercent, formatMinInvestment, formatSubscription, getIpos, gmpPercent, type Ipo } from "@/lib/ipo";
 import {
@@ -39,6 +40,9 @@ import {
  */
 const DEFAULT_SORT: SortKey = "status";
 
+/** Cards shown at first and added per "Show more"; the rest stay in the HTML, hidden. */
+const BATCH = 12;
+
 const statusLabel: Record<Ipo["status"], string> = { upcoming: "Upcoming", open: "Open now", closed: "Closed", listed: "Listed" };
 type ViewMode = "cards" | "table";
 
@@ -54,6 +58,7 @@ export default function IpoPage() {
   const [sortDir, setSortDir] = useState<SortDir>(searchParams.get("dir") === "desc" ? "desc" : "asc");
   const [compareSlugs, setCompareSlugs] = useState<string[]>(() => parseCompareSlugs(searchParams.get("compare")));
   const [compareOpen, setCompareOpen] = useState(false);
+  const [limit, setLimit] = useState(BATCH);
 
   useEffect(() => { getIpos().then(setIpos).catch((e: Error) => setError(e.message)).finally(() => setLoading(false)); }, []);
 
@@ -93,19 +98,18 @@ export default function IpoPage() {
     <Header />
     <StockTicker />
     <main>
-      <SplitHero
-        eyebrow={<><Rocket className="h-3.5 w-3.5 text-brand-gold" aria-hidden="true" /> IPO Central</>}
-        title="IPO decisions, grounded in the details."
-        subtitle="Issue dates, price bands and a transparent record of observed GMP—not a recommendation to apply, buy or sell."
-        illustration="ipo-guidance"
-        badge={<p className="text-sm"><span className="block text-[0.6875rem] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Apply in minutes</span><span className="font-semibold">UPI mandate · ASBA</span></p>}
-      >
-        <Link to="/ipo-pipeline" className="group inline-flex items-center gap-3 rounded-full border border-primary-foreground/30 py-1.5 pl-4 pr-1.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-foreground/10 pressable">
-          See the IPO pipeline
-          <span className="grid h-8 w-8 place-items-center rounded-full bg-primary-foreground/10 transition-transform duration-base group-hover:translate-x-0.5 group-hover:-translate-y-px"><ArrowRight className="h-4 w-4" aria-hidden="true" /></span>
-        </Link>
-      </SplitHero>
-      <section className="container mx-auto px-4 max-w-6xl py-10 md:py-14 pb-28">
+      <section className="container mx-auto px-4 max-w-6xl pt-4 md:pt-6 pb-28">
+        <PageHeader
+          className="mb-6"
+          eyebrow={<><Rocket className="h-3.5 w-3.5" aria-hidden="true" /> IPO Central</>}
+          title="IPO decisions, grounded in the details."
+          description="Issue dates, price bands and a transparent record of observed GMP—not a recommendation to apply, buy or sell."
+        >
+          <Button asChild variant="outline" size="sm" className="h-9">
+            <Link to="/ipo-pipeline">See the IPO pipeline <ArrowRight aria-hidden="true" /></Link>
+          </Button>
+          <HeaderStat label="Apply in minutes" value="UPI mandate · ASBA" />
+        </PageHeader>
         <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-foreground"><strong>Important:</strong> Grey market premium (GMP) is unofficial, unregulated and can change quickly. It is shown for information only and is not investment advice or a prediction of listing performance.</div>
 
         {!loading && !error && <div className="mt-10"><IpoMarketStats ipos={ipos} today={istToday()} /></div>}
@@ -131,11 +135,19 @@ export default function IpoPage() {
           ) : sorted.length === 0 ? (
             <Card><CardContent className="p-8 text-center text-muted-foreground">No IPOs match these filters. Try widening the status, board or GMP band.</CardContent></Card>
           ) : view === "table" ? (
-            <IPOTable ipos={sorted} sortKey={sortKey} sortDir={sortDir} onSort={handleSort} compareSlugs={compareSlugs} onToggleCompare={toggleCompare} />
+            <IPOTable ipos={sorted.slice(0, limit)} sortKey={sortKey} sortDir={sortDir} onSort={handleSort} compareSlugs={compareSlugs} onToggleCompare={toggleCompare} />
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">{sorted.map((ipo) => (
-              <IpoCard key={ipo.id} ipo={ipo} selected={compareSlugs.includes(ipo.slug)} compareDisabled={!compareSlugs.includes(ipo.slug) && compareSlugs.length >= MAX_COMPARE} onToggleCompare={() => toggleCompare(ipo.slug)} />
+            // Every card is rendered and those past the limit are only hidden, so the
+            // prerendered page still links to each IPO's own page.
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">{sorted.map((ipo, i) => (
+              <IpoCard key={ipo.id} hidden={i >= limit} ipo={ipo} selected={compareSlugs.includes(ipo.slug)} compareDisabled={!compareSlugs.includes(ipo.slug) && compareSlugs.length >= MAX_COMPARE} onToggleCompare={() => toggleCompare(ipo.slug)} />
             ))}</div>
+          )}
+          {!loading && !error && sorted.length > limit && (
+            <div className="mt-6 flex flex-col items-center gap-2">
+              <p className="text-xs text-muted-foreground" aria-live="polite">Showing {limit} of {sorted.length}</p>
+              <Button variant="outline" size="sm" onClick={() => setLimit((n) => n + BATCH)}>Show {Math.min(BATCH, sorted.length - limit)} more</Button>
+            </div>
           )}
         </div>
       </section>
@@ -146,13 +158,13 @@ export default function IpoPage() {
   </PageTransition>;
 }
 
-type IpoCardProps = { ipo: Ipo; selected: boolean; compareDisabled: boolean; onToggleCompare: () => void };
+type IpoCardProps = { ipo: Ipo; hidden: boolean; selected: boolean; compareDisabled: boolean; onToggleCompare: () => void };
 
-function IpoCard({ ipo, selected, compareDisabled, onToggleCompare }: IpoCardProps) {
+function IpoCard({ ipo, hidden, selected, compareDisabled, onToggleCompare }: IpoCardProps) {
   const gmpPct = gmpPercent(ipo);
   const min = formatMinInvestment(ipo)?.amount;
   const subscribed = formatSubscription(ipo.subscription_total);
-  return <Card className="h-full border-border/70 transition-[border-color,box-shadow] hover:border-secondary/50 hover:shadow-lg relative">
+  return <Card hidden={hidden} className="h-full border-border/70 transition-[border-color,box-shadow] hover:border-secondary/50 hover:shadow-lg relative">
     {/* Absolutely placed so the checkbox is not inside the card's link; lined up with the badge row. */}
     <label
       className={`absolute top-4 right-4 md:top-5 md:right-5 z-10 flex h-6 items-center gap-1.5 text-[11px] font-semibold text-muted-foreground ${compareDisabled ? "cursor-not-allowed opacity-50" : "cursor-pointer"}`}

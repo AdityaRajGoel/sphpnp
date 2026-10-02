@@ -28,6 +28,8 @@ describe("client error reporting", () => {
     expect(isNoise(toReport("error", "ResizeObserver loop completed with undelivered notifications"))).toBe(true);
     expect(isNoise(toReport("error", "bad", "chrome-extension://abc/content.js:1:1"))).toBe(true);
     expect(isNoise(toReport("error", "Script error."))).toBe(true);
+    // Microsoft's link scanner (Outlook Safe Links) rejects this from its own harness.
+    expect(isNoise(toReport("unhandledrejection", "Object Not Found Matching Id:3, MethodName:update, ParamCount:4"))).toBe(true);
     expect(isNoise(toReport("error", "Cannot read properties of undefined"))).toBe(false);
   });
 
