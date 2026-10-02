@@ -83,6 +83,7 @@ export default function PortfolioPage() {
           <input ref={input} type="file" accept=".csv,text/csv" className="sr-only" aria-label="Holdings CSV file" onChange={(e) => onFile(e.target.files?.[0])} />
           <Button onClick={() => input.current?.click()}><Upload className="mr-1.5 h-4 w-4" aria-hidden="true" /> {holdings.length ? "Replace file" : "Upload holdings CSV"}</Button>
           {holdings.length > 0 && <Button variant="outline" onClick={() => { setHoldings([]); save([]); }}><Trash2 className="mr-1.5 h-4 w-4" aria-hidden="true" /> Clear</Button>}
+          {holdings.length > 0 && <Button asChild variant="ghost"><Link to="/tax-loss-harvesting-calculator">Tax saved by booking losses</Link></Button>}
         </PageHeader>
         {error && <p role="alert" className="mt-4 rounded-lg border border-destructive/40 bg-destructive/5 px-4 py-3 text-sm text-destructive">{error}</p>}
 

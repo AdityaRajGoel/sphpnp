@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { ArrowRight, CalendarDays, LayoutGrid, Rocket, Table2 } from "lucide-react";
+import { ArrowRight, CalendarDays, ExternalLink, LayoutGrid, Rocket, Table2 } from "lucide-react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import SEOHead from "@/components/SEOHead";
@@ -33,6 +33,8 @@ import {
   type SortDir,
   type SortKey,
 } from "@/lib/ipo-filters";
+/** Parasram's online IPO application (client login, then the issue). */
+const IPO_APPLY_URL = "https://dashboard.parasramindia.com/Account/Login?Link=1002";
 
 /**
  * Lifecycle order - open issues first, recent listings newest first - rather
@@ -105,6 +107,10 @@ export default function IpoPage() {
           title="IPO decisions, grounded in the details."
           description="Issue dates, price bands and a transparent record of observed GMP—not a recommendation to apply, buy or sell."
         >
+          {/* The firm's online application, moved here from the header's Services menu. */}
+          <Button asChild size="sm" className="h-9 bg-secondary text-secondary-foreground hover:bg-secondary/90">
+            <a href={IPO_APPLY_URL} target="_blank" rel="noopener noreferrer">Apply for an IPO online <ExternalLink aria-hidden="true" /></a>
+          </Button>
           <Button asChild variant="outline" size="sm" className="h-9">
             <Link to="/ipo-pipeline">See the IPO pipeline <ArrowRight aria-hidden="true" /></Link>
           </Button>

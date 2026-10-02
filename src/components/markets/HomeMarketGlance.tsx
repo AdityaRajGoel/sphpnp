@@ -75,7 +75,7 @@ export default function HomeMarketGlance() {
               <LiveIndicator updatedAt={board.data.generated_at} />
             </div>
             <HeatStrip rows={board.data.groups.world} />
-            <Link to="/market-pulse#world" className="mt-3 inline-block text-xs font-semibold text-secondary hover:underline">See every index, sector and ETF</Link>
+            <Link to="/global-markets" className="mt-3 inline-block text-xs font-semibold text-secondary hover:underline">Global markets, and investing in US stocks</Link>
           </Card>
         )}
       </div>

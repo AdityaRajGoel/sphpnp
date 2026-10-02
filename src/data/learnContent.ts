@@ -364,7 +364,7 @@ The Securities and Exchange Board of India (**SEBI**) strictly regulates every m
 3. **Choose SIP or lumpsum** - a [monthly SIP](/learn/sip-vs-lumpsum) suits most beginners.
 4. **Stay invested** and review once or twice a year.
 
-> Parasram India offers direct and regular mutual funds with SIPs from ₹500/month. [Open a free account](/open-account) or [explore our services](/services).`,
+> Parasram India offers direct and regular mutual funds with SIPs from ₹500/month. [Invest online with Parasram Mutual Funds](https://parasrammf.com/), [open a free account](/open-account) or [explore our services](/services).`,
   },
 
   "ipo-guide": {

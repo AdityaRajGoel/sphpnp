@@ -9,7 +9,25 @@ import {
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
-import { latestNiftyPcr } from "@/lib/market-data";
+import { latestNiftyPcr, marketSnapshots, type Breadth } from "@/lib/market-data";
+
+/**
+ * Advances and declines across every NSE stock (sync-market-data's breadth
+ * snapshot, the same query Market Overview reads), else the 20 large caps the
+ * live feed tracks. Two different breadths on one page contradicted each other.
+ */
+function useBreadth(): { advances: number; declines: number; scope: string } | null {
+  const { marketOverview } = useLiveMarket();
+  const nse = useQuery({
+    queryKey: ["market-snapshot", "breadth"],
+    queryFn: async () => (await marketSnapshots<Breadth>(["breadth"]))[0] ?? null,
+    staleTime: 5 * 60_000,
+  }).data?.payload;
+  if (nse) return { advances: nse.advances, declines: nse.declines, scope: `All ${nse.total.toLocaleString("en-IN")} NSE stocks traded` };
+  if (!marketOverview) return null;
+  const tracked = marketOverview.advances + marketOverview.declines + (marketOverview.unchanged ?? 0);
+  return { advances: marketOverview.advances, declines: marketOverview.declines, scope: `The ${tracked} stocks this page tracks` };
+}
 import { useT } from "@/i18n/LanguageContext";
 import { useLiveMarket } from "@/hooks/useLiveMarket";
 import { useMarketFlows } from "@/hooks/useMarketFeed";
@@ -21,16 +39,23 @@ const sectorIcons: Record<string, LucideIcon> = {
   Healthcare: Heart,
 };
 
+/** "Live" only while NSE is open; after hours and on holidays the figures are the last close. */
+const LiveTag = ({ className = "text-xs text-brand-orange font-semibold" }: { className?: string }) => {
+  const { marketOpen } = useLiveMarket();
+  return <span className={className}>{marketOpen ? "Live" : "Last close"}</span>;
+};
+
 // Fear & Greed Gauge
 const FearGreedGauge = memo(() => {
-  const { vix, marketOverview } = useLiveMarket();
+  const { vix } = useLiveMarket();
+  const breadth = useBreadth();
   let value = 50;
   const vixPrice = vix ? parseFloat(vix.price.replace(/,/g, '')) : 0;
   if (vixPrice > 0) {
     value = Math.round(Math.max(5, Math.min(95, 100 - ((vixPrice - 10) / 20) * 80)));
   }
-  if (marketOverview) {
-    const { advances, declines } = marketOverview;
+  if (breadth) {
+    const { advances, declines } = breadth;
     const total = advances + declines;
     if (total > 0) {
       const breadthScore = (advances / total) * 100;
@@ -67,10 +92,11 @@ const FearGreedGauge = memo(() => {
             <path d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke="url(#gauge-grad)" strokeWidth="14" strokeLinecap="round" strokeDasharray="251" strokeDashoffset={251 - (value / 100) * 251} />
             <line x1="100" y1="100" x2={100 + 60 * Math.cos(angleRad)} y2={100 - 60 * Math.sin(angleRad)} stroke={color} strokeWidth="3" strokeLinecap="round" />
             <circle cx="100" cy="100" r="5" fill={color} />
-            <text x="100" y="85" textAnchor="middle" className="fill-foreground text-2xl font-bold">{value}</text>
           </svg>
-          <div className="text-center -mt-2">
-            <span className="text-sm font-bold" style={{ color }}>{label}</span>
+          {/* The reading sits under the dial: drawn at the pivot, the needle crossed it. */}
+          <div className="text-center -mt-1">
+            <span className="text-2xl font-bold tabular-nums text-foreground">{value}</span>
+            <span className="ml-2 text-sm font-bold" style={{ color }}>{label}</span>
             <div className="flex justify-between w-48 text-[9px] text-muted-foreground mt-1">
               <span>Extreme Fear</span><span>Neutral</span><span>Extreme Greed</span>
             </div>
@@ -99,7 +125,7 @@ const SectorHeatmap = memo(() => {
             <PieChart className="w-4 h-4 text-brand-gold" />
             Sector Performance
           </h3>
-          <span className="text-xs text-brand-orange font-semibold">Live</span>
+          <LiveTag />
         </div>
         <div className="grid grid-cols-2 gap-2">
           {sectors.length === 0 && Array.from({ length: 8 }, (_, i) => <div key={i} className="h-12 rounded-lg bg-muted/50 animate-pulse" aria-hidden="true" />)}
@@ -201,12 +227,13 @@ const FIIDIIFlow = memo(() => {
 
 // Options Analysis
 const PutCallRatio = memo(() => {
-  const { vix, marketOverview } = useLiveMarket();
+  const { vix } = useLiveMarket();
   // No invented figures: until real breadth and VIX arrive (and always in the
   // prerendered HTML) the tiles show a dash, never a made-up "Live" number.
-  const hasBreadth = marketOverview != null;
-  const advances = marketOverview?.advances ?? 0;
-  const declines = marketOverview?.declines ?? 0;
+  const breadth = useBreadth();
+  const hasBreadth = breadth != null;
+  const advances = breadth?.advances ?? 0;
+  const declines = breadth?.declines ?? 0;
   // The real put-call ratio: NIFTY's nearest expiry from the last F&O close. This
   // used to be declines / advances x 1.1 - a breadth figure labelled as a PCR.
   const { data: nifty } = useQuery({ queryKey: ["nifty-pcr"], queryFn: latestNiftyPcr, staleTime: 10 * 60_000 });
@@ -239,16 +266,16 @@ const PutCallRatio = memo(() => {
           </div>
           <div className="bg-muted/30 rounded-lg p-3 text-center">
             <div className="text-xs text-muted-foreground mb-1">Advances</div>
-            <div className="text-lg font-bold text-secondary">{hasBreadth ? advances : "—"}</div>
+            <div className="text-lg font-bold tabular-nums text-secondary">{hasBreadth ? advances.toLocaleString("en-IN") : "—"}</div>
           </div>
           <div className="bg-muted/30 rounded-lg p-3 text-center">
             <div className="text-xs text-muted-foreground mb-1">Declines</div>
-            <div className="text-lg font-bold text-destructive">{hasBreadth ? declines : "—"}</div>
+            <div className="text-lg font-bold tabular-nums text-destructive">{hasBreadth ? declines.toLocaleString("en-IN") : "—"}</div>
           </div>
         </div>
         <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground">
-          <span>{hasBreadth ? `Across the ${advances + declines} stocks this page tracks` : "Breadth loading"}</span>
-          <span className="flex items-center gap-1 text-brand-orange font-semibold"><Zap className="w-3 h-3" /> Live</span>
+          <span>{breadth ? breadth.scope : "Breadth loading"}</span>
+          <LiveTag className="text-brand-orange font-semibold" />
         </div>
       </CardContent>
     </Card>
@@ -275,7 +302,7 @@ const TrendingStocks = memo(() => {
           <h3 className="text-sm font-bold text-primary-foreground">Trending Now</h3>
           <div className="ml-auto flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-brand-orange animate-pulse" />
-            <span className="text-xs text-primary-foreground/60 font-medium">Live</span>
+            <LiveTag className="text-xs text-primary-foreground/60 font-medium" />
           </div>
         </div>
         <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-1">
@@ -314,7 +341,7 @@ const GlobalMarkets = memo(() => {
             <Globe className="w-4 h-4 text-brand-orange" />
             Global Markets
           </h3>
-          <span className="text-xs text-muted-foreground">Live</span>
+          <LiveTag className="text-xs text-muted-foreground" />
         </div>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
           {globalMarkets.length === 0 && Array.from({ length: 6 }, (_, i) => <div key={i} className="h-16 rounded-lg bg-muted/50 animate-pulse" aria-hidden="true" />)}
@@ -400,7 +427,7 @@ const CurrencyDashboard = memo(() => {
             <DollarSign className="w-4 h-4 text-brand-gold" />
             Currency Rates
           </h3>
-          <span className="text-xs text-brand-orange font-semibold">Live</span>
+          <LiveTag />
         </div>
         <div className="space-y-2">
           {displayCurrencies.length === 0 && Array.from({ length: 3 }, (_, i) => <div key={i} className="h-14 rounded-lg bg-muted/50 animate-pulse" aria-hidden="true" />)}
@@ -517,7 +544,7 @@ const STALE_AFTER_MS = 10 * 60 * 1000;
 // Honesty badge: the dashboard seeds with fallback numbers and keeps the last
 // good fetch on errors, so surface whether what's on screen is actually live.
 const DataFreshness = memo(() => {
-  const { fetchedAt, loading } = useLiveMarket();
+  const { fetchedAt, loading, marketOpen } = useLiveMarket();
   // Re-render each minute so the staleness judgement stays current.
   const [, setTick] = useState(0);
   useEffect(() => {
@@ -536,7 +563,7 @@ const DataFreshness = memo(() => {
   return isLive ? (
     <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-secondary">
       <span className="w-1.5 h-1.5 rounded-full bg-secondary animate-pulse" />
-      Live data · {timeLabel}
+      {marketOpen ? "Live data" : "Last close, updated"} · {timeLabel}
     </span>
   ) : (
     <span
@@ -678,7 +705,7 @@ const MarketDashboard = () => {
                     <Coins className="w-4 h-4 text-brand-gold" />
                     Commodity Snapshot
                   </h3>
-                  <span className="text-xs text-muted-foreground">MCX Live</span>
+                  <span className="text-xs text-muted-foreground">MCX</span>
                 </div>
                 <div className="space-y-3">
                   {[

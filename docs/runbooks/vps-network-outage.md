@@ -4,7 +4,9 @@
 
 The public site, API gateway, and public edge-function probe are unavailable from outside the VPS. On 30 September 2026, the VPS was still running but lost reachability to both Contabo DNS resolvers and all public TCP ports. Nginx, Docker, disk, memory, and UFW were healthy; a VPS reboot restored service.
 
-Cause, from `journalctl -b -1` and `/var/log/apt/history.log`: unattended-upgrade installed openssl at 02:44 IST and needrestart restarted `systemd-networkd` and `systemd-resolved`. DNS failed from 02:47, and public traffic stopped at about 05:15. `infra/vps/bootstrap/01-base-system.sh` now excludes both services from needrestart (`/etc/needrestart/conf.d/sphpnp-network.conf`).
+Cause, from `journalctl -b -1`, `/var/log/apt/history.log` and the nginx access logs: unattended-upgrade installed openssl at 02:44 IST and needrestart restarted `systemd-networkd` and `systemd-resolved`. networkd dropped eth0's static addresses and routes to re-apply them, logged `eth0: Configuring` and never `Configured`. The last outside request arrived at 02:44:13; every later one in the log came from the server's own IP (its monitor and the 04:30 build), so the site was down from 02:45 to the 10:20 reboot, about 7.5 hours.
+
+Two safeguards in `infra/vps/bootstrap/01-base-system.sh`: needrestart skips both services (`/etc/needrestart/conf.d/sphpnp-network.conf`, installed 2 Oct), and netplan marks eth0 `critical: true` (`/etc/netplan/60-sphpnp-critical.yaml`), which makes networkd keep the static addresses when it restarts (`KeepConfiguration=true` in the generated unit). The second is in the repo; install it with `sudo netplan generate`, never `netplan apply` over SSH.
 
 The auto-recovery workflow below is a slow alarm, not a fast fix. GitHub runs its five-minute schedule only every few hours, and it can restart the VPS only once the Contabo secrets exist.
 

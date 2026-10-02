@@ -25,7 +25,7 @@ type Props = { id?: string; eyebrow: string; heading: string; intro?: string; it
  */
 export default function FeatureStory({ id, eyebrow, heading, intro, items }: Props) {
   return (
-    <section id={id} aria-labelledby={id ? `${id}-heading` : undefined} className="relative overflow-hidden py-16 md:py-28">
+    <section id={id} aria-labelledby={id ? `${id}-heading` : undefined} className="relative overflow-hidden py-16 md:py-20">
       <div className="container mx-auto max-w-6xl px-4">
         <motion.div {...revealSection} className="mx-auto max-w-2xl text-center">
           <p className="mb-4 inline-flex rounded-full border border-secondary/30 bg-secondary/10 px-3 py-1 text-[0.6875rem] font-semibold uppercase tracking-[0.18em] text-secondary">{eyebrow}</p>
@@ -33,21 +33,21 @@ export default function FeatureStory({ id, eyebrow, heading, intro, items }: Pro
           {intro && <p className="mt-4 text-muted-foreground md:text-lg">{intro}</p>}
         </motion.div>
 
-        <div className="mt-10 space-y-12 md:mt-20 md:space-y-28">
+        <div className="mt-10 space-y-12 md:mt-14 md:space-y-20">
           {items.map((item, i) => {
             const flip = i % 2 === 1;
             return (
               <article key={item.title} className="grid items-center gap-7 md:grid-cols-12 md:gap-12">
-                <div className={`md:col-span-7 ${flip ? "md:order-2" : ""} ${i > 0 ? "max-md:hidden" : ""}`}>
+                <div className={`md:col-span-6 ${flip ? "md:order-2" : ""} ${i > 0 ? "max-md:hidden" : ""}`}>
                   <IllustrationFrame
                     slug={item.slug}
                     tone="light"
                     reveal="view"
-                    sizes="(min-width: 1152px) 660px, (min-width: 768px) 58vw, 100vw"
+                    sizes="(min-width: 1152px) 560px, (min-width: 768px) 50vw, 100vw"
                     frameClassName="-mx-1 sm:mx-0"
                   />
                 </div>
-                <motion.div {...revealItem(1)} className={`md:col-span-5 ${flip ? "md:order-1" : ""}`}>
+                <motion.div {...revealItem(1)} className={`md:col-span-6 ${flip ? "md:order-1" : ""}`}>
                   <p className="text-[0.6875rem] font-semibold uppercase tracking-[0.18em] text-secondary">{item.eyebrow}</p>
                   <h3 className="mt-2 font-heading text-2xl font-bold tracking-tight [text-wrap:balance] md:text-3xl">{item.title}</h3>
                   <p className="mt-3 text-muted-foreground leading-relaxed">{item.body}</p>

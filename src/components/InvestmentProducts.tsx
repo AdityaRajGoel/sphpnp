@@ -28,39 +28,6 @@ const products: { icon: typeof LineChart; title: string; desc: string; to: strin
   { icon: Vault, title: "Demat & Depository", desc: "Secure CDSL/NSDL depository services, pledging & transfers.", to: "/depository-services", tag: "CDSL · NSDL", art: "demat-network" },
 ];
 
-// Decorative market sparkline for the featured card - draws itself on scroll-in.
-const FeaturedSparkline = () => (
-  <svg viewBox="0 0 220 64" preserveAspectRatio="none" fill="none" className="w-full h-16 md:h-24 mt-auto pt-2" aria-hidden="true">
-    <defs>
-      <linearGradient id="spark-stroke" x1="0" y1="0" x2="220" y2="0" gradientUnits="userSpaceOnUse">
-        <stop stopColor="hsl(var(--secondary))" />
-        <stop offset="1" stopColor="hsl(var(--brand-gold))" />
-      </linearGradient>
-    </defs>
-    <motion.path
-      d="M2 52 L28 44 L52 48 L76 32 L100 38 L124 20 L148 27 L174 12 L202 18 L218 6"
-      stroke="url(#spark-stroke)"
-      strokeWidth="2.5"
-      strokeLinecap="round"
-      /* motion-exempt: SVG pathLength draw-on. No transform reproduces a stroke
-         revealing along its own length, so there is no preset equivalent. */
-      initial={{ pathLength: 0 }}
-      whileInView={{ pathLength: 1 }}
-      viewport={{ once: true, margin: "-60px" }}
-      transition={{ duration: 1.6, ease: EASE_IN_OUT, delay: 0.3 }}
-    />
-    <motion.circle
-      cx="218" cy="6" r="3.5"
-      fill="hsl(var(--brand-gold))"
-      /* motion-exempt: three-step keyframe overshoot on the path's end cap. The
-         presets are all two-state by design; a keyframe array is a different shape. */
-      initial={{ scale: 0, opacity: 0 }}
-      whileInView={{ scale: [0, 1.4, 1], opacity: 1 }}
-      viewport={{ once: true, margin: "-60px" }}
-      transition={{ duration: 0.5, delay: 1.9 }}
-    />
-  </svg>
-);
 
 const containerVariants: Variants = {
   hidden: { opacity: 0 },
@@ -152,10 +119,9 @@ const InvestmentProducts = () => {
                       <Illustration
                         slug="analyst-charts"
                         sizes="(min-width: 1024px) 520px, 0px"
-                        className="mt-4 hidden h-44 w-full object-contain object-left mix-blend-multiply transition-transform duration-slow ease-out group- dark:mix-blend-normal dark:opacity-80 md:block lg:h-56"
+                        className="mt-auto hidden h-52 w-full object-contain object-center pt-4 mix-blend-multiply dark:mix-blend-normal dark:opacity-80 md:block lg:h-72"
                       />
                     )}
-                    {isFeatured && <FeaturedSparkline />}
 
                     <span className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-secondary opacity-0 group-hover:opacity-100 -translate-x-1 group-hover:translate-x-0 transition-[opacity,transform] ease-out duration-base">
                       Explore <ArrowRight className="w-3.5 h-3.5" />

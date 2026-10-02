@@ -98,11 +98,25 @@ systemctl daemon-reload
 
 # needrestart already leaves docker and ^network alone, but not systemd-networkd or
 # systemd-resolved. On 30 Sep 2026 an openssl update made it restart both at 02:44:
-# DNS failed at once and the public site at ~05:15 while the VPS showed "running",
-# until a manual reboot at 10:20. Those two pick up library updates on the next reboot.
+# networkd dropped eth0's addresses to re-apply them and stalled at "Configuring": the
+# site was unreachable 02:45-10:20 while the VPS showed "running". Those two pick up
+# library updates on the next reboot.
 cat > /etc/needrestart/conf.d/sphpnp-network.conf <<'EOF'
 $nrconf{override_rc}{qr(^systemd-(networkd|resolved))} = 0;
 EOF
+
+# And if networkd restarts for any other reason, it keeps eth0's static addresses and
+# routes instead of dropping them (netplan "critical" = KeepConfiguration=true).
+# generate only: `netplan apply` over SSH reconfigures the link it is running on.
+cat > /etc/netplan/60-sphpnp-critical.yaml <<'EOF'
+network:
+  version: 2
+  ethernets:
+    eth0:
+      critical: true
+EOF
+chmod 600 /etc/netplan/60-sphpnp-critical.yaml
+netplan generate
 
 systemctl enable --now chrony auditd sysstat unattended-upgrades
 

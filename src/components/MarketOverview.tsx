@@ -62,69 +62,52 @@ const RANGES = [
 // shows an honest empty state instead.
 
 // marketStats is now computed dynamically inside the component using live data
-// Mini sparkline for table rows
-const MiniSparkline = ({ up }: { up: boolean }) => {
-  const points = up
-    ? "0,20 5,18 10,15 15,17 20,12 25,14 30,8 35,10 40,5 45,3 50,2"
-    : "0,2 5,5 10,8 15,6 20,12 25,10 30,15 35,13 40,18 45,19 50,20";
-  const color = up ? "hsl(145 70% 40%)" : "hsl(0 84% 60%)";
+/** "₹1,035.00" -> 1035; the live feed sends display strings. */
+const toNum = (v: string | undefined) => {
+  const n = Number((v ?? "").replace(/[^0-9.-]/g, ""));
+  return v && Number.isFinite(n) && n > 0 ? n : null;
+};
+
+/** Columns shared by the header and every row, so figures line up. */
+const ROW_GRID = "grid grid-cols-[minmax(0,1fr)_auto_auto] sm:grid-cols-[minmax(0,1fr)_9rem_6.5rem_5.5rem] md:grid-cols-[minmax(0,1fr)_10rem_5rem_6.5rem_5.5rem] items-center gap-x-3 sm:gap-x-4";
+
+/**
+ * Where the price sits between the day's low and high. It replaces a sparkline
+ * that drew the same hard-coded line for every gainer: a real figure or nothing.
+ */
+const DayRange = ({ stock }: { stock: Stock }) => {
+  const low = toNum(stock.low), high = toNum(stock.high), price = toNum(stock.price);
+  if (low === null || high === null || price === null || high <= low) return <span className="text-xs text-muted-foreground">—</span>;
+  const pos = Math.min(100, Math.max(0, ((price - low) / (high - low)) * 100));
   return (
-    <div className="relative group/spark">
-      <svg viewBox="0 0 50 22" className="w-16 h-6" preserveAspectRatio="none">
-        <defs>
-          <linearGradient id={`spark-${up ? 'up' : 'down'}`} x1="0" x2="0" y1="0" y2="1">
-            <stop offset="0%" stopColor={color} stopOpacity="0.3" />
-            <stop offset="100%" stopColor={color} stopOpacity="0" />
-          </linearGradient>
-        </defs>
-        <polygon points={`0,22 ${points} 50,22`} fill={`url(#spark-${up ? 'up' : 'down'})`} />
-        <polyline points={points} fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/spark:opacity-100 transition-opacity bg-muted/60 rounded">
-        <Maximize2 className="w-3 h-3 text-foreground" />
+    <div className="w-full" title={`Day range ${stock.low} to ${stock.high}`}>
+      <div className="relative h-1.5 rounded-full bg-muted">
+        <span className="absolute top-1/2 h-3 w-1 -translate-x-1/2 -translate-y-1/2 rounded-sm bg-foreground/70" style={{ left: `${pos}%` }} />
+      </div>
+      <div className="mt-1 flex justify-between text-[10px] tabular-nums text-muted-foreground">
+        <span>{stock.low}</span><span>{stock.high}</span>
       </div>
     </div>
   );
 };
 
-const StockRow = ({ stock, index, onChartClick }: { stock: Stock; index: number; onChartClick: (stock: Stock) => void }) => (
+const StockRow = ({ stock, onChartClick }: { stock: Stock; index: number; onChartClick: (stock: Stock) => void }) => (
   <motion.div
-    className="flex items-center justify-between py-3 px-3 sm:px-4 rounded-xl hover:bg-muted/50 transition-colors duration-fast cursor-pointer group border-b border-border/30 last:border-0"
+    className={`${ROW_GRID} px-3 sm:px-4 py-3 rounded-lg hover:bg-muted/50 transition-colors duration-fast cursor-pointer group border-b border-border/30 last:border-0`}
     {...revealItemX("left")}
-    whileHover={{ x: 2 }}
     onClick={() => onChartClick(stock)}
     {...pressable(() => onChartClick(stock), { label: `View chart for ${stock.name}, ${stock.price}, ${stock.change}` })}
   >
-    <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
-      <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-bold shrink-0 ${stock.up ? "bg-secondary/10 text-secondary" : "bg-destructive/10 text-destructive"}`}>
-        {stock.name.slice(0, 2)}
-      </div>
-      <div className="min-w-0">
-        <span className="font-semibold text-sm text-foreground group-hover:text-secondary transition-colors block truncate">{stock.name}</span>
-        {stock.volume && <span className="text-[10px] text-muted-foreground hidden sm:block">Vol: {stock.volume}</span>}
-      </div>
+    <div className="min-w-0">
+      <span className="block truncate text-sm font-semibold text-foreground group-hover:text-secondary transition-colors">{stock.name}</span>
+      {stock.volume && <span className="block text-[10px] text-muted-foreground md:hidden">Vol {stock.volume}</span>}
     </div>
-    <div className="flex items-center gap-2 sm:gap-4 shrink-0">
-      <div className="hidden sm:block">
-        <MiniSparkline up={stock.up} />
-      </div>
-      <div className="text-right">
-        <span className="text-sm text-foreground font-medium block">{stock.price}</span>
-        {stock.high && stock.low && (
-          <span className="text-[9px] text-muted-foreground hidden md:block">H: {stock.high} L: {stock.low}</span>
-        )}
-      </div>
-      <span className={`flex items-center gap-0.5 text-xs font-bold px-2 sm:px-2.5 py-1 rounded-full min-w-[60px] sm:min-w-[70px] justify-center ${stock.up ? "bg-secondary/10 text-secondary" : "bg-destructive/10 text-destructive"}`}>
-        {stock.up ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}{stock.change}
-      </span>
-      <button
-        onClick={() => onChartClick(stock)}
-        className="sm:hidden -my-1 p-2.5 rounded-lg hover:bg-muted transition-colors"
-        aria-label={`View chart for ${stock.name}`}
-      >
-        <Maximize2 className="w-3.5 h-3.5 text-muted-foreground" />
-      </button>
-    </div>
+    <div className="hidden sm:block"><DayRange stock={stock} /></div>
+    <span className="hidden md:block text-right text-xs tabular-nums text-muted-foreground">{stock.volume ?? "—"}</span>
+    <span className="text-right text-sm font-semibold tabular-nums text-foreground">{stock.price}</span>
+    <span className={`inline-flex items-center justify-end gap-0.5 text-sm font-semibold tabular-nums ${stock.up ? "text-secondary" : "text-destructive"}`}>
+      {stock.up ? <ArrowUpRight className="h-3.5 w-3.5" aria-hidden /> : <ArrowDownRight className="h-3.5 w-3.5" aria-hidden />}{stock.change}
+    </span>
   </motion.div>
 );
 
@@ -265,23 +248,16 @@ const MarketOverview = () => {
   };
   const fiiFlow = fmtFlow("fii_cash");
   const diiFlow = fmtFlow("dii_cash");
-  const breadthPct = hasBreadth && totalStocks > 0 ? Math.round((liveAdvances / totalStocks) * 100) : null;
-  const neutral = { color: "text-muted-foreground", bgColor: "bg-muted/40" };
 
   const marketStats = useMemo(() => [
-    breadthPct == null
-      ? { icon: BarChart3, label: "Breadth (Adv)", value: "—", ...neutral }
-      // A share, not a verdict: no green-above-half, red-below colouring.
-      : { icon: BarChart3, label: "Breadth (Adv)", value: `${breadthPct}%`, ...neutral },
-    { icon: Activity, label: "Unchanged", value: hasBreadth ? liveUnchanged.toLocaleString() : "—", color: "text-brand-gold", bgColor: "bg-brand-gold/10" },
+    // Breadth share and unchanged count live in the breadth bar below; repeated here they were noise.
     { icon: TrendingUp, label: "Advances", value: hasBreadth ? liveAdvances.toLocaleString() : "—", color: "text-secondary", bgColor: "bg-secondary/10" },
     { icon: TrendingDown, label: "Declines", value: hasBreadth ? liveDeclines.toLocaleString() : "—", color: "text-destructive", bgColor: "bg-destructive/10" },
     { icon: Eye, label: "Most Active", value: liveMostActive, color: "text-primary", bgColor: "bg-primary/10" },
     { icon: Activity, label: "India VIX", value: liveVix, color: "text-brand-gold", bgColor: "bg-brand-gold/10" },
     { icon: IndianRupee, label: "FII Flow", value: fiiFlow?.value ?? "—", color: fiiFlow ? (fiiFlow.up ? "text-secondary" : "text-destructive") : "text-muted-foreground", bgColor: fiiFlow ? (fiiFlow.up ? "bg-secondary/10" : "bg-destructive/10") : "bg-muted/40" },
     { icon: Percent, label: "DII Flow", value: diiFlow?.value ?? "—", color: diiFlow ? (diiFlow.up ? "text-secondary" : "text-destructive") : "text-muted-foreground", bgColor: diiFlow ? (diiFlow.up ? "bg-secondary/10" : "bg-destructive/10") : "bg-muted/40" },
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- `neutral` is a constant literal
-  ], [hasBreadth, liveAdvances, liveDeclines, liveUnchanged, liveMostActive, liveVix, fiiFlow, diiFlow, breadthPct]);
+  ], [hasBreadth, liveAdvances, liveDeclines, liveMostActive, liveVix, fiiFlow, diiFlow]);
 
   // Real history for the selected scrip. Previously this component generated a
   // Math.random() walk per stock name and cached it, so a visitor clicking
@@ -345,7 +321,7 @@ const MarketOverview = () => {
         </motion.div>
 
         {/* Stats strip */}
-        <motion.div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3 mb-12" {...revealSection}>
+        <motion.div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-12" {...revealSection}>
           {marketStats.map((stat, i) => (
             <motion.div key={stat.label} className={`bg-card border border-border/50 rounded-xl p-3 text-center group ${i >= 4 ? 'hidden sm:block' : ''}`} whileHover={{ y: -2 }} transition={{ type: "spring", stiffness: 300 }}>
               <div className={`w-9 h-9 mx-auto mb-1.5 rounded-xl flex items-center justify-center ${stat.bgColor}`}>
@@ -384,14 +360,12 @@ const MarketOverview = () => {
                 <span className="text-right">Date / Details</span>
               </div>
             ) : (
-              <div className="flex items-center justify-between py-2 px-3 sm:px-4 text-[10px] text-muted-foreground font-semibold uppercase tracking-wide border-b border-border/30 bg-muted/20">
+              <div className={`${ROW_GRID} mx-1 sm:mx-2 py-2 px-3 sm:px-4 text-[10px] text-muted-foreground font-semibold uppercase tracking-wide border-b border-border/30`}>
                 <span>{activeTab === "commodities" ? "Commodity" : activeTab === "mf" ? "Fund (Direct-Growth)" : "Company"}</span>
-                <div className="flex items-center gap-2 sm:gap-4">
-                  <span className="w-16 text-center hidden sm:block">Chart</span>
-                  <span className="w-20 sm:w-28 text-right">Price</span>
-                  <span className="w-[60px] sm:w-[70px] text-center">Change</span>
-                  <span className="w-9 sm:hidden"></span>
-                </div>
+                <span className="hidden sm:block">Day range</span>
+                <span className="hidden md:block text-right">Volume</span>
+                <span className="text-right">Price</span>
+                <span className="text-right">Change</span>
               </div>
             )}
 
@@ -420,8 +394,8 @@ const MarketOverview = () => {
                 <Clock className="w-3 h-3" />
                 <span>Last updated: {fetchedAt ? new Date(fetchedAt).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" }) : new Date().toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}</span>
               </div>
-              <Link to="/screener" className="flex items-center gap-1 text-[11px] sm:text-xs text-secondary font-medium cursor-pointer hover:underline p-2 -mr-2 min-h-[44px]">
-                <span>View All</span>
+              <Link to={activeTab === "commodities" ? "/commodities" : "/screener"} className="flex items-center gap-1 text-[11px] sm:text-xs text-secondary font-medium cursor-pointer hover:underline p-2 -mr-2 min-h-[44px]">
+                <span>{activeTab === "commodities" ? "All commodity prices" : "View All"}</span>
                 <ChevronRight className="w-3 h-3" />
               </Link>
             </div>

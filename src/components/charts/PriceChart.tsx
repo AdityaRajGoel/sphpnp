@@ -47,12 +47,20 @@ interface PriceChartProps {
   showVolume?: boolean;
   /** Events already pinned to bar times (see snapEvents); any other time is dropped by the library. */
   markers?: readonly { time: UTCTimestamp; event: PriceEvent }[];
+  /** "points" for an index level: no rupee sign, and no ".00" on round axis ticks. */
+  unit?: "rupees" | "points";
 }
 
 const RUPEES = {
   type: "custom",
   minMove: 0.01,
   formatter: (p: number) => `₹${p.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+} as const;
+
+const POINTS = {
+  type: "custom",
+  minMove: 0.01,
+  formatter: (p: number) => p.toLocaleString("en-IN", { maximumFractionDigits: 2 }),
 } as const;
 
 /**
@@ -147,6 +155,7 @@ const PriceChart = ({
   smaPeriods,
   showVolume = true,
   markers,
+  unit = "rupees",
 }: PriceChartProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
@@ -212,14 +221,14 @@ const PriceChart = ({
             borderDownColor: c.down,
             wickUpColor: c.up,
             wickDownColor: c.down,
-            priceFormat: RUPEES,
+            priceFormat: unit === "points" ? POINTS : RUPEES,
           })
         : chart.addSeries(AreaSeries, {
             lineColor: c.up,
             topColor: withAlpha(c.up, 0.28),
             bottomColor: withAlpha(c.up, 0),
             lineWidth: 2,
-            priceFormat: RUPEES,
+            priceFormat: unit === "points" ? POINTS : RUPEES,
           });
 
     smaRefs.current = (smaKey ? smaKey.split(",") : []).map((_, i) =>
@@ -262,7 +271,7 @@ const PriceChart = ({
       markersRef.current = null;
       chart.remove();
     };
-  }, [mode, height, smaKey, showVolume]);
+  }, [mode, height, smaKey, showVolume, unit]);
 
   // Re-read the palette when the theme class flips on <html>.
   useEffect(() => {

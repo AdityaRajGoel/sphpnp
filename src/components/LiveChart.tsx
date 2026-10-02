@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { istToday, shortDate } from "@/lib/market-data";
 import { motion } from "motion/react";
 import { useState, useMemo, useCallback, useEffect, memo } from "react";
@@ -174,7 +175,7 @@ const InteractiveChart = memo(({ data, volumeData, timestamps, up, large = false
           className="absolute top-0 bg-card border border-brand-orange/30 rounded-xl px-3 py-1.5 sm:px-4 sm:py-2 shadow-xl pointer-events-none text-xs z-10 max-w-[150px] sm:max-w-none"
           style={{ left: `clamp(40px, ${(coords[hoverIdx].x / w) * 100}%, calc(100% - 40px))`, transform: "translateX(-50%)" }}
         >
-          <div className="font-bold text-foreground text-sm truncate">₹{coords[hoverIdx].val.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+          <div className="font-bold text-foreground text-sm truncate">{coords[hoverIdx].val.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
           <div className="text-muted-foreground">
             {timestamps && timestamps[hoverIdx] 
               ? new Date(timestamps[hoverIdx]).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) 
@@ -246,8 +247,8 @@ const RangeBar = memo(({ label, low, high, current, lowLabel, highLabel }: { lab
         />
       </div>
       <div className="flex justify-between text-[9px] text-muted-foreground">
-        <span>₹{lowLabel}</span>
-        <span>₹{highLabel}</span>
+        <span className="tabular-nums">{lowLabel}</span>
+        <span className="tabular-nums">{highLabel}</span>
       </div>
     </div>
   );
@@ -411,6 +412,7 @@ const LiveChart = () => {
             <BarChart3 className="w-4 h-4 text-brand-orange" />
           </div>
           <h2 className="font-heading text-xl md:text-2xl font-bold text-foreground">Market Watch</h2>
+          <Link to="/indices" className="text-xs font-semibold text-secondary hover:underline underline-offset-4">All NSE indices</Link>
           <div className="ml-auto flex items-center gap-2 flex-wrap justify-end">
             <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border ${statusColor}`}>
               <span className={`w-2 h-2 rounded-full ${dotColor}`} />
@@ -448,7 +450,7 @@ const LiveChart = () => {
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="text-xs text-muted-foreground font-medium">{idx.name}</div>
-                    <div className="whitespace-nowrap text-sm font-bold tabular-nums text-foreground">₹{idx.price}</div>
+                    <div className="whitespace-nowrap text-sm font-bold tabular-nums text-foreground">{idx.price}</div>
                     {/* Under the price on a phone: beside it, an 11-character Sensex level ran into the pill. */}
                     <div className={`sm:hidden text-[11px] font-bold tabular-nums ${idx.up ? "text-secondary" : "text-destructive"}`}>{idx.change}</div>
                   </div>
@@ -468,7 +470,7 @@ const LiveChart = () => {
                       <p className="text-xs text-muted-foreground">Last session, {shortDate(session)}</p>
                     )}
                     <div className="flex items-center gap-3 mt-1">
-                      <span className="text-xl sm:text-2xl font-bold text-foreground">₹{activeIndex?.price}</span>
+                      <span className="text-xl sm:text-2xl font-bold tabular-nums text-foreground">{activeIndex?.price}</span>
                       <span className={`text-sm font-bold px-2.5 py-1 rounded-full ${currentUp ? "bg-secondary/10 text-secondary" : "bg-destructive/10 text-destructive"}`}>
                         {currentUp ? <TrendingUp className="w-3.5 h-3.5 inline mr-1" /> : <TrendingDown className="w-3.5 h-3.5 inline mr-1" />}{activeIndex?.change}
                       </span>
@@ -528,6 +530,7 @@ const LiveChart = () => {
                     <PriceChart
                       data={zipSeries(chartData, volumeData, timestamps)}
                       mode="area"
+                      unit="points"
                       height={200}
                       smaPeriods={showIndicators ? [20, 50] : undefined}
                       // Indices carry no traded volume, so the feed returns all
@@ -560,14 +563,18 @@ const LiveChart = () => {
                 {/* Indicator legend */}
                 <div className="flex items-center justify-between mt-2 pt-2 border-t border-border/30">
                   <div className="flex items-center gap-3 flex-wrap">
-                    <div className="flex items-center gap-1">
-                      <div className="w-2.5 h-2.5 rounded-sm bg-secondary/40" />
-                      <span className="text-[10px] text-muted-foreground">Buy Vol</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <div className="w-2.5 h-2.5 rounded-sm bg-destructive/40" />
-                      <span className="text-[10px] text-muted-foreground">Sell Vol</span>
-                    </div>
+                    {volumeData.some((v) => v > 0) && (
+                      <>
+                        <div className="flex items-center gap-1">
+                          <div className="w-2.5 h-2.5 rounded-sm bg-secondary/40" />
+                          <span className="text-[10px] text-muted-foreground">Buy Vol</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <div className="w-2.5 h-2.5 rounded-sm bg-destructive/40" />
+                          <span className="text-[10px] text-muted-foreground">Sell Vol</span>
+                        </div>
+                      </>
+                    )}
                     {showIndicators && (
                       <>
                         <div className="flex items-center gap-1">
@@ -599,10 +606,11 @@ const LiveChart = () => {
             {/* OHLC Data */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {[
-                { label: "Open", value: activeIndex?.open ? `₹${activeIndex.open}` : "-", icon: Activity },
-                { label: "High", value: activeIndex?.high ? `₹${activeIndex.high}` : "-", icon: ArrowUpRight, color: "text-secondary" },
-                { label: "Low", value: activeIndex?.low ? `₹${activeIndex.low}` : "-", icon: ArrowDownRight, color: "text-destructive" },
-                { label: "Prev Close", value: activeIndex?.prevClose ? `₹${activeIndex.prevClose}` : "-", icon: Layers },
+                // Index levels are points, not rupees.
+                { label: "Open", value: activeIndex?.open ?? "—", icon: Activity },
+                { label: "High", value: activeIndex?.high ?? "—", icon: ArrowUpRight, color: "text-secondary" },
+                { label: "Low", value: activeIndex?.low ?? "—", icon: ArrowDownRight, color: "text-destructive" },
+                { label: "Prev Close", value: activeIndex?.prevClose ?? "—", icon: Layers },
               ].map((item) => {
                 const Icon = item.icon;
                 return (
@@ -626,8 +634,8 @@ const LiveChart = () => {
                     low={dayLow}
                     high={dayHigh}
                     current={currentPrice}
-                    lowLabel={dayLow.toLocaleString('en-IN')}
-                    highLabel={dayHigh.toLocaleString('en-IN')}
+                    lowLabel={dayLow.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    highLabel={dayHigh.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   />
                   <RangeBar
                     label="52 Week Range"
@@ -642,7 +650,8 @@ const LiveChart = () => {
             )}
 
             {/* Volume Analysis Bar */}
-            {activeIndex?.volume && (
+            {/* Only with real volume: an index's feed has none, and the bar read a made-up 50/50. */}
+            {activeIndex?.volume && volumeData.some((v) => v > 0) && (
               <Card className="border-border/50">
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between mb-2">
