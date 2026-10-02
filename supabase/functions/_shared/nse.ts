@@ -107,7 +107,7 @@ async function nseGet(url: string, asText = false): Promise<unknown> {
   throw new Error(`unreachable: ${url}`);
 }
 
-export async function fetchFilingRegistry(symbol: string): Promise<FilingRecord[]> {
+export async function fetchFilingRegistry(symbol: string, dead: ReadonlySet<string> = new Set()): Promise<FilingRecord[]> {
   // Both regimes: the old endpoint holds everything up to the December 2024
   // quarter, the integrated one everything since. A period present in both is
   // taken from the integrated registry, which is the current filing.
@@ -118,9 +118,9 @@ export async function fetchFilingRegistry(symbol: string): Promise<FilingRecord[
       return [] as FilingRecord[];
     }),
   ]);
-  const current = latestRevisions(integrated);
+  const current = latestRevisions(integrated, dead);
   const seen = new Set(current.map((f) => `${f.toDate}|${f.isConsolidated}`));
-  return [...current, ...latestRevisions(legacy).filter((f) => !seen.has(`${f.toDate}|${f.isConsolidated}`))];
+  return [...current, ...latestRevisions(legacy, dead).filter((f) => !seen.has(`${f.toDate}|${f.isConsolidated}`))];
 }
 
 /**
@@ -129,10 +129,15 @@ export async function fetchFilingRegistry(symbol: string): Promise<FilingRecord[
  * links - they 404. fundamentals_filings keeps one row per quarter and basis, so
  * every run re-fetched the superseded links (the repeated "xbrl failed ... NSE
  * 404" lines), and one that still answered could overwrite the revised figures.
+ *
+ * `dead` holds links NSE has already 404'd (nse_dead_documents). NSE also lists
+ * revisions whose documents it withdrew, sometimes the latest one, so those are
+ * dropped first and the latest revision that remains is the one taken.
  */
-export function latestRevisions(filings: FilingRecord[]): FilingRecord[] {
+export function latestRevisions(filings: FilingRecord[], dead: ReadonlySet<string> = new Set()): FilingRecord[] {
   const byKey = new Map<string, FilingRecord>();
   for (const f of filings) {
+    if (dead.has(f.xbrlUrl)) continue;
     const key = `${f.toDate}|${f.isConsolidated}`;
     const cur = byKey.get(key);
     const at = (x: FilingRecord) => (x.filingDate ? Date.parse(x.filingDate) : NaN);

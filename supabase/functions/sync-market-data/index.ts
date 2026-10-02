@@ -22,6 +22,7 @@ import { symbolResolver } from "../_shared/ticker.ts";
 import {
   ddmmyyyy, isoDate, parseAsm, parseBseBhavcopy, parseConstituents, parseDeals, parseFoBan, parseGsm, parseIndexCloseAll,
   parseLotSizes, parseMovers, parseNseBhavdataFull, parseNseIpos, parseParticipantOi, parsePledges, parseWeek52,
+  parseBandHitters, parseBreadth, parseMarketStatus, parsePreOpen, parseVariations, parseWeek52Live,
   weekdaysBack, yyyymmdd, type DealKind,
 } from "../_shared/market-files.ts";
 import { fortnightlyReportLinks, parseBseResultsCalendar, parseFpiDaily, parseFpiSectorFortnightly, parseNseEventCalendar, type MacroMonthly } from "../_shared/market-extra.ts";
@@ -111,6 +112,10 @@ async function bseCodes(sb: SupabaseClient): Promise<Map<string, string>> {
 const eqEodFor = (ctx: Ctx, codes: Map<string, string>) => async (date: string) => {
   const nse = parseNseBhavdataFull(await fetchText(`${ARCHIVE}/products/content/sec_bhavdata_full_${ddmmyyyy(date)}.csv`));
   let rows = await upsert(ctx.sb, "eq_eod", nse, "symbol,exchange,series,trade_date");
+  // The day's advance/decline counts for Market Pulse. Logged, not thrown: the
+  // bars are the dataset, the breadth row is derived and recomputed next run.
+  const { error: breadthError } = await ctx.sb.rpc("refresh_market_breadth_daily", { p_since: date });
+  if (breadthError) console.error(`breadth ${date}: ${breadthError.message}`);
   try {
     const bse = parseBseBhavcopy(await fetchText(`https://www.bseindia.com/download/BhavCopy/Equity/BhavCopy_BSE_CM_0_0_0_${yyyymmdd(date)}_F_0000.CSV`, BSE_HEADERS), codes);
     rows += await upsert(ctx.sb, "eq_eod", bse, "symbol,exchange,series,trade_date");
@@ -310,11 +315,42 @@ async function run(ctx: Ctx, dataset: string, body: Record<string, unknown>): Pr
       return { date: f.date, rows: await upsert(sb, "week52_levels", parseWeek52(f.text), "symbol,series") };
     }
     case "movers": {
-      const snapshots = [
-        { kind: "most_active_value", ...parseMovers(await fetchJson("https://www.nseindia.com/api/live-analysis-most-active-securities?index=value"), "value") },
-        { kind: "volume_gainers", ...parseMovers(await fetchJson("https://www.nseindia.com/api/live-analysis-volume-gainers"), "volume") },
-      ].map((s) => ({ kind: s.kind, as_of: s.as_of, payload: s.movers, fetched_at: new Date().toISOString() }));
-      return { rows: await upsert(sb, "market_snapshots", snapshots, "kind") };
+      const api = async (path: string) => {
+        const json = await fetchJson(`https://www.nseindia.com/api/${path}`);
+        await sleep(600);
+        return json;
+      };
+      const bands = await api("live-analysis-price-band-hitter");
+      const preOpen = parsePreOpen(await api("market-data-pre-open?key=FO"));
+      const byChange = [...preOpen.movers].sort((a, b) => (b.change_pct ?? 0) - (a.change_pct ?? 0));
+      const breadth = parseBreadth(await api("live-analysis-stocksTraded"));
+      const lists = [
+        { kind: "most_active_value", ...parseMovers(await api("live-analysis-most-active-securities?index=value"), "value") },
+        { kind: "volume_gainers", ...parseMovers(await api("live-analysis-volume-gainers"), "volume") },
+        { kind: "gainers", ...parseVariations(await api("live-analysis-variations?index=gainers")) },
+        // NSE's own spelling.
+        { kind: "losers", ...parseVariations(await api("live-analysis-variations?index=loosers")) },
+        { kind: "week52_high", ...parseWeek52Live(await api("live-analysis-52Week?index=high")) },
+        { kind: "week52_low", ...parseWeek52Live(await api("live-analysis-52Week?index=low")) },
+        { kind: "upper_circuit", ...parseBandHitters(bands, "upper") },
+        { kind: "lower_circuit", ...parseBandHitters(bands, "lower") },
+      ];
+      const now = new Date().toISOString();
+      // An empty list is NSE between sessions, not a market with no movers: keep
+      // the last good snapshot rather than overwrite it with nothing.
+      const risers = byChange.slice(0, 15);
+      const fallers = byChange.slice(Math.max(risers.length, byChange.length - 15)).reverse();
+      const snapshots: { kind: string; as_of: string | null; payload: unknown }[] = [
+        ...lists.filter((l) => l.movers.length > 0).map((l) => ({ kind: l.kind, as_of: l.as_of, payload: l.movers })),
+        ...(preOpen.movers.length > 0
+          ? [{ kind: "pre_open_fo", as_of: preOpen.as_of, payload: { ...preOpen, movers: [...risers, ...fallers] } }]
+          : []),
+        ...(breadth ? [{ kind: "breadth", as_of: breadth.as_of, payload: breadth }] : []),
+      ];
+      const status = parseMarketStatus(await api("marketStatus"));
+      if (status.gift_nifty || status.nifty) snapshots.push({ kind: "market_status", as_of: status.gift_nifty?.as_of ?? status.nifty?.as_of ?? null, payload: status });
+      const rows = snapshots.map((s) => ({ ...s, fetched_at: now }));
+      return { rows: await upsert(sb, "market_snapshots", rows, "kind"), kinds: rows.map((r) => r.kind) };
     }
     case "constituents": {
       const counts: Record<string, number | string> = {};

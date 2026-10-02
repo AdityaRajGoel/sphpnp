@@ -170,6 +170,12 @@ Deno.serve(async (req) => {
     batchSize: BATCH_SIZE,
   });
 
+  // Documents NSE has 404'd. The registry skips them, so a withdrawn revision
+  // is fetched once rather than on every run (see latestRevisions).
+  const { data: deadRows, error: deadErr } = await supabase.from("nse_dead_documents").select("url");
+  if (deadErr) console.error("nse_dead_documents read:", deadErr.message);
+  const dead = new Set((deadRows ?? []).map((r: { url: string }) => r.url));
+
   for (const symbol of batch) {
     // Supabase kills an edge function at 150s. A batch of 2 symbols x up to 12
     // filings, each paced by NSE_DELAY_MS on top of however long NSE itself
@@ -197,7 +203,7 @@ Deno.serve(async (req) => {
     // corporate-actions block at the bottom of the loop body still runs.
     let registry: FilingRecord[] = [];
     try {
-      registry = await fetchFilingRegistry(symbol);
+      registry = await fetchFilingRegistry(symbol, dead);
     } catch (err) {
       // 4xx halts this symbol's filings only; the batch continues.
       //
@@ -322,7 +328,12 @@ Deno.serve(async (req) => {
       try {
         xml = await fetchXbrl(f.xbrlUrl);
       } catch (err) {
-        console.error(`xbrl failed for ${f.symbol} ${f.toDate}:`, (err as Error).message);
+        const message = (err as Error).message;
+        console.error(`xbrl failed for ${f.symbol} ${f.toDate}:`, message);
+        if (message.startsWith("NSE 404 ")) {
+          const { error } = await supabase.from("nse_dead_documents").upsert({ url: f.xbrlUrl, symbol: f.symbol });
+          if (error) console.error("nse_dead_documents write:", error.message);
+        }
       }
       // Paced whether or not the fetch succeeded, and the failure path is the one
       // that actually needs it: nseGet throws immediately on any 4xx with no

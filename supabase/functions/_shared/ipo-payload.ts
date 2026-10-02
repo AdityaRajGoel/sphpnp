@@ -8,6 +8,9 @@
  */
 export const LIST_OMITTED_FIELDS = ["details", "news"] as const;
 
+/** GMP points kept per issue in the list, for its sparkline; the detail page gets them all. */
+export const LIST_HISTORY_POINTS = 30;
+
 /** A row as the list needs it; a single-slug response keeps every field. */
 export function forListing<T extends Record<string, unknown>>(ipo: T, single = false): Partial<T> {
   if (single) return ipo;

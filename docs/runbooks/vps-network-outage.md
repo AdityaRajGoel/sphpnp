@@ -4,6 +4,10 @@
 
 The public site, API gateway, and public edge-function probe are unavailable from outside the VPS. On 30 September 2026, the VPS was still running but lost reachability to both Contabo DNS resolvers and all public TCP ports. Nginx, Docker, disk, memory, and UFW were healthy; a VPS reboot restored service.
 
+Cause, from `journalctl -b -1` and `/var/log/apt/history.log`: unattended-upgrade installed openssl at 02:44 IST and needrestart restarted `systemd-networkd` and `systemd-resolved`. DNS failed from 02:47, and public traffic stopped at about 05:15. `infra/vps/bootstrap/01-base-system.sh` now excludes both services from needrestart (`/etc/needrestart/conf.d/sphpnp-network.conf`).
+
+The auto-recovery workflow below is a slow alarm, not a fast fix. GitHub runs its five-minute schedule only every few hours, and it can restart the VPS only once the Contabo secrets exist.
+
 ## Automated containment
 
 `.github/workflows/vps-auto-recovery.yml` runs from GitHub-hosted infrastructure every five minutes. It checks the three critical public endpoints, waits one minute, then repeats them. Only if all three checks fail twice does it ask Contabo to restart the configured instance. A workflow failure remains visible even when the restart request succeeds, so GitHub's normal workflow-failure notification is the incident alert.

@@ -271,6 +271,9 @@ Deno.serve(async (req) => {
         // eight quarters into a "seven-year" CAGR.
         revenue_cagr_3y: cagrOverPeriods(periods, (income) => income.revenue),
         profit_cagr_3y: cagrOverPeriods(periods, (income) => income.profit_after_tax),
+        // The column default fires only on insert; without this an upsert leaves
+        // the first run's time in place and freshness reads the scores as stale.
+        computed_at: new Date().toISOString(),
       });
     }
   }

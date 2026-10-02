@@ -58,6 +58,12 @@ export const GLOBAL_TICKERS: GlobalTicker[] = [
   // policy anchor the RBI's own moves are read against.
   { ticker: "US2Y.YIELD", name: "US 2-year Treasury yield", group: "Rates", unit: "percent", fred: "DGS2" },
   { ticker: "FEDFUNDS.RATE", name: "US Fed funds rate", group: "Rates", unit: "percent", fred: "DFF" },
+  // Spot energy prices from the US EIA via FRED: public domain, citation
+  // requested (checked 2 Oct 2026). Brent here is the real $/bbl, where BNO
+  // above is a fund that only tracks its direction.
+  { ticker: "BRENT.SPOT", name: "Brent crude spot ($/bbl)", group: "Commodity", unit: "dollars", fred: "DCOILBRENTEU" },
+  { ticker: "WTI.SPOT", name: "WTI crude spot ($/bbl)", group: "Commodity", unit: "dollars", fred: "DCOILWTICO" },
+  { ticker: "NATGAS.SPOT", name: "Henry Hub natural gas ($/mmBtu)", group: "Commodity", unit: "dollars", fred: "DHHNGSP" },
 ];
 
 export type GlobalBar = { ticker: string; trade_date: string; open: number | null; high: number | null; low: number | null; close: number; volume: number | null };

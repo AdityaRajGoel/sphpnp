@@ -30,10 +30,19 @@ import {
 } from "../_shared/indianapi.ts";
 
 const BASE_URL = "https://stock.indianapi.in";
-/** Symbols per run. Each costs 1 + STATEMENT_KINDS.length = 6 requests. */
+/**
+ * Profile only (the default since 2 Oct 2026): /stock alone, one request a
+ * symbol (two when the ticker search misses). Statements now come free from
+ * screener.in for the whole universe, and IndianAPI's passed the revenue check
+ * for one stock, so five of every six requests bought nothing. A full pass is
+ * then ~250 requests a month against a key that returned 429 after ~480.
+ * STATEMENTS_PROFILE_ONLY=0 restores the statements.
+ */
+const PROFILE_ONLY = (Deno.env.get("STATEMENTS_PROFILE_ONLY") ?? "1") !== "0";
+/** Symbols per run. Each costs 1 request profile-only, else 1 + STATEMENT_KINDS.length = 6. */
 const BATCH_SIZE = Number(Deno.env.get("STATEMENTS_BATCH_SIZE") ?? "6");
 /** A symbol attempted more recently than this is not due. */
-const REFRESH_DAYS = Number(Deno.env.get("STATEMENTS_REFRESH_DAYS") ?? "7");
+const REFRESH_DAYS = Number(Deno.env.get("STATEMENTS_REFRESH_DAYS") ?? (PROFILE_ONLY ? "30" : "7"));
 /** Supabase kills the worker at 150s; stop well before, as sync-fundamentals does. */
 const RUN_BUDGET_MS = 110_000;
 const REQUEST_TIMEOUT_MS = 20_000;
@@ -95,7 +104,7 @@ async function syncSymbol(
   if (!stock || !resolvedBy) return { symbol, ok: false, reason: rejections.join("; ") || "no response" };
 
   const statements = new Map<StatementKind, Statement>();
-  for (const kind of STATEMENT_KINDS) {
+  for (const kind of PROFILE_ONLY ? [] : STATEMENT_KINDS) {
     const parsed = parseStatement(await call("/historical_stats", { stock_name: resolvedBy, stats: kind }, apiKey));
     if (parsed) statements.set(kind, parsed);
   }
@@ -133,7 +142,8 @@ async function syncSymbol(
     key_metrics: flattenKeyMetrics(s.keyMetrics),
     moving_averages: parseTechnicals(s.stockTechnicalData),
     shareholding: parseShareholding(s.shareholding),
-    roe_history: annual && balance ? deriveRoe(annual, balance) : [],
+    // Profile-only runs fetch no statements: keep the stored ROE history.
+    ...(PROFILE_ONLY ? {} : { roe_history: annual && balance ? deriveRoe(annual, balance) : [] }),
     peers: Array.isArray(profile.peerCompanyList)
       ? (profile.peerCompanyList as Record<string, unknown>[]).map((p) => ({ name: p.companyName ?? null }))
       : [],

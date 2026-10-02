@@ -59,12 +59,14 @@ Deno.serve(async (req) => {
     const chartUrl = (sym: string) => `https://query1.finance.yahoo.com/v8/finance/chart/${sym}?range=${timeRange}&interval=${interval}&includePrePost=false`;
     const headers = { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" };
 
-    let res = await fetch(chartUrl(yahooSymbol), { headers });
+    let sym = yahooSymbol;
+    let res = await fetch(chartUrl(sym), { headers });
     // A BSE-only company (NSDL) has no NSE listing; when the symbol was
     // given bare and NSE's is not found, its BSE listing is the chart.
     if (res.status === 404 && yahooSymbol.endsWith(".NS") && !/\.NS$/i.test(symbol)) {
       await res.body?.cancel();
-      res = await fetch(chartUrl(yahooSymbol.replace(/\.NS$/, ".BO")), { headers });
+      sym = yahooSymbol.replace(/\.NS$/, ".BO");
+      res = await fetch(chartUrl(sym), { headers });
     }
 
     if (!res.ok) {
@@ -83,8 +85,19 @@ Deno.serve(async (req) => {
       });
     }
 
-    const timestamps = result.timestamp || [];
-    const quotes = result.indicators?.quote?.[0] || {};
+    let source = result;
+    // A 1d request on an exchange holiday or before the open returns no bars,
+    // and the homepage read that as the feed being down (2 Oct 2026). Show the
+    // last session instead: five days at the same 5-minute grain, cut to the
+    // last date that traded. `session` tells the page which day it is.
+    if (timeRange === "1d" && !(result.indicators?.quote?.[0]?.close ?? []).some((c: number | null) => c != null)) {
+      const back = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${sym}?range=5d&interval=5m&includePrePost=false`, { headers });
+      const fallback = back.ok ? (await back.json())?.chart?.result?.[0] : null;
+      if (fallback) source = fallback;
+    }
+
+    const timestamps = source.timestamp || [];
+    const quotes = source.indicators?.quote?.[0] || {};
     const closes = quotes.close || [];
     const highs = quotes.high || [];
     const lows = quotes.low || [];
@@ -106,7 +119,10 @@ Deno.serve(async (req) => {
       }
     }
 
-    const meta = result.meta;
+    const istDay = (ms: number) => new Date(ms + 5.5 * 3_600_000).toISOString().slice(0, 10);
+    const session = dataPoints.length ? istDay(dataPoints[dataPoints.length - 1].t) : null;
+    const points = timeRange === "1d" && session ? dataPoints.filter((p) => istDay(p.t) === session) : dataPoints;
+    const meta = source.meta;
 
     return new Response(JSON.stringify({
       success: true,
@@ -114,7 +130,8 @@ Deno.serve(async (req) => {
       range: timeRange,
       interval,
       currency: meta?.currency || "INR",
-      dataPoints,
+      dataPoints: points,
+      session,
       previousClose: meta?.chartPreviousClose ?? meta?.previousClose ?? 0,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

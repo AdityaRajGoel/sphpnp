@@ -49,7 +49,8 @@ const formatDateRange = (ipo: IpoRow) => {
   return ipo.close_date ? `${format(ipo.open_date)} – ${format(ipo.close_date)}` : format(ipo.open_date);
 };
 
-import { forListing } from "../_shared/ipo-payload.ts";
+import { forListing, LIST_HISTORY_POINTS } from "../_shared/ipo-payload.ts";
+import { allPages } from "../_shared/paging.ts";
 
 const client = () => createClient(
   Deno.env.get("SUPABASE_URL")!,
@@ -70,10 +71,13 @@ Deno.serve(async (req) => {
     const ipos = (data ?? []) as IpoRow[];
 
     const ids = ipos.map((ipo) => ipo.id);
-    const { data: snapshots, error: snapshotError } = ids.length
-      ? await supabase.from("ipo_gmp_snapshots").select("ipo_id,captured_at,gmp,est_listing_price,source").in("ipo_id", ids).order("captured_at", { ascending: true })
-      : { data: [], error: null };
-    if (snapshotError) throw snapshotError;
+    // Paged: one read stopped at the oldest 1,000 snapshots, so every recent
+    // issue on the list showed "Not yet quoted" while its own page had a GMP.
+    const snapshots = ids.length
+      ? await allPages<{ ipo_id: string; captured_at: string; gmp: number; est_listing_price: number | null; source: string }>((from, to) =>
+        supabase.from("ipo_gmp_snapshots").select("ipo_id,captured_at,gmp,est_listing_price,source").in("ipo_id", ids)
+          .order("captured_at", { ascending: true }).order("id", { ascending: true }).range(from, to))
+      : [];
 
     // Listing performance from exchange bars, for listed issues the catalogue
     // has no listing price for (which, as of Sept 2026, is all of them). A
@@ -86,8 +90,12 @@ Deno.serve(async (req) => {
         const symbols = (links ?? []).map((l) => l.symbol);
         const earliest = (links ?? []).map((l) => l.listing_date).filter(Boolean).sort()[0];
         if (symbols.length > 0 && earliest) {
-          const { data: bars } = await supabase.from("eq_eod").select("symbol,trade_date,open,close").eq("exchange", "NSE").in("symbol", symbols).gte("trade_date", earliest).order("trade_date", { ascending: true }).limit(20000);
-          performance = performanceBySlug((links ?? []) as NseIpoLink[], (bars ?? []) as EodBar[]);
+          // Paged for the same reason as the snapshots: `.limit(20000)` was
+          // capped at 1,000 bars, so later listings lost their gain and close.
+          const bars = await allPages<EodBar>((from, to) =>
+            supabase.from("eq_eod").select("symbol,trade_date,open,close").eq("exchange", "NSE").in("symbol", symbols).gte("trade_date", earliest)
+              .order("trade_date", { ascending: true }).order("symbol", { ascending: true }).order("series", { ascending: true }).range(from, to));
+          performance = performanceBySlug((links ?? []) as NseIpoLink[], bars);
         }
       } catch (e) {
         console.error("listing performance skipped:", e instanceof Error ? e.message : e);
@@ -125,7 +133,8 @@ Deno.serve(async (req) => {
         size: ipo.issue_size_crore === null ? "—" : `₹${ipo.issue_size_crore} Cr`,
         gmp: latest?.gmp ?? null,
         est_listing_price: latest?.est_listing_price ?? null,
-        gmp_history: history,
+        // The list draws a sparkline, not the history table; its tail is enough.
+        gmp_history: single ? history : history.slice(-LIST_HISTORY_POINTS),
       };
     }).map((ipo) => forListing(ipo, single));
 

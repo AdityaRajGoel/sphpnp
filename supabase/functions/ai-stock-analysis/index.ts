@@ -48,7 +48,9 @@ const LAST_DITCH_FLOOR_MS = 5_000;
 const FREE_CHAT_MODEL = Deno.env.get("FREE_CHAT_MODEL") ?? "openai/gpt-oss-20b:free";
 // Groq free-tier models, tried in order (a decommissioned model 404s and the
 // cascade just moves to the next one). Overridable via GROQ_MODELS (comma-sep).
-const GROQ_MODELS = (Deno.env.get("GROQ_MODELS") ?? "llama-3.3-70b-versatile,openai/gpt-oss-120b")
+// llama-3.3-70b-versatile is still on Groq's list, but none of the four keys'
+// projects can use it (GET /models, 2 Oct 2026): it 404'd on every request.
+const GROQ_MODELS = (Deno.env.get("GROQ_MODELS") ?? "openai/gpt-oss-120b,qwen/qwen3.8-27b")
   .split(",").map((s) => s.trim()).filter(Boolean);
 // Cerebras free tier (fastest inference available). Optional: skipped entirely
 // unless CEREBRAS_API_KEY is set as a Supabase secret.
@@ -58,13 +60,13 @@ const CEREBRAS_API_KEY = Deno.env.get("CEREBRAS_API_KEY");
 const CEREBRAS_MODEL = Deno.env.get("CEREBRAS_MODEL") ?? "gpt-oss-120b";
 // NVIDIA NIM (build.nvidia.com) free developer tier. OpenAI-compatible, so it
 // reuses the same request/parse shape as Groq/Cerebras rather than a bespoke path.
-// openai/gpt-oss-120b was confirmed present in the live catalogue served by
-// GET https://integrate.api.nvidia.com/v1/models, and it is the same open-weight
-// family the rest of this cascade already leans on. Override via NVIDIA_MODEL —
-// that /v1/models listing is the source of truth for what a given key can serve
-// (NVIDIA gates catalogue access per NGC org, so a model id that works on one
-// key can 403 on another).
-const NVIDIA_MODEL = Deno.env.get("NVIDIA_MODEL") ?? "openai/gpt-oss-120b";
+// openai/gpt-oss-120b reached end of life on NVIDIA on 3 Sep 2026 and answered
+// 410 Gone from then on. nemotron-3-super-120b-a12b returned valid JSON in 2.9s
+// on 2 Oct 2026 (deepseek-v4.1-flash timed out at 60s). Override via
+// NVIDIA_MODEL; GET https://integrate.api.nvidia.com/v1/models is the source of
+// truth for what a key can serve (access is gated per NGC org, so an id that
+// works on one key can 403 on another).
+const NVIDIA_MODEL = Deno.env.get("NVIDIA_MODEL") ?? "nvidia/nemotron-3-super-120b-a12b";
 // Bytez free tier. NOT OpenAI-shaped: the model id lives in the URL path,
 // generation settings go under `params`, and a reply comes back as { error, output } with a
 // 200 even when the model itself failed - so the error field has to be checked
@@ -91,6 +93,10 @@ const corsHeaders = {
 };
 
 const OPENROUTER_API_KEY = Deno.env.get("OPENROUTER_API_KEY");
+// The paid OpenRouter step runs only when the key has credit. The key is on the
+// free tier with none (GET /key, 2 Oct 2026), so every paid call was a 402 that
+// could hold up to 52s of the 60s budget before Groq and the rest were tried.
+const OPENROUTER_PAID = Deno.env.get("OPENROUTER_PAID") === "1";
 
 // Multiple keys per provider multiply the free-tier quota: when one key is
 // rate-limited or exhausted the cascade retries the same request on the next
@@ -461,7 +467,7 @@ async function askOpenRouter(prompt: string, isChat: boolean = false, modelOverr
 // ─────────────────────────────────────────────────────────────
 // Provider 2: Groq (Fallback 1)
 // ─────────────────────────────────────────────────────────────
-async function askGroq(prompt: string, isChat: boolean = false, model = "llama-3.3-70b-versatile") {
+async function askGroq(prompt: string, isChat: boolean = false, model = GROQ_MODELS[0]) {
   const systemMsg = isChat ? CHAT_SYSTEM_PROMPT : REPORT_SYSTEM_PROMPT;
 
   // Groq has a strict token limit - aggressively truncate
@@ -1684,7 +1690,7 @@ serve(async (req) => {
         }
         if (GROQ_API_KEY) {
           // Most capable / most distinct Groq model first for diversity...
-          const gm = GROQ_MODELS[GROQ_MODELS.length - 1] ?? "llama-3.3-70b-versatile";
+          const gm = GROQ_MODELS[GROQ_MODELS.length - 1] ?? "openai/gpt-oss-120b";
           candidates.push({ name: `groq:${gm}`, run: () => askGroq(committeePrompt, false, gm) });
           // ...but also field the known-good workhorse so the committee still
           // convenes if the capable model is decommissioned/unavailable.
@@ -1723,7 +1729,7 @@ serve(async (req) => {
         const freeModels = is_chat ? [FREE_CHAT_MODEL] : FREE_REPORT_MODELS;
         for (const freeModel of freeModels) {
           if (Date.now() - cascadeStart > FREE_TIER_DEADLINE_MS) {
-            console.warn("Free-tier deadline reached; moving to paid model");
+            console.warn("Free-tier deadline reached; moving to the next provider");
             break;
           }
           try {
@@ -1738,7 +1744,7 @@ serve(async (req) => {
         }
       }
 
-      if (!result && OPENROUTER_API_KEY) {
+      if (!result && OPENROUTER_API_KEY && OPENROUTER_PAID) {
         try {
           // Stay inside the 60s edge-function limit even after free-tier attempts.
           const remaining = Math.max(12_000, 52_000 - (Date.now() - cascadeStart));

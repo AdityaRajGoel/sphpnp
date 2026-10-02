@@ -36,7 +36,7 @@ Shareholding filings - sync|select max(fetched_at) from nse_shareholding_filings
 Promoter pledge (shareholding XBRL)|select max(quarter_end) from nse_shareholding_filings where promoter_pledged_pct is not null|140
 NSE pledge feed - sync|select max(fetched_at) from pledge_snapshots|3
 Quarterly results - newest filing|select max(filing_date) from fundamentals_filings|110
-Income statements - sync|select max(fetched_at) from fundamentals_income|3
+Income statements - sync ran|select updated_at from sync_cursors where job = 'fundamentals'|3
 Fundamental scores|select max(computed_at) from stock_fundamental_scores|3
 Price analytics|select max(computed_at) from stock_price_analytics|4
 Surveillance flags (ASM/GSM)|select max(as_of) from surveillance_flags|5

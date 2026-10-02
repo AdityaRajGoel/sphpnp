@@ -96,6 +96,14 @@ printf '[Timer]\nOnCalendar=\nOnCalendar=*-*-* 01:30\nRandomizedDelaySec=30m\n' 
 printf '[Timer]\nOnCalendar=\nOnCalendar=*-*-* 02:30\nRandomizedDelaySec=30m\n' > /etc/systemd/system/apt-daily-upgrade.timer.d/sphpnp.conf
 systemctl daemon-reload
 
+# needrestart already leaves docker and ^network alone, but not systemd-networkd or
+# systemd-resolved. On 30 Sep 2026 an openssl update made it restart both at 02:44:
+# DNS failed at once and the public site at ~05:15 while the VPS showed "running",
+# until a manual reboot at 10:20. Those two pick up library updates on the next reboot.
+cat > /etc/needrestart/conf.d/sphpnp-network.conf <<'EOF'
+$nrconf{override_rc}{qr(^systemd-(networkd|resolved))} = 0;
+EOF
+
 systemctl enable --now chrony auditd sysstat unattended-upgrades
 
 # Resolve our own hostnames locally. Every name here is served by this machine, yet

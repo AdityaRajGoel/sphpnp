@@ -255,6 +255,31 @@ const findScrapedTitle = (html: string, videoId: string): string | null => {
 };
 
 /**
+ * The watch page's own video: currentVideoEndpoint names it (every other
+ * watchEndpoint on the page is a related video - the grep trap described below),
+ * and its videoPrimaryInfoRenderer carries the live flag for that same video.
+ * Both are required, the same two-signal rule as the canonical path.
+ */
+const CURRENT_VIDEO_ID = /"currentVideoEndpoint"\s*:\s*\{[\s\S]{0,600}?"watchEndpoint"\s*:\s*\{\s*"videoId"\s*:\s*"([^"]*)"/;
+const PRIMARY_INFO_LIVE = /"videoPrimaryInfoRenderer"[\s\S]{0,1500}?"isLive"\s*:\s*true/;
+// The title comes from that same block. On these pages the meta title is empty
+// and the videoDetails block findScrapedTitle reads yields the like count.
+const PRIMARY_INFO_RUNS = /"videoPrimaryInfoRenderer"\s*:\s*\{\s*"title"\s*:\s*\{\s*"runs"\s*:\s*\[([\s\S]{0,3000}?)\]/;
+const RUN_TEXT = /"text"\s*:\s*"((?:\\.|[^"\\])*)"/g;
+
+const primaryInfoTitle = (html: string): string | null => {
+  const runs = html.match(PRIMARY_INFO_RUNS)?.[1];
+  const title = runs ? [...runs.matchAll(RUN_TEXT)].map((m) => decodeJsonStringEscapes(m[1])).join("").trim() : "";
+  return title || null;
+};
+
+const fromCurrentVideo = (html: string): LiveVideo | null => {
+  const videoId = html.match(CURRENT_VIDEO_ID)?.[1];
+  if (!isValidVideoId(videoId) || !PRIMARY_INFO_LIVE.test(html)) return null;
+  return { videoId: videoId as string, title: primaryInfoTitle(html) ?? findScrapedTitle(html, videoId as string) };
+};
+
+/**
  * Tier 2: extract the live video from the HTML of /channel/<id>/live.
  *
  * Used only when tier 1 could not answer at all (no API key, blown quota,
@@ -291,7 +316,11 @@ export const extractLiveVideoFromHtml = (html: unknown): LiveVideo | null => {
   if (!canonicalTag) return null;
 
   const canonicalHref = canonicalTag.match(HREF_ATTRIBUTE)?.[1];
-  if (!canonicalHref || !canonicalHref.includes("/watch")) return null;
+  // No usable canonical at all (YouTube served the VPS href="undefined" on 29
+  // Sep 2026): fall back to the page's own player data. A real canonical that is
+  // not a watch URL still means off-air, so that case never reaches the fallback.
+  if (!canonicalHref || !/^https?:\/\//i.test(canonicalHref)) return fromCurrentVideo(html);
+  if (!canonicalHref.includes("/watch")) return null;
 
   // Captured loosely, then validated - a 14-character id must be rejected, not
   // silently truncated to its first 11 characters.

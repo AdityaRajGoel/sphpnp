@@ -10,6 +10,12 @@ J=/opt/sphpnp/jobs/sync.sh
 30 9  * * 1-5   deploy flock -n /tmp/sync-market-data.lock $J market-data
 0  19 * * 1-5   deploy flock -n /tmp/sync-market-data.lock $J market-data
 15 0  * * 2-6   deploy flock -n /tmp/sync-market-data.lock $J market-data
+# Movers, breadth and GIFT Nifty for /markets/*: before the open, every 15 minutes
+# through the session (09:15 catches the 09:08 pre-open result), and after NSE's
+# 16:00 final lists. About ten light NSE calls a run.
+50 8  * * 1-5   deploy flock -n /tmp/sync-movers.lock $J once sync-market-data '{"dataset":"movers"}' 170
+*/15 9-15 * * 1-5 deploy flock -n /tmp/sync-movers.lock $J once sync-market-data '{"dataset":"movers"}' 170
+15 16 * * 1-5   deploy flock -n /tmp/sync-movers.lock $J once sync-market-data '{"dataset":"movers"}' 170
 30 19 * * 1-5   deploy flock -n /tmp/sync-bhavcopy.lock $J once sync-bhavcopy '{}' 180
 30 21 * * 1-5   deploy flock -n /tmp/sync-bhavcopy.lock $J once sync-bhavcopy '{}' 180
 45 18 * * 1-5   deploy flock -n /tmp/sync-market-feed.lock $J once sync-market-feed '{}' 120
@@ -24,6 +30,9 @@ J=/opt/sphpnp/jobs/sync.sh
 47 *  * * *     deploy flock -n /tmp/sync-fundamentals.lock $J repeat sync-fundamentals 8 300
 7  *  * * *     deploy flock -n /tmp/sync-fundamentals-yahoo.lock $J once sync-fundamentals-yahoo '{}' 300
 40 7  * * *     deploy flock -n /tmp/sync-google-finance.lock $J once sync-google-finance '{}' 150
+# IndianAPI profiles, profile-only: 6 symbols x 3 runs = 18 requests a day, a full pass in
+# ~14 days, then each symbol rests 30 days - ~250-300 requests a month (key 429'd at ~480).
+25 7,13,20 * * * deploy flock -n /tmp/sync-stock-statements.lock $J once sync-stock-statements '{}' 150
 10 8  * * *     deploy flock -n /tmp/build-screener.lock $J once build-screener-fundamentals '{}' 150
 40 23 * * *     deploy flock -n /tmp/sync-scores.lock $J loop sync-fundamental-scores 12
 35 9,12,15,18 * * 1-6 deploy flock -n /tmp/sync-announcements.lock $J once sync-announcements '{}' 120

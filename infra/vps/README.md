@@ -265,8 +265,9 @@ Logs go to `/var/log/sphpnp-sync/YYYY-MM-DD.log` (two weeks kept).
 | `mospi.sh` | MoSPI CPI/IIP/WPI via Node (legacy TLS), posted to `sync-market-data` |
 | `kronos.sh` | weekly Kronos forecast (Python venv in `/opt/sphpnp/kronos-venv`) |
 
-`sync-stock-statements` stays unscheduled, as on GitHub, until it is sized against the
-IndianAPI quota.
+`sync-stock-statements` runs profile-only at 07:25, 13:25 and 20:25 (18 IndianAPI requests a
+day, ~250-300 a month); statements come from screener.in. Set `STATEMENTS_PROFILE_ONLY=0` to
+fetch IndianAPI statements again (six requests a symbol).
 
 ## Bootstrap (phase 1)
 

@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { dailyQuote } from "../_shared/yahoo-daily-quote.ts";
 import { buildStockRow, exchangeCloseRow, groupRowsByShape, isStaleQuote, type ExchangeBar } from "../_shared/screener-row.ts";
 
 const corsHeaders = {
@@ -370,17 +371,21 @@ async function fetchBatchQuotes(symbols: string[], crumb: string, cookie: string
       const result = json?.chart?.result?.[0];
       if (!result) return;
       const meta = result.meta;
+      // range=5d makes chartPreviousClose the close before the five days, not
+      // yesterday's, and a holiday adds an empty last bar: see dailyQuote.
+      const q = dailyQuote(result);
+      if (!q) return;
       results.set(sym, {
         symbol: sym,
-        regularMarketPrice: meta.regularMarketPrice ?? 0,
+        regularMarketPrice: q.price,
         regularMarketTime: meta.regularMarketTime,
-        regularMarketChange: (meta.regularMarketPrice ?? 0) - (meta.chartPreviousClose ?? meta.previousClose ?? 0),
-        regularMarketChangePercent: meta.chartPreviousClose ? ((meta.regularMarketPrice - meta.chartPreviousClose) / meta.chartPreviousClose) * 100 : 0,
-        regularMarketVolume: result.indicators?.quote?.[0]?.volume?.slice(-1)?.[0] ?? 0,
-        regularMarketDayHigh: result.indicators?.quote?.[0]?.high?.slice(-1)?.[0] ?? 0,
-        regularMarketDayLow: result.indicators?.quote?.[0]?.low?.slice(-1)?.[0] ?? 0,
-        regularMarketOpen: result.indicators?.quote?.[0]?.open?.slice(-1)?.[0] ?? 0,
-        regularMarketPreviousClose: meta.chartPreviousClose ?? meta.previousClose ?? 0,
+        regularMarketChange: q.change,
+        regularMarketChangePercent: q.changePercent,
+        regularMarketVolume: q.volume ?? 0,
+        regularMarketDayHigh: q.high ?? 0,
+        regularMarketDayLow: q.low ?? 0,
+        regularMarketOpen: q.open ?? 0,
+        regularMarketPreviousClose: q.prevClose,
         fiftyTwoWeekHigh: meta.fiftyTwoWeekHigh ?? 0,
         fiftyTwoWeekLow: meta.fiftyTwoWeekLow ?? 0,
         // The v8 chart API has no market-cap field at all — leave marketCap

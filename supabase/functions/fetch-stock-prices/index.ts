@@ -1,3 +1,5 @@
+import { nseMarketStatus } from "../_shared/market-holidays.ts";
+import { dailyQuote } from "../_shared/yahoo-daily-quote.ts";
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
@@ -141,7 +143,7 @@ async function fetchETCommodity(symbol: string) {
 
 async function fetchYahooQuote(symbol: string): Promise<QuoteResult | null> {
   try {
-    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1d&range=2d`;
+    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1d&range=5d`;
     const res = await fetch(url, {
       headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
     });
@@ -156,24 +158,18 @@ async function fetchYahooQuote(symbol: string): Promise<QuoteResult | null> {
       return null;
     }
 
+    const q = dailyQuote(result);
+    if (!q) {
+      console.error(`Yahoo quote parse error for ${symbol}: no session to compare with`);
+      return null;
+    }
     const meta = result.meta;
-    const price = meta.regularMarketPrice;
-    const prevClose = meta.chartPreviousClose || meta.previousClose;
-    const change = price - prevClose;
-    const changePercent = prevClose ? (change / prevClose) * 100 : 0;
-
-    const indicators = result.indicators?.quote?.[0];
-    const lastIdx = indicators?.close?.length ? indicators.close.length - 1 : 0;
-
     return {
-      price,
-      change,
-      changePercent,
-      open: indicators?.open?.[lastIdx] || meta.regularMarketOpen || undefined,
-      high: indicators?.high?.[lastIdx] || meta.regularMarketDayHigh || undefined,
-      low: indicators?.low?.[lastIdx] || meta.regularMarketDayLow || undefined,
-      prevClose,
-      volume: indicators?.volume?.[lastIdx] || meta.regularMarketVolume || undefined,
+      ...q,
+      open: q.open ?? meta.regularMarketOpen ?? undefined,
+      high: q.high ?? meta.regularMarketDayHigh ?? undefined,
+      low: q.low ?? meta.regularMarketDayLow ?? undefined,
+      volume: q.volume ?? meta.regularMarketVolume ?? undefined,
     };
   } catch (e) {
     console.error(`Yahoo quote fetch error for ${symbol}:`, e);
@@ -194,83 +190,11 @@ function formatVolume(vol?: number): string {
   return vol.toString();
 }
 
-function getIndianMarketStatus(): { isOpen: boolean; lastTradingDate: string; statusText: string; nextMarketOpenISO: string | null; marketCloseISO: string | null } {
-  const now = new Date();
-  const istOffset = 5.5 * 60 * 60 * 1000;
-  const istNow = new Date(now.getTime() + istOffset + now.getTimezoneOffset() * 60000);
-  
-  const day = istNow.getDay();
-  const hours = istNow.getHours();
-  const minutes = istNow.getMinutes();
-  const timeInMinutes = hours * 60 + minutes;
-  
-  const marketOpenMin = 9 * 60 + 15;
-  const marketCloseMin = 15 * 60 + 30;
-  
-  const isWeekday = day >= 1 && day <= 5;
-  const isDuringHours = timeInMinutes >= marketOpenMin && timeInMinutes <= marketCloseMin;
-  const isOpen = isWeekday && isDuringHours;
-  
-  // Calculate last trading date
-  const istDate = new Date(istNow);
-  if (!isWeekday || (isWeekday && timeInMinutes < marketOpenMin)) {
-    const d = new Date(istDate);
-    if (timeInMinutes < marketOpenMin && isWeekday) {
-      d.setDate(d.getDate() - 1);
-    }
-    while (d.getDay() === 0 || d.getDay() === 6) {
-      d.setDate(d.getDate() - 1);
-    }
-    istDate.setFullYear(d.getFullYear(), d.getMonth(), d.getDate());
-  }
-  
-  const lastTradingDate = `${istDate.getFullYear()}-${String(istDate.getMonth() + 1).padStart(2, '0')}-${String(istDate.getDate()).padStart(2, '0')}`;
-  
-  let statusText = "Market Closed";
-  if (isOpen) {
-    statusText = "Market Open";
-  } else if (isWeekday && timeInMinutes > marketCloseMin) {
-    statusText = "After Hours";
-  } else if (isWeekday && timeInMinutes < marketOpenMin) {
-    statusText = "Pre-Market";
-  }
-  
-  // Calculate next market open in UTC ISO
-  let nextMarketOpenISO: string | null = null;
-  let marketCloseISO: string | null = null;
-  
-  if (isOpen) {
-    // Market closes today at 15:30 IST → convert to UTC
-    const closeUTC = new Date(istNow);
-    closeUTC.setHours(15, 30, 0, 0);
-    // Convert IST back to UTC: subtract 5:30
-    const closeUTCTime = new Date(closeUTC.getTime() - istOffset + now.getTimezoneOffset() * 60000);
-    // Actually just compute from `now` directly
-    const remainingMin = marketCloseMin - timeInMinutes;
-    marketCloseISO = new Date(now.getTime() + remainingMin * 60000).toISOString();
-  }
-  
-  if (!isOpen) {
-    // Find next weekday
-    const nextDay = new Date(istNow);
-    if (isWeekday && timeInMinutes > marketCloseMin) {
-      nextDay.setDate(nextDay.getDate() + 1);
-    } else if (isWeekday && timeInMinutes < marketOpenMin) {
-      // Same day, just wait
-    } else {
-      nextDay.setDate(nextDay.getDate() + 1);
-    }
-    while (nextDay.getDay() === 0 || nextDay.getDay() === 6) {
-      nextDay.setDate(nextDay.getDate() + 1);
-    }
-    // Set to 9:15 AM IST
-    nextDay.setHours(9, 15, 0, 0);
-    // Convert IST to UTC offset from now
-    const diffMs = nextDay.getTime() - istNow.getTime();
-    nextMarketOpenISO = new Date(now.getTime() + diffMs).toISOString();
-  }
-  
-  return { isOpen, lastTradingDate, statusText, nextMarketOpenISO, marketCloseISO };
+// Weekday and clock alone said "Market Open" all through Gandhi Jayanti (2 Oct
+// 2026); the shared helper also reads the exchange holiday list.
+function getIndianMarketStatus() {
+  const s = nseMarketStatus();
+  return { isOpen: s.isOpen, lastTradingDate: s.lastTradingDate, statusText: s.statusText, holiday: s.holiday, nextMarketOpenISO: s.nextMarketOpenISO, marketCloseISO: s.marketCloseISO };
 }
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -419,16 +343,17 @@ Deno.serve(async (req) => {
     ]);
 
     const validMarket = marketResults.filter(Boolean) as any[];
-    const gainers = validMarket.filter(s => s.up).sort((a: any, b: any) => b.changePercent - a.changePercent).slice(0, 7);
-    const losers = validMarket.filter(s => !s.up).sort((a: any, b: any) => a.changePercent - b.changePercent).slice(0, 7);
+    // A 0.00% move is unchanged, not a gain: counted as up, a holiday read 20 advances, 0 declines.
+    const gainers = validMarket.filter(s => s.changePercent > 0).sort((a: any, b: any) => b.changePercent - a.changePercent).slice(0, 7);
+    const losers = validMarket.filter(s => s.changePercent < 0).sort((a: any, b: any) => a.changePercent - b.changePercent).slice(0, 7);
     const mostActive = [...validMarket].sort((a: any, b: any) => {
       const volA = parseFloat(a.volume?.replace(/[CLK]/g, '') || '0');
       const volB = parseFloat(b.volume?.replace(/[CLK]/g, '') || '0');
       return volB - volA;
     }).slice(0, 7);
 
-    const advances = validMarket.filter(s => s.up).length;
-    const declines = validMarket.filter(s => !s.up).length;
+    const advances = validMarket.filter(s => s.changePercent > 0).length;
+    const declines = validMarket.filter(s => s.changePercent < 0).length;
 
     // Extract VIX from commodities
     const vixResult = commodityResults.find(c => c?.name === "INDIA VIX");
@@ -493,6 +418,7 @@ Deno.serve(async (req) => {
       },
       marketOpen: marketStatus.isOpen,
       marketStatusText: marketStatus.statusText,
+      marketHoliday: marketStatus.holiday,
       lastTradingDate: marketStatus.lastTradingDate,
       nextMarketOpen: marketStatus.nextMarketOpenISO,
       marketClose: marketStatus.marketCloseISO,

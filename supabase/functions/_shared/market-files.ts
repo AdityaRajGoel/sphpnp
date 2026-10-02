@@ -375,6 +375,99 @@ export function parseMovers(raw: unknown, kind: "value" | "volume"): { as_of: st
   };
 }
 
+type MoverList = { as_of: string | null; movers: Mover[] };
+const jsonRows = (v: unknown) => (Array.isArray(v) ? v.filter(isRecord) : []);
+const mover = (symbol: string, m: Partial<Mover>): Mover =>
+  ({ symbol, name: null, price: null, change_pct: null, value_cr: null, volume: null, volume_vs_week: null, ...m });
+
+/** Top gainers or losers, all securities (api/live-analysis-variations). Turnover is in lakh. */
+export function parseVariations(raw: unknown): MoverList {
+  const all = isRecord(raw) && isRecord(raw.allSec) ? raw.allSec : {};
+  return {
+    as_of: istTimestamp(all.timestamp),
+    movers: jsonRows(all.data).flatMap((r) => {
+      const symbol = str(r.symbol);
+      const lakh = num(r.turnover);
+      return symbol ? [mover(symbol, { price: num(r.ltp), change_pct: num(r.perChange), volume: num(r.trade_quantity), value_cr: lakh == null ? null : lakh / 100 })] : [];
+    }),
+  };
+}
+
+/** Stocks that set a new 52-week high or low today (api/live-analysis-52Week), both price buckets. */
+export function parseWeek52Live(raw: unknown): MoverList {
+  const d = isRecord(raw) ? raw : {};
+  return {
+    as_of: istTimestamp(d.timestamp),
+    movers: [...jsonRows(d.dataLtpGreater20), ...jsonRows(d.dataLtpLess20)].flatMap((r) => {
+      const symbol = str(r.symbol);
+      return symbol ? [mover(symbol, { name: str(r.comapnyName), price: num(r.ltp), change_pct: num(r.pChange) })] : [];
+    }),
+  };
+}
+
+/** Upper or lower circuit hitters (api/live-analysis-price-band-hitter): volume in lakh shares, turnover in crore. */
+export function parseBandHitters(raw: unknown, side: "upper" | "lower"): MoverList {
+  const bySide = isRecord(raw) ? raw[side] : null;
+  const all = isRecord(bySide) && isRecord(bySide.AllSec) ? bySide.AllSec : {};
+  return {
+    as_of: istTimestamp(all.timestamp),
+    movers: jsonRows(all.data).flatMap((r) => {
+      const symbol = str(r.symbol);
+      const lakhShares = num(r.totalTradedVol);
+      return symbol ? [mover(symbol, { price: num(r.ltp), change_pct: num(r.pChange), volume: lakhShares == null ? null : lakhShares * 1e5, value_cr: num(r.turnover) })] : [];
+    }),
+  };
+}
+
+export type Breadth = { as_of: string | null; advances: number; declines: number; unchanged: number; total: number };
+
+/** Advances and declines across every stock traded on NSE (api/live-analysis-stocksTraded). */
+export function parseBreadth(raw: unknown): Breadth | null {
+  const d = isRecord(raw) ? raw : {};
+  const c = isRecord(d.total) && isRecord(d.total.count) ? d.total.count : null;
+  const advances = num(c?.Advances), declines = num(c?.Declines), unchanged = num(c?.Unchange), total = num(c?.Total);
+  if (advances == null || declines == null || unchanged == null || total == null) return null;
+  return { as_of: istTimestamp(d.timestamp), advances, declines, unchanged, total };
+}
+
+export type MarketStatus = {
+  gift_nifty: { last: number; change: number | null; change_pct: number | null; expiry: string | null; as_of: string | null } | null;
+  nifty: { last: number; change: number | null; change_pct: number | null; status: string | null; as_of: string | null } | null;
+};
+
+/** GIFT Nifty's near-month future and the capital market's state (api/marketStatus). */
+export function parseMarketStatus(raw: unknown): MarketStatus {
+  const d = isRecord(raw) ? raw : {};
+  const g = isRecord(d.giftnifty) ? d.giftnifty : null;
+  const cm = jsonRows(d.marketState).find((m) => m.market === "Capital Market") ?? null;
+  const giftLast = num(g?.LASTPRICE), niftyLast = num(cm?.last);
+  return {
+    gift_nifty: g && giftLast != null
+      ? { last: giftLast, change: num(g.DAYCHANGE), change_pct: num(g.PERCHANGE), expiry: isoDate(g.EXPIRYDATE), as_of: istTimestamp(g.TIMESTMP) }
+      : null,
+    nifty: cm && niftyLast != null
+      ? { last: niftyLast, change: num(cm.variation), change_pct: num(cm.percentChange), status: str(cm.marketStatus), as_of: istTimestamp(cm.tradeDate) }
+      : null,
+  };
+}
+
+/** The 09:00-09:08 pre-open session (api/market-data-pre-open). Turnover is in rupees. */
+export function parsePreOpen(raw: unknown): MoverList & { advances: number | null; declines: number | null; unchanged: number | null } {
+  const d = isRecord(raw) ? raw : {};
+  return {
+    as_of: istTimestamp(d.timestamp),
+    advances: num(d.advances),
+    declines: num(d.declines),
+    unchanged: num(d.unchanged),
+    movers: jsonRows(d.data).flatMap((r) => {
+      const m = isRecord(r.metadata) ? r.metadata : {};
+      const symbol = str(m.symbol);
+      const rupees = num(m.totalTurnover);
+      return symbol ? [mover(symbol, { price: num(m.lastPrice), change_pct: num(m.pChange), volume: num(m.finalQuantity), value_cr: rupees == null ? null : rupees / 1e7 })] : [];
+    }),
+  };
+}
+
 export type Constituent = { index_name: string; symbol: string; company: string | null; industry: string | null; isin: string | null };
 
 export function parseConstituents(csv: string, index_name: string): Constituent[] {
