@@ -46,6 +46,26 @@ Disallow: /hero-540.mp4
 Disallow: /hero-540.webm
 Disallow: /api/
 
+# SEO crawlers we use, slowed rather than blocked (AhrefsBot made 41,649 requests in
+# two weeks). Same rules as above, plus a delay; Google and Bing ignore Crawl-delay.
+User-agent: AhrefsBot
+User-agent: SemrushBot
+Crawl-delay: 5
+Allow: /
+Disallow: /hero-360.mp4
+Disallow: /hero-360.webm
+Disallow: /hero-540.mp4
+Disallow: /hero-540.webm
+Disallow: /api/
+
+# Crawlers refused at the server too (nginx); listed so the polite ones stop asking.
+User-agent: Bytespider
+User-agent: PetalBot
+User-agent: MJ12bot
+User-agent: DotBot
+User-agent: BLEXBot
+Disallow: /
+
 Sitemap: https://www.sphpnp.com/sitemap.xml
 
 # Semantic site map for AI assistants

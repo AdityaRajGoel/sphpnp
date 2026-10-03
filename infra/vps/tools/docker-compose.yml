@@ -184,6 +184,33 @@ services:
     security_opt: ["no-new-privileges:true"]
     mem_limit: 256m
 
+  # Database GUI (pgAdmin 4): browse and edit tables, run SQL and EXPLAIN, and live
+  # dashboards for sessions, locks and transactions per second. PgHero covers slow
+  # queries and bloat; Studio covers quick table edits. Authelia guards the port, and
+  # pgAdmin keeps its own login on top. The Supabase database is pre-registered
+  # (pgadmin/servers.json) with a pgpass file, so it opens without typing a password.
+  pgadmin:
+    image: dpage/pgadmin4:9
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD}
+      PGADMIN_CONFIG_SERVER_MODE: "True"
+      PGADMIN_CONFIG_UPGRADE_CHECK_ENABLED: "False"
+      PGADMIN_CONFIG_ENHANCED_COOKIE_PROTECTION: "True"
+      PGADMIN_DISABLE_POSTFIX: "true"
+      GUNICORN_THREADS: "4"
+    volumes:
+      - ./data/pgadmin:/var/lib/pgadmin
+      - ./pgadmin/servers.json:/pgadmin4/servers.json:ro
+      - ./pgadmin/pgpass:/pgpass:ro
+    networks:
+      - default
+      - supabase
+    ports:
+      - "127.0.0.1:3011:80"
+    mem_limit: 512m
+
   glances:
     image: nicolargo/glances:4.5.6-full
     restart: unless-stopped

@@ -1,0 +1,15 @@
+{
+  "Servers": {
+    "1": {
+      "Name": "sphpnp (Supabase Postgres)",
+      "Group": "Servers",
+      "Host": "supabase-db",
+      "Port": 5432,
+      "MaintenanceDB": "postgres",
+      "Username": "postgres",
+      "PassFile": "/pgpass",
+      "SSLMode": "prefer",
+      "Comment": "The site's database. Writes here change the live site: prefer read-only queries."
+    }
+  }
+}

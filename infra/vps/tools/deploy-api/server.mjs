@@ -15,6 +15,7 @@ import { readdir, readlink, symlink, rename, rm, readFile, appendFile } from "no
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import path from "node:path";
+import { buildProgress } from "./progress.mjs";
 
 const run = promisify(execFile);
 
@@ -131,19 +132,43 @@ async function startBuild(user) {
   if (await buildRunning()) return { status: 409, body: { error: "a build is already running" } };
   // flock -n so this can never run alongside the 04:30 cron build; detached so the
   // request returns immediately and the build survives a restart of this service.
-  const child = execFile("flock", ["-n", BUILD_LOCK, BUILD_SCRIPT], { detached: true, stdio: "ignore" });
+  // FORCE_BUILD=1: a build started from the panel runs now, even in market hours (the
+  // script otherwise defers to 15:50 and exits at once, which looked like a dead button).
+  const child = execFile("flock", ["-n", BUILD_LOCK, BUILD_SCRIPT], { detached: true, stdio: "ignore", env: { ...process.env, FORCE_BUILD: "1" } });
   child.unref();
   await audit(`rebuild started by ${user}`);
   await notify("Site rebuild started", `Started from the admin panel by ${user}`);
   return { status: 202, body: { started: true } };
 }
 
+// build-YYYY-MM-DD-HHMM.log is named in IST when build-site.sh starts.
+const startedFromName = (name) => {
+  const m = /^build-(\d{4}-\d{2}-\d{2})-(\d{2})(\d{2})\.log$/.exec(name);
+  return m ? Date.parse(`${m[1]}T${m[2]}:${m[3]}:00+05:30`) : null;
+};
+
+async function lastResult() {
+  // Today's sync log, then yesterday's (a build that finished before midnight).
+  for (const back of [0, 1]) {
+    const day = new Date(Date.now() + 5.5 * 3600_000 - back * 86400_000).toISOString().slice(0, 10);
+    const text = await readFile(`/var/log/sphpnp-sync/${day}.log`, "utf8").catch(() => "");
+    const line = text.split("\n").filter((l) => / build-site /.test(l)).at(-1);
+    if (line) return line;
+  }
+  return null;
+}
+
 async function buildLog() {
   const files = await readdir(BUILD_LOGS).catch(() => []);
-  const newest = files.filter((f) => f.endsWith(".log")).sort().pop();
-  if (!newest) return { running: await buildRunning(), log: "" };
+  const newest = files.filter((f) => /^build-.*\.log$/.test(f)).sort().pop();
+  const running = await buildRunning();
+  if (!newest) return { running, log: "", progress: null, lastResult: await lastResult() };
   const text = await readFile(path.join(BUILD_LOGS, newest), "utf8").catch(() => "");
-  return { running: await buildRunning(), file: newest, log: text.split("\n").slice(-40).join("\n") };
+  // Per-page lines are the bulk of the log; the tail shown keeps the last few of them and
+  // every other line, so warnings and retries stay visible.
+  const lines = text.replace(/\x1b\[[0-9;]*m/g, "").split("\n");
+  const tail = lines.filter((l, i) => !/^(Saved|Prerendering) \//.test(l) || i >= lines.length - 6).slice(-40).join("\n");
+  return { running, file: newest, log: tail, progress: buildProgress(text, startedFromName(newest), Date.now(), running), lastResult: await lastResult() };
 }
 
 createServer(async (req, res) => {

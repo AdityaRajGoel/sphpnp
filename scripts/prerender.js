@@ -280,6 +280,11 @@ async function prerender() {
   GENERIC_TITLE = RAW_SHELL.match(/<title[^>]*>([^<]*)<\/title>/i)?.[1] ?? '';
   const app = express();
   // index: false - "/" must boot from the raw shell too, never a captured page.
+  // The screener universe as one file (jobs/screener-universe.sh writes it outside the
+  // release). Served here too, so each stock page reads one local file instead of
+  // making four paged database reads per capture - the build's heaviest load.
+  const universeFile = path.join(process.env.UNIVERSE_DIR || '/var/www/sphpnp-data', 'screener-universe.json');
+  app.get('/data/screener-universe.json', (req, res, next) => (fs.existsSync(universeFile) ? res.sendFile(universeFile) : next()));
   app.use(express.static(DIST_DIR, { index: false }));
   // Fallback for SPA routing: always the raw shell read above, never the
   // dist/index.html the "/" capture overwrites (see RAW_SHELL).
@@ -372,7 +377,8 @@ async function prerender() {
 
           fs.writeFileSync(filePath, html);
           done += 1;
-          console.log(`Saved ${filePath} (${done}/${total})`);
+          // t= lets the admin panel's deploy API work out pages per minute and time left.
+          console.log(`Saved ${filePath} (${done}/${total}) t=${Date.now()}`);
         }
       };
 

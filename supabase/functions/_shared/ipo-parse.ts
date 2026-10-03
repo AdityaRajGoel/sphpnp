@@ -338,6 +338,19 @@ export type IpoWatchParseResult = {
   tablesMatched: number;
 };
 
+/**
+ * Since 2026-10 IPO Watch runs one table for both boards, six columns:
+ *
+ *   Company | GMP* | Trend | Price Band | Est. Gain | Date
+ *
+ * with the status code and board glued to the name - "TNA Solutions (O) SME",
+ * "Jio Platform (U) Mainboard" - and dates with no year ("30-6 Oct"), which
+ * parseDateRange leaves null (Chittorgarh carries the dates). Columns are found by
+ * header text, not position, so either layout reads correctly.
+ */
+const NAME_TAG = /\s*\((CT|[OUCLP])\)\s*(SME|Mainboard)?\s*$/i;
+const STATUS_CODE: Record<string, IpoStatus> = { O: "open", CT: "open", C: "closed", L: "listed" };
+
 export function parseIpoWatch(html: string): IpoWatchParseResult {
   const rows: IpoWatchGmpRow[] = [];
   const listings: IpoWatchListingRow[] = [];
@@ -346,19 +359,28 @@ export function parseIpoWatch(html: string): IpoWatchParseResult {
   for (const { tableHtml, heading } of tablesWithHeadings(html)) {
     const allRows = tableRows(tableHtml);
     if (allRows.length < 2) continue;
-    const header = stripTags(allRows[0]).toLowerCase();
+    const headers = (rowCells(allRows[0]) ?? []).map((h) => h.toLowerCase());
+    const header = headers.join(" ");
+    const col = (test: (h: string) => boolean) => headers.findIndex(test);
 
-    const isGmpTable = header.includes("gmp") && header.includes("price band") && header.includes("status");
+    const isGmpTable = header.includes("gmp") && header.includes("price band");
     const isPerformanceTable = header.includes("gmp") && header.includes("listing price") && !header.includes("status");
     if (!isGmpTable && !isPerformanceTable) continue;
     tablesMatched++;
 
-    const board: Board = heading.toLowerCase().includes("sme") ? "sme" : "mainboard";
+    const headingBoard: Board = heading.toLowerCase().includes("sme") ? "sme" : "mainboard";
+    const gmpCol = col((h) => h.includes("gmp"));
+    const priceCol = col((h) => h.includes("price band"));
+    const estCol = col((h) => h.startsWith("est"));
+    const dateCol = col((h) => h.includes("date"));
+    const statusCol = col((h) => h.includes("status"));
 
     for (const row of allRows.slice(1)) {
       const values = rowCells(row);
       if (!values) continue;
-      const name = cleanIpoName(values[0] ?? "");
+      const rawName = values[0] ?? "";
+      const tag = rawName.match(NAME_TAG);
+      const name = cleanIpoName(tag ? rawName.slice(0, tag.index) : rawName);
       if (name.length < 2 || name === "-" || name === "--") continue;
 
       if (isPerformanceTable) {
@@ -367,17 +389,18 @@ export function parseIpoWatch(html: string): IpoWatchParseResult {
         continue;
       }
 
-      if (values.length < 7) continue;
-      const gmp = parseGmp(values[1] ?? "");
-      const [min, max] = priceBand(values[3] ?? "");
-      const estimated = amount(values[4] ?? "");
-      const [openDate, closeDate] = parseDateRange(values[5] ?? "");
-      const status = statusFromLabel((values[6] ?? "").toLowerCase());
+      if (values.length < headers.length) continue;
+      const [min, max] = priceBand(values[priceCol] ?? "");
+      // "₹76 (8.57%)": the price before the bracket; "₹- (0.00%)" is no estimate.
+      const estimated = estCol >= 0 ? amount((values[estCol] ?? "").split("(")[0]) : null;
+      const [openDate, closeDate] = dateCol >= 0 ? parseDateRange(values[dateCol] ?? "") : [null, null];
+      const board: Board = tag?.[2] ? (tag[2].toLowerCase() === "sme" ? "sme" : "mainboard") : headingBoard;
+      const status = tag ? STATUS_CODE[tag[1].toUpperCase()] ?? "upcoming" : statusFromLabel((values[statusCol] ?? "").toLowerCase());
 
       rows.push({
         slug: slugify(name), name, board, status,
         price_band_min: min, price_band_max: max, open_date: openDate, close_date: closeDate,
-        gmp, est_listing_price: estimated,
+        gmp: parseGmp(values[gmpCol] ?? ""), est_listing_price: estimated,
       });
     }
   }

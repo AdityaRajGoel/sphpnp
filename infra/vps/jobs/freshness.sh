@@ -46,7 +46,7 @@ Market snapshots|select max(fetched_at) from market_snapshots|4
 FX rates|select max(rate_date) from fx_rates|5
 CPI (MoSPI)|select max(period) from macro_monthly where series like 'CPI%'|75
 IIP (MoSPI)|select max(period) from macro_monthly where series like 'IIP%'|100
-WPI (MoSPI)|select max(period) from macro_monthly where series like 'WPI%'|60
+WPI (MoSPI)|select max(period) from macro_monthly where series like 'WPI%'|80
 Stock profiles (screener.in)|select max(screener_fetched_at) from stock_profiles|3
 Stock profiles (Tickertape)|select max(tickertape_fetched_at) from stock_profiles|3
 EOF

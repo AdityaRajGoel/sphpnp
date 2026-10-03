@@ -1,6 +1,9 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { describe, it, expect } from "vitest";
 import {
   parseDateRange,
+  parseIpoWatch,
   parseGmp,
   toCatalogueRow,
 } from "../../supabase/functions/_shared/ipo-parse";
@@ -110,5 +113,25 @@ describe("toCatalogueRow", () => {
     expect(row.price_band_max).toBe(105);
     expect(row.open_date).toBe("2026-09-10");
     expect(row).not.toHaveProperty("close_date");
+  });
+});
+
+describe("parseIpoWatch, single-table layout (2026-10)", () => {
+  const html = readFileSync(join(__dirname, "fixtures/ipo/ipowatch-gmp-2026-10.html"), "utf8");
+  const { rows, tablesMatched } = parseIpoWatch(html);
+  const bySlug = new Map(rows.map((r) => [r.slug, r]));
+
+  it("reads the table and every row", () => {
+    expect(tablesMatched).toBe(1);
+    expect(rows).toHaveLength(5);
+  });
+  it("takes board and status from the name tag, not a column", () => {
+    expect(bySlug.get("tna-solutions")).toMatchObject({ name: "TNA Solutions", board: "sme", status: "open", gmp: 6, price_band_max: 70, est_listing_price: 76 });
+    expect(bySlug.get("vishal-nirmiti")).toMatchObject({ board: "mainboard", status: "open", gmp: 20, est_listing_price: 240 });
+    expect(bySlug.get("srit-india")).toMatchObject({ board: "mainboard", status: "closed" });
+    expect(bySlug.get("jio-platform")).toMatchObject({ status: "upcoming", gmp: 125, price_band_min: null, est_listing_price: null });
+  });
+  it("leaves year-less dates null rather than guessing", () => {
+    expect(bySlug.get("tna-solutions")).toMatchObject({ open_date: null, close_date: null });
   });
 });
