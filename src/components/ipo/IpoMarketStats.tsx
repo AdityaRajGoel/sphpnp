@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import AnimatedNumber from "@/components/ui/animated-number";
 import { formatSubscription, gmpPercent, type Ipo } from "@/lib/ipo";
+import { formatCrore } from "@/lib/fundamentals";
 
 const mean = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : null);
 const signed = (v: number | null, digits = 1) => (v === null ? "—" : `${v >= 0 ? "+" : ""}${v.toFixed(digits)}%`);
@@ -82,7 +83,7 @@ export default function IpoMarketStats({ ipos, today }: { ipos: Ipo[]; today: st
         </Card>
         <Card className="p-4">
           <div className="text-xs text-muted-foreground">Raised by this year's listings</div>
-          <div className="mt-1 text-3xl font-bold tabular-nums">{s.raisedCr <= 0 ? "—" : `₹${s.raisedCr >= 1000 ? `${(s.raisedCr / 1000).toFixed(1)}K` : s.raisedCr.toFixed(0)} Cr`}</div>
+          <div className="mt-1 text-3xl font-bold tabular-nums">{s.raisedCr <= 0 ? "—" : formatCrore(s.raisedCr)}</div>
           <div className="text-xs text-muted-foreground">where issue size is known</div>
         </Card>
       </div>

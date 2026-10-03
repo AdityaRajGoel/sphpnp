@@ -2,6 +2,7 @@ import { motion } from "motion/react";
 import { Link } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import type { ScreenerStock } from "@/hooks/useScreenerStocks";
+import { formatCrore } from "@/lib/fundamentals";
 
 /** Symmetric steps either side of flat: the same move up or down gets the same strength of colour. */
 const STEPS = [0.1, 1, 2, 3];
@@ -18,11 +19,7 @@ export const heatColor = (pct: number): string => {
 /** Strong fills carry white text in both themes; pale ones the page's own text colour. */
 export const heatTextColor = (pct: number): string => (Math.abs(pct) >= 1 ? "#ffffff" : "hsl(var(--foreground))");
 
-const formatCap = (cr: number) => {
-  if (cr >= 100000) return `₹${(cr / 100000).toFixed(1)}L Cr`;
-  if (cr >= 1000) return `₹${(cr / 1000).toFixed(0)}K Cr`;
-  return `₹${cr} Cr`;
-};
+const formatCap = (cr: number) => formatCrore(cr);
 
 type Props = {
   stocks: ScreenerStock[];

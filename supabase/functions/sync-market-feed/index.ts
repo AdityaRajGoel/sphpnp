@@ -17,6 +17,7 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { AMFI_NAVALL_URL, parseAmfiNavAll } from "../_shared/amfi.ts";
 import * as XLSX from "npm:xlsx@0.18.5";
+import { fiiStatsUrl, parseFiiStats, weekdaysBetween, type FiiDerivativeRow } from "../_shared/fii-stats.ts";
 
 const BROWSER_HEADERS = {
   "User-Agent":
@@ -104,37 +105,50 @@ async function fetchFlowsFromNiftytrader(): Promise<FlowRow[]> {
   ];
 }
 
-// FII derivatives stats: daily .xls with gross buy/sell per instrument.
-// Sum the four top-level instrument rows (sub-rows like BANKNIFTY FUTURES
-// roll up into INDEX FUTURES, so summing them too would double count).
-const FNO_CATEGORIES = ["INDEX FUTURES", "STOCK FUTURES", "INDEX OPTIONS", "STOCK OPTIONS"];
-const MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-
-async function fetchFiiFnoFlow(activityDateISO: string): Promise<FlowRow> {
-  // "2026-07-09" -> "09-Jul-2026"
-  const [y, m, d] = activityDateISO.split("-");
-  const nseDate = `${d}-${MONTH_NAMES[parseInt(m, 10) - 1]}-${y}`;
-  const url = `https://nsearchives.nseindia.com/content/fo/fii_stats_${nseDate}.xls`;
-  const res = await fetch(url, { headers: BROWSER_HEADERS });
+// FII derivatives stats: NSE's daily .xls, parsed by _shared/fii-stats.ts into the four
+// top-level instruments. The gross totals still feed market_flows (fii_fno); the
+// per-instrument rows go to fii_derivatives_daily.
+async function fetchFiiStats(isoDate: string): Promise<FiiDerivativeRow[] | null> {
+  const res = await fetch(fiiStatsUrl(isoDate), { headers: BROWSER_HEADERS });
+  if (res.status === 404) return null; // a holiday: NSE publishes no file
   if (!res.ok) throw new Error(`fii_stats xls -> ${res.status}`);
   const wb = XLSX.read(await res.arrayBuffer(), { type: "array" });
-  const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1 }) as unknown[][];
+  const rows = parseFiiStats(XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1 }) as unknown[][], isoDate);
+  if (rows.length === 0) throw new Error("fii_stats: empty parse");
+  return rows;
+}
 
-  let buy = 0, sell = 0, matched = 0;
-  for (const r of rows) {
-    if (FNO_CATEGORIES.includes(String(r?.[0] ?? "").trim().toUpperCase())) {
-      buy += parseFloat(String(r[2]));
-      sell += parseFloat(String(r[4]));
-      matched++;
+const fnoFlow = (rows: FiiDerivativeRow[]): FlowRow => ({
+  activity_date: rows[0].trade_date,
+  category: "fii_fno",
+  buy_cr: Math.round(rows.reduce((a, r) => a + r.buy_cr, 0) * 100) / 100,
+  sell_cr: Math.round(rows.reduce((a, r) => a + r.sell_cr, 0) * 100) / 100,
+});
+
+// Backfill: up to BACKFILL_BATCH weekdays per call from `from`, oldest first, then
+// the caller resumes at `next`. Spaced out so the archive sees one file at a time.
+const BACKFILL_BATCH = 60;
+const BACKFILL_DELAY_MS = 400;
+
+async function backfillFiiStats(supabase: ReturnType<typeof createClient>, from: string, to: string) {
+  const days = weekdaysBetween(from, to);
+  const batch = days.slice(0, BACKFILL_BATCH);
+  let stored = 0, holidays = 0;
+  const failed: string[] = [];
+  for (const day of batch) {
+    try {
+      const rows = await fetchFiiStats(day);
+      if (!rows) { holidays += 1; continue; }
+      const { error } = await supabase.from("fii_derivatives_daily").upsert(rows, { onConflict: "trade_date,instrument" });
+      if (error) throw error;
+      stored += 1;
+    } catch (e) {
+      failed.push(`${day}: ${String(e).slice(0, 80)}`);
     }
+    await new Promise((r) => setTimeout(r, BACKFILL_DELAY_MS));
   }
-  if (matched === 0 || !isFinite(buy) || !isFinite(sell)) throw new Error("fii_stats: empty parse");
-  return {
-    activity_date: activityDateISO,
-    category: "fii_fno",
-    buy_cr: Math.round(buy * 100) / 100,
-    sell_cr: Math.round(sell * 100) / 100,
-  };
+  const next = days[BACKFILL_BATCH] ?? null;
+  return { stored, holidays, failed, next, done: next === null };
 }
 
 // AMFI daily NAVs for a curated set of widely-held schemes (Direct-Growth).
@@ -285,6 +299,19 @@ Deno.serve(async (req) => {
 
   const report: Record<string, unknown> = {};
 
+  // {"fii_backfill": {"from": "2018-01-01", "to": "2026-07-08"}} runs only the archive
+  // backfill, one batch per call (see backfillFiiStats).
+  const body = await req.json().catch(() => ({})) as { fii_backfill?: { from?: string; to?: string } };
+  if (body.fii_backfill) {
+    const { from, to } = body.fii_backfill;
+    const iso = /^\d{4}-\d{2}-\d{2}$/;
+    if (!from || !to || !iso.test(from) || !iso.test(to) || from > to) {
+      return new Response(JSON.stringify({ error: "fii_backfill needs ISO from <= to" }), { status: 400, headers: { ...cors, "Content-Type": "application/json" } });
+    }
+    const result = await backfillFiiStats(supabase, from, to);
+    return new Response(JSON.stringify({ ok: true, ...result }), { headers: { ...cors, "Content-Type": "application/json" } });
+  }
+
   // ── FII/DII flows ──────────────────────────────────────────────
   try {
     let flows: FlowRow[];
@@ -299,7 +326,11 @@ Deno.serve(async (req) => {
     }
     // FII F&O rides on the same trading date as the cash figures
     try {
-      flows.push(await fetchFiiFnoFlow(flows[0].activity_date));
+      const fii = await fetchFiiStats(flows[0].activity_date);
+      if (!fii) throw new Error("fii_stats: no file for the flows date");
+      flows.push(fnoFlow(fii));
+      const { error: derivError } = await supabase.from("fii_derivatives_daily").upsert(fii, { onConflict: "trade_date,instrument" });
+      if (derivError) throw derivError;
       report.fii_fno = "ok";
     } catch (e) {
       report.fii_fno_error = String(e);

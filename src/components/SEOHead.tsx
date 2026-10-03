@@ -111,6 +111,22 @@ const SEOHead = ({
     "email": PRIMARY_EMAIL,
     "currenciesAccepted": "INR",
     "paymentAccepted": "Bank Transfer, UPI, Cheque",
+    // Checkable facts answer engines quote when asked "is Parasram registered?":
+    // the registrations, memberships and the firm this branch belongs to.
+    "foundingDate": "1994",
+    "identifier": [
+      { "@type": "PropertyValue", "propertyID": "SEBI registration", "value": "INZ000220838" },
+      { "@type": "PropertyValue", "propertyID": "AMFI ARN", "value": "ARN-35616" },
+    ],
+    "memberOf": [
+      { "@type": "Organization", "name": "National Stock Exchange of India", "url": "https://www.nseindia.com" },
+      { "@type": "Organization", "name": "BSE", "url": "https://www.bseindia.com" },
+      { "@type": "Organization", "name": "Multi Commodity Exchange of India", "url": "https://www.mcxindia.com" },
+      { "@type": "Organization", "name": "Metropolitan Stock Exchange of India", "url": "https://www.msei.in" },
+      { "@type": "Organization", "name": "NSDL", "url": "https://nsdl.co.in" },
+      { "@type": "Organization", "name": "CDSL", "url": "https://www.cdslindia.com" },
+    ],
+    "parentOrganization": { "@type": "Organization", "name": "Shri Parasram Holdings Pvt. Ltd.", "url": "https://www.parasramindia.com" },
     // No aggregateRating here on purpose. Google's review-snippet policy bars a
     // business from marking up its own aggregate rating, and bars markup for
     // content not visible on the page - this block was both. Real Google reviews

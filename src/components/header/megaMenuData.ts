@@ -82,6 +82,7 @@ export const megaMenuItems: MegaMenuItem[] = [
         title: "Overview",
         items: [
           { label: "Market Pulse", href: "/market-pulse", icon: Gauge, description: "Valuations, FII flows and deals" },
+          { label: "FII & DII Data", href: "/fii-dii-data", icon: Landmark, description: "Daily institutional buying and selling" },
           { label: "Indices", href: "/indices", icon: LineChart, description: "Nifty and sector index levels, returns, P/E" },
           { label: "Commodities", href: "/commodities", icon: Gem, description: "MCX gold, silver, crude and metals" },
           { label: "Commodity Research", href: "/commodity-research", icon: Gem, description: "Ten-year returns, volatility and seasonality" },
@@ -225,7 +226,7 @@ const pathOf = (href: string) => href.split("#")[0];
 // Deep pages that belong to a section without being listed in its menu.
 const SECTION_PREFIXES: Record<string, string[]> = {
   IPO: ["/ipo"],
-  Markets: ["/stock/", "/indices", "/sectors/", "/ipo-pipeline", "/markets/", "/commodities", "/commodity-research", "/global-markets"],
+  Markets: ["/stock/", "/indices", "/sectors/", "/ipo-pipeline", "/markets/", "/commodities", "/commodity-research", "/global-markets", "/fii-dii-data"],
   Learn: ["/learn"],
 };
 

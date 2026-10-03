@@ -55,6 +55,14 @@ J=/opt/sphpnp/jobs/sync.sh
 5  9,14,19 * * 1-6 deploy flock -n /tmp/sync-ipo-details.lock $J once sync-ipo-details '{"force":false}' 150
 45 19 * * *     deploy flock -n /tmp/sync-ipo-pipeline.lock $J once sync-ipo-pipeline '{"backfill":false}' 150
 50 8,13,18 * * 1-6 deploy flock -n /tmp/ipo-browser.lock /opt/sphpnp/jobs/ipo-browser.sh
+# MCX futures from MCX's own market watch in headless Chromium (MCX's CDN refuses plain
+# clients): every 5 minutes through MCX hours, which run to 23:30/23:55.
+*/5 9-23 * * 1-5 deploy flock -n /tmp/host-mcx.lock /opt/sphpnp/jobs/host-mcx.sh
+# The screener universe as one static file (speed plan step 2): every 10 minutes in
+# market hours, hourly otherwise; browsers fall back to the tables if it goes 2h stale.
+*/10 9-15 * * 1-5 deploy flock -n /tmp/screener-universe.lock /opt/sphpnp/jobs/screener-universe.sh
+5 0-8,16-23 * * 1-5 deploy flock -n /tmp/screener-universe.lock /opt/sphpnp/jobs/screener-universe.sh
+5 * * * 0,6 deploy flock -n /tmp/screener-universe.lock /opt/sphpnp/jobs/screener-universe.sh
 
 # --- Forecasts (Saturday 07:30 IST) ---
 30 7  * * 6     deploy flock -n /tmp/kronos.lock /opt/sphpnp/jobs/kronos.sh

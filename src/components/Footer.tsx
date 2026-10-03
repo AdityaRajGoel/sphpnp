@@ -30,6 +30,7 @@ const toolLinks: FooterLink[] = [
   { label: "Indices", href: "/indices" },
   { label: "Commodities", href: "/commodities" },
   { label: "Commodity Research", href: "/commodity-research" },
+  { label: "FII & DII Data", href: "/fii-dii-data" },
   { label: "Global Markets", href: "/global-markets" },
   { label: "Mutual Funds", href: "/mutual-funds" },
   { label: "Stock Screener", href: "/screener" },

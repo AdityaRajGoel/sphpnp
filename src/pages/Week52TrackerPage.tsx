@@ -75,7 +75,7 @@ function ExtremeTable({ rows, side }: { rows: Row[]; side: Side }) {
                 {distance <= AT && <span className={`ml-2 rounded px-1.5 py-0.5 text-[10px] font-bold ${side === "high" ? "bg-secondary/15 text-secondary" : "bg-destructive/15 text-destructive"}`}>AT {side.toUpperCase()}</span>}
                 <div className="max-w-[200px] truncate text-xs text-muted-foreground">{s.name} · {s.sector}</div>
               </td>
-              <td className="px-3 py-2 text-right tabular-nums">₹{s.price.toLocaleString("en-IN", { maximumFractionDigits: 2 })}</td>
+              <td className="px-3 py-2 text-right tabular-nums">₹{s.price.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
               <td className={`px-3 py-2 text-right tabular-nums ${s.change_pct >= 0 ? "text-secondary" : "text-destructive"}`}>{s.change_pct >= 0 ? "+" : ""}{s.change_pct.toFixed(2)}%</td>
               <td className="px-3 py-2 text-right font-semibold tabular-nums">{distance.toFixed(1)}%</td>
               <td className="px-3 py-2"><div className="flex items-center gap-2"><RangeBar position={position} /><span className="text-xs tabular-nums text-muted-foreground">{position.toFixed(0)}</span></div></td>
@@ -125,7 +125,7 @@ const Week52TrackerPage = () => {
     <PageTransition>
     <div className="min-h-screen bg-background">
       <SEOHead
-        title="52-Week High Low Tracker for NSE Stocks | Parasram India"
+        title="52 Week High Stocks Today: NSE 52-Week High & Low List"
         description="NSE stocks at and near their 52-week highs and lows, with the sectors they cluster in, one-year return, 200-day trend, RSI, delivery and volume spikes."
         breadcrumbs={[{ name: "Home", url: "/" }, { name: "52-Week High/Low Tracker" }]}
         jsonLd={{

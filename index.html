@@ -2,6 +2,20 @@
 <html lang="en-IN">
 
 <head>
+  <!-- Google tag (gtag.js). Consent Mode starts denied, so no analytics cookies
+       until the visitor accepts in the cookie banner (src/lib/analytics-consent.ts
+       sends the update). Not configured under automation, so the prerender's
+       headless captures do not count as visits. -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-4XERS3Y19Y"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('consent', 'default', { ad_storage: 'denied', ad_user_data: 'denied', ad_personalization: 'denied', analytics_storage: 'denied' });
+    if (!navigator.webdriver) {
+      gtag('js', new Date());
+      gtag('config', 'G-4XERS3Y19Y');
+    }
+  </script>
   <meta charset="UTF-8" />
   <meta http-equiv="content-language" content="en-IN" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
@@ -102,7 +116,7 @@
   <div id="root">
     <noscript>
       <h1>Parasram India - Best Stock Broker in Panipat</h1>
-      <p>SEBI registered stock broker since 1970. Open free Demat account for Stocks, Mutual Funds, IPO, F&amp;O, Commodities and Unlisted Shares trading.</p>
+      <p>SEBI-registered stock broker, serving investors since 1970. Open free Demat account for Stocks, Mutual Funds, IPO, F&amp;O, Commodities and Unlisted Shares trading.</p>
       <nav>
         <ul>
           <li><a href="/about">About Us - 50+ Years Legacy</a></li>

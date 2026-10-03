@@ -5,6 +5,7 @@ import { getFundamentalsSummaries, type FundamentalsSummary } from "@/lib/screen
 import { getRiskSummaries, type RiskSummary } from "@/lib/screener-risk";
 import { getScoreSummaries, type ScoreSummary } from "@/lib/screener-scores";
 import { buildMetricRows, type MetricRow } from "@/lib/screener-metrics";
+import { fetchUniverseFile } from "@/lib/universe-file";
 
 /**
  * The whole tracked universe as joined metric rows, for surfaces that are not
@@ -15,21 +16,26 @@ import { buildMetricRows, type MetricRow } from "@/lib/screener-metrics";
  * A failing source leaves its part of each row null instead of failing the
  * whole universe, the same rule every per-stock panel follows.
  */
+const toQuotes = (rows: unknown[]): ScreenerStock[] =>
+  currentStocks((rows as ScreenerStock[]).map((s) => ({
+    ...s,
+    sector: s.sector || "General",
+    price: Number(s.price) || 0,
+    change_pct: Number(s.change_pct) || 0,
+    volume: Number(s.volume) || 0,
+    pe: Number(s.pe) || 0,
+    market_cap: Number(s.market_cap) || 0,
+    high_52: Number(s.high_52) || 0,
+    low_52: Number(s.low_52) || 0,
+  })));
+
 async function loadUniverse(): Promise<Map<string, MetricRow>> {
+  // Every part reads the cached static file first (lib/universe-file), one request in all.
+  const file = await fetchUniverseFile();
   const [quotes, fundamentals, risk, scores] = await Promise.all([
-    supabase.from("screener_stocks").select("*").then(({ data, error }) => {
+    file ? toQuotes(file.quotes) : supabase.from("screener_stocks").select("*").then(({ data, error }) => {
       if (error) throw new Error(error.message);
-      return currentStocks(((data ?? []) as unknown as ScreenerStock[]).map((s) => ({
-        ...s,
-        sector: s.sector || "General",
-        price: Number(s.price) || 0,
-        change_pct: Number(s.change_pct) || 0,
-        volume: Number(s.volume) || 0,
-        pe: Number(s.pe) || 0,
-        market_cap: Number(s.market_cap) || 0,
-        high_52: Number(s.high_52) || 0,
-        low_52: Number(s.low_52) || 0,
-      })));
+      return toQuotes(data ?? []);
     }),
     getFundamentalsSummaries().catch(() => new Map<string, FundamentalsSummary>()),
     getRiskSummaries().catch(() => new Map<string, RiskSummary>()),

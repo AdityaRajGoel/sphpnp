@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { Link } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import AnimatedNumber from "@/components/ui/animated-number";
 import LiveIndicator from "@/components/ui/live-indicator";
@@ -27,7 +28,7 @@ export default function FiiDiiCashCard() {
     <Card className="p-5">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h3 className="font-semibold">FII &amp; DII cash market</h3>
-        <span className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">Provisional, {date} · NSE, BSE and MSEI combined <LiveIndicator updatedAt={data.fetched_at} staleAfterMinutes={60} /></span>
+        <span className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">Provisional, {date} · NSE, BSE and MSEI combined <LiveIndicator updatedAt={data.fetched_at} staleAfterMinutes={60} /> <Link to="/fii-dii-data" className="font-medium text-secondary hover:underline">Full history</Link></span>
       </div>
       <div className="mt-4 grid gap-5 sm:grid-cols-2">
         {data.rows.map((r) => (

@@ -60,6 +60,21 @@ export function dropRuntimePreloads(html) {
   return html.replace(/<link\b[^>]*\brel="modulepreload"[^>]*\bas="script"[^>]*>/g, "");
 }
 
+/**
+ * Ships the page's query data and drops the splash. The static HTML is the
+ * whole page, so it is shown from the first paint; src/main.tsx renders the
+ * app off-screen from this data and swaps it in when ready. `<` is escaped so
+ * no string in the data can close the script element.
+ */
+export function shipPageState(html, stateJson) {
+  let out = html.replace(/<div id="app-splash"(?![^>]*display:none)/, '<div id="app-splash" style="display:none"');
+  if (stateJson) {
+    const block = `<script type="application/json" id="rq-state">${stateJson.replace(/</g, "\\u003c")}</script>`;
+    out = out.replace(/<\/body>(?![\s\S]*<\/body>)/, `${block}</body>`);
+  }
+  return out;
+}
+
 export function cleanCapturedHtml(html, port, route) {
   return dedupeJsonLd(dropRuntimePreloads(dropHeroPreload(stripCaptureOrigin(html, port), route)));
 }

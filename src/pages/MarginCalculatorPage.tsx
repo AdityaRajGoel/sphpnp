@@ -96,8 +96,8 @@ const MarginCalculatorPage = () => {
     <PageTransition>
     <div className="min-h-screen bg-background">
       <SEOHead 
-        title="NSE F&O Margin Calculator: SPAN + Exposure | Parasram India"
-        description="Free NSE F&O margin calculator with current lot sizes: SPAN and exposure margin, leverage and capital for NIFTY, BANKNIFTY and stock futures."
+        title="F&O Margin Calculator: NSE SPAN, MCX & Margin List"
+        description="Free F&O margin calculator: NSE SPAN and exposure margin, MCX commodity margin, and the margin list for every contract with current lot sizes."
         faqItems={MARGIN_FAQ}
         breadcrumbs={[
           { name: "Home", url: "/" },

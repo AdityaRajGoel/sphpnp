@@ -158,6 +158,8 @@ const CONSTITUENT_FILES: Record<string, string> = {
   "NIFTY FINANCIAL SERVICES": "ind_niftyfinancelist.csv", "NIFTY PSU BANK": "ind_niftypsubanklist.csv", "NIFTY MEDIA": "ind_niftymedialist.csv",
   "NIFTY HEALTHCARE": "ind_niftyhealthcarelist.csv", "NIFTY OIL & GAS": "ind_niftyoilgaslist.csv", "NIFTY CONSUMER DURABLES": "ind_niftyconsumerdurableslist.csv",
   "NIFTY PRIVATE BANK": "ind_nifty_privatebanklist.csv",
+  // Ranks 501-750, and the 750 together: the screener universe (fetch-screener-data).
+  "NIFTY MICROCAP 250": "ind_niftymicrocap250_list.csv", "NIFTY TOTAL MARKET": "ind_niftytotalmarket_list.csv",
 };
 
 const MACRO_SERIES = new Set(["CPI (Combined)", "IIP (General)", "WPI (All commodities)"]);

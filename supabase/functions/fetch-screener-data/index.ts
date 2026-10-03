@@ -413,10 +413,18 @@ async function fetchBatchQuotes(symbols: string[], crumb: string, cookie: string
  * refreshed from NSE), so large, mid and small caps all reach the screener.
  * A failed read keeps the hand-picked list rather than emptying the screener.
  */
+// The NIFTY Total Market's 750 (the NIFTY 500 plus the Microcap 250), or the NIFTY 500
+// until the constituents sync has stored the larger list.
+const UNIVERSE_INDICES = ["NIFTY TOTAL MARKET", "NIFTY 500"];
+
 async function loadUniverse(sb: ReturnType<typeof createClient>): Promise<UniverseStock[]> {
-  const { data, error } = await sb.from("index_constituents").select("symbol,company,industry").eq("index_name", "NIFTY 500");
-  if (error) { console.error("universe: NIFTY 500 read failed, using the hand-picked list:", error.message); return NSE_SYMBOLS; }
-  return mergeUniverse(NSE_SYMBOLS, (data ?? []) as { symbol: string; company: string | null; industry: string | null }[]);
+  for (const index of UNIVERSE_INDICES) {
+    const { data, error } = await sb.from("index_constituents").select("symbol,company,industry").eq("index_name", index);
+    if (error) { console.error(`universe: ${index} read failed:`, error.message); continue; }
+    if ((data ?? []).length >= 400) return mergeUniverse(NSE_SYMBOLS, data as { symbol: string; company: string | null; industry: string | null }[]);
+  }
+  console.error("universe: no index list stored, using the hand-picked list");
+  return NSE_SYMBOLS;
 }
 
 async function processBatch(stocks: UniverseStock[], crumb: string, cookie: string, batchSize = 15, delayMs = 400) {

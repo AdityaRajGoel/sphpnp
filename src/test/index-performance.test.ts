@@ -82,3 +82,13 @@ describe("monthTicks over several years", () => {
     expect(ticks.length).toBeLessThanOrEqual(6);
   });
 });
+
+describe("annualised at the start of the stored history", () => {
+  it("counts a history that begins a day after the anchor, over the span it covers", () => {
+    const closes = [{ trade_date: "2016-10-03", close: 100 }, { trade_date: "2026-10-02", close: 200 }];
+    const r = annualised(closes, 10)!;
+    expect(r).toBeGreaterThan(7.1);
+    expect(r).toBeLessThan(7.25);
+    expect(annualised([{ trade_date: "2016-11-01", close: 100 }, { trade_date: "2026-10-02", close: 200 }], 10)).toBeNull();
+  });
+});

@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import PriceChart from "@/components/charts/PriceChart";
+import { formatCrore } from "@/lib/fundamentals";
 const AIAnalysisModal = lazy(() => import("@/components/AIAnalysisModal"));
 // Split out: KLineChart is browser-only and ~40kB, and most visitors never open
 // the advanced view. Lazy here keeps it off the critical path for everyone else.
@@ -47,12 +48,7 @@ const TIME_RANGES: { key: TimeRange; label: string }[] = [
   { key: "5y", label: "5Y" },
 ];
 
-const formatMarketCap = (cr: number) => {
-  if (cr >= 100000) return `₹${(cr / 100000).toFixed(1)}L Cr`;
-  if (cr >= 1000) return `₹${(cr / 1000).toFixed(0)}K Cr`;
-  if (cr > 0) return `₹${cr.toFixed(0)} Cr`;
-  return "-";
-};
+const formatMarketCap = (cr: number) => (cr > 0 ? formatCrore(cr) : "-");
 
 type Props = { className?: string };
 

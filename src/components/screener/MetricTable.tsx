@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/card";
 import WatchlistButton from "@/components/WatchlistButton";
 import type { ScreenerStock } from "@/hooks/useScreenerStocks";
 import { displayMetric, metricTone, sortByMetric, type Metric, type MetricRow } from "@/lib/screener-metrics";
+import AiAnalysisButton from "@/components/screener/AiAnalysisButton";
 
 type Props = {
   rows: ScreenerStock[];
@@ -13,6 +14,8 @@ type Props = {
   /** The footnote: what the columns are computed from and what a dash means. */
   note: string;
   onOpen?: (symbol: string) => void;
+  /** Opens the AI analysis for a row; adds the AI column when given. */
+  onAnalyse?: (symbol: string) => void;
 };
 
 /**
@@ -20,7 +23,7 @@ type Props = {
  * scores and custom views. Missing figures sort last in both directions and
  * render as a dash, never zero.
  */
-export default function MetricTable({ rows, metricRows, columns, note, onOpen }: Props) {
+export default function MetricTable({ rows, metricRows, columns, note, onOpen, onAnalyse }: Props) {
   const [sortId, setSortId] = useState<string | null>(null);
   const [dir, setDir] = useState<"asc" | "desc">("desc");
   const sortMetric = columns.find((c) => c.id === sortId) ?? null;
@@ -57,6 +60,7 @@ export default function MetricTable({ rows, metricRows, columns, note, onOpen }:
                   </button>
                 </th>
               ))}
+              {onAnalyse && <th className="px-3 py-3 text-right font-medium text-muted-foreground">AI</th>}
             </tr>
           </thead>
           <tbody>
@@ -90,6 +94,7 @@ export default function MetricTable({ rows, metricRows, columns, note, onOpen }:
                       </td>
                     );
                   })}
+                  {onAnalyse && <td className="px-3 py-2 text-right"><AiAnalysisButton symbol={s.symbol} name={s.name} onAnalyse={onAnalyse} /></td>}
                 </tr>
               );
             })}

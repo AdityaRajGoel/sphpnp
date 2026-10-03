@@ -2,6 +2,7 @@ import type { ScreenerStock } from "@/hooks/useScreenerStocks";
 import type { FundamentalsSummary } from "@/lib/screener-fundamentals";
 import type { RiskSummary } from "@/lib/screener-risk";
 import type { ScoreSummary } from "@/lib/screener-scores";
+import { formatCrore } from "@/lib/fundamentals";
 
 /**
  * One registry of every per-stock number the site holds - live quote,
@@ -204,8 +205,8 @@ export function formatMetric(value: number | null, unit: MetricUnit): string {
     case "signed_pct": return `${value > 0 ? "+" : ""}${value.toFixed(1)}%`;
     case "points": return `${value > 0 ? "+" : ""}${value.toFixed(1)}`;
     case "sigma": return `${value > 0 ? "+" : ""}${value.toFixed(1)}σ`;
-    case "rupees": return `₹${value.toLocaleString("en-IN", { maximumFractionDigits: 2 })}`;
-    case "crore": return value >= 1000 ? `₹${(value / 1000).toFixed(1)}K Cr` : `₹${value.toFixed(0)} Cr`;
+    case "rupees": return `₹${value.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    case "crore": return formatCrore(value);
     case "percentile": return value.toFixed(0);
     case "rank": return `#${value.toFixed(0)}`;
     case "number": return value.toFixed(1);

@@ -32,3 +32,53 @@ export function rememberPrerenderedHeight(selector: string): void {
 export function prerenderedHeight(pathname: string): number | undefined {
   return prerenderedHeights.get(pathname);
 }
+
+/** The page's query data, written into the static HTML by scripts/prerender.js. */
+export const PRERENDER_STATE_ID = "rq-state";
+const MAX_QUERY_CHARS = 150_000;
+const MAX_TOTAL_CHARS = 400_000;
+
+/** True when a value survives JSON unchanged: no Map, Set, Date or class instance in it. */
+export function isPlainJson(value: unknown, depth = 0): boolean {
+  if (value === null || typeof value === "string" || typeof value === "boolean") return true;
+  if (typeof value === "number") return Number.isFinite(value);
+  if (typeof value !== "object" || depth > 12) return false;
+  if (Array.isArray(value)) return value.every((v) => isPlainJson(v, depth + 1));
+  const proto = Object.getPrototypeOf(value);
+  if (proto !== Object.prototype && proto !== null) return false;
+  return Object.values(value as Record<string, unknown>).every((v) => v === undefined || isPlainJson(v, depth + 1));
+}
+
+type Dehydrated = { mutations: unknown[]; queries: { queryHash: string; state: { data?: unknown; status: string } }[] };
+
+/**
+ * The queries worth shipping in the page: successful, JSON-safe, and small
+ * enough. A page's own data comes first; the biggest are dropped until the
+ * total fits, so one universe-wide list cannot double the HTML.
+ */
+export function pickDehydrated<T extends Dehydrated>(state: T): T {
+  const sized = state.queries
+    .filter((q) => q.state.status === "success" && q.state.data !== undefined && isPlainJson(q.state.data))
+    .map((q) => ({ q, chars: JSON.stringify(q).length }))
+    .filter(({ chars }) => chars <= MAX_QUERY_CHARS)
+    .sort((a, b) => a.chars - b.chars);
+  const kept: T["queries"] = [];
+  let total = 0;
+  for (const { q, chars } of sized) {
+    if (total + chars > MAX_TOTAL_CHARS) break;
+    kept.push(q);
+    total += chars;
+  }
+  return { ...state, mutations: [], queries: kept };
+}
+
+/** The shipped query data, or null on a page that was not prerendered. */
+export function readPrerenderedState(): unknown {
+  const el = typeof document === "undefined" ? null : document.getElementById(PRERENDER_STATE_ID);
+  if (!el?.textContent) return null;
+  try {
+    return JSON.parse(el.textContent);
+  } catch {
+    return null;
+  }
+}

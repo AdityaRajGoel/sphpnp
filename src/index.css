@@ -561,3 +561,16 @@ input[type="range"]::-moz-range-thumb {
   :root .text-\[9px\],
   :root .text-\[10px\] { font-size: 11px; }
 }
+
+/* Phones: data tables in a scrolling card cut their third column mid-number at
+   390px (screener, index constituents, world board, 52-week tracker; 3 Oct
+   audit), because desktop cell padding (px-3/px-4) spent ~60px on gutters.
+   Tighter cells let the name, price and change columns fit; the rest still
+   scrolls. Only tables inside a scroll container, so card layouts are untouched. */
+@media (max-width: 639px) {
+  :root :is(.overflow-auto, .overflow-x-auto) table :is(th, td) {
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+  }
+  :root :is(.overflow-auto, .overflow-x-auto) table :is(th, td):first-child { padding-left: 0.75rem; }
+}

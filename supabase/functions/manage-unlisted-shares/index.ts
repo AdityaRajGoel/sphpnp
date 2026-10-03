@@ -43,6 +43,11 @@ function sanitizeNumber(val: unknown): number { const num = Number(val); return 
 const ALLOWED_MIME_TYPES = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp', 'image/svg+xml', 'image/gif']
 const MAX_FILE_SIZE = 2 * 1024 * 1024
 
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/
+// Mirror the admin form's options (src/components/admin/MarketDataManager.tsx).
+const FLOW_CATEGORIES = ['fii_cash', 'dii_cash', 'fii_fno', 'mf_activity']
+const ACTION_TYPES = ['Dividend', 'Bonus', 'Split', 'Buyback', 'Rights', 'Results', 'AGM', 'Other']
+
 function safeErrorResponse(status: number, message: string) {
   return new Response(JSON.stringify({ success: false, error: message }), {
     status, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -204,6 +209,49 @@ Deno.serve(async (req) => {
       if (!data.id || typeof data.id !== 'string') return safeErrorResponse(400, 'Invalid lead ID')
       const { error } = await supabase.from('account_leads').delete().eq('id', data.id)
       if (error) { console.error('Delete lead error:', error); return safeErrorResponse(500, 'Failed to delete lead') }
+      return new Response(JSON.stringify({ success: true }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    }
+
+    // ---- Market data (admin "Market Data" tab) ----
+    // These tables only accept writes from a database admin, and this page signs
+    // in with the admin password instead, so its direct writes were refused (and a
+    // refused delete looked like a success). The password check above guards these.
+    if (action === 'save_flows') {
+      const rows = Array.isArray(data.rows) ? data.rows : []
+      const clean = rows.slice(0, FLOW_CATEGORIES.length).map((r: Record<string, unknown>) => ({
+        activity_date: sanitizeString(r.activity_date, 10),
+        category: sanitizeString(r.category, 20),
+        buy_cr: sanitizeNumber(r.buy_cr),
+        sell_cr: sanitizeNumber(r.sell_cr),
+      }))
+      if (!clean.length || clean.some((r) => !ISO_DATE.test(r.activity_date) || !FLOW_CATEGORIES.includes(r.category) || r.buy_cr < 0 || r.sell_cr < 0)) {
+        return safeErrorResponse(400, 'Invalid flow rows')
+      }
+      const { error } = await supabase.from('market_flows').upsert(clean, { onConflict: 'activity_date,category' })
+      if (error) { console.error('Save flows error:', error); return safeErrorResponse(500, 'Failed to save flows') }
+      return new Response(JSON.stringify({ success: true, saved: clean.length }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    }
+
+    if (action === 'add_corporate_action') {
+      const row = {
+        company: sanitizeString(data.company, 120),
+        action_type: sanitizeString(data.action_type, 20),
+        details: sanitizeString(data.details, 500),
+        ex_date: sanitizeString(data.ex_date, 10),
+      }
+      if (!row.company || !row.details || !ACTION_TYPES.includes(row.action_type) || !ISO_DATE.test(row.ex_date)) {
+        return safeErrorResponse(400, 'Invalid corporate action')
+      }
+      const { error } = await supabase.from('corporate_actions').insert(row)
+      if (error) { console.error('Add corporate action error:', error); return safeErrorResponse(500, 'Failed to add corporate action') }
+      return new Response(JSON.stringify({ success: true }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    }
+
+    if (action === 'delete_corporate_action') {
+      if (!data.id || typeof data.id !== 'string') return safeErrorResponse(400, 'Invalid corporate action ID')
+      const { error, count } = await supabase.from('corporate_actions').delete({ count: 'exact' }).eq('id', data.id)
+      if (error) { console.error('Delete corporate action error:', error); return safeErrorResponse(500, 'Failed to delete corporate action') }
+      if (!count) return safeErrorResponse(404, 'Corporate action not found')
       return new Response(JSON.stringify({ success: true }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
 

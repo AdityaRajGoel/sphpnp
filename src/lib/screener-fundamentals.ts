@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { UNIVERSE_SOURCES, fetchUniverseFile } from "@/lib/universe-file";
 
 /**
  * The screener's fundamentals columns (stock_fundamentals_summary), built daily
@@ -74,8 +75,10 @@ export const FUNDAMENTAL_SCREENS: FundamentalScreen[] = [
 ];
 
 export async function getFundamentalsSummaries(): Promise<Map<string, FundamentalsSummary>> {
+  const file = await fetchUniverseFile();
+  if (file) return new Map((file.fundamentals as unknown as FundamentalsSummary[]).map((row) => [row.symbol, row]));
   const { data, error } = await (supabase.from("stock_fundamentals_summary" as never) as ReturnType<typeof supabase.from>)
-    .select("symbol,source,roe,roce,opm,sales_growth_yoy,profit_growth_yoy,debt_to_equity,pb,dividend_yield,eps_ttm,latest_quarter")
+    .select(UNIVERSE_SOURCES.fundamentals.select)
     .limit(1000);
   if (error) throw new Error(error.message);
   return new Map(((data ?? []) as unknown as FundamentalsSummary[]).map((row) => [row.symbol, row]));

@@ -11,6 +11,7 @@ import { IndianRupee, BadgeCheck, Calculator, ArrowRight, Phone, Info, Percent, 
 
 import { revealItem, revealSection } from "@/lib/motion";
 import { RATE_CARD, formatRule } from "@/lib/brokerage";
+import ChargesBreakdown from "@/components/pricing/ChargesBreakdown";
 // Published tariff for Shri Parasram Holdings (as listed on broker-data
 // aggregators sourced from the firm's tariff sheet). Keep in sync with the
 // branch's current schedule - update here when rates change.
@@ -101,7 +102,7 @@ const ChargesTable = ({ title, rows, cols }: { title: string; rows: { [k: string
         {rows.map((r) => (
           <tr key={String(r.item ?? r.segment)} className="border-b border-border/30 last:border-0 hover:bg-muted/30 transition-colors">
             <td className="px-5 py-3 text-foreground">{r.item ?? r.segment}</td>
-            <td className={`px-5 py-3 text-right font-semibold ${r.highlight ? "text-secondary" : "text-foreground"}`}>
+            <td className={`whitespace-nowrap px-4 py-3 text-right font-semibold sm:px-5 ${r.highlight ? "text-secondary" : "text-foreground"}`}>
               {r.value ?? r.rate}
             </td>
           </tr>
@@ -150,12 +151,13 @@ const PricingPage = () => {
           >
             <span className="inline-flex items-center gap-1.5 text-secondary"><BadgeCheck className="w-4 h-4" /> ₹0 Account Opening</span>
             <span className="inline-flex items-center gap-1.5 text-secondary"><BadgeCheck className="w-4 h-4" /> Free Trading AMC</span>
-            <span className="inline-flex items-center gap-1.5 text-secondary"><BadgeCheck className="w-4 h-4" /> SEBI-Registered · Since 1970</span>
+            <span className="inline-flex items-center gap-1.5 text-secondary"><BadgeCheck className="w-4 h-4" /> SEBI-registered · Serving since 1970</span>
           </motion.div>
 
           <div className="space-y-8">
             <ChargesTable title="Account Charges" rows={accountCharges} cols={["Item", "Charge"]} />
             <ChargesTable title="Brokerage by Segment" rows={brokerageCharges} cols={["Segment", "Brokerage"]} />
+            <ChargesBreakdown />
             <ChargesTable title="Other Charges" rows={otherCharges} cols={["Item", "Charge"]} />
           </div>
 

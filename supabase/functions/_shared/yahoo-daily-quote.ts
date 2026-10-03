@@ -19,7 +19,7 @@ export type DailyQuote = {
 
 type Nums = (number | null | undefined)[];
 type ChartResult = {
-  meta?: { regularMarketPrice?: number; regularMarketTime?: number };
+  meta?: { regularMarketPrice?: number; regularMarketTime?: number; chartPreviousClose?: number };
   timestamp?: number[];
   indicators?: { quote?: { close?: Nums; open?: Nums; high?: Nums; low?: Nums; volume?: Nums }[] };
 };
@@ -39,15 +39,18 @@ export function dailyQuote(result: ChartResult): DailyQuote | null {
   const priceDate = result.meta?.regularMarketTime ? istDate(result.meta.regularMarketTime) : last.date;
   // The price is the last bar's own session (closed, or live today): compare
   // with the bar before it. A price newer than every bar compares with the last.
-  const base = last.date === priceDate ? bars[bars.length - 2] : last;
-  if (!base) return null;
+  // Some NSE sector indices (^CNXFIN, ^CNXAUTO, ...) come back with one bar for
+  // the whole range; chartPreviousClose is then the close before that bar.
+  const onlyBarPrev = bars.length === 1 && last.date === priceDate ? num(result.meta?.chartPreviousClose) : undefined;
+  const baseClose = last.date === priceDate ? (bars[bars.length - 2]?.close ?? onlyBarPrev) : last.close;
+  if (baseClose === undefined) return null;
 
-  const change = price - base.close;
+  const change = price - baseClose;
   return {
     price,
-    prevClose: base.close,
+    prevClose: baseClose,
     change,
-    changePercent: (change / base.close) * 100,
+    changePercent: (change / baseClose) * 100,
     open: num(q.open?.[last.i]),
     high: num(q.high?.[last.i]),
     low: num(q.low?.[last.i]),

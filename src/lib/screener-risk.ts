@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { UNIVERSE_SOURCES, fetchUniverseFile } from "@/lib/universe-file";
 
 /**
  * The screener's risk view (stock_price_analytics_latest), computed daily from
@@ -120,11 +121,10 @@ export const RISK_SCREENS: RiskScreen[] = [
 ];
 
 export async function getRiskSummaries(): Promise<Map<string, RiskSummary>> {
+  const file = await fetchUniverseFile();
+  if (file) return new Map((file.risk as unknown as RiskSummary[]).map((row) => [row.symbol, row]));
   const { data, error } = await (supabase.from("stock_price_analytics_latest" as never) as ReturnType<typeof supabase.from>)
-    .select(
-      "symbol,as_of,volatility_1y,max_drawdown_1y,beta_1y,rsi_14,adx,return_3m,relative_strength_3m,week52_position,delivery_recent,delivery_change,volume_zscore,distance_from_200,ma_trend," +
-        "drawdown_from_peak,atr_pct_14,return_1m,return_6m,return_1y,sma_50,sma_200,macd_histogram,bollinger_percent_b,bollinger_bandwidth,stochastic_k,stochastic_d,plus_di,minus_di,obv_trend_20,money_flow_index,close_vs_vwap",
-    )
+    .select(UNIVERSE_SOURCES.risk.select)
     .limit(1000);
   if (error) throw new Error(error.message);
   return new Map(((data ?? []) as unknown as RiskSummary[]).map((row) => [row.symbol, row]));

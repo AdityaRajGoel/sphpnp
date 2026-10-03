@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { motion, AnimatePresence } from "motion/react";
 import {
   X, BrainCircuit, TrendingUp, TrendingDown, Activity, AlertTriangle,
-  CheckCircle2, Bot, Info, Star, Share2, BarChart2, Zap, Sparkles, MessageSquare, Send, Users,
+  CheckCircle2, Bot, Info, Star, Share2, BarChart2, Zap, Sparkles, MessageSquare, Send, Users, User,
   Database, LineChart, Scale, Cpu, FileText, Check, Newspaper, ExternalLink
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
@@ -16,6 +16,8 @@ import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip as Recharts
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { EASE_IN_OUT, EASE_OUT } from "@/lib/motion";
+
+type ChatMessage = { role: 'user' | 'ai'; text: string; model?: string; failed?: boolean; retry?: string };
 
 export interface StockForAnalysis {
   name: string;
@@ -294,7 +296,7 @@ export const AIAnalysisModal = ({ isOpen, onClose, stock }: AIAnalysisModalProps
       };
     }
   } | null>(null);
-  const [chatHistory, setChatHistory] = useState<{role: 'user' | 'ai', text: string}[]>([]);
+  const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
   const [chatInput, setChatInput] = useState("");
   const [isChatting, setIsChatting] = useState(false);
   const [activeTab, setActiveTab] = useState<'report' | 'chat'>('report');
@@ -310,15 +312,14 @@ export const AIAnalysisModal = ({ isOpen, onClose, stock }: AIAnalysisModalProps
   const analysisSteps = useCommittee ? COMMITTEE_STEPS : REPORT_STEPS;
   const [copied, setCopied] = useState(false);
   
+  // Research questions the chat can answer from the figures it is given.
   const sampleQuestions = [
-    "What's the price target for 3 months?",
-    "What are the key support & resistance levels?",
-    "Is volume unusually high or low today?",
-    "Is this a good time to buy?",
-    "What are the top 3 risks I should know?",
-    "How does the P/E compare to sector peers?",
-    "Technical outlook for next month?",
-    "Explain the detected chart pattern.",
+    "Summarise the key numbers",
+    "Where is the price against its 52-week range?",
+    "What are the main risks in the data?",
+    "Is today's volume unusual?",
+    "How expensive is it on P/E?",
+    "Explain the detected chart pattern",
   ];
   
   const endOfChatRef = useRef<HTMLDivElement>(null);
@@ -536,7 +537,7 @@ export const AIAnalysisModal = ({ isOpen, onClose, stock }: AIAnalysisModalProps
     return [
       `Stock: ${stock?.name} (${stock?.symbol})`,
       `Sector: ${stock?.sector || 'N/A'}`,
-      `CMP: ₹${stock?.price}`,
+      `CMP: ${stock?.price != null ? `₹${Number(stock.price).toLocaleString('en-IN', { maximumFractionDigits: 2 })}` : 'N/A'}`,
       `Change: ${analysis?.changePct?.toFixed(2)}%`,
       `Day Range: ${stock?.day_low != null && stock?.day_high != null ? `₹${stock.day_low} – ₹${stock.day_high}` : 'N/A'}`,
       `52W High: ${na(analysis?.high52, (n) => `₹${n}`)} | 52W Low: ${na(analysis?.low52, (n) => `₹${n}`)}`,
@@ -550,58 +551,37 @@ export const AIAnalysisModal = ({ isOpen, onClose, stock }: AIAnalysisModalProps
     ].join(' | ');
   };
 
-  const handleChatSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!chatInput.trim() || !stock || isChatting) return;
-
-    const userMsg = chatInput.trim();
+  /** One chat turn, for typed and suggested questions alike. A failed turn keeps the question so it can be retried. */
+  const ask = async (question: string) => {
+    const q = question.trim();
+    if (!q || !stock || isChatting) return;
+    const history = chatHistory.filter((m) => !m.failed).slice(-10).map(({ role, text }) => ({ role, text }));
     setChatInput("");
-    setChatHistory(prev => [...prev, { role: 'user', text: userMsg }]);
-    setIsChatting(true);
-
-    try {
-      const richContext = buildChatContext();
-
-      const { data, error } = await supabase.functions.invoke('ai-stock-analysis', {
-        body: {
-          symbol: stock.symbol, is_chat: true, chat_message: userMsg,
-          chat_history: chatHistory.slice(-10), 
-          context: richContext,
-          ai_report_summary: geminiVerdict?.analysis?.slice(0, 1500) || '',
-          use_web_search: useWebSearch
-        }
-      });
-      
-      if (error) throw error;
-      setChatHistory(prev => [...prev, { role: 'ai', text: data.verdict || "I encountered an error." }]);
-    } catch (err) {
-      console.error("Chat Error:", err);
-      setChatHistory(prev => [...prev, { role: 'ai', text: "Failed to connect to the AI brain." }]);
-    } finally { setIsChatting(false); }
-  };
-
-  const handleSampleQuestion = async (q: string) => {
-    if (isChatting) return;
-    setChatInput("");
-    setChatHistory(prev => [...prev, { role: 'user', text: q }]);
+    setChatHistory((prev) => [...prev.filter((m) => !m.failed), { role: "user", text: q }]);
     setIsChatting(true);
     try {
-      const richContext = buildChatContext();
-      const { data, error } = await supabase.functions.invoke('ai-stock-analysis', {
+      const { data, error } = await supabase.functions.invoke("ai-stock-analysis", {
         body: {
           symbol: stock.symbol, is_chat: true, chat_message: q,
-          chat_history: chatHistory.slice(-10),
-          context: richContext,
-          ai_report_summary: geminiVerdict?.analysis?.slice(0, 1500) || '',
-          use_web_search: useWebSearch
-        }
+          chat_history: history,
+          context: buildChatContext(),
+          ai_report_summary: geminiVerdict?.analysis?.slice(0, 1500) || "",
+          use_web_search: useWebSearch,
+        },
       });
-      if (error) throw error;
-      setChatHistory(prev => [...prev, { role: 'ai', text: data.verdict || "I encountered an error." }]);
+      if (error || !data?.verdict) throw error ?? new Error("empty reply");
+      setChatHistory((prev) => [...prev, { role: "ai", text: String(data.verdict), model: data.model }]);
     } catch (err) {
       console.error("Chat Error:", err);
-      setChatHistory(prev => [...prev, { role: 'ai', text: "Failed to connect to the AI brain. Please try again." }]);
-    } finally { setIsChatting(false); }
+      setChatHistory((prev) => [...prev, { role: "ai", text: "The AI service did not answer this time. Your question is kept; try again in a moment.", failed: true, retry: q }]);
+    } finally {
+      setIsChatting(false);
+    }
+  };
+
+  const handleChatSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    void ask(chatInput);
   };
 
   const clearChat = () => {
@@ -749,7 +729,7 @@ export const AIAnalysisModal = ({ isOpen, onClose, stock }: AIAnalysisModalProps
                 {/* Tabs */}
                 <div className="px-5 border-b border-border/50 flex items-center gap-6 bg-muted/20">
                   <button onClick={() => setActiveTab('report')} aria-label="View deep analysis report" className={`py-3 text-sm font-semibold border-b-2 transition-colors ${activeTab === 'report' ? 'border-brand-orange text-brand-orange' : 'border-transparent text-muted-foreground'}`}>Deep Analysis</button>
-                  <button onClick={() => setActiveTab('chat')} aria-label="Ask AI questions" className={`py-3 text-sm font-semibold border-b-2 transition-colors flex items-center gap-2 ${activeTab === 'chat' ? 'border-brand-orange text-brand-orange' : 'border-transparent text-muted-foreground'}`}><MessageSquare className="w-4 h-4" /> Ask AI Q&A</button>
+                  <button onClick={() => setActiveTab('chat')} aria-label="Ask AI questions" className={`py-3 text-sm font-semibold border-b-2 transition-colors flex items-center gap-2 ${activeTab === 'chat' ? 'border-brand-orange text-brand-orange' : 'border-transparent text-muted-foreground'}`}><MessageSquare className="w-4 h-4" /> Ask questions</button>
                   <button
                     onClick={() => {
                       const next = !useCommittee;
@@ -1300,88 +1280,87 @@ export const AIAnalysisModal = ({ isOpen, onClose, stock }: AIAnalysisModalProps
 
                 {/* Tab: Chat */}
                 {activeTab === 'chat' && (
-                  <div className="flex flex-col h-[450px]">
-                    <div className="px-5 py-2 bg-orange-500/5 border-b border-orange-500/10 flex gap-2 items-center">
-                      <Info className="w-3 h-3 text-orange-500 shrink-0" />
-                      <div className="text-[9px] text-muted-foreground uppercase tracking-tight font-bold">
-                        AI Chat Advice: Non-Financial Advice. Use for Research only.
-                      </div>
+                  <div className="flex h-[min(62vh,560px)] min-h-[420px] flex-col">
+                    <div className="flex items-center gap-2 border-b border-border/60 bg-muted/30 px-5 py-2 text-xs text-muted-foreground">
+                      <Info className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                      Answers come from the figures on this page and the report above. Research information, not investment advice.
                     </div>
-                    <div className="flex-1 p-5 overflow-y-auto space-y-4 bg-muted/10">
-                      
-                      <div className="flex justify-between items-start mb-2">
+                    <div className="flex-1 space-y-4 overflow-y-auto bg-muted/10 p-5" aria-live="polite">
+                      <div className="flex items-start justify-between gap-3">
                         <div className="flex gap-3">
-                          <div className="shrink-0 w-8 h-8 rounded-full bg-brand-orange/20 flex items-center justify-center"><Bot className="w-4 h-4 text-brand-orange"/></div>
-                          <div className="bg-card border rounded-2xl rounded-tl-none p-3 text-sm text-foreground shadow-sm">
-                            I am your Parasram AI associate. I've analyzed {stock.symbol}'s charts and fundamentals. What specific questions do you have before making an investment decision?
+                          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-orange/15"><Bot className="h-4 w-4 text-brand-orange" aria-hidden /></div>
+                          <div className="rounded-2xl rounded-tl-sm border bg-card p-3 text-sm leading-relaxed text-foreground shadow-sm">
+                            Ask about {stock.name}: its price against the day and 52-week range, valuation, volume, the chart patterns found, or the risks in the data. I answer from the figures shown here and say when something is not available.
                           </div>
                         </div>
                         {chatHistory.length > 0 && (
-                          <Button variant="ghost" size="sm" onClick={clearChat} className="text-[10px] h-7 px-2 text-muted-foreground hover:text-destructive">
-                            Clear Chat
+                          <Button variant="ghost" size="sm" onClick={clearChat} className="h-8 shrink-0 px-2 text-xs text-muted-foreground hover:text-destructive">
+                            Clear
                           </Button>
                         )}
                       </div>
 
                       {chatHistory.map((msg, i) => (
                         <div key={i} className={`flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
-                          <div className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${msg.role === 'user' ? 'bg-secondary' : 'bg-brand-orange/20'}`}>
-                            {msg.role === 'user' ? <div className="text-xs font-bold text-background">YOU</div> : <Bot className="w-4 h-4 text-brand-orange"/>}
+                          <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${msg.role === 'user' ? 'bg-secondary/15' : 'bg-brand-orange/15'}`}>
+                            {msg.role === 'user' ? <User className="h-4 w-4 text-secondary" aria-label="You" /> : <Bot className="h-4 w-4 text-brand-orange" aria-hidden />}
                           </div>
-                          <div className={`border rounded-2xl p-3 text-sm shadow-sm max-w-[85%] backdrop-blur-md ${msg.role === 'user' ? 'bg-secondary/90 text-background border-secondary rounded-tr-none' : 'bg-card/70 text-foreground border-border/50 rounded-tl-none prose prose-sm dark:prose-invert shadow-[0_4px_12px_rgba(0,0,0,0.05)]'}`}>
-                            {msg.role === 'ai' ? <Markdown remarkPlugins={[remarkGfm]}>{msg.text}</Markdown> : msg.text}
-                            {msg.role === 'ai' && <div className="text-[8px] opacity-30 mt-2 flex items-center gap-1"><BrainCircuit className="w-2 h-2"/> Analysis by Parasram Intelligence</div>}
+                          <div className={`max-w-[85%] rounded-2xl p-3 text-sm leading-relaxed shadow-sm ${msg.role === 'user' ? 'rounded-tr-sm bg-secondary text-secondary-foreground' : `rounded-tl-sm border bg-card text-foreground ${msg.failed ? 'border-destructive/40' : ''}`}`}>
+                            {msg.role === 'ai' ? (
+                              <>
+                                <div className="prose prose-sm max-w-none dark:prose-invert prose-p:my-1.5 prose-ul:my-1.5 prose-li:my-0.5"><Markdown remarkPlugins={[remarkGfm]}>{msg.text}</Markdown></div>
+                                <div className="mt-2 flex items-center justify-between gap-3 border-t border-border/60 pt-2 text-[11px] text-muted-foreground">
+                                  <span>{msg.failed ? "Not answered" : msg.model ? `Parasram Intelligence · ${msg.model}` : "Parasram Intelligence"}</span>
+                                  {msg.failed && msg.retry ? (
+                                    <button type="button" onClick={() => void ask(msg.retry!)} disabled={isChatting} className="font-semibold text-brand-orange hover:underline disabled:opacity-50">Retry</button>
+                                  ) : (
+                                    <button type="button" onClick={() => void navigator.clipboard?.writeText(msg.text)} className="hover:text-foreground">Copy</button>
+                                  )}
+                                </div>
+                              </>
+                            ) : msg.text}
                           </div>
                         </div>
                       ))}
 
                       {isChatting && (
-                        <div className="flex gap-3">
-                          <div className="shrink-0 w-8 h-8 rounded-full bg-brand-orange/20 flex items-center justify-center"><Bot className="w-4 h-4 text-brand-orange"/></div>
-                          <div className="bg-card border rounded-2xl rounded-tl-none p-4 text-sm flex gap-1 shadow-sm items-center">
-                            <motion.div animate={{y:[0,-4,0]}} transition={{repeat:Infinity, delay:0}} className="w-1.5 h-1.5 bg-brand-orange rounded-full" />
-                            <motion.div animate={{y:[0,-4,0]}} transition={{repeat:Infinity, delay:0.2}} className="w-1.5 h-1.5 bg-brand-orange rounded-full" />
-                            <motion.div animate={{y:[0,-4,0]}} transition={{repeat:Infinity, delay:0.4}} className="w-1.5 h-1.5 bg-brand-orange rounded-full" />
+                        <div className="flex gap-3" role="status" aria-label="Thinking">
+                          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-orange/15"><Bot className="h-4 w-4 text-brand-orange" aria-hidden /></div>
+                          <div className="flex items-center gap-1 rounded-2xl rounded-tl-sm border bg-card p-4 shadow-sm">
+                            {[0, 0.2, 0.4].map((d) => <motion.div key={d} animate={{ y: [0, -4, 0] }} transition={{ repeat: Infinity, delay: d }} className="h-1.5 w-1.5 rounded-full bg-brand-orange" />)}
                           </div>
                         </div>
                       )}
                       <div ref={endOfChatRef} />
                     </div>
 
-                    {/* Chat Input & Samples */}
-                    <div className="p-4 border-t border-border/50 bg-background space-y-3">
-                      {/* Sample Questions Chips */}
-                      <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none no-scrollbar -mx-1 px-1">
-                        {sampleQuestions.map((q, i) => (
+                    <div className="space-y-3 border-t border-border/60 bg-background p-4">
+                      {/* Suggested questions: a wrapping set before the first question, one scrolling row after. */}
+                      <div className={chatHistory.length === 0 ? "flex flex-wrap gap-2" : "-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 no-scrollbar"}>
+                        {sampleQuestions.map((q) => (
                           <button
-                            key={i}
-                            onClick={() => handleSampleQuestion(q)}
+                            key={q}
+                            type="button"
+                            onClick={() => void ask(q)}
                             disabled={isChatting}
-                            className="shrink-0 text-[10px] font-medium bg-muted/50 hover:bg-brand-orange/10 hover:text-brand-orange border border-border/50 rounded-full px-3 py-1.5 transition-colors whitespace-nowrap"
+                            className="shrink-0 whitespace-nowrap rounded-full border border-border/70 bg-muted/40 px-3 py-1.5 text-xs font-medium transition-colors hover:border-brand-orange/40 hover:bg-brand-orange/10 hover:text-brand-orange disabled:opacity-50"
                           >
                             {q}
                           </button>
                         ))}
                       </div>
 
-                      <form onSubmit={handleChatSubmit} className="flex flex-col gap-2 shrink-0">
-                        <div className="flex items-center gap-2 px-2">
-                          <label className="flex items-center gap-1.5 text-[10px] text-muted-foreground font-semibold cursor-pointer hover:text-foreground transition-colors">
-                            <input 
-                              type="checkbox" 
-                              checked={useWebSearch} 
-                              onChange={(e) => setUseWebSearch(e.target.checked)}
-                              className="accent-brand-orange w-3.5 h-3.5"
-                            />
-                            Enable AI Live Web Search (News & Events)
-                          </label>
-                        </div>
+                      <form onSubmit={handleChatSubmit} className="space-y-2">
                         <div className="flex gap-2">
-                          <Input value={chatInput} onChange={e => setChatInput(e.target.value)} placeholder={`Ask AI about ${stock.symbol}...`} className="bg-muted/40 rounded-full h-10 px-4" />
-                          <Button type="submit" disabled={isChatting || !chatInput.trim()} size="icon" className="h-10 w-10 shrink-0 rounded-full bg-brand-orange hover:bg-brand-orange/90">
-                            <Send className="w-4 h-4" />
+                          <Input value={chatInput} onChange={(e) => setChatInput(e.target.value)} placeholder={`Ask about ${stock.symbol}`} aria-label={`Ask a question about ${stock.name}`} maxLength={500} className="h-11 rounded-full bg-muted/40 px-4" />
+                          <Button type="submit" disabled={isChatting || !chatInput.trim()} size="icon" aria-label="Send" className="h-11 w-11 shrink-0 rounded-full bg-brand-orange hover:bg-brand-orange/90">
+                            <Send className="h-4 w-4" />
                           </Button>
                         </div>
+                        <label className="flex w-fit cursor-pointer items-center gap-2 px-1 text-xs text-muted-foreground transition-colors hover:text-foreground">
+                          <input type="checkbox" checked={useWebSearch} onChange={(e) => setUseWebSearch(e.target.checked)} className="h-3.5 w-3.5 accent-brand-orange" />
+                          Include recent news from the web
+                        </label>
                       </form>
                     </div>
                   </div>

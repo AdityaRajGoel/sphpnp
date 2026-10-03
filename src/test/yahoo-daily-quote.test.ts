@@ -41,3 +41,15 @@ describe("dailyQuote", () => {
     expect(dailyQuote({ meta: {}, timestamp: [], indicators: { quote: [{ close: [] }] } })).toBeNull();
   });
 });
+
+describe("dailyQuote with a single bar", () => {
+  it("compares with chartPreviousClose, as Yahoo returns ^CNXFIN (3 Oct 2026)", () => {
+    const q = dailyQuote({
+      meta: { regularMarketPrice: 26434.75, chartPreviousClose: 26556.55, regularMarketTime: 1790848902 },
+      timestamp: [1790848902],
+      indicators: { quote: [{ close: [26434.75] }] },
+    })!;
+    expect(q.prevClose).toBe(26556.55);
+    expect(q.changePercent).toBeCloseTo(-0.4586, 3);
+  });
+});

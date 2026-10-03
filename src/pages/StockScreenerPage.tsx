@@ -7,8 +7,9 @@ import WhatsAppButton from "@/components/WhatsAppButton";
 import ScrollProgress from "@/components/ScrollProgress";
 import { useState, useMemo, useEffect, useRef, lazy, Suspense } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Search, Filter, TrendingUp, TrendingDown, ArrowUpDown, RefreshCw, Loader2, BarChart3, Bot, LayoutGrid, List, Landmark, Cpu, Car, Building2, ShoppingCart, Activity, Radar, X, Download, LineChart, ChevronRight, Gauge, Sigma, SlidersHorizontal } from "lucide-react";
+import { Search, Filter, TrendingUp, TrendingDown, ArrowUpDown, RefreshCw, Loader2, BarChart3, Bot, LayoutGrid, List, Landmark, Cpu, Car, Building2, ShoppingCart, Activity, Radar, X, Download, LineChart, ChevronRight, ChevronDown, Gauge, Sigma, SlidersHorizontal } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { isPrerender } from "@/lib/prerender";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -42,10 +43,18 @@ import PageTransition from "@/components/PageTransition";
 import StockTicker from "@/components/StockTicker";
 import { EASE_IN_OUT, EASE_OUT } from "@/lib/motion";
 import { pressable } from "@/lib/pressable";
+import { formatCrore } from "@/lib/fundamentals";
+import { useQuery } from "@tanstack/react-query";
+import { loadIndexMembership, SCREENER_INDICES } from "@/lib/market-lists";
 const AIAnalysisModal = lazy(() => import("@/components/AIAnalysisModal"));
 const ChartCompare = lazy(() => import("@/components/ChartCompare"));
 
 const MAX_COMPARE = 4;
+
+// The static HTML carries the first rows only: all ~500 made the page 3 MB, past
+// what search engines read of one file. The browser renders the full list, and
+// every stock page is in the sitemap.
+const PRERENDER_ROWS = 120;
 
 const THEMATIC_BASKETS = [
   { id: "banking", name: "Banking & Finance", desc: "Top private & PSU banks", icon: Landmark, filter: (s: ScreenerStock) => s.sector === "Banking" || s.sector === "NBFC" || s.sector === "Insurance" },
@@ -82,12 +91,7 @@ const SCORE_COLUMNS = metricsById([
 
 const DEFAULT_CUSTOM_COLUMNS = ["composite_score", "earnings_yield", "roce", "revenue_cagr_3y", "return_6m", "rsi_14", "volatility_1y"];
 
-const formatMarketCap = (cr: number) => {
-  if (cr >= 100000) return `₹${(cr / 100000).toFixed(1)}L Cr`;
-  if (cr >= 1000) return `₹${(cr / 1000).toFixed(0)}K Cr`;
-  if (cr > 0) return `₹${cr.toFixed(0)} Cr`;
-  return "-";
-};
+const formatMarketCap = (cr: number) => (cr > 0 ? formatCrore(cr) : "-");
 
 type SortKey = "symbol" | "price" | "change_pct" | "market_cap" | "pe";
 
@@ -245,6 +249,9 @@ const StockScreenerPage = () => {
   const [sector, setSector] = useState(searchParams.get("sector") ?? "all");
   const [peRange, setPeRange] = useState(searchParams.get("pe") ?? "all");
   const [capRange, setCapRange] = useState(searchParams.get("cap") ?? "all");
+  const [indexFilter, setIndexFilter] = useState(searchParams.get("idx") ?? "all");
+  const [moveFilter, setMoveFilter] = useState(searchParams.get("move") ?? "all");
+  const membership = useQuery({ queryKey: ["index-membership"], queryFn: loadIndexMembership, staleTime: 6 * 60 * 60_000, enabled: indexFilter !== "all" });
   const [sortKey, setSortKey] = useState<SortKey>((searchParams.get("sort") as SortKey) || "market_cap");
   const [sortDir, setSortDir] = useState<"asc" | "desc">(searchParams.get("dir") === "asc" ? "asc" : "desc");
   const [refreshing, setRefreshing] = useState(false);
@@ -254,6 +261,8 @@ const StockScreenerPage = () => {
   const [activeScans, setActiveScans] = useState<string[]>(() => parseScanIds(searchParams.get("scan"), searchParams.get("screen")));
   const [rules, setRules] = useState<Rule[]>(() => parseRules(searchParams.get("f")));
   const [query, setQuery] = useState(searchParams.get("fx") ?? "");
+  const advancedActive = (activeBasket ? 1 : 0) + activeScans.length + rules.length + (query.trim() ? 1 : 0);
+  const [moreFiltersOpen, setMoreFiltersOpen] = useState(advancedActive > 0);
   const [viewMode, setViewMode] = useState<ViewMode>(() =>
     searchParams.get("f") || searchParams.get("fx") ? "custom" : searchParams.get("screen") ? "fundamentals" : "list",
   );
@@ -287,6 +296,8 @@ const StockScreenerPage = () => {
     if (sector !== "all") p.set("sector", sector);
     if (peRange !== "all") p.set("pe", peRange);
     if (capRange !== "all") p.set("cap", capRange);
+    if (indexFilter !== "all") p.set("idx", indexFilter);
+    if (moveFilter !== "all") p.set("move", moveFilter);
     if (sortKey !== "market_cap") p.set("sort", sortKey);
     if (sortDir !== "desc") p.set("dir", sortDir);
     if (activeBasket) p.set("basket", activeBasket);
@@ -294,7 +305,7 @@ const StockScreenerPage = () => {
     if (rules.length > 0) p.set("f", serializeRules(rules));
     if (query) p.set("fx", query);
     setSearchParams(p, { replace: true });
-  }, [search, sector, peRange, capRange, sortKey, sortDir, activeBasket, activeScans, rules, query, setSearchParams]);
+  }, [search, sector, peRange, capRange, indexFilter, moveFilter, sortKey, sortDir, activeBasket, activeScans, rules, query, setSearchParams]);
 
   const parsedQuery = useMemo(() => {
     const p = query ? parseQuery(query) : null;
@@ -303,10 +314,10 @@ const StockScreenerPage = () => {
 
   const activeFilterCount =
     (search ? 1 : 0) + (sector !== "all" ? 1 : 0) + (peRange !== "all" ? 1 : 0) +
-    (capRange !== "all" ? 1 : 0) + (activeBasket ? 1 : 0) + activeScans.length + rules.length + (parsedQuery ? 1 : 0);
+    (capRange !== "all" ? 1 : 0) + (indexFilter !== "all" ? 1 : 0) + (moveFilter !== "all" ? 1 : 0) + (activeBasket ? 1 : 0) + activeScans.length + rules.length + (parsedQuery ? 1 : 0);
 
   const clearAllFilters = () => {
-    setSearch(""); setSector("all"); setPeRange("all"); setCapRange("all");
+    setSearch(""); setSector("all"); setPeRange("all"); setCapRange("all"); setIndexFilter("all"); setMoveFilter("all");
     setActiveBasket(null); setActiveScans([]); setRules([]); setQuery("");
   };
 
@@ -340,6 +351,7 @@ const StockScreenerPage = () => {
 
   const sectors = useMemo(() => [...new Set(stocks.map(s => s.sector))].sort(), [stocks]);
 
+  const analyseSymbol = (symbol: string) => setAnalyzingStock(stocks.find((x) => x.symbol === symbol) ?? null);
   const filtered = useMemo(() => {
     let list = [...stocks];
     if (search) list = list.filter(s => s.symbol.toLowerCase().includes(search.toLowerCase()) || s.name.toLowerCase().includes(search.toLowerCase()));
@@ -350,6 +362,14 @@ const StockScreenerPage = () => {
     if (capRange === "large") list = list.filter(s => s.market_cap >= 50000);
     else if (capRange === "mid") list = list.filter(s => s.market_cap >= 10000 && s.market_cap < 50000);
     else if (capRange === "small") list = list.filter(s => s.market_cap > 0 && s.market_cap < 10000);
+    if (indexFilter !== "all") {
+      const members = membership.data?.get(indexFilter);
+      if (members) list = list.filter(s => members.has(s.symbol));
+    }
+    if (moveFilter === "up") list = list.filter(s => s.change_pct > 0);
+    else if (moveFilter === "down") list = list.filter(s => s.change_pct < 0);
+    else if (moveFilter === "up2") list = list.filter(s => s.change_pct >= 2);
+    else if (moveFilter === "down2") list = list.filter(s => s.change_pct <= -2);
 
     if (activeBasket) {
       const basket = THEMATIC_BASKETS.find(b => b.id === activeBasket);
@@ -364,7 +384,7 @@ const StockScreenerPage = () => {
       return sortDir === "asc" ? (av > bv ? 1 : -1) : (av < bv ? 1 : -1);
     });
     return list;
-  }, [stocks, search, sector, peRange, capRange, sortKey, sortDir, activeBasket, activeScans, rules, parsedQuery, metricRows]);
+  }, [stocks, search, sector, peRange, capRange, indexFilter, moveFilter, membership.data, sortKey, sortDir, activeBasket, activeScans, rules, parsedQuery, metricRows]);
 
   const toggleSort = (key: SortKey) => {
     if (sortKey === key) setSortDir(d => d === "asc" ? "desc" : "asc");
@@ -445,12 +465,12 @@ const StockScreenerPage = () => {
           </Button>
         </PageHeader>
 
-        {/* The screener itself comes first, right under the header: filters, then the results. */}
+        {/* The screener itself comes first, right under the header: every filter, then the results. */}
         <Card className="p-4 mb-6">
           <div className="flex items-center gap-2 mb-3 text-sm font-medium text-muted-foreground">
             <Filter className="w-4 h-4" /> Filters
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input aria-label="Search stock" placeholder="Search stock..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
@@ -475,13 +495,86 @@ const StockScreenerPage = () => {
               <SelectTrigger aria-label="Select Market Cap"><SelectValue placeholder="Market Cap" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Caps</SelectItem>
-                <SelectItem value="large">Large Cap (₹50K+ Cr)</SelectItem>
-                <SelectItem value="mid">Mid Cap (₹10K-50K Cr)</SelectItem>
-                <SelectItem value="small">Small Cap (&lt;₹10K Cr)</SelectItem>
+                <SelectItem value="large">Large Cap (₹50,000 Cr+)</SelectItem>
+                <SelectItem value="mid">Mid Cap (₹10,000–50,000 Cr)</SelectItem>
+                <SelectItem value="small">Small Cap (under ₹10,000 Cr)</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={indexFilter} onValueChange={setIndexFilter}>
+              <SelectTrigger aria-label="Select Index"><SelectValue placeholder="Index" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Indices</SelectItem>
+                {SCREENER_INDICES.map((i) => <SelectItem key={i.key} value={i.key}>{i.label}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            <Select value={moveFilter} onValueChange={setMoveFilter}>
+              <SelectTrigger aria-label="Select today's move"><SelectValue placeholder="Today's move" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Any Move Today</SelectItem>
+                <SelectItem value="up">Up today</SelectItem>
+                <SelectItem value="down">Down today</SelectItem>
+                <SelectItem value="up2">Up 2% or more</SelectItem>
+                <SelectItem value="down2">Down 2% or more</SelectItem>
               </SelectContent>
             </Select>
           </div>
         </Card>
+
+        {/* Baskets, scanners and custom rules narrow the same list, so they sit
+            above it. Collapsed by default so the results stay near the top on a
+            phone; open whenever one of them is in use. */}
+        <details
+          className="group mb-6 rounded-lg border border-border bg-card"
+          open={moreFiltersOpen}
+          onToggle={(e) => setMoreFiltersOpen(e.currentTarget.open)}
+        >
+          <summary className="flex min-h-[44px] cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-sm font-medium [&::-webkit-details-marker]:hidden">
+            <span className="flex items-center gap-2">
+              <SlidersHorizontal className="h-4 w-4 text-muted-foreground" aria-hidden />
+              More filters: baskets, scanners and custom rules
+              {advancedActive > 0 && <span className="rounded-full bg-brand-orange/10 px-2 py-0.5 text-xs font-semibold text-brand-orange">{advancedActive} active</span>}
+            </span>
+            <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180" aria-hidden />
+          </summary>
+          <div className="border-t border-border px-4 pt-5">
+            <div className="mb-8">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-heading font-bold flex items-center gap-2">
+                  <LayoutGrid className="w-5 h-5 text-brand-orange" />
+                  Thematic Baskets
+                </h2>
+                {activeBasket && (
+                  <Button variant="ghost" size="sm" onClick={() => setActiveBasket(null)} className="h-8 text-muted-foreground hover:text-foreground">
+                    Clear Selection
+                  </Button>
+                )}
+              </div>
+              <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+                {THEMATIC_BASKETS.map(b => {
+                  const Icon = b.icon;
+                  const isActive = activeBasket === b.id;
+                  return (
+                    <Card 
+                      key={b.id} 
+                      className={`p-4 flex flex-col cursor-pointer transition-transform ease-out active:scale-[0.97] ${isActive ? "ring-2 ring-brand-orange bg-brand-orange/5 border-brand-orange/50" : "hover:border-primary/50"}`}
+                      onClick={() => setActiveBasket(isActive ? null : b.id)}
+                      aria-pressed={isActive}
+                      {...pressable(() => setActiveBasket(isActive ? null : b.id))}
+                    >
+                      <Icon className={`w-6 h-6 mb-3 ${isActive ? "text-brand-orange" : "text-muted-foreground"}`} />
+                      <h3 className="font-semibold text-sm mb-1 text-foreground">{b.name}</h3>
+                      <p className="text-xs text-muted-foreground line-clamp-2">{b.desc}</p>
+                    </Card>
+                  );
+                })}
+              </div>
+            </div>
+
+            <ScannerLibrary active={activeScans} counts={counts} onToggle={toggleScan} onClear={() => setActiveScans([])} />
+
+            <CustomFilterBuilder rules={rules} onChange={changeRules} matches={ruleMatches} query={query} onQueryChange={changeQuery} queryMatches={queryMatches} />
+          </div>
+        </details>
 
         {error && (
           <Card className="p-4 mb-4 border-destructive/50 bg-destructive/5">
@@ -532,14 +625,14 @@ const StockScreenerPage = () => {
                   </Suspense>
                 </motion.div>
               ) : viewMode === "fundamentals" ? (
-                <FundamentalsTable rows={filtered} summaries={summaries} onOpen={(symbol) => navigate(`/stock/${encodeURIComponent(symbol)}`)} />
+                <FundamentalsTable rows={filtered} summaries={summaries} onOpen={(symbol) => navigate(`/stock/${encodeURIComponent(symbol)}`)} onAnalyse={analyseSymbol} />
               ) : viewMode === "technicals" ? (
                 <MetricTable
                   rows={filtered}
                   metricRows={metricRows}
                   columns={TECHNICAL_COLUMNS}
                   note="Indicators computed daily from each stock's own split-adjusted bars. Readings describe where an indicator sits, not what to do."
-                  onOpen={(symbol) => navigate(`/stock/${encodeURIComponent(symbol)}`)}
+                  onOpen={(symbol) => navigate(`/stock/${encodeURIComponent(symbol)}`)} onAnalyse={analyseSymbol}
                 />
               ) : viewMode === "scores" ? (
                 <MetricTable
@@ -547,7 +640,7 @@ const StockScreenerPage = () => {
                   metricRows={metricRows}
                   columns={SCORE_COLUMNS}
                   note="Factor scores are percentiles (0-100) among the tracked stocks and move as the others do. Magic Formula excludes financials. Piotroski shows passed/testable."
-                  onOpen={(symbol) => navigate(`/stock/${encodeURIComponent(symbol)}`)}
+                  onOpen={(symbol) => navigate(`/stock/${encodeURIComponent(symbol)}`)} onAnalyse={analyseSymbol}
                 />
               ) : viewMode === "custom" ? (
                 <MetricTable
@@ -555,10 +648,10 @@ const StockScreenerPage = () => {
                   metricRows={metricRows}
                   columns={customColumns}
                   note={rules.length > 0 ? "Columns follow the metrics in your custom screen." : "Add a rule below to screen on any metric; its column appears here."}
-                  onOpen={(symbol) => navigate(`/stock/${encodeURIComponent(symbol)}`)}
+                  onOpen={(symbol) => navigate(`/stock/${encodeURIComponent(symbol)}`)} onAnalyse={analyseSymbol}
                 />
               ) : viewMode === "risk" ? (
-                <RiskTable rows={filtered} summaries={riskSummaries} onOpen={(symbol) => navigate(`/stock/${encodeURIComponent(symbol)}`)} />
+                <RiskTable rows={filtered} summaries={riskSummaries} onOpen={(symbol) => navigate(`/stock/${encodeURIComponent(symbol)}`)} onAnalyse={analyseSymbol} />
               ) : viewMode === "heatmap" ? (
                 <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} className="min-h-[50vh]">
                   <StockHeatmap stocks={filtered} maxItems={150} />
@@ -584,7 +677,7 @@ const StockScreenerPage = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {filtered.map((s, i) => {
+                    {(isPrerender() ? filtered.slice(0, PRERENDER_ROWS) : filtered).map((s, i) => {
                       const range = s.high_52 - s.low_52;
                       const pct52 = range > 0 ? ((s.price - s.low_52) / range) * 100 : 50;
                       return (
@@ -661,7 +754,7 @@ const StockScreenerPage = () => {
                                   setAnalyzingStock(s);
                                 }}
                               >
-                                <Bot className="w-3.5 h-3.5 mr-1" /> AI Edit
+                                <Bot className="w-3.5 h-3.5 mr-1" /> AI analysis
                               </Button>
                               <Link
                                 to={`/stock/${encodeURIComponent(s.symbol)}`}
@@ -687,44 +780,6 @@ const StockScreenerPage = () => {
             </motion.div>
           )}
         </AnimatePresence>
-
-        {/* Screening tools that feed the table above: thematic baskets, scanners, custom rules. */}
-        <div className="mt-10 mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-heading font-bold flex items-center gap-2">
-              <LayoutGrid className="w-5 h-5 text-brand-orange" />
-              Thematic Baskets
-            </h2>
-            {activeBasket && (
-              <Button variant="ghost" size="sm" onClick={() => setActiveBasket(null)} className="h-8 text-muted-foreground hover:text-foreground">
-                Clear Selection
-              </Button>
-            )}
-          </div>
-          <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
-            {THEMATIC_BASKETS.map(b => {
-              const Icon = b.icon;
-              const isActive = activeBasket === b.id;
-              return (
-                <Card 
-                  key={b.id} 
-                  className={`p-4 flex flex-col cursor-pointer transition-transform ease-out active:scale-[0.97] ${isActive ? "ring-2 ring-brand-orange bg-brand-orange/5 border-brand-orange/50" : "hover:border-primary/50"}`}
-                  onClick={() => setActiveBasket(isActive ? null : b.id)}
-                  aria-pressed={isActive}
-                  {...pressable(() => setActiveBasket(isActive ? null : b.id))}
-                >
-                  <Icon className={`w-6 h-6 mb-3 ${isActive ? "text-brand-orange" : "text-muted-foreground"}`} />
-                  <h3 className="font-semibold text-sm mb-1 text-foreground">{b.name}</h3>
-                  <p className="text-xs text-muted-foreground line-clamp-2">{b.desc}</p>
-                </Card>
-              );
-            })}
-          </div>
-        </div>
-
-        <ScannerLibrary active={activeScans} counts={counts} onToggle={toggleScan} onClear={() => setActiveScans([])} />
-
-        <CustomFilterBuilder rules={rules} onChange={changeRules} matches={ruleMatches} query={query} onQueryChange={changeQuery} queryMatches={queryMatches} />
 
         {/* Market context, after the screener: any-stock search, snapshot, movers, deals, circuits. */}
         <GlobalStockSearch className="mb-6" />

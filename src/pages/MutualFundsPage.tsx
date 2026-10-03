@@ -81,6 +81,17 @@ export default function MutualFundsPage() {
         description="Every open-ended mutual fund by category, with 1-month to 5-year returns from AMFI's daily NAVs. Compare large cap, flexi cap, ELSS, debt and index funds."
         breadcrumbs={crumbs}
         faqItems={faq.map((f) => ({ question: f.q, answer: f.a }))}
+        jsonLd={{
+          "@type": "Dataset",
+          name: "Indian mutual fund returns by SEBI category",
+          description: "Trailing 1-month to 5-year returns for every open-ended Indian mutual fund scheme, direct and regular plans, computed from AMFI's daily net asset values.",
+          url: "https://www.sphpnp.com/mutual-funds",
+          ...(navDate ? { dateModified: navDate } : {}),
+          isBasedOn: "https://www.amfiindia.com/net-asset-value",
+          creator: { "@type": "Organization", name: "Shri Parasram Holdings Pvt. Ltd.", url: "https://www.sphpnp.com" },
+          spatialCoverage: "India",
+          variableMeasured: ["NAV", "1-month return", "1-year return", "3-year CAGR", "5-year CAGR"],
+        }}
       />
       <Header />
       <VisibleBreadcrumbs items={crumbs} />

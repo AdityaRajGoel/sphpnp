@@ -87,6 +87,14 @@ export function annualised(closes: Close[], years: number): number | null {
   const series = valid(closes);
   const last = lastOf(series);
   if (!last) return null;
-  const base = lastOf(series.filter((c) => c.trade_date <= shift(last.trade_date, Math.round(years * 365.25))));
-  return base ? ((last.close / base.close) ** (1 / years) - 1) * 100 : null;
+  const anchor = shift(last.trade_date, Math.round(years * 365.25));
+  // A history that starts within a week after the anchor (a holiday, or a
+  // ten-year backfill that began the next trading day) still counts, compounded
+  // over the time it actually spans.
+  const base = lastOf(series.filter((c) => c.trade_date <= anchor)) ?? (series[0] && series[0].trade_date <= shift(anchor, -START_SLACK_DAYS) ? series[0] : undefined);
+  if (!base) return null;
+  const spanYears = (Date.parse(last.trade_date) - Date.parse(base.trade_date)) / (365.25 * 86_400_000);
+  return ((last.close / base.close) ** (1 / spanYears) - 1) * 100;
 }
+
+const START_SLACK_DAYS = 7;

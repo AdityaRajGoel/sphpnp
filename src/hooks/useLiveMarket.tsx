@@ -26,6 +26,9 @@ export type LiveStock = {
   high?: string;
   low?: string;
   changePercent?: number;
+  /** MCX contract expiry (ISO) when the quote came from MCX itself. */
+  expiry?: string;
+  source?: "MCX";
 };
 
 export type SectorData = {

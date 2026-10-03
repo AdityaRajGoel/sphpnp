@@ -20,6 +20,7 @@ import StockTicker from "@/components/StockTicker";
 import PageHeader, { HeaderStat } from "@/components/PageHeader";
 import { istToday } from "@/lib/market-data";
 import { formatGmp, formatGmpPercent, formatMinInvestment, formatSubscription, getIpos, gmpPercent, type Ipo } from "@/lib/ipo";
+import IpoTimeline from "@/components/ipo/IpoTimeline";
 import {
   compareSlugsToParam,
   filterIpos,
@@ -156,6 +157,7 @@ export default function IpoPage() {
             </div>
           )}
         </div>
+        <IpoTimeline />
       </section>
     </main>
     <IPOCompareBar count={compareIpos.length} onCompare={() => setCompareOpen(true)} onClear={() => setCompareSlugs([])} />

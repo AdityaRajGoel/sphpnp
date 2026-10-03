@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { isTradingDay } from "@/lib/market-holidays";
 import { isPrerender } from "@/lib/prerender";
+import { fetchUniverseFile } from "@/lib/universe-file";
 
 export type ScreenerStock = {
   symbol: string;
@@ -61,6 +62,9 @@ export function currentStocks(stocks: ScreenerStock[]): ScreenerStock[] {
   return stocks.filter((s) => s.price > 0 && freshest - (Date.parse(s.updated_at) || 0) <= WEEK_MS);
 }
 
+/** The static file's quotes paint the table only while this fresh; the live refresh follows either way. */
+const FILE_FOR_QUOTES_MS = 15 * 60_000;
+
 export function useScreenerStocks() {
   const [stocks, setStocks] = useState<ScreenerStock[]>([]);
   const [loading, setLoading] = useState(true);
@@ -95,10 +99,12 @@ export function useScreenerStocks() {
       // This is a direct DB query (no Yahoo Finance), typically resolves in <200ms.
       // It lets the table render immediately with the last-known prices.
       if (!refresh) {
-        const { data: cached } = await supabase
-          .from("screener_stocks")
-          .select("*")
-          .order("market_cap", { ascending: false });
+        // The static universe file when it is recent enough to stand in for the table read.
+        const file = await fetchUniverseFile();
+        const recent = file && Date.now() - Date.parse(file.generated_at) < FILE_FOR_QUOTES_MS;
+        const cached = recent
+          ? ([...file.quotes] as Parameters<typeof mapStock>[0][]).sort((a, b) => Number(b.market_cap) - Number(a.market_cap))
+          : (await supabase.from("screener_stocks").select("*").order("market_cap", { ascending: false })).data;
 
         const freshest = cached?.reduce((max, row) => (row.updated_at > max ? row.updated_at : max), "") ?? "";
         if (cached && cached.length > 0 && snapshotIsShowable(freshest)) {

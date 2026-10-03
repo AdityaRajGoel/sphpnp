@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { ArrowUpDown } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import type { ScreenerStock } from "@/hooks/useScreenerStocks";
+import AiAnalysisButton from "@/components/screener/AiAnalysisButton";
 import {
   FUNDAMENTAL_COLUMNS,
   formatFundamental,
@@ -17,13 +18,15 @@ type Props = {
   summaries: Map<string, FundamentalsSummary>;
   /** Opens a stock's page; a click anywhere on its row except the name link. */
   onOpen?: (symbol: string) => void;
+  /** Opens the AI analysis for a row; adds the AI column when given. */
+  onAnalyse?: (symbol: string) => void;
 };
 
 const quarterLabel = (iso: string | null) =>
   iso ? new Date(`${iso}T00:00:00Z`).toLocaleDateString("en-IN", { month: "short", year: "numeric", timeZone: "UTC" }) : "—";
 
 /** The screener's fundamentals view: returns, margins, growth, leverage and valuation per stock. */
-export default function FundamentalsTable({ rows, summaries, onOpen }: Props) {
+export default function FundamentalsTable({ rows, summaries, onOpen, onAnalyse }: Props) {
   const [sortKey, setSortKey] = useState<FundamentalsKey | null>(null);
   const [dir, setDir] = useState<"asc" | "desc">("desc");
 
@@ -61,6 +64,7 @@ export default function FundamentalsTable({ rows, summaries, onOpen }: Props) {
                 </th>
               ))}
               <th className="text-right px-3 py-3 font-medium text-muted-foreground whitespace-nowrap">Latest qtr</th>
+              {onAnalyse && <th className="px-3 py-3 text-right font-medium text-muted-foreground">AI</th>}
             </tr>
           </thead>
           <tbody>
@@ -88,6 +92,7 @@ export default function FundamentalsTable({ rows, summaries, onOpen }: Props) {
                     );
                   })}
                   <td className="px-3 py-2.5 text-right text-xs text-muted-foreground whitespace-nowrap">{quarterLabel(f?.latest_quarter ?? null)}</td>
+                  {onAnalyse && <td className="px-3 py-2 text-right"><AiAnalysisButton symbol={s.symbol} name={s.name} onAnalyse={onAnalyse} /></td>}
                 </tr>
               );
             })}

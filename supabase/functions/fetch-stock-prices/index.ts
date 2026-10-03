@@ -103,6 +103,30 @@ interface QuoteResult {
   volume?: number;
 }
 
+// MCX's own quotes (mcx_futures_daily, written by sync-mcx from MCX's market watch):
+// each commodity's most-held contract on the latest trading day. Used while that day
+// is recent; Economic Times stays the fallback for a stopped job.
+const MCX_MAX_AGE_MS = 4 * 24 * 60 * 60 * 1000; // a weekend plus a holiday
+type McxRow = { trade_date: string; symbol: string; expiry: string; close: number; change_pct: number | null; oi: number; ltt: string };
+
+// deno-lint-ignore no-explicit-any
+async function mcxCommodities(sb: any): Promise<Map<string, McxRow>> {
+  if (!sb) return new Map();
+  const { data, error } = await sb
+    .from("mcx_futures_daily")
+    .select("trade_date,symbol,expiry,close,change_pct,oi,ltt")
+    .in("symbol", ET_COMMODITIES.map((c) => c.symbol))
+    .order("trade_date", { ascending: false })
+    .limit(200);
+  if (error || !data?.length) {
+    if (error) console.error("mcx_futures_daily read failed:", error.message);
+    return new Map();
+  }
+  const latest = (data as McxRow[]).filter((r) => r.trade_date === data[0].trade_date);
+  if (Date.now() - Date.parse(latest[0].ltt) > MCX_MAX_AGE_MS) return new Map();
+  return activeContracts(latest);
+}
+
 async function fetchETCommodity(symbol: string) {
   try {
     const res = await fetch(`https://economictimes.indiatimes.com/commoditysummary/symbol-${symbol}.cms`, {
@@ -198,6 +222,7 @@ function getIndianMarketStatus() {
 }
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { activeContracts } from "../_shared/mcx.ts";
 
 const CACHE_KEY = "stock_prices";
 const CACHE_TTL_MS = 2 * 60 * 1000; // 2 minutes when market open, check below
@@ -291,7 +316,21 @@ Deno.serve(async (req) => {
       })),
       // Fetch ET Commodities and Yahoo Currencies independently
       (async () => {
+        const mcx = await mcxCommodities(sb);
         const etResults = await Promise.all(ET_COMMODITIES.map(async (item) => {
+          const m = mcx.get(item.symbol);
+          if (m) {
+            const pct = m.change_pct ?? 0;
+            return {
+              name: item.name,
+              price: `₹${formatPrice(Number(m.close))}`,
+              change: `${pct >= 0 ? '+' : ''}${Number(pct).toFixed(2)}%`,
+              up: pct >= 0,
+              unit: item.unit,
+              expiry: m.expiry,
+              source: "MCX",
+            };
+          }
           const q = await fetchETCommodity(item.symbol);
           if (!q) return null;
           return {

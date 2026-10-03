@@ -8,7 +8,15 @@ import { useToast } from "@/hooks/use-toast";
 
 // Admin feed for the numbers the site can't get from a live API:
 // daily FII/DII/MF flows (published by NSE/AMFI after market close) and
-// upcoming corporate actions. Public pages read these tables directly.
+// upcoming corporate actions. Public pages read these tables directly; writes go
+// through manage-unlisted-shares with the admin password, because the tables only
+// accept writes from a database admin and this page signs in with the password.
+
+/** Runs one password-checked admin action; throws the server's message on failure. */
+async function adminAction(password: string, action: string, data: Record<string, unknown>): Promise<void> {
+  const { data: res, error } = await supabase.functions.invoke("manage-unlisted-shares", { body: { action, password, data } });
+  if (error || !res?.success) throw new Error(res?.error ?? error?.message ?? "Request failed");
+}
 
 const FLOW_CATEGORIES = [
   { key: "fii_cash", label: "FII (Cash)" },
@@ -31,7 +39,7 @@ type CorpAction = {
 
 const todayISO = () => new Date().toISOString().slice(0, 10);
 
-const FlowsEditor = () => {
+const FlowsEditor = ({ password }: { password: string }) => {
   const { toast } = useToast();
   const [date, setDate] = useState(todayISO());
   const [rows, setRows] = useState<Record<string, FlowRow>>({});
@@ -71,9 +79,7 @@ const FlowsEditor = () => {
         toast({ title: "Nothing to save", description: "Enter at least one buy/sell figure." });
         return;
       }
-      const { error } = await (supabase.from("market_flows" as never) as ReturnType<typeof supabase.from>)
-        .upsert(payload as never, { onConflict: "activity_date,category" });
-      if (error) throw error;
+      await adminAction(password, "save_flows", { rows: payload });
       toast({ title: "Flows saved ✅", description: `${payload.length} entr${payload.length > 1 ? "ies" : "y"} for ${date}` });
     } catch (e: unknown) {
       toast({ title: "Save failed", description: e instanceof Error ? e.message : "Unknown error", variant: "destructive" });
@@ -133,7 +139,7 @@ const FlowsEditor = () => {
   );
 };
 
-const CorporateActionsEditor = () => {
+const CorporateActionsEditor = ({ password }: { password: string }) => {
   const { toast } = useToast();
   const [actions, setActions] = useState<CorpAction[]>([]);
   const [loading, setLoading] = useState(true);
@@ -161,9 +167,7 @@ const CorporateActionsEditor = () => {
     }
     setSaving(true);
     try {
-      const { error } = await (supabase.from("corporate_actions" as never) as ReturnType<typeof supabase.from>)
-        .insert({ ...draft, company: draft.company.trim(), details: draft.details.trim() } as never);
-      if (error) throw error;
+      await adminAction(password, "add_corporate_action", { ...draft, company: draft.company.trim(), details: draft.details.trim() });
       setDraft(emptyDraft);
       toast({ title: "Corporate action added ✅" });
       load();
@@ -175,11 +179,10 @@ const CorporateActionsEditor = () => {
   };
 
   const remove = async (id: string) => {
-    const { error } = await (supabase.from("corporate_actions" as never) as ReturnType<typeof supabase.from>)
-      .delete()
-      .eq("id", id);
-    if (error) {
-      toast({ title: "Delete failed", description: error.message, variant: "destructive" });
+    try {
+      await adminAction(password, "delete_corporate_action", { id });
+    } catch (e: unknown) {
+      toast({ title: "Delete failed", description: e instanceof Error ? e.message : "Unknown error", variant: "destructive" });
       return;
     }
     setActions((p) => p.filter((a) => a.id !== id));
@@ -240,10 +243,10 @@ const CorporateActionsEditor = () => {
   );
 };
 
-const MarketDataManager = () => (
+const MarketDataManager = ({ password }: { password: string }) => (
   <div className="space-y-6">
-    <FlowsEditor />
-    <CorporateActionsEditor />
+    <FlowsEditor password={password} />
+    <CorporateActionsEditor password={password} />
   </div>
 );
 

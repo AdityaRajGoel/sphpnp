@@ -1,7 +1,7 @@
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClient, QueryClientProvider, dehydrate, hydrate, type DehydratedState } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
 import { LiveMarketProvider } from "@/hooks/useLiveMarket";
@@ -10,7 +10,7 @@ import type { ReactNode } from "react";
 import { usePageTracking } from "@/hooks/usePageTracking";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { LanguageProvider } from "@/i18n/LanguageContext";
-import { isPrerender } from "@/lib/prerender";
+import { isPrerender, pickDehydrated, readPrerenderedState } from "@/lib/prerender";
 import { MotionPreferenceProvider, useMotionPreference } from "@/contexts/MotionPreferenceContext";
 import { toMotionConfigValue } from "@/lib/motion-preference";
 import { AnimatePresence, motion, MotionConfig } from "motion/react";
@@ -90,6 +90,7 @@ const MarketMoversPage = lazy(() => import("./pages/MarketMoversPage"));
 const GiftNiftyPage = lazy(() => import("./pages/GiftNiftyPage"));
 const CommoditiesPage = lazy(() => import("./pages/CommoditiesPage"));
 const CommodityResearchPage = lazy(() => import("./pages/CommodityResearchPage"));
+const FiiDiiPage = lazy(() => import("./pages/FiiDiiPage"));
 const GlobalMarketsPage = lazy(() => import("./pages/GlobalMarketsPage"));
 const MutualFundsPage = lazy(() => import("./pages/MutualFundsPage"));
 const HelpPage = lazy(() => import("./pages/HelpPage"));
@@ -110,7 +111,7 @@ const candleVariants = {
 };
 
 const PageFallback = () => (
-  <div className="min-h-screen bg-background flex flex-col items-center justify-center relative overflow-hidden">
+  <div data-page-fallback className="min-h-screen bg-background flex flex-col items-center justify-center relative overflow-hidden">
     {/* Subtle grid background */}
     <div
       className="absolute inset-0 opacity-[0.02]"
@@ -204,6 +205,7 @@ const AnimatedRoutes = () => {
         <Route path="/markets/gift-nifty" element={<GiftNiftyPage />} />
         <Route path="/commodities" element={<CommoditiesPage />} />
         <Route path="/commodity-research" element={<CommodityResearchPage />} />
+        <Route path="/fii-dii-data" element={<FiiDiiPage />} />
         <Route path="/global-markets" element={<GlobalMarketsPage />} />
         <Route path="/mutual-funds" element={<MutualFundsPage />} />
         <Route path="/markets/:list" element={<MarketMoversPage />} />
@@ -258,13 +260,22 @@ const AnimatedRoutes = () => {
   );
 };
 
-const queryClient = new QueryClient();
+export const queryClient = new QueryClient();
 
 // scripts/prerender.js waits on this until no query is in flight, so a panel
 // that loads after the page's own data is captured with its content, never
 // its skeleton.
 if (isPrerender()) {
-  (window as Window & { __PRERENDER_QC__?: QueryClient }).__PRERENDER_QC__ = queryClient;
+  const w = window as Window & { __PRERENDER_QC__?: QueryClient; __PRERENDER_STATE__?: () => string };
+  w.__PRERENDER_QC__ = queryClient;
+  // The capture writes this into the page, so the browser starts from the data
+  // the static HTML was drawn from instead of every query's loading state.
+  w.__PRERENDER_STATE__ = () => JSON.stringify(pickDehydrated(dehydrate(queryClient)));
+} else {
+  // Each query keeps the time it was fetched at the build, so its own staleTime
+  // still decides when it refetches.
+  const shipped = readPrerenderedState();
+  if (shipped) hydrate(queryClient, shipped as DehydratedState);
 }
 
 /**

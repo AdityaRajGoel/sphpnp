@@ -12,6 +12,7 @@ export const INDEX_NAMES = [
   "NIFTY PSU BANK", "NIFTY FINANCIAL SERVICES", "NIFTY IT", "NIFTY AUTO",
   "NIFTY PHARMA", "NIFTY HEALTHCARE", "NIFTY FMCG", "NIFTY METAL", "NIFTY REALTY",
   "NIFTY ENERGY", "NIFTY OIL & GAS", "NIFTY MEDIA", "NIFTY CONSUMER DURABLES",
+  "NIFTY MICROCAP 250", "NIFTY TOTAL MARKET",
 ];
 
 /** "NIFTY OIL & GAS" -> "nifty-oil-gas". Must match slugify in scripts/lib/market-list-routes.mjs. */
@@ -108,4 +109,28 @@ export async function loadIndexBoard(): Promise<IndexBoardRow[]> {
     const b = base.get(r.index_name);
     return [{ name, trade_date: r.trade_date, close: r.close, change_pct: r.change_pct, pe: r.pe, year_pct: b && r.close ? (r.close / b - 1) * 100 : null }];
   });
+}
+
+/** The broad NSE indices the screener can filter by, smallest first. */
+export const SCREENER_INDICES = [
+  { key: "NIFTY 50", label: "Nifty 50" },
+  { key: "NIFTY NEXT 50", label: "Nifty Next 50" },
+  { key: "NIFTY 100", label: "Nifty 100" },
+  { key: "NIFTY MIDCAP 150", label: "Nifty Midcap 150" },
+  { key: "NIFTY SMALLCAP 250", label: "Nifty Smallcap 250" },
+  { key: "NIFTY MICROCAP 250", label: "Nifty Microcap 250" },
+] as const;
+
+/** Symbols in each of SCREENER_INDICES, paged past the 1,000-row cap. */
+export async function loadIndexMembership(): Promise<Map<string, Set<string>>> {
+  const out = new Map<string, Set<string>>();
+  for (let from = 0; from < 10_000; from += 1000) {
+    const { data, error } = await supabase.from("index_constituents" as never)
+      .select("index_name,symbol").in("index_name", SCREENER_INDICES.map((i) => i.key)).order("index_name").order("symbol").range(from, from + 999);
+    if (error) throw new Error(error.message);
+    const rows = (data ?? []) as { index_name: string; symbol: string }[];
+    for (const r of rows) (out.get(r.index_name) ?? out.set(r.index_name, new Set()).get(r.index_name)!).add(r.symbol);
+    if (rows.length < 1000) break;
+  }
+  return out;
 }

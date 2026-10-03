@@ -16,6 +16,7 @@ import { CHART, EmptyState, SectionHeading, axisTick, tooltipStyle } from "@/com
 import { useLiveMarket } from "@/hooks/useLiveMarket";
 import { globalMarkets, shortDate, type GlobalBar } from "@/lib/market-data";
 import { alignRupees, monthTicks, trailingReturns, yearRange, GOLD_10G_PER_OZ, SILVER_KG_PER_OZ, type Close } from "@/lib/index-performance";
+import McxBoard from "@/components/markets/McxBoard";
 
 /** "₹1,47,724.00" -> 147724; "+1.10%" -> 1.1. The live feed sends display strings. */
 const toNumber = (s: string | undefined) => {
@@ -112,7 +113,7 @@ export default function CommoditiesPage() {
         </PageHeader>
 
         <section aria-labelledby="mcx-heading">
-          <SectionHeading id="mcx-heading" title="MCX prices" subtitle="Near-month futures on the Multi Commodity Exchange, change on the previous close." />
+          <SectionHeading id="mcx-heading" title="MCX prices" subtitle="The most-held futures contract on the Multi Commodity Exchange, change on the previous close." />
           {mcx.length === 0 ? (
             <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">{Array.from({ length: 6 }, (_, i) => <Skeleton key={i} className="h-24" />)}</div>
           ) : (
@@ -125,7 +126,7 @@ export default function CommoditiesPage() {
                       <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{c.name}</p>
                       <p className="mt-1 text-xl font-semibold tabular-nums">{c.price}</p>
                       <p className={`text-sm font-medium tabular-nums ${tone(change)}`}>{pct(change)}</p>
-                      <p className="mt-1 text-xs text-muted-foreground">{MCX_NOTES[c.name] ?? c.unit}</p>
+                      <p className="mt-1 text-xs text-muted-foreground">{MCX_NOTES[c.name] ?? c.unit}{c.expiry && <> · {new Date(`${c.expiry}T00:00:00Z`).toLocaleDateString("en-IN", { month: "short", year: "numeric", timeZone: "UTC" })} contract</>}</p>
                     </Card>
                   </li>
                 );
@@ -133,6 +134,8 @@ export default function CommoditiesPage() {
             </ul>
           )}
         </section>
+
+        <McxBoard />
 
         <section aria-labelledby="history-heading" className="mt-10">
           <SectionHeading id="history-heading" title="International prices, one year" subtitle="End-of-day closes, collected each weekday morning." />
@@ -209,7 +212,7 @@ export default function CommoditiesPage() {
         )}
 
         <p className="mt-8 text-xs text-muted-foreground">
-          MCX quotes via Economic Times; international closes from EODHD and Yahoo Finance; energy spot prices from the US EIA via FRED. Market data, not investment advice. See also{" "}
+          MCX quotes from MCX's market watch (Economic Times if that is unavailable); international closes from EODHD and Yahoo Finance; energy spot prices from the US EIA via FRED. Market data, not investment advice. See also{" "}
           <Link to="/commodity-research" className="underline underline-offset-4 hover:text-secondary">ten-year commodity research</Link>,{" "}
           <Link to="/indices" className="underline underline-offset-4 hover:text-secondary">NSE indices</Link> and{" "}
           <Link to="/market-pulse#global" className="underline underline-offset-4 hover:text-secondary">global cues</Link>.

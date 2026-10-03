@@ -808,7 +808,7 @@ const AdminPage = () => {
           </TabsContent>
 
           <TabsContent value="market">
-            <MarketDataManager />
+            <MarketDataManager password={password} />
           </TabsContent>
         </Tabs>
       </div>

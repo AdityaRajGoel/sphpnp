@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { UNIVERSE_SOURCES, fetchUniverseFile } from "@/lib/universe-file";
 
 /**
  * The screener's composite-score view (stock_fundamental_scores_latest), built
@@ -29,10 +30,11 @@ export type ScoreSummary = {
   profit_cagr_3y: number | null;
 };
 
-export const SCORE_FIELDS =
-  "symbol,period_end,piotroski_score,piotroski_testable,net_debt_to_equity,accruals_ratio,cash_conversion,capex_intensity,fcf_yield,ev_to_sales,peg,payout_ratio,revenue_cagr_3y,profit_cagr_3y";
+export const SCORE_FIELDS = UNIVERSE_SOURCES.scores.select;
 
 export async function getScoreSummaries(): Promise<Map<string, ScoreSummary>> {
+  const file = await fetchUniverseFile();
+  if (file) return new Map((file.scores as unknown as ScoreSummary[]).map((row) => [row.symbol, row]));
   const { data, error } = await (supabase.from("stock_fundamental_scores_latest" as never) as ReturnType<typeof supabase.from>)
     .select(SCORE_FIELDS)
     .limit(1000);

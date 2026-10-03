@@ -214,31 +214,29 @@ export default function StockPage() {
                 <div className="text-right">
                   {s.header?.price !== null && s.header?.price !== undefined && (
                     <div className="text-2xl font-bold tabular-nums">
-                      ₹{s.header.price.toFixed(2)}
+                      ₹{s.header.price.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </div>
                   )}
                   {s.header?.updated_at && (
                     <div className="text-xs text-muted-foreground">
-                      price as of{" "}
-                      {new Date(s.header.updated_at).toLocaleString("en-IN")}
+                      Price as of{" "}
+                      {new Date(s.header.updated_at).toLocaleString("en-IN", { day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit", timeZone: "Asia/Kolkata" })} IST
                     </div>
                   )}
                   <div className="mt-2 flex flex-wrap items-center justify-end gap-2">
                     {s.header && <WatchlistButton symbol={s.header.symbol} name={s.header.name} withLabel />}
                     <SymbolSwitcher />
-                    {/* Gated on hasFinancials, not just on loading: a symbol the
-                        sync cursor has not reached has no results for the AI to
-                        read, and offering analysis on it invites a report built
-                        from nothing but a price. */}
-                    {hasFinancials && aiStock && (
+                    {/* Offered on every stock, as the screener does: fields this
+                        page lacks go to the model as absent and are withheld in the
+                        report rather than estimated (see ai-analysis-absence.test). */}
+                    {aiStock && (
                       <Button
-                        variant="outline"
                         size="sm"
-                        aria-label={`Ask AI about ${aiStock.name}`}
-                        className="h-11 gap-1.5 border-brand-orange/30 bg-transparent px-2.5 text-xs text-brand-orange hover:bg-brand-orange/10 hover:text-brand-orange md:h-8"
+                        aria-label={`AI analysis of ${aiStock.name}`}
+                        className="h-11 gap-1.5 bg-brand-orange px-3 text-xs font-semibold text-white hover:bg-brand-orange/90 md:h-8"
                         onClick={() => setAskingAI(true)}
                       >
-                        <Bot aria-hidden="true" /> Ask AI
+                        <Bot aria-hidden="true" /> AI analysis
                       </Button>
                     )}
                   </div>

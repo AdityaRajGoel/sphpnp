@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { ArrowUpDown } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import type { ScreenerStock } from "@/hooks/useScreenerStocks";
+import AiAnalysisButton from "@/components/screener/AiAnalysisButton";
 import {
   RISK_COLUMNS,
   formatRisk,
@@ -17,6 +18,8 @@ type Props = {
   summaries: Map<string, RiskSummary>;
   /** Opens a stock's page; a click anywhere on its row except the name link. */
   onOpen?: (symbol: string) => void;
+  /** Opens the AI analysis for a row; adds the AI column when given. */
+  onAnalyse?: (symbol: string) => void;
 };
 
 /**
@@ -28,7 +31,7 @@ type Props = {
  * that describe rather than judge (volatility, beta, drawdown) carry no colour;
  * see riskTone for why.
  */
-export default function RiskTable({ rows, summaries, onOpen }: Props) {
+export default function RiskTable({ rows, summaries, onOpen, onAnalyse }: Props) {
   const [sortKey, setSortKey] = useState<RiskKey | null>(null);
   const [dir, setDir] = useState<"asc" | "desc">("desc");
 
@@ -65,6 +68,7 @@ export default function RiskTable({ rows, summaries, onOpen }: Props) {
                 </th>
               ))}
               <th className="text-right px-3 py-3 font-medium text-muted-foreground whitespace-nowrap">Trend</th>
+              {onAnalyse && <th className="px-3 py-3 text-right font-medium text-muted-foreground">AI</th>}
             </tr>
           </thead>
           <tbody>
@@ -104,6 +108,7 @@ export default function RiskTable({ rows, summaries, onOpen }: Props) {
                       <span className="text-muted-foreground">—</span>
                     )}
                   </td>
+                  {onAnalyse && <td className="px-3 py-2 text-right"><AiAnalysisButton symbol={s.symbol} name={s.name} onAnalyse={onAnalyse} /></td>}
                 </tr>
               );
             })}

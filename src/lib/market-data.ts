@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { INDEX_UNDERLYINGS } from "../../supabase/functions/_shared/option-chain";
+import type { FlowRecord, OiRecord } from "@/lib/fii-dii";
 
 /**
  * Reads for the market tables sync-market-data fills (see
@@ -383,4 +384,37 @@ export function summariseGlobal(bars: GlobalBar[], ticker: string): GlobalSummar
     month: change(30), year: change(365),
     spark: series.slice(-65).map((b) => b.close),
   };
+}
+
+/** Stored FII and DII cash flows since `since` (ISO date), oldest first, paged past the 1,000-row cap. */
+export async function flowHistory(since: string): Promise<FlowRecord[]> {
+  const out: FlowRecord[] = [];
+  for (let from = 0; from < 20_000; from += 1000) {
+    const page = await rows<FlowRecord>(table("market_flows").select("activity_date,category,buy_cr,sell_cr").in("category", ["fii_cash", "dii_cash"]).gte("activity_date", since).order("activity_date").order("category").range(from, from + 999));
+    out.push(...page);
+    if (page.length < 1000) break;
+  }
+  return out;
+}
+
+/** FII index-futures open interest per session since `since`, oldest first. */
+export async function fiiIndexFutures(since: string): Promise<OiRecord[]> {
+  return rows<OiRecord>(table("participant_oi_daily").select("trade_date,client_type,fut_idx_long,fut_idx_short").eq("client_type", "FII").gte("trade_date", since).order("trade_date").limit(1000));
+}
+
+export type FiiDerivativeDay = { trade_date: string; instrument: string; buy_cr: number; sell_cr: number; oi_contracts: number };
+export type FiiDerivativeMonth = { month: string; instrument: string; net_cr: number; sessions: number; oi_end: number };
+
+/** FII buying, selling and open interest per derivatives instrument on the latest stored session. */
+export async function fiiDerivativesLatest(): Promise<FiiDerivativeDay[]> {
+  const recent = await rows<FiiDerivativeDay>(table("fii_derivatives_daily").select("trade_date,instrument,buy_cr,sell_cr,oi_contracts").order("trade_date", { ascending: false }).limit(4));
+  const day = recent[0]?.trade_date;
+  return recent.filter((r) => r.trade_date === day).map((r) => ({ ...r, buy_cr: Number(r.buy_cr), sell_cr: Number(r.sell_cr), oi_contracts: Number(r.oi_contracts) }));
+}
+
+/** FII net buying per instrument per month since Dec 2014, oldest first (one RPC, not ~12,000 rows). */
+export async function fiiDerivativesMonthly(): Promise<FiiDerivativeMonth[]> {
+  const { data, error } = await supabase.rpc("fii_derivatives_monthly" as never);
+  if (error) throw new Error(error.message);
+  return ((data ?? []) as [string, string, number, number, number][]).map(([month, instrument, net, sessions, oi]) => ({ month, instrument, net_cr: Number(net), sessions: Number(sessions), oi_end: Number(oi) }));
 }

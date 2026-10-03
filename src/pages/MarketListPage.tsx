@@ -1,5 +1,6 @@
 import { useMemo } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import { ChevronRight } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -36,6 +37,7 @@ const listNames = (names: string[]) => (names.length < 2 ? names.join("") : `${n
  * its stock page. Marked data-list-state="ready" for scripts/prerender.js.
  */
 export default function MarketListPage({ kind }: { kind: "index" | "sector" }) {
+  const navigate = useNavigate();
   const { slug } = useParams<{ slug: string }>();
   const universe = useScreenerUniverse();
   const indexName = kind === "index" ? indexBySlug(slug) : null;
@@ -162,6 +164,7 @@ export default function MarketListPage({ kind }: { kind: "index" | "sector" }) {
 
           <section aria-labelledby="constituents" className="mt-8">
             <h2 id="constituents" className="text-xl font-bold">{kind === "index" ? `${title} constituents` : `All ${sectorName} stocks`}, by market cap</h2>
+            <p className="mt-1 text-sm text-muted-foreground">Select a company to open its stock page: price history, financials, shareholding and research profile.</p>
             <Card className="mt-3 overflow-hidden p-0">
               {loading ? <Skeleton className="h-96 w-full" /> : (
                 <div className="overflow-x-auto">
@@ -177,13 +180,16 @@ export default function MarketListPage({ kind }: { kind: "index" | "sector" }) {
                     </thead>
                     <tbody>
                       {rows.map((r, i) => (
-                        <tr key={r.symbol} className="border-b last:border-0 hover:bg-muted/30">
+                        // The whole row opens the stock page; the name stays a real link for
+                        // keyboards, crawlers and opening in a new tab.
+                        <tr key={r.symbol} onClick={r.metrics ? (e) => { if (!(e.target as HTMLElement).closest("a")) navigate(`/stock/${encodeURIComponent(r.symbol)}`); } : undefined} className={`group border-b last:border-0 ${r.metrics ? "cursor-pointer hover:bg-muted/40" : ""}`}>
                           <td className="p-3 tabular-nums text-muted-foreground">{i + 1}</td>
                           <th scope="row" className="sticky left-0 z-10 bg-card p-3 text-left font-normal">
                             {r.metrics
-                              ? <Link to={`/stock/${encodeURIComponent(r.symbol)}`} className="font-medium hover:text-secondary hover:underline underline-offset-4">{r.name}</Link>
+                              ? <Link to={`/stock/${encodeURIComponent(r.symbol)}`} className="font-medium text-foreground underline-offset-4 group-hover:text-secondary group-hover:underline">{r.name}</Link>
                               : <span>{r.name}</span>}
                             <span className="ml-2 font-mono text-[0.6875rem] text-muted-foreground">{r.symbol}</span>
+                            {r.metrics && <ChevronRight className="ml-1 inline h-3.5 w-3.5 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-secondary" aria-hidden />}
                           </th>
                           {kind === "index" && <td className="hidden p-3 text-muted-foreground sm:table-cell">{r.industry ?? "—"}</td>}
                           {COLUMNS.map((m) => <td key={m.id} className="whitespace-nowrap p-3 text-right tabular-nums">{r.metrics ? displayMetric(m, r.metrics) : formatMetric(null, m.unit)}</td>)}

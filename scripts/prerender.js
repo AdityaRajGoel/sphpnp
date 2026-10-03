@@ -6,7 +6,7 @@ import { fetchStockRoutes, assertStockPageCaptured } from './lib/stock-routes.mj
 import { fetchIpoRoutes, assertIpoPageCaptured } from './lib/ipo-routes.mjs';
 import { fetchMarketListRoutes, assertListPageCaptured, MARKET_MOVER_ROUTES } from './lib/market-list-routes.mjs';
 import { routeToFilePath } from './lib/route-paths.mjs';
-import { assertHeadCaptured, cleanCapturedHtml, expectedCanonical } from './lib/prerender-html.mjs';
+import { assertHeadCaptured, cleanCapturedHtml, expectedCanonical, shipPageState } from './lib/prerender-html.mjs';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DIST_DIR = path.resolve(__dirname, '../dist');
 
@@ -52,6 +52,7 @@ const routes = [
   '/market-pulse',
   '/commodities',
   '/commodity-research',
+  '/fii-dii-data',
   '/global-markets',
   '/mutual-funds',
   '/compare',
@@ -197,7 +198,7 @@ async function captureOnce(browser, port, route) {
         .catch(() => {});
     }
 
-    if (route === '/indices' || route === '/commodities' || route === '/commodity-research' || route === '/mutual-funds' || route.startsWith('/indices/') || route.startsWith('/sectors/')) {
+    if (route === '/indices' || route === '/commodities' || route === '/commodity-research' || route === '/fii-dii-data' || route === '/mutual-funds' || route.startsWith('/indices/') || route.startsWith('/sectors/')) {
       await page.waitForSelector('[data-list-state="ready"]', { timeout: 25000 }).catch(() => {});
     }
     // Panels below the page's own data (results, red flags, peers, news) load
@@ -230,7 +231,8 @@ async function captureOnce(browser, port, route) {
       )
       .catch(() => {});
 
-    const html = cleanCapturedHtml(await page.content(), port, route);
+    const state = await page.evaluate(() => window.__PRERENDER_STATE__?.() ?? null).catch(() => null);
+    const html = shipPageState(cleanCapturedHtml(await page.content(), port, route), state);
     assertHeadCaptured(route, html, { genericTitle: GENERIC_TITLE, checkCanonical });
     if (route.startsWith('/stock/')) {
       assertStockPageCaptured(route, html);
@@ -341,7 +343,9 @@ async function prerender() {
       // above 4 parallel pages capture completeness was measured to collapse, and
       // every page still passes the same state assertions and bounded retries,
       // so a page that is not ready fails the build rather than shipping.
-      const queue = [...routes, ...listRoutes, ...stockRoutes, ...ipoRoutes, ERROR_ROUTE];
+      // PRERENDER_ONLY=/,/screener captures just those routes, for checking a change locally.
+      const only = process.env.PRERENDER_ONLY?.split(',').map((r) => r.trim()).filter(Boolean);
+      const queue = only?.length ? only : [...routes, ...listRoutes, ...stockRoutes, ...ipoRoutes, ERROR_ROUTE];
       const total = queue.length;
       let next = 0;
       let done = 0;

@@ -1,5 +1,5 @@
 /**
- * Microsoft Clarity, loaded only with consent.
+ * Microsoft Clarity, loaded only with consent; Google Analytics' consent updated to match.
  *
  * It used to be an inline snippet in index.html, so it ran - and set its _clck /
  * _clsk cookies - for every visitor, including those who picked "Essential only" in
@@ -15,7 +15,15 @@ type ClarityFn = ((...args: unknown[]) => void) & { q?: unknown[][] };
 declare global {
   interface Window {
     clarity?: ClarityFn;
+    /** Google tag from index.html; consent starts denied there. */
+    gtag?: (...args: unknown[]) => void;
   }
+}
+
+/** Google Analytics follows the same banner choice through Consent Mode. */
+function updateGoogleConsent(choice: ConsentChoice | null): void {
+  if (!window.gtag || choice === null) return;
+  window.gtag("consent", "update", { analytics_storage: choice === "all" ? "granted" : "denied" });
 }
 
 const TAG_SELECTOR = 'script[src^="https://www.clarity.ms/tag/"]';
@@ -36,6 +44,7 @@ function loadClarity(): void {
 }
 
 function apply(choice: ConsentChoice | null): void {
+  updateGoogleConsent(choice);
   if (choice === "all") {
     loadClarity();
     window.clarity?.("consent");
