@@ -27,6 +27,26 @@ const SEARCH_CACHE_MS = 30 * 60_000;
 const MAX_CACHED = 200;
 const searchCache = new Map<string, { at: number; contracts: Contract[] }>();
 
+/**
+ * webtrade drops the odd request (five 502s on 3 Oct 2026, minutes apart, then fine):
+ * one retry after a short pause on a network error or a 5xx; a 4xx is a real answer.
+ */
+async function fetchUpstream(url: string, init: RequestInit, timeoutMs: number): Promise<Response> {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      const res = await fetch(url, { ...init, signal: AbortSignal.timeout(timeoutMs) });
+      if (res.status < 500 || attempt === 2) return res;
+      await res.body?.cancel();
+    } catch (e) {
+      if (attempt === 2) throw e;
+    }
+    await new Promise((r) => setTimeout(r, 700));
+  }
+}
+
+/** webtrade answered, but refused the request itself (an unknown contract, say). */
+class Refused extends Error {}
+
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
@@ -38,7 +58,7 @@ const json = (body: unknown, status = 200) =>
 async function upstreamContracts(word: string): Promise<Contract[]> {
   const hit = searchCache.get(word);
   if (hit && Date.now() - hit.at < SEARCH_CACHE_MS) return hit.contracts;
-  const res = await fetch(`${BASE}/search/spansearch?source=WEB&searchString=${encodeURIComponent(word)}`, { signal: AbortSignal.timeout(10_000) });
+  const res = await fetchUpstream(`${BASE}/search/spansearch?source=WEB&searchString=${encodeURIComponent(word)}`, {}, 10_000);
   if (!res.ok) throw new Error(`webtrade search answered HTTP ${res.status}`);
   const upstream = (await res.json()) as { result?: Contract[] };
   const contracts = (upstream.result ?? []).filter(tradeable);
@@ -50,7 +70,7 @@ async function upstreamContracts(word: string): Promise<Contract[]> {
 const INSTRUMENTS = `${BASE}/instruments/instrument`;
 
 async function lookup(path: string): Promise<unknown> {
-  const res = await fetch(`${INSTRUMENTS}/${path}`, { signal: AbortSignal.timeout(10_000) });
+  const res = await fetchUpstream(`${INSTRUMENTS}/${path}`, {}, 10_000);
   if (!res.ok) throw new Error(`webtrade lookup answered HTTP ${res.status}`);
   return ((await res.json()) as { result?: unknown }).result;
 }
@@ -84,15 +104,14 @@ async function contract(symbol: string, series: string, expiry: string, kind: Ki
 }
 
 async function calculate(positions: Position[]) {
-  const res = await fetch(`${BASE}/instruments/calculator/span`, {
+  const res = await fetchUpstream(`${BASE}/instruments/calculator/span`, {
     method: "POST",
     headers: { "Content-Type": "application/json", api: "true" },
     body: JSON.stringify({ Portfolio: positions.map((p) => ({ Exchange: p.exchange, ExchangeInstrumentID: p.id, Position: p.quantity, Price: "0.0" })) }),
-    signal: AbortSignal.timeout(15_000),
-  });
+  }, 15_000);
   if (!res.ok) throw new Error(`webtrade span answered HTTP ${res.status}`);
   const upstream = (await res.json()) as { type?: string; description?: string; result?: Record<string, number> };
-  if (upstream.type !== "success" || !upstream.result) throw new Error(upstream.description ?? "webtrade span returned no result");
+  if (upstream.type !== "success" || !upstream.result) throw new Refused(upstream.description ?? "webtrade span returned no result");
   const r = upstream.result;
   return { success: true, span: r.SpanMargin ?? 0, exposure: r.ExposureMargin ?? 0, netPremium: r.NetOptionsPremium ?? 0, total: r.TotalMargin ?? 0 };
 }
@@ -127,6 +146,9 @@ Deno.serve(async (req) => {
     }
     return json({ success: false, error: "action must be search, calculate, expiries, strikes or contract" }, 400);
   } catch (e) {
-    return json({ success: false, error: (e as Error).message }, 502);
+    const message = e instanceof Error ? e.message : String(e);
+    if (e instanceof Refused) return json({ success: false, error: message }, 422);
+    console.error(`span-margin ${body.action ?? "?"} failed: ${message}`);
+    return json({ success: false, error: message }, 502);
   }
 });
