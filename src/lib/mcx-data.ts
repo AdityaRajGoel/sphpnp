@@ -19,11 +19,17 @@ const toQuote = (r: Record<string, unknown>): McxQuote => ({
   change_pct: num(r.change_pct), volume: Number(r.volume) || 0, oi: Number(r.oi) || 0, value_lacs: num(r.value_lacs), ltt: String(r.ltt),
 });
 
-/** Each commodity's most-held contract on its latest trading day, most traded (by value) first. */
+/**
+ * Each commodity's most-held contract on its latest trading day, most traded (by
+ * value) first. Contracts with no open interest and no volume (dormant agri and
+ * steel contracts) are left out: a price nobody trades at is not a quote.
+ */
 export async function mcxBoard(): Promise<McxQuote[]> {
   const { data, error } = await table("mcx_active_latest").select("*");
   if (error) throw new Error(error.message);
-  return ((data ?? []) as Record<string, unknown>[]).map(toQuote).sort((a, b) => (b.value_lacs ?? 0) - (a.value_lacs ?? 0));
+  return ((data ?? []) as Record<string, unknown>[]).map(toQuote)
+    .filter((q) => q.oi > 0 || q.volume > 0)
+    .sort((a, b) => (b.value_lacs ?? 0) - (a.value_lacs ?? 0));
 }
 
 /** Every contract of one commodity on one trading day, nearest expiry first: the term structure. */
