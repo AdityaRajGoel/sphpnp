@@ -12,6 +12,7 @@
 // Protected by SYNC_SECRET; writes use the service-role key. Safe to re-run.
 
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { errorText } from "../_shared/errors.ts";
 
 const BROWSER_HEADERS = {
   "User-Agent":
@@ -235,7 +236,7 @@ async function syncDeals(supabase: ReturnType<typeof createClient>): Promise<{ b
       block: rows.filter((r) => r.deal_type === "block").length,
     };
   } catch (e) {
-    return { error: e instanceof Error ? e.message : String(e) };
+    return { error: errorText(e) };
   }
 }
 
@@ -289,7 +290,7 @@ Deno.serve(async (req) => {
   } catch (e) {
     console.error("sync-bhavcopy: sync failed:", e);
     return new Response(
-      JSON.stringify({ success: false, error: e instanceof Error ? e.message : String(e) }),
+      JSON.stringify({ success: false, error: errorText(e) }),
       { status: 500, headers: { ...cors, "Content-Type": "application/json" } },
     );
   }

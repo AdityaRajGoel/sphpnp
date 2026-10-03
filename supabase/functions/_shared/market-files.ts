@@ -473,7 +473,10 @@ export type Constituent = { index_name: string; symbol: string; company: string 
 export function parseConstituents(csv: string, index_name: string): Constituent[] {
   return records(csv, (c) => c.includes("Symbol")).flatMap((r) => {
     const symbol = str(r.Symbol);
-    return symbol ? [{ index_name, symbol, company: str(r["Company Name"]), industry: str(r.Industry), isin: str(r["ISIN Code"]) }] : [];
+    // NSE parks a pending demerger or scheme as a "DUMMY<name>" row (DUMMYHEG,
+    // DUMMYINGL1, 3 Oct 2026): not a tradable stock, so not a constituent.
+    if (!symbol || /^DUMMY/i.test(symbol)) return [];
+    return [{ index_name, symbol, company: str(r["Company Name"]), industry: str(r.Industry), isin: str(r["ISIN Code"]) }];
   });
 }
 

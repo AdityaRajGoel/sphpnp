@@ -180,6 +180,6 @@ createServer(async (req, res) => {
     }
     json(res, 404, { error: "not found" });
   } catch (err) {
-    json(res, 500, { error: String(err?.message || err).slice(0, 200) });
+    json(res, 500, { error: (err instanceof Error ? err.message : "internal error").slice(0, 200) });
   }
 }).listen(PORT, HOST, () => console.log(`deploy-api listening on ${HOST}:${PORT}`));

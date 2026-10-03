@@ -200,3 +200,11 @@ describe("live market snapshots", () => {
     expect(parsePreOpen({ data: [], msg: "" }).movers).toEqual([]);
   });
 });
+
+describe("parseConstituents placeholders", () => {
+  it("drops NSE's DUMMY rows for pending demergers", async () => {
+    const { parseConstituents } = await import("../../supabase/functions/_shared/market-files");
+    const csv = "Company Name,Industry,Symbol,Series,ISIN Code\nHEG Ltd.,Capital Goods,HEG,EQ,INE545A01024\nDummy HEG Ltd.,Capital Goods,DUMMYHEG,EQ,INE0XXX01010\n";
+    expect(parseConstituents(csv, "NIFTY 500").map((r) => r.symbol)).toEqual(["HEG"]);
+  });
+});

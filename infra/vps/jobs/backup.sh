@@ -18,7 +18,11 @@ OUT="$DIR/$STAMP"
 LOG="/var/log/sphpnp-sync/$(date +%F).log"
 
 log() { printf '%s backup %s\n' "$(date '+%F %T')" "$*" >> "$LOG"; }
-fail() { log "FAILED: $*"; exit 1; }
+# Optional dead-man's switch for the backup itself (Healthchecks.io): ping on success,
+# /fail on failure, so a backup that stops - or starts failing - raises an alert.
+HC_URL=$(head -1 /opt/sphpnp/heartbeat-backup.url 2>/dev/null | tr -d '[:space:]')
+hc() { [ -n "$HC_URL" ] && curl -fsS -m 10 --retry 3 -o /dev/null "$HC_URL$1" || true; }
+fail() { log "FAILED: $*"; hc /fail; exit 1; }
 trap 'fail "line $LINENO"' ERR
 
 umask 077
@@ -40,6 +44,9 @@ size=$(du -sh "$OUT" | cut -f1)
 
 find "$DIR" -mindepth 1 -maxdepth 1 -type d -mtime +"$KEEP_DAYS" -exec rm -rf {} +
 
+# R2's API token is IP-filtered to this server's IPv4 address; without this rclone
+# reaches R2 over IPv6 and is refused (403, 3 Oct 2026).
+export RCLONE_BIND=0.0.0.0
 if rclone listremotes 2>/dev/null | grep -qx 'offsite:'; then
   rclone copy "$OUT" "offsite:$STAMP" --transfers 2
   rclone delete offsite: --min-age "$OFFSITE_KEEP"
@@ -49,3 +56,4 @@ else
   log "ok $STAMP ($size) - local only (no offsite remote configured)"
 fi
 date '+%F %T' > "$DIR/last-success"
+hc

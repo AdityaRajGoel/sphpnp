@@ -21,6 +21,7 @@ import { reconcileIpos } from "../_shared/ipo-reconcile.ts";
 import { deriveIpoStatus, istDate } from "../_shared/ipo-status.ts";
 import { FILLABLE, planIpoMerges, preferFullName, resolveSlug, type IpoMerge, type StoredIpo } from "../_shared/ipo-identity.ts";
 import { sanitizeChittorgarhRows, sanitizeInvestorGainRows } from "../_shared/ipo-ingest.ts";
+import { errorText } from "../_shared/errors.ts";
 
 const SOURCES = {
   ipowatch: "https://ipowatch.in/ipo-grey-market-premium-latest-ipo-gmp/",
@@ -101,7 +102,7 @@ async function collect<T, E extends Record<string, unknown> = Record<string, nev
     }
     return { ...parsed, rows, report: { source, ok: true, rows: rows.length } };
   } catch (error) {
-    const reason = error instanceof Error ? error.message : String(error);
+    const reason = errorText(error);
     return { rows: [], report: { source, ok: false, rows: 0, reason } };
   }
 }
@@ -329,7 +330,7 @@ Deno.serve(async (req) => {
       capturedAt,
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
+    const message = errorText(error);
     console.error("sync-ipos failed:", message);
     return json({ error: message }, 500);
   }

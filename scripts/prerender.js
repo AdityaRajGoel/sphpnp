@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import express from 'express';
-import { fetchStockRoutes, assertStockPageCaptured } from './lib/stock-routes.mjs';
+import { fetchStockRoutes, fetchLiteStockRoutes, assertStockPageCaptured } from './lib/stock-routes.mjs';
 import { fetchIpoRoutes, assertIpoPageCaptured } from './lib/ipo-routes.mjs';
 import { fetchMarketListRoutes, assertListPageCaptured, MARKET_MOVER_ROUTES } from './lib/market-list-routes.mjs';
 import { routeToFilePath } from './lib/route-paths.mjs';
@@ -180,7 +180,7 @@ async function captureOnce(browser, port, route) {
     // a skeleton"), not a generic selector timeout that says nothing about why.
     if (route.startsWith('/stock/')) {
       await page
-        .waitForSelector('[data-stock-state="ready"], [data-stock-state="unsynced"]', {
+        .waitForSelector('[data-stock-state="ready"], [data-stock-state="unsynced"], [data-stock-state="lite"]', {
           timeout: 25000,
         })
         .catch(() => {});
@@ -321,6 +321,9 @@ async function prerender() {
 
       const stockRoutes = await fetchStockRoutes();
       console.log(`Derived ${stockRoutes.length} stock routes from screener_stocks.`);
+      // Every other traded NSE stock gets the lighter page (LiteStockPage).
+      const liteRoutes = await fetchLiteStockRoutes();
+      console.log(`Derived ${liteRoutes.length} lighter stock routes from nse_securities.`);
       const ipoRoutes = await fetchIpoRoutes();
       console.log(`Derived ${ipoRoutes.length} IPO routes from ipos.`);
       const listRoutes = await fetchMarketListRoutes();
@@ -345,7 +348,7 @@ async function prerender() {
       // so a page that is not ready fails the build rather than shipping.
       // PRERENDER_ONLY=/,/screener captures just those routes, for checking a change locally.
       const only = process.env.PRERENDER_ONLY?.split(',').map((r) => r.trim()).filter(Boolean);
-      const queue = only?.length ? only : [...routes, ...listRoutes, ...stockRoutes, ...ipoRoutes, ERROR_ROUTE];
+      const queue = only?.length ? only : [...routes, ...listRoutes, ...stockRoutes, ...liteRoutes, ...ipoRoutes, ERROR_ROUTE];
       const total = queue.length;
       let next = 0;
       let done = 0;

@@ -1,3 +1,4 @@
+import { decodeEntities } from "./html-entities.ts";
 // A company page on screener.in (www.screener.in/company/SYMBOL/consolidated/),
 // read into the same statement grids IndianAPI's historical_stats produces -
 // IndianAPI serves screener.in's figures, so the labels, units (crore) and
@@ -10,8 +11,6 @@
 //
 // Pure: no fetch, no Deno APIs. sync-screener-in does the I/O.
 
-/** A character from an entity's code point; nothing for a code point no character has (String.fromCodePoint would throw). */
-const codePoint = (n: number): string => (Number.isInteger(n) && n >= 0 && n <= 0x10ffff ? String.fromCodePoint(n) : "");
 
 export type Grid = { periods: string[]; period_ends: (string | null)[]; rows: { label: string; values: (number | null)[] }[] };
 export type ScreenerKind = "quarter_results" | "yoy_results" | "balancesheet" | "cashflow" | "ratios";
@@ -57,12 +56,7 @@ const MONTHS: Record<string, string> = {
   jul: "07", aug: "08", sep: "09", oct: "10", nov: "11", dec: "12",
 };
 
-const decode = (value: string) =>
-  value
-    .replace(/&nbsp;/g, " ").replace(/&amp;/g, "&").replace(/&quot;/g, '"').replace(/&#x27;|&#39;|&apos;/g, "'")
-    .replace(/&lt;/g, "<").replace(/&gt;/g, ">")
-    .replace(/&#(\d+);/g, (_, n: string) => codePoint(Number(n)))
-    .replace(/&#x([0-9a-f]+);/gi, (_, n: string) => codePoint(parseInt(n, 16)));
+const decode = (value: string) => decodeEntities(value);
 
 /** Visible text of a fragment. */
 const text = (html: string) => decode(html.replace(/<[^>]+>/g, " ")).replace(/\s+/g, " ").trim();

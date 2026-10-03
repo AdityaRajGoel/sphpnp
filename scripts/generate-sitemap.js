@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { fetchStockRoutes } from './lib/stock-routes.mjs';
+import { fetchStockRoutes, fetchLiteStockRoutes } from './lib/stock-routes.mjs';
 import { fetchIpoRoutes } from './lib/ipo-routes.mjs';
 import { fetchMarketListRoutes, MARKET_MOVER_ROUTES } from './lib/market-list-routes.mjs';
 
@@ -41,6 +41,8 @@ if (learnArticleSlugs.length === 0) {
 // search engines never find. fetchStockRoutes throws on an empty or failed
 // fetch, so a bad response fails the build rather than silently shrinking it.
 const stockRoutes = await fetchStockRoutes();
+// The lighter pages for every other traded NSE stock.
+const liteRoutes = await fetchLiteStockRoutes();
 // Every IPO page in the catalogue - they were all answering crawlers with the
 // 404 page before the prerender learned about them.
 const ipoRoutes = await fetchIpoRoutes();
@@ -71,6 +73,7 @@ const urls = [
   ...listRoutes.map(route => ({ loc: route, changefreq: 'daily', priority: route === '/indices' ? '0.8' : '0.75', lastmod: today })),
   // Per-symbol stock pages (the screener's children)
   ...stockRoutes.map(route => ({ loc: route, changefreq: 'weekly', priority: '0.6', lastmod: today })),
+  ...liteRoutes.map(route => ({ loc: route, changefreq: 'weekly', priority: '0.4', lastmod: today })),
   { loc: '/learn',               changefreq: 'weekly',  priority: '0.8',  lastmod: null },
   { loc: '/learn/recommendations', changefreq: 'daily', priority: '0.8',  lastmod: today },
   // Learning Center articles (original content)

@@ -2,7 +2,7 @@
 //
 //   POST { dataset: "index_valuation" | "participant_oi" | "option_chain" | "fo_bhavcopy" | "eq_eod"
 //          | "pledges" | "deals" | "nse_ipos" | "fpi" | "fpi_sectors" | "week52" | "movers"
-//          | "constituents" | "surveillance" | "lot_sizes" | "calendar"
+//          | "constituents" | "securities" | "surveillance" | "lot_sizes" | "calendar"
 //          | "macro_ingest", backfill?: true, rows?: [...] }
 //
 // A daily call takes the latest file; `backfill` walks back through dates from
@@ -15,6 +15,7 @@
 
 import { createClient, type SupabaseClient } from "npm:@supabase/supabase-js@2";
 import { NSE_HEADERS } from "../_shared/nse.ts";
+import { EQUITY_LIST_URL, SME_LIST_URL, parseSecurities } from "../_shared/nse-securities.ts";
 import { BSE_HEADERS } from "../_shared/bse.ts";
 import { istDate } from "../_shared/ipo-status.ts";
 import { canonicalIpoKey, ipoAliases } from "../_shared/ipo-parse.ts";
@@ -353,6 +354,16 @@ async function run(ctx: Ctx, dataset: string, body: Record<string, unknown>): Pr
       if (status.gift_nifty || status.nifty) snapshots.push({ kind: "market_status", as_of: status.gift_nifty?.as_of ?? status.nifty?.as_of ?? null, payload: status });
       const rows = snapshots.map((s) => ({ ...s, fetched_at: now }));
       return { rows: await upsert(sb, "market_snapshots", rows, "kind"), kinds: rows.map((r) => r.kind) };
+    }
+    case "securities": {
+      // Every NSE-listed security, for the lighter stock pages. Both lists or
+      // neither: a half-written table would drop names from pages already built.
+      const main = parseSecurities(await fetchText(EQUITY_LIST_URL), "main");
+      const sme = parseSecurities(await fetchText(SME_LIST_URL), "sme");
+      if (main.length < 1000 || sme.length < 100) throw new Error(`securities: only ${main.length} main-board and ${sme.length} SME rows parsed`);
+      const now = new Date().toISOString();
+      const rows = [...new Map([...main, ...sme].map((r) => [r.symbol, { ...r, updated_at: now }])).values()];
+      return { main: main.length, sme: sme.length, upserted: await upsert(sb, "nse_securities", rows, "symbol") };
     }
     case "constituents": {
       const counts: Record<string, number | string> = {};

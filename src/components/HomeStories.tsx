@@ -10,6 +10,7 @@ export default function HomeStories() {
       heading="How our Panipat branch helps you invest"
       intro="Research and technology do the heavy lifting; our team makes sure every decision fits you."
       items={HOME_STORIES}
+      className="border-y border-border/60 bg-muted/40"
     />
   );
 }

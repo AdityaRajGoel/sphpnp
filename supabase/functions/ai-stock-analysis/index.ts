@@ -189,7 +189,7 @@ async function withKeyRotation<T>(
       const isLast = i === keys.length - 1;
       if (shouldRotateKey(error) && !isLast) {
         const status = error instanceof ProviderHttpError ? error.status : "?";
-        console.warn(`${provider} key #${i + 1}/${keys.length} failed (${status}); rotating to key #${i + 2}`);
+        console.warn(`${provider} key #${i + 1} failed (${status}); rotating to the next key`);
         continue;
       }
       throw error;

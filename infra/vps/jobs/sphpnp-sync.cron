@@ -44,7 +44,9 @@ J=/opt/sphpnp/jobs/sync.sh
 
 # Free sources pass (02:00 IST): each until its pass wraps, then BSE announcements -
 # fetched from the host with Node since BSE started refusing the edge runtime (24 Sep 2026).
-0  2  * * *     deploy flock -n /tmp/sync-free-sources.lock bash -c '$J loop sync-nse-disclosures 60; $J loop sync-screener-in 40; $J loop sync-tickertape 40; /opt/sphpnp/jobs/host-bse-announcements.sh'
+# sync-screener-in walks ~3,150 stocks (universe + lighter pages), 12 a call: 110 calls is
+# ~1,300 a night, a full pass in about 2.5 nights.
+0  2  * * *     deploy flock -n /tmp/sync-free-sources.lock bash -c '$J loop sync-nse-disclosures 60; $J loop sync-screener-in 110; $J loop sync-tickertape 40; /opt/sphpnp/jobs/host-bse-announcements.sh'
 
 # --- Telegram watchlist alerts: after the morning filings, midday, and the evening results ---
 5  8,13 * * *    deploy flock -n /tmp/telegram-alerts.lock $J once telegram-alerts '{}' 170
@@ -55,6 +57,10 @@ J=/opt/sphpnp/jobs/sync.sh
 5  9,14,19 * * 1-6 deploy flock -n /tmp/sync-ipo-details.lock $J once sync-ipo-details '{"force":false}' 150
 45 19 * * *     deploy flock -n /tmp/sync-ipo-pipeline.lock $J once sync-ipo-pipeline '{"backfill":false}' 150
 50 8,13,18 * * 1-6 deploy flock -n /tmp/ipo-browser.lock /opt/sphpnp/jobs/ipo-browser.sh
+# Heartbeat to an outside monitor (jobs/heartbeat.sh); a no-op until heartbeat.url exists.
+*/5 * * * * deploy /opt/sphpnp/jobs/heartbeat.sh
+# NSE's lists of every listed security (names for the lighter stock pages), weekly.
+10 7 * * 0 deploy flock -n /tmp/securities.lock $J once sync-market-data '{"dataset":"securities"}' 200
 # MCX futures from MCX's own market watch in headless Chromium (MCX's CDN refuses plain
 # clients): every 5 minutes through MCX hours, which run to 23:30/23:55.
 */5 9-23 * * 1-5 deploy flock -n /tmp/host-mcx.lock /opt/sphpnp/jobs/host-mcx.sh

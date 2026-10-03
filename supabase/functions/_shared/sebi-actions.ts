@@ -16,9 +16,8 @@
 
 import { ipoMatchKey } from "./ipo-parse.ts";
 import { splitFilingTitle } from "./sebi-filings.ts";
+import { decodeEntities } from "./html-entities.ts";
 
-/** A character from an entity's code point; nothing for a code point no character has (String.fromCodePoint would throw). */
-const codePoint = (n: number): string => (Number.isInteger(n) && n >= 0 && n <= 0x10ffff ? String.fromCodePoint(n) : "");
 
 export type SebiActionCategory = "order" | "buyback" | "open_offer" | "rights_issue";
 export type SebiAction = { category: SebiActionCategory; kind: string; title: string; filed_on: string; url: string };
@@ -29,10 +28,7 @@ const MONTHS: Record<string, string> = {
   jul: "07", aug: "08", sep: "09", oct: "10", nov: "11", dec: "12",
 };
 
-const decode = (value: string) =>
-  value
-    .replace(/&amp;/g, "&").replace(/&quot;/g, '"').replace(/&#39;|&apos;/g, "'").replace(/&nbsp;/g, " ")
-    .replace(/&#(\d+);/g, (_, n: string) => codePoint(Number(n)));
+const decode = (value: string) => decodeEntities(value);
 
 /** Visible text: tags, zero-width characters and runs of whitespace removed. */
 const clean = (value: string) =>

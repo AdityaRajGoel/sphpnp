@@ -11,6 +11,7 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { AMFI_NAVALL_URL, parseAmfiNavAll } from "../_shared/amfi.ts";
 import { ANCHORS, amfiDate, anchorWindow, latestOnOrBefore, toScheme, type Anchor } from "../_shared/mf-schemes.ts";
+import { errorText } from "../_shared/errors.ts";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -66,7 +67,7 @@ Deno.serve(async (req) => {
 
     return json({ error: 'body must be {"part":"latest"} or {"part":"anchor","anchor":"1m|3m|6m|1y|3y|5y"}' }, 400);
   } catch (e) {
-    const message = e instanceof Error ? e.message : String(e);
+    const message = errorText(e);
     console.error("sync-mf-schemes:", message);
     return json({ ok: false, error: message }, 500);
   }

@@ -465,7 +465,26 @@ const StockScreenerPage = () => {
           </Button>
         </PageHeader>
 
-        {/* The screener itself comes first, right under the header: every filter, then the results. */}
+        {/* Market context first: any-stock search, snapshot, movers, deals and circuits.
+            The screen (filters, then the list) follows it. */}
+        <GlobalStockSearch className="mb-6" />
+
+        {/* Exchange-style market snapshot */}
+        <MarketSnapshot />
+
+        {/* Exchange-homepage-style movers board */}
+        {!loading && stocks.length > 0 && (
+          <MarketMovers stocks={stocks} onPick={addToChart} />
+        )}
+
+        {/* EOD smart-money boards: bulk/block deals + circuit hitters */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 empty:hidden">
+          <BulkBlockDeals />
+          <CircuitWatch rows={bhavRows} asOf={bhavAsOf} loading={bhavLoading} />
+        </div>
+
+        {/* The screen: every filter, then the list it narrows. */}
+        <h2 id="screen" className="mb-3 mt-2 scroll-mt-24 font-heading text-xl font-bold">Screen {stocks.length > 0 ? stocks.length.toLocaleString("en-IN") : ""} stocks</h2>
         <Card className="p-4 mb-6">
           <div className="flex items-center gap-2 mb-3 text-sm font-medium text-muted-foreground">
             <Filter className="w-4 h-4" /> Filters
@@ -781,22 +800,6 @@ const StockScreenerPage = () => {
           )}
         </AnimatePresence>
 
-        {/* Market context, after the screener: any-stock search, snapshot, movers, deals, circuits. */}
-        <GlobalStockSearch className="mb-6" />
-
-        {/* Exchange-style market snapshot */}
-        <MarketSnapshot />
-
-        {/* Exchange-homepage-style movers board */}
-        {!loading && stocks.length > 0 && (
-          <MarketMovers stocks={stocks} onPick={addToChart} />
-        )}
-
-        {/* EOD smart-money boards: bulk/block deals + circuit hitters */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 empty:hidden">
-          <BulkBlockDeals />
-          <CircuitWatch rows={bhavRows} asOf={bhavAsOf} loading={bhavLoading} />
-        </div>
 
         {/* Lazy: recharts only downloads when an analysis is opened */}
         {analyzingStock && (

@@ -170,14 +170,18 @@ const IPOTracker = () => {
         </motion.div>
 
         {/* Tabs */}
-        <div className="flex items-center justify-center gap-2 mb-8">
+        {/* Two by two on a phone (four in a row ran off a 390px screen), one row from sm. */}
+        <div role="tablist" aria-label="IPO status" className="mx-auto mb-8 grid max-w-md grid-cols-2 gap-2 sm:flex sm:max-w-none sm:items-center sm:justify-center">
           {tabs.map(tab => {
             const Icon = tab.icon;
             return (
               <button
                 key={tab.key}
+                type="button"
+                role="tab"
+                aria-selected={activeTab === tab.key}
                 onClick={() => setActiveTab(tab.key)}
-                className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold transition-colors ${
+                className={`flex min-h-[44px] items-center justify-center gap-1.5 whitespace-nowrap px-3 py-2.5 rounded-xl text-xs font-bold transition-colors sm:px-4 ${
                   activeTab === tab.key
                     ? "bg-brand-orange text-white dark:text-brand-charcoal shadow-lg"
                     : "bg-card border border-border/50 text-muted-foreground hover:text-foreground hover:bg-muted"

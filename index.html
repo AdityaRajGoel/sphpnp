@@ -2,15 +2,19 @@
 <html lang="en-IN">
 
 <head>
-  <!-- Google tag (gtag.js). Consent Mode starts denied, so no analytics cookies
-       until the visitor accepts in the cookie banner (src/lib/analytics-consent.ts
-       sends the update). Not configured under automation, so the prerender's
+  <!-- Google tag (gtag.js). Consent Mode starts denied unless the visitor has
+       already accepted analytics in the cookie banner, so no analytics cookies
+       without consent (src/lib/analytics-consent.ts sends later updates). Not configured under automation, so the prerender's
        headless captures do not count as visits. -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-4XERS3Y19Y"></script>
   <script>
     window.dataLayer = window.dataLayer || [];
     function gtag(){dataLayer.push(arguments);}
-    gtag('consent', 'default', { ad_storage: 'denied', ad_user_data: 'denied', ad_personalization: 'denied', analytics_storage: 'denied' });
+    // A visitor who already accepted analytics starts granted, so their first page
+    // view is measured with cookies; src/lib/consent.ts writes this key.
+    var gaGranted = false;
+    try { gaGranted = localStorage.getItem('panipat_cookie_consent') === 'all'; } catch (e) {}
+    gtag('consent', 'default', { ad_storage: 'denied', ad_user_data: 'denied', ad_personalization: 'denied', analytics_storage: gaGranted ? 'granted' : 'denied' });
     if (!navigator.webdriver) {
       gtag('js', new Date());
       gtag('config', 'G-4XERS3Y19Y');

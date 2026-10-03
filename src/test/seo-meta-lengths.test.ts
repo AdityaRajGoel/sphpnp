@@ -14,7 +14,7 @@ const TITLE_MAX = 60;
 const DESC_MIN = 110;
 const DESC_MAX = 160;
 
-const unescape = (s: string) => s.replace(/&amp;/g, "&").replace(/&#39;|&apos;/g, "'").replace(/&quot;/g, '"');
+const unescape = (s: string) => s.replace(/&(amp|#39|apos|quot);/g, (_, e: string) => ({ amp: "&", "#39": "'", apos: "'", quot: '"' })[e]!);
 const pages = readdirSync("src/pages").filter((f) => f.endsWith(".tsx"));
 
 /** The <SEOHead .../> elements in a page, minus the ones marked noindex. */

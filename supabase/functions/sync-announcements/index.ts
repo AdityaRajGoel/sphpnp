@@ -22,6 +22,7 @@ import {
   parseFinancialResults,
 } from "../_shared/nse-announcements.ts";
 import { NSE_HEADERS } from "../_shared/nse.ts";
+import { errorText } from "../_shared/errors.ts";
 
 const FEEDS = {
   corporateActions: "https://nsearchives.nseindia.com/content/RSS/Corporate_action.xml",
@@ -87,7 +88,7 @@ async function collect<T>(
     }
     return { rows, report: { source, ok: true, rows: rows.length } };
   } catch (error) {
-    return { rows: [], report: { source, ok: false, rows: 0, reason: error instanceof Error ? error.message : String(error) } };
+    return { rows: [], report: { source, ok: false, rows: 0, reason: errorText(error) } };
   }
 }
 
@@ -197,7 +198,7 @@ Deno.serve(async (req) => {
 
     return json({ ok: true, sources: reports, written, capturedAt: new Date().toISOString() });
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
+    const message = errorText(error);
     console.error("sync-announcements failed:", message);
     return json({ error: message }, 500);
   }

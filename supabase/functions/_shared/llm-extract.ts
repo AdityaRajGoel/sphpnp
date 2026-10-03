@@ -59,9 +59,9 @@ function decode(text: string): string {
  */
 export function htmlToText(html: string, maxLength = 24_000): string {
   const text = html
-    .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, " ")
-    .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, " ")
-    .replace(/<noscript\b[^>]*>[\s\S]*?<\/noscript>/gi, " ")
+    .replace(/<script\b[^>]*>[\s\S]*?<\/script\b[^>]*>/gi, " ")
+    .replace(/<style\b[^>]*>[\s\S]*?<\/style\b[^>]*>/gi, " ")
+    .replace(/<noscript\b[^>]*>[\s\S]*?<\/noscript\b[^>]*>/gi, " ")
     .replace(/<svg\b[^>]*>[\s\S]*?<\/svg>/gi, " ")
     .replace(/<!--[\s\S]*?-->/g, " ")
     .replace(/<\/(td|th)>\s*<(td|th)\b[^>]*>/gi, " | ")

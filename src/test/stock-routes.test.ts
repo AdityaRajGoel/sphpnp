@@ -92,3 +92,12 @@ describe("assertStockPageCaptured", () => {
     expect(() => assertStockPageCaptured("/stock/X", html)).not.toThrow();
   });
 });
+
+describe("assertStockPageCaptured, lighter pages", () => {
+  it("accepts a lighter page that shows its 52-week range, and rejects one that does not", async () => {
+    const { assertStockPageCaptured } = await import("../../scripts/lib/stock-routes.mjs");
+    expect(() => assertStockPageCaptured("/stock/ABC", '<div data-stock-state="lite"><span>52-week low ₹120.00</span></div>')).not.toThrow();
+    expect(() => assertStockPageCaptured("/stock/ABC", '<div data-stock-state="lite"></div>')).toThrow(/52-week/);
+    expect(() => assertStockPageCaptured("/stock/ABC", '<div data-stock-state="lite"></div><div data-stock-state="ready"></div>')).toThrow(/more than one state/);
+  });
+});

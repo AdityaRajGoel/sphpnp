@@ -14,6 +14,7 @@ import ScrollProgress from "@/components/ScrollProgress";
 import WhatsAppButton from "@/components/WhatsAppButton";
 import VisibleBreadcrumbs from "@/components/VisibleBreadcrumbs";
 import NotFound from "@/pages/NotFound";
+import LiteStockPage from "@/pages/LiteStockPage";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -137,9 +138,10 @@ export default function StockPage() {
         }
       : null;
 
-  // An unknown ticker must be a real 404, not an empty shell - /stock/:symbol
-  // is an open namespace and would otherwise become a soft-404 farm.
-  if (s.notFound) return <NotFound />;
+  // Outside the screener universe: the lighter page from NSE's own data, which
+  // itself 404s for a symbol NSE does not list - /stock/:symbol is an open
+  // namespace and must not become a soft-404 farm.
+  if (s.notFound) return symbol ? <LiteStockPage symbol={symbol.toUpperCase()} /> : <NotFound />;
 
   const title = s.header
     ? `${s.header.name} (${s.header.symbol}) financials`

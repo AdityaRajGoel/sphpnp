@@ -1,3 +1,4 @@
+import { decodeEntities } from "./html-entities.ts";
 // NSE's own RSS feeds: corporate actions, financial-results filings and general
 // company announcements.
 //
@@ -72,8 +73,7 @@ export function parsePipeFields(description: string): Record<string, string> {
 const decode = (value: string) =>
   value
     .replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, "$1")
-    .replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">")
-    .replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&nbsp;/gi, " ")
+    .replace(/&[#a-z0-9]+;/gi, (e) => decodeEntities(e))
     .replace(/\s+/g, " ")
     .trim();
 

@@ -18,6 +18,7 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 import { AMFI_NAVALL_URL, parseAmfiNavAll } from "../_shared/amfi.ts";
 import * as XLSX from "npm:xlsx@0.18.5";
 import { fiiStatsUrl, parseFiiStats, weekdaysBetween, type FiiDerivativeRow } from "../_shared/fii-stats.ts";
+import { errorText } from "../_shared/errors.ts";
 
 const BROWSER_HEADERS = {
   "User-Agent":
@@ -143,7 +144,7 @@ async function backfillFiiStats(supabase: ReturnType<typeof createClient>, from:
       if (error) throw error;
       stored += 1;
     } catch (e) {
-      failed.push(`${day}: ${String(e).slice(0, 80)}`);
+      failed.push(`${day}: ${errorText(e, 80)}`);
     }
     await new Promise((r) => setTimeout(r, BACKFILL_DELAY_MS));
   }
@@ -321,7 +322,7 @@ Deno.serve(async (req) => {
     } catch (nseErr) {
       flows = await fetchFlowsFromNiftytrader();
       report.flows_source = "niftytrader (net-only fallback)";
-      report.flows_nse_error = String(nseErr);
+      report.flows_nse_error = errorText(nseErr);
       console.error("sync-market-feed: NSE flows fetch failed, using niftytrader fallback:", nseErr);
     }
     // FII F&O rides on the same trading date as the cash figures
@@ -333,7 +334,7 @@ Deno.serve(async (req) => {
       if (derivError) throw derivError;
       report.fii_fno = "ok";
     } catch (e) {
-      report.fii_fno_error = String(e);
+      report.fii_fno_error = errorText(e);
       console.error("sync-market-feed: FII F&O flow fetch failed:", e);
     }
     const { error } = await supabase
@@ -343,7 +344,7 @@ Deno.serve(async (req) => {
     report.flows_upserted = flows.length;
     report.flows_date = flows[0]?.activity_date;
   } catch (e) {
-    report.flows_error = String(e);
+    report.flows_error = errorText(e);
     console.error("sync-market-feed: flows sync failed:", e);
   }
 
@@ -373,7 +374,7 @@ Deno.serve(async (req) => {
     if (error) throw error;
     report.mf_navs_upserted = rows.length;
   } catch (e) {
-    report.mf_navs_error = String(e);
+    report.mf_navs_error = errorText(e);
     console.error("sync-market-feed: MF NAV sync failed:", e);
   }
 
@@ -394,7 +395,7 @@ Deno.serve(async (req) => {
     report.corp_actions_upserted = actions.length;
     report.results_calendar_upserted = results.length;
   } catch (e) {
-    report.corp_actions_error = String(e);
+    report.corp_actions_error = errorText(e);
     console.error("sync-market-feed: corporate actions sync failed:", e);
   }
 

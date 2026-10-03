@@ -74,9 +74,13 @@ Deno.serve(async (req) => {
   const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
   const started = Date.now();
 
+  // The screener universe plus every other traded NSE stock (the lighter pages),
+  // so those pages gain financials as the pass reaches them.
   const { data: universe, error: uErr } = await supabase.from("screener_stocks").select("symbol").order("symbol");
   if (uErr) return json({ error: `universe: ${uErr.message}` }, 500);
-  const symbols = (universe ?? []).map((r) => r.symbol as string).sort();
+  const { data: lite, error: lErr } = await supabase.rpc("lite_stock_symbols");
+  if (lErr) console.error("sync-screener-in: lite_stock_symbols failed, screener universe only:", lErr.message);
+  const symbols = [...new Set([...(universe ?? []).map((r) => r.symbol as string), ...((Array.isArray(lite) ? lite : []) as string[])])].sort();
   const { data: cursorRow } = await supabase.from("sync_cursors").select("cursor").eq("job", JOB).maybeSingle();
   const previous = (cursorRow?.cursor as string | null) ?? null;
   const { batch, wrapped } = nextBatch(symbols, previous, BATCH_SIZE);

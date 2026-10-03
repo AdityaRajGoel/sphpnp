@@ -15,7 +15,7 @@ export type StoryItem = {
   cta: string;
 };
 
-type Props = { id?: string; eyebrow: string; heading: string; intro?: string; items: StoryItem[] };
+type Props = { id?: string; eyebrow: string; heading: string; intro?: string; items: StoryItem[]; className?: string };
 
 /**
  * Large illustrated rows that alternate sides on desktop - the illustration
@@ -23,9 +23,9 @@ type Props = { id?: string; eyebrow: string; heading: string; intro?: string; it
  * phone every row is the full-width image first, then its copy, so nothing is
  * squeezed into a thumbnail.
  */
-export default function FeatureStory({ id, eyebrow, heading, intro, items }: Props) {
+export default function FeatureStory({ id, eyebrow, heading, intro, items, className = "" }: Props) {
   return (
-    <section id={id} aria-labelledby={id ? `${id}-heading` : undefined} className="relative overflow-hidden py-16 md:py-20">
+    <section id={id} aria-labelledby={id ? `${id}-heading` : undefined} className={`relative overflow-hidden py-16 md:py-20 ${className}`}>
       <div className="container mx-auto max-w-6xl px-4">
         <motion.div {...revealSection} className="mx-auto max-w-2xl text-center">
           <p className="mb-4 inline-flex rounded-full border border-secondary/30 bg-secondary/10 px-3 py-1 text-[0.6875rem] font-semibold uppercase tracking-[0.18em] text-secondary">{eyebrow}</p>

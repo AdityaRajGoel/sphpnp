@@ -52,7 +52,7 @@ describe("every NSE caller", () => {
       return /\.(ts|mts|js|mjs)$/.test(entry) ? [path] : [];
     });
   const callers = [...walk(join(root, "supabase", "functions")), ...walk(join(root, "scripts"))]
-    .filter((path) => readFileSync(path, "utf8").includes("nseindia.com"));
+    .filter((path) => /\bnseindia\.com\b/.test(readFileSync(path, "utf8")));
 
   it("finds the files it is meant to police", () => {
     expect(callers.length).toBeGreaterThanOrEqual(3);

@@ -30,6 +30,7 @@ import type { ApiChartPoint } from "@/lib/chart-data";
 import { useCorporateActions, useMarketFlows, useMfNavs } from "@/hooks/useMarketFeed";
 import { revealBar, revealItemX, revealSection } from "@/lib/motion";
 import { pressable } from "@/lib/pressable";
+import Nifty50Overview from "@/components/markets/Nifty50Overview";
 
 /**
  * `symbol` is the Yahoo ticker (e.g. "RELIANCE.NS") and is what makes a real
@@ -332,6 +333,9 @@ const MarketOverview = () => {
             </motion.div>
           ))}
         </motion.div>
+
+        {/* Nifty 50 first, then the broader market and sectors (Nifty50Overview). */}
+        <Nifty50Overview />
 
         {/* Tabbed Section */}
         <Card className="overflow-hidden border-border/50 shadow-xl">

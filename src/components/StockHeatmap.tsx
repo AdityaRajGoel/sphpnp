@@ -21,8 +21,10 @@ export const heatTextColor = (pct: number): string => (Math.abs(pct) >= 1 ? "#ff
 
 const formatCap = (cr: number) => formatCrore(cr);
 
+export type HeatmapStock = Pick<ScreenerStock, "symbol" | "name" | "price" | "change_pct" | "market_cap">;
+
 type Props = {
-  stocks: ScreenerStock[];
+  stocks: HeatmapStock[];
   maxItems?: number;
 };
 

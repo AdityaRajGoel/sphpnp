@@ -49,6 +49,27 @@ export async function fetchStockRoutes() {
     .map((s) => `/stock/${encodeURIComponent(s)}`);
 }
 
+/**
+ * The lighter pages: NSE stocks outside the screener universe (see the
+ * lite_stock_symbols RPC). One JSON array, so ~2,400 symbols come back in one
+ * response rather than stopping at PostgREST's 1,000-row cap.
+ */
+export async function fetchLiteStockRoutes() {
+  const { url, key } = readSupabaseConfig();
+  const res = await fetch(`${url}/rest/v1/rpc/lite_stock_symbols`, {
+    method: 'POST',
+    headers: { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+    body: '{}',
+  });
+  if (!res.ok) throw new Error(`lite_stock_symbols failed: HTTP ${res.status}`);
+  const symbols = await res.json();
+  if (!Array.isArray(symbols)) throw new Error('lite_stock_symbols returned no list');
+  return symbols
+    .map((s) => String(s || '').trim().toUpperCase())
+    .filter((s) => /^[A-Z0-9&-]{1,20}$/.test(s))
+    .map((s) => `/stock/${encodeURIComponent(s)}`);
+}
+
 // Only the financial tables render a <td> on a stock page - the NSE income
 // table, or the IndianAPI statements, shareholding and moving averages - so a
 // table cell holding a signed number ("₹1,28,260.00 Cr", "3,09,468", "50.48%")
@@ -74,14 +95,21 @@ const FINANCIAL_FIGURE = /<td[^>]*>\s*-?(?:₹\s*)?\d/;
 export function assertStockPageCaptured(route, html) {
   const ready = html.includes('data-stock-state="ready"');
   const unsynced = html.includes('data-stock-state="unsynced"');
+  const lite = html.includes('data-stock-state="lite"');
+  const states = [ready, unsynced, lite].filter(Boolean).length;
 
-  if (ready === unsynced) {
+  if (states !== 1) {
     throw new Error(
-      ready
-        ? `Prerender captured both states for ${route} - the state marker is ambiguous.`
+      states > 1
+        ? `Prerender captured more than one state for ${route} - the state marker is ambiguous.`
         : `Prerender captured no data for ${route} - got a loading or error state. ` +
           `Refusing to ship a skeleton page.`,
     );
+  }
+
+  // A lighter page (NSE data only) must carry its price range, or it is a shell.
+  if (lite && !/52-week low ₹\d/.test(html)) {
+    throw new Error(`Prerender captured ${route} as a lighter page without its 52-week range. Refusing to ship it.`);
   }
 
   if (ready && !FINANCIAL_FIGURE.test(withoutPeers(html))) {
