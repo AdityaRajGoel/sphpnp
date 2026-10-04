@@ -51,7 +51,6 @@ const routes = [
   ...MARKET_MOVER_ROUTES,
   '/market-pulse',
   '/commodities',
-  '/commodity-research',
   '/fii-dii-data',
   '/global-markets',
   '/mutual-funds',
@@ -198,7 +197,7 @@ async function captureOnce(browser, port, route) {
         .catch(() => {});
     }
 
-    if (route === '/indices' || route === '/commodities' || route === '/commodity-research' || route === '/fii-dii-data' || route === '/mutual-funds' || route.startsWith('/indices/') || route.startsWith('/sectors/')) {
+    if (route === '/indices' || route === '/commodities' || route === '/fii-dii-data' || route === '/mutual-funds' || route.startsWith('/indices/') || route.startsWith('/sectors/')) {
       await page.waitForSelector('[data-list-state="ready"]', { timeout: 25000 }).catch(() => {});
     }
     // Panels below the page's own data (results, red flags, peers, news) load

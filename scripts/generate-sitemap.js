@@ -82,7 +82,6 @@ const urls = [
   ...MARKET_MOVER_ROUTES.map(route => ({ loc: route, changefreq: 'daily', priority: '0.7', lastmod: today })),
   { loc: '/market-pulse',        changefreq: 'daily',   priority: '0.9',  lastmod: today },
   { loc: '/commodities',         changefreq: 'daily',   priority: '0.8',  lastmod: today },
-  { loc: '/commodity-research',  changefreq: 'weekly',  priority: '0.7',  lastmod: today },
   { loc: '/fii-dii-data',        changefreq: 'daily',   priority: '0.8',  lastmod: today },
   { loc: '/global-markets',      changefreq: 'daily',   priority: '0.8',  lastmod: today },
   { loc: '/mutual-funds',        changefreq: 'daily',   priority: '0.8',  lastmod: today },

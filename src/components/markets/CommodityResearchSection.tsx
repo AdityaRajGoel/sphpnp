@@ -2,14 +2,6 @@ import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { Gem } from "lucide-react";
-import Header from "@/components/Header";
-import PageHeader, { HeaderStat } from "@/components/PageHeader";
-import Footer from "@/components/Footer";
-import VisibleBreadcrumbs from "@/components/VisibleBreadcrumbs";
-import SEOHead from "@/components/SEOHead";
-import WhatsAppButton from "@/components/WhatsAppButton";
-import FAQ from "@/components/FAQ";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { segmentItem, segmentTrack } from "@/components/ui/segmented";
@@ -58,12 +50,15 @@ function useHistory(ticker: string) {
 }
 
 /**
- * /commodity-research: ten years of gold, silver, copper, crude and natural
- * gas, with returns, volatility, the worst fall, how each month has tended to
- * go, and how the commodity moves with the rupee, US stocks and its peers.
- * Descriptions of the past from end-of-day closes, not forecasts.
+ * Ten years of gold, silver, copper, crude and natural gas, with returns,
+ * volatility, the worst fall, how each month has tended to go, and how the
+ * commodity moves with the rupee, US stocks and its peers. Descriptions of the
+ * past from end-of-day closes, not forecasts.
+ *
+ * This was its own page, /commodity-research, until Oct 2026; it now sits on
+ * /commodities at #research and the old URL 301s here.
  */
-export default function CommodityResearchPage() {
+export default function CommodityResearchSection() {
   const [pick, setPick] = useState<(typeof COMMODITIES)[number]["ticker"]>("GOLD.FUT");
   const [market, setMarket] = useState<Market>("intl");
   const c = COMMODITIES.find((x) => x.ticker === pick)!;
@@ -88,46 +83,14 @@ export default function CommodityResearchPage() {
   const corr = PEERS.filter((p) => onMcx || p.ticker !== pick).map((p) => ({ ...p, v: correlation(series, closes(peers[PEERS.indexOf(p)].data)) }));
   const years = series.length ? Math.round((Date.parse(series[series.length - 1].trade_date) - Date.parse(series[0].trade_date)) / (365.25 * 86_400_000)) : 0;
 
-  const crumbs = [{ name: "Home", url: "/" }, { name: "Commodities", url: "/commodities" }, { name: "Research" }];
-  const faq = [
-    { q: "Where does this data come from?", a: "In US dollars: gold, silver and copper are COMEX front-month futures; Brent, WTI and Henry Hub natural gas are spot prices published by the US Energy Information Administration through FRED. In rupees: MCX's own daily bhavcopy since 2012, taking each day's most-held futures contract. All are end-of-day closes, collected each weekday." },
-    { q: "What does volatility mean here?", a: "How widely the daily price has swung over the last year, as an annual figure: the standard deviation of daily returns, scaled to a year. A higher number means bigger day-to-day moves." },
-    { q: "Does a strong month in the past mean it will repeat?", a: "No. The monthly averages describe what happened over the years shown, and a few large years can dominate them. They are not a forecast." },
-    { q: "How do I trade these in India?", a: "Gold, silver, copper, crude oil and natural gas trade as futures on MCX. Parasram offers MCX trading with a commodity account; see the MCX prices page and margin calculator." },
-  ];
-
   return (
-    <div className="min-h-screen bg-background">
-      <SEOHead
-        title="Commodity Research: Gold, Silver, Crude Oil Trends & Data"
-        description="Gold, silver, copper, crude and natural gas in US dollars and on MCX in rupees: annualised returns, volatility, worst falls, seasonality and correlations."
-        breadcrumbs={crumbs}
-        faqItems={faq.map((f) => ({ question: f.q, answer: f.a }))}
-        jsonLd={{
-          "@type": "Dataset",
-          name: "Ten-year commodity price statistics: gold, silver, copper, crude oil, natural gas",
-          description: "Annualised returns, one-year volatility, maximum drawdown, monthly seasonality and correlations from daily closes of COMEX gold, silver and copper futures and EIA Brent, WTI and Henry Hub spot prices.",
-          url: "https://www.sphpnp.com/commodity-research",
-          ...(stats.last ? { dateModified: stats.last.trade_date, temporalCoverage: `${series[0].trade_date}/${stats.last.trade_date}` } : {}),
-          isBasedOn: ["https://fred.stlouisfed.org/series/DCOILBRENTEU", "https://fred.stlouisfed.org/series/DCOILWTICO", "https://fred.stlouisfed.org/series/DHHNGSP"],
-          creator: { "@type": "Organization", name: "Shri Parasram Holdings Pvt. Ltd.", url: "https://www.sphpnp.com" },
-          license: "https://www.sphpnp.com/terms",
-          isAccessibleForFree: true,
-          variableMeasured: ["Annualised return", "Volatility", "Maximum drawdown", "Monthly average return", "Correlation"],
-        }}
+    <section id="research" aria-labelledby="research-heading" className="mt-12 scroll-mt-28 border-t pt-10" data-research-state={main.isLoading ? "loading" : "ready"}>
+      <SectionHeading
+        id="research-heading"
+        title="Ten-year research"
+        subtitle="The commodities India trades on MCX, measured: returns, volatility, the worst falls, how each month has tended to go, and what each moves with."
       />
-      <Header />
-      <VisibleBreadcrumbs items={crumbs} />
-      <main className="container mx-auto px-4 py-8" data-list-state={main.isLoading ? "loading" : "ready"}>
-        <PageHeader
-          className="mb-8"
-          eyebrow={<><Gem className="h-3.5 w-3.5" aria-hidden /> Commodities</>}
-          title="Commodity research"
-          description="Ten years of the commodities India trades on MCX, measured: returns, volatility, the worst falls, how each month has tended to go, and what each moves with."
-        >
-          {stats.last && <HeaderStat label="Last close" value={shortDate(stats.last.trade_date)} />}
-        </PageHeader>
-
+      <div className="mt-4">
         <div className="flex flex-wrap items-center gap-3">
           <div role="group" aria-label="Market" className={segmentTrack}>
             <button type="button" aria-pressed={market === "intl"} className={segmentItem(market === "intl")} onClick={() => setMarket("intl")}>International, US$</button>
@@ -233,12 +196,9 @@ export default function CommodityResearchPage() {
         )}
 
         <p className="mt-8 text-xs text-muted-foreground">
-          End-of-day closes in US dollars from Yahoo Finance (COMEX futures) and the US EIA via FRED (spot energy); MCX series in rupees from MCX's own bhavcopy and market watch. Past behaviour, not a forecast or investment advice. See <Link to="/commodities" className="underline underline-offset-4 hover:text-secondary">MCX prices today</Link> and the <Link to="/margin-calculator" className="underline underline-offset-4 hover:text-secondary">MCX margin calculator</Link>.
+          End-of-day closes in US dollars from Yahoo Finance (COMEX futures) and the US EIA via FRED (spot energy); MCX series in rupees from MCX's own bhavcopy and market watch. Past behaviour, not a forecast or investment advice. See the <Link to="/margin-calculator" className="underline underline-offset-4 hover:text-secondary">MCX margin calculator</Link>.
         </p>
-      </main>
-      <FAQ title="Commodity research: common questions" subtitle="About the measures on this page." items={faq} />
-      <Footer />
-      <WhatsAppButton />
-    </div>
+      </div>
+    </section>
   );
 }

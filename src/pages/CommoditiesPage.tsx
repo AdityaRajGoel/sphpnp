@@ -17,6 +17,7 @@ import { useLiveMarket } from "@/hooks/useLiveMarket";
 import { globalMarkets, shortDate, type GlobalBar } from "@/lib/market-data";
 import { alignRupees, monthTicks, trailingReturns, yearRange, GOLD_10G_PER_OZ, SILVER_KG_PER_OZ, type Close } from "@/lib/index-performance";
 import McxBoard from "@/components/markets/McxBoard";
+import CommodityResearchSection from "@/components/markets/CommodityResearchSection";
 
 /** "₹1,47,724.00" -> 147724; "+1.10%" -> 1.1. The live feed sends display strings. */
 const toNumber = (s: string | undefined) => {
@@ -58,7 +59,8 @@ function buildSeries(bars: GlobalBar[]): Series[] {
  * /commodities: MCX prices from the live feed, and a year of international
  * gold, silver, Brent and USD/INR closes with returns, ranges and the gold
  * to silver ratio. International prices are converted to rupees at parity so
- * they can be read beside MCX.
+ * they can be read beside MCX. Below them, the ten-year research section that
+ * used to be /commodity-research (that URL now 301s to #research).
  */
 export default function CommoditiesPage() {
   const { commodities, fetchedAt } = useLiveMarket();
@@ -89,6 +91,9 @@ export default function CommoditiesPage() {
     { q: "Where do these commodity prices come from?", a: "The MCX prices are the latest quotes on the Multi Commodity Exchange of India, refreshed through the trading day. The charts use international end-of-day closes for spot gold and silver, Brent, WTI and Henry Hub natural gas spot prices from the US Energy Information Administration, and USD/INR." },
     { q: "Why is MCX gold higher than the international price in rupees?", a: `The rupee figure converts spot gold at USD/INR and stops there. MCX gold also carries import duty, GST and the cost of holding a futures contract to expiry${premium !== null ? `, which together put it ${premium.toFixed(1)}% above parity on the latest figures` : ""}. The two are also quoted at different times of day.` },
     { q: "What are MCX trading hours?", a: "Metals and energy trade from 9:00 am to 11:30 pm IST, extended to 11:55 pm while US daylight saving time is in force. Agricultural contracts close earlier." },
+    { q: "What does volatility mean in the research section?", a: "How widely the daily price has swung over the last year, as an annual figure: the standard deviation of daily returns, scaled to a year. A higher number means bigger day-to-day moves." },
+    { q: "Does a strong month in the past mean it will repeat?", a: "No. The monthly averages describe what happened over the years shown, and a few large years can dominate them. They are not a forecast." },
+    { q: "How do I trade these in India?", a: "Gold, silver, copper, crude oil and natural gas trade as futures on MCX. Parasram offers MCX trading with a commodity account; see the MCX margin calculator for what a position needs." },
     { q: "What is the gold to silver ratio?", a: `How many ounces of silver one ounce of gold buys${ratioRange ? `: ${ratioRange.last.toFixed(1)} on the latest close, against a 52-week range of ${ratioRange.low.toFixed(1)} to ${ratioRange.high.toFixed(1)}` : ""}. It is a measure of the two metals' relative price, not a signal.` },
   ];
 
@@ -96,9 +101,20 @@ export default function CommoditiesPage() {
     <div className="min-h-screen bg-background">
       <SEOHead
         title="Commodity Prices Today: MCX Gold, Silver, Crude Oil"
-        description="MCX gold, silver, crude oil, natural gas, copper and aluminium prices today, with a year of international gold, silver, Brent and natural gas prices."
+        description="MCX gold, silver, crude oil, natural gas, copper and aluminium prices today, plus ten years of returns, volatility, seasonality and correlations."
         breadcrumbs={crumbs}
         faqItems={faq.map((f) => ({ question: f.q, answer: f.a }))}
+        jsonLd={{
+          "@type": "Dataset",
+          name: "Ten-year commodity price statistics: gold, silver, copper, crude oil, natural gas",
+          description: "Annualised returns, one-year volatility, maximum drawdown, monthly seasonality and correlations from daily closes of COMEX gold, silver and copper futures, EIA Brent, WTI and Henry Hub spot prices, and MCX's most-held futures contracts.",
+          url: "https://www.sphpnp.com/commodities#research",
+          isBasedOn: ["https://fred.stlouisfed.org/series/DCOILBRENTEU", "https://fred.stlouisfed.org/series/DCOILWTICO", "https://fred.stlouisfed.org/series/DHHNGSP"],
+          creator: { "@type": "Organization", name: "Shri Parasram Holdings Pvt. Ltd.", url: "https://www.sphpnp.com" },
+          license: "https://www.sphpnp.com/terms",
+          isAccessibleForFree: true,
+          variableMeasured: ["Annualised return", "Volatility", "Maximum drawdown", "Monthly average return", "Correlation"],
+        }}
       />
       <Header />
       <VisibleBreadcrumbs items={crumbs} />
@@ -107,7 +123,7 @@ export default function CommoditiesPage() {
           className="mb-6"
           eyebrow="Markets"
           title="Commodity prices today"
-          description="Gold, silver, crude oil, natural gas and base metals on MCX, with a year of international prices in rupees and dollars."
+          description="Gold, silver, crude oil, natural gas and base metals on MCX, a year of international prices in rupees and dollars, and ten years of research."
         >
           {fetchedAt && <HeaderStat label="MCX quotes as of" value={new Date(fetchedAt).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Kolkata" })} />}
         </PageHeader>
@@ -211,14 +227,16 @@ export default function CommoditiesPage() {
           </section>
         )}
 
+        <CommodityResearchSection />
+
         <p className="mt-8 text-xs text-muted-foreground">
           MCX quotes from MCX's market watch (Economic Times if that is unavailable); international closes from EODHD and Yahoo Finance; energy spot prices from the US EIA via FRED. Market data, not investment advice. See also{" "}
-          <Link to="/commodity-research" className="underline underline-offset-4 hover:text-secondary">ten-year commodity research</Link>,{" "}
+          <a href="#research" className="underline underline-offset-4 hover:text-secondary">ten-year commodity research</a>,{" "}
           <Link to="/indices" className="underline underline-offset-4 hover:text-secondary">NSE indices</Link> and{" "}
           <Link to="/market-pulse#global" className="underline underline-offset-4 hover:text-secondary">global cues</Link>.
         </p>
       </main>
-      <FAQ title="Commodity prices: common questions" subtitle="Answered from the figures on this page." items={faq} />
+      <FAQ title="Commodities: common questions" subtitle="Answered from the figures on this page." items={faq} />
       <Footer />
       <WhatsAppButton />
     </div>

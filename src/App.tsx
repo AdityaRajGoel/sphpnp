@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider, dehydrate, hydrate, type DehydratedState } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
 import { LiveMarketProvider } from "@/hooks/useLiveMarket";
 import { lazy, Suspense } from "react";
@@ -89,7 +89,6 @@ const MarketListsHubPage = lazy(() => import("./pages/MarketListsHubPage"));
 const MarketMoversPage = lazy(() => import("./pages/MarketMoversPage"));
 const GiftNiftyPage = lazy(() => import("./pages/GiftNiftyPage"));
 const CommoditiesPage = lazy(() => import("./pages/CommoditiesPage"));
-const CommodityResearchPage = lazy(() => import("./pages/CommodityResearchPage"));
 const FiiDiiPage = lazy(() => import("./pages/FiiDiiPage"));
 const GlobalMarketsPage = lazy(() => import("./pages/GlobalMarketsPage"));
 const MutualFundsPage = lazy(() => import("./pages/MutualFundsPage"));
@@ -204,7 +203,8 @@ const AnimatedRoutes = () => {
         <Route path="/52-week-tracker" element={<Week52TrackerPage />} />
         <Route path="/markets/gift-nifty" element={<GiftNiftyPage />} />
         <Route path="/commodities" element={<CommoditiesPage />} />
-        <Route path="/commodity-research" element={<CommodityResearchPage />} />
+        {/* Merged into /commodities in Oct 2026; nginx 301s the URL, this covers in-app links. */}
+        <Route path="/commodity-research" element={<Navigate to="/commodities#research" replace />} />
         <Route path="/fii-dii-data" element={<FiiDiiPage />} />
         <Route path="/global-markets" element={<GlobalMarketsPage />} />
         <Route path="/mutual-funds" element={<MutualFundsPage />} />

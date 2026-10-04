@@ -1,5 +1,5 @@
 /**
- * Research measures for /commodity-research, from stored daily closes:
+ * Research measures for the /commodities research section, from stored daily closes:
  * volatility, worst fall, average return by calendar month, and how two
  * series move together. Pure functions; descriptions of the past, not signals.
  */

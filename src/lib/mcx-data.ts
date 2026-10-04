@@ -1,7 +1,7 @@
 /**
  * MCX commodity futures as stored from MCX's own market watch and bhavcopy
  * (mcx_futures_daily; see supabase/functions/_shared/mcx.ts), for /commodities
- * and /commodity-research.
+ * and the research section on /commodities.
  */
 import { supabase } from "@/integrations/supabase/client";
 
