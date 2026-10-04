@@ -41,7 +41,7 @@ const BANNER_TYPES = [
   { value: "none", label: "No Icon", icon: Info, color: "bg-muted text-muted-foreground" },
   { value: "info", label: "Info", icon: Info, color: "bg-blue-500/10 text-blue-600" },
   { value: "warning", label: "Warning", icon: AlertTriangle, color: "bg-amber-500/10 text-amber-600" },
-  { value: "success", label: "Success", icon: CheckCircle, color: "bg-emerald-500/10 text-emerald-600" },
+  { value: "success", label: "Success", icon: CheckCircle, color: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400" },
   { value: "promo", label: "Promo", icon: Sparkles, color: "bg-purple-500/10 text-purple-600" },
 ];
 

@@ -91,14 +91,10 @@ const SIPCalculator = ({ headingLevel = 2 }: SIPCalculatorProps) => {
           className="text-center mb-12"
           {...revealSection}
         >
-          <motion.div
-            className="inline-flex items-center gap-2 bg-secondary/10 border border-secondary/30 rounded-full px-5 py-2 mb-5"
-            animate={{ boxShadow: ["0 0 0 0 hsl(145 70% 40% / 0)", "0 0 0 6px hsl(145 70% 40% / 0.1)", "0 0 0 0 hsl(145 70% 40% / 0)"] }}
-            transition={{ duration: 2, repeat: Infinity }}
-          >
-            <Calculator className="w-4 h-4 text-secondary" />
-            <span className="text-secondary font-semibold text-sm">Investment Tool</span>
-          </motion.div>
+          <p className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-secondary mb-3">
+            <Calculator className="w-4 h-4" aria-hidden="true" />
+            Investment tool
+          </p>
           <Heading className="font-heading text-3xl md:text-4xl font-bold text-foreground mb-4">
             SIP Calculator
           </Heading>
@@ -117,10 +113,10 @@ const SIPCalculator = ({ headingLevel = 2 }: SIPCalculatorProps) => {
             <div>
               <div className="flex justify-between items-center mb-3">
                 <label htmlFor="sip-monthly" className="text-sm font-semibold text-foreground flex items-center gap-2">
-                  <IndianRupee className="w-4 h-4 text-secondary" aria-hidden="true" />
+                  <IndianRupee className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
                   Monthly Investment
                 </label>
-                <span className={`${CHIP} text-secondary bg-secondary/10 focus-within:ring-secondary`}>
+                <span className={`${CHIP} text-foreground bg-muted focus-within:ring-secondary`}>
                   <span aria-hidden="true">₹</span>
                   <ValueInput id="sip-monthly" value={monthlyInvestment} min={500} max={100000} step={500} onChange={setMonthlyInvestment} className="w-[7ch]" />
                 </span>
@@ -146,10 +142,10 @@ const SIPCalculator = ({ headingLevel = 2 }: SIPCalculatorProps) => {
             <div>
               <div className="flex justify-between items-center mb-3">
                 <label htmlFor="sip-years" className="text-sm font-semibold text-foreground flex items-center gap-2">
-                  <Calendar className="w-4 h-4 text-brand-gold" aria-hidden="true" />
+                  <Calendar className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
                   Time Period (years)
                 </label>
-                <span className={`${CHIP} text-brand-gold bg-brand-gold/10 focus-within:ring-brand-gold`}>
+                <span className={`${CHIP} text-foreground bg-muted focus-within:ring-secondary`}>
                   <ValueInput id="sip-years" value={years} min={1} max={30} step={1} onChange={setYears} className="w-[3ch]" />
                   <span aria-hidden="true">years</span>
                 </span>
@@ -163,7 +159,7 @@ const SIPCalculator = ({ headingLevel = 2 }: SIPCalculatorProps) => {
                 step={1}
                 value={years}
                 onChange={(e) => setYears(Number(e.target.value))}
-                className="w-full h-2 bg-muted rounded-full appearance-none cursor-pointer accent-brand-gold"
+                className="w-full h-2 bg-muted rounded-full appearance-none cursor-pointer accent-secondary"
               />
               <div className="flex justify-between text-xs text-muted-foreground mt-1">
                 <span>1 yr</span>
@@ -175,10 +171,10 @@ const SIPCalculator = ({ headingLevel = 2 }: SIPCalculatorProps) => {
             <div>
               <div className="flex justify-between items-center mb-3">
                 <label htmlFor="sip-return" className="text-sm font-semibold text-foreground flex items-center gap-2">
-                  <Percent className="w-4 h-4 text-primary" aria-hidden="true" />
+                  <Percent className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
                   Expected Return (% p.a.)
                 </label>
-                <span className={`${CHIP} text-primary bg-primary/10 focus-within:ring-primary`}>
+                <span className={`${CHIP} text-foreground bg-muted focus-within:ring-secondary`}>
                   <ValueInput id="sip-return" value={expectedReturn} min={1} max={30} step={0.5} onChange={setExpectedReturn} className="w-[4ch]" />
                   <span aria-hidden="true">%</span>
                 </span>
@@ -192,7 +188,7 @@ const SIPCalculator = ({ headingLevel = 2 }: SIPCalculatorProps) => {
                 step={0.5}
                 value={expectedReturn}
                 onChange={(e) => setExpectedReturn(Number(e.target.value))}
-                className="w-full h-2 bg-muted rounded-full appearance-none cursor-pointer accent-primary"
+                className="w-full h-2 bg-muted rounded-full appearance-none cursor-pointer accent-secondary"
               />
               <div className="flex justify-between text-xs text-muted-foreground mt-1">
                 <span>1%</span>
@@ -265,7 +261,7 @@ const SIPCalculator = ({ headingLevel = 2 }: SIPCalculatorProps) => {
                   </div>
                 </div>
 
-                <motion.div className="mt-6" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                <motion.div className="mt-6" whileTap={{ scale: 0.98 }}>
                   <Button
                     asChild
                     className="w-full bg-secondary hover:bg-secondary/90 text-secondary-foreground font-bold py-6"

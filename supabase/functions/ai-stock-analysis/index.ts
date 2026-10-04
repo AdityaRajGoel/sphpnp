@@ -5,6 +5,7 @@ import { fetchCompanyRecord, formatCompanyRecord } from "../_shared/company-reco
 import { reportChanges } from "../_shared/report-diff.ts";
 import { ROLES, buildRolePrompt, buildSynthesisPrompt, hasQuorum, type RoleOutput } from "../_shared/analysis-roles.ts";
 import { shouldServeCachedReport } from "../_shared/report-cache.ts";
+import { trimPromptKeepingTail } from "../_shared/prompt-trim.ts";
 
 // Cached AI reports: one report per symbol per Indian (Asia/Kolkata) trading
 // day. No TTL, no price-drift recompute - see supabase/functions/_shared/
@@ -23,10 +24,11 @@ const REPORT_MODEL = Deno.env.get("REPORT_MODEL") || "google/gemini-2.5-flash";
 // on - the paid model remains the reliability backstop.
 // Verified against OpenRouter's live :free catalogue — qwen3-next-80b and
 // llama-3.3-70b:free were withdrawn ("This model is unavailable for free")
-// and 404'd every attempt, wasting a cascade step each. These three were
+// and 404'd every attempt, wasting a cascade step each. These two were
 // confirmed to return parseable JSON under response_format: json_object.
+// openai/gpt-oss-20b:free was withdrawn too (404 "unavailable for free", Oct 2026).
 const FREE_REPORT_MODELS = (Deno.env.get("FREE_REPORT_MODELS") ??
-  "nvidia/nemotron-3-super-120b-a12b:free,nvidia/nemotron-3-ultra-550b-a55b:free,openai/gpt-oss-20b:free")
+  "nvidia/nemotron-3-super-120b-a12b:free,nvidia/nemotron-3-ultra-550b-a55b:free")
   .split(",").map((s) => s.trim()).filter(Boolean);
 // Per-attempt timeout for free models (they can be slower/oversubscribed).
 const FREE_MODEL_TIMEOUT_MS = 22_000;
@@ -44,8 +46,9 @@ const LAST_DITCH_BUDGET_MS = 55_000;
 const LAST_DITCH_FLOOR_MS = 5_000;
 // Free model tried first for Q&A chat (falls back to the paid chat model).
 // llama-3.3-70b:free was withdrawn from OpenRouter's free tier, so every chat
-// request paid a 404 before falling back. gpt-oss-20b:free is current and fast.
-const FREE_CHAT_MODEL = Deno.env.get("FREE_CHAT_MODEL") ?? "openai/gpt-oss-20b:free";
+// request paid a 404 before falling back. gpt-oss-20b:free followed it out in
+// Oct 2026; gemma-4-26b-a4b (a small-active MoE, so quick) is on the free list.
+const FREE_CHAT_MODEL = Deno.env.get("FREE_CHAT_MODEL") ?? "google/gemma-4-26b-a4b-it:free";
 // Groq free-tier models, tried in order (a decommissioned model 404s and the
 // cascade just moves to the next one). Overridable via GROQ_MODELS (comma-sep).
 // llama-3.3-70b-versatile is still on Groq's list, but none of the four keys'
@@ -473,11 +476,13 @@ async function askOpenRouter(prompt: string, isChat: boolean = false, modelOverr
 async function askGroq(prompt: string, isChat: boolean = false, model = GROQ_MODELS[0]) {
   const systemMsg = isChat ? CHAT_SYSTEM_PROMPT : REPORT_SYSTEM_PROMPT;
 
-  // Groq has a strict token limit - aggressively truncate
-  const maxPromptLen = isChat ? 2000 : 4000;
-  const truncatedPrompt = prompt.length > maxPromptLen
-    ? prompt.slice(0, maxPromptLen) + "\n[Data truncated]"
-    : prompt;
+  // Groq's free tier is tokens-per-minute limited, so prompts are capped. The
+  // cap keeps the closing question: a head cut at 2,000 chars used to drop it,
+  // and every chat turn was answered without the question (Oct 2026).
+  const maxPromptLen = isChat ? 6000 : 4000;
+  // Reports keep the quant engine block and output instructions (they restate the
+  // key indicator values); the raw data tables before them are what gets cut.
+  const truncatedPrompt = trimPromptKeepingTail(prompt, maxPromptLen, isChat ? "## Client's Question" : "## ⚙️ QUANT ENGINE OUTPUT");
 
   const response = await withKeyRotation("Groq", GROQ_API_KEYS, async (apiKey) => {
     const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {

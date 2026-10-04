@@ -99,6 +99,8 @@ export default function FiiDiiPage() {
           ...(latest ? { dateModified: latest.date, temporalCoverage: `${sessions[sessions.length - 1].date}/${latest.date}` } : {}),
           isBasedOn: "https://www.nseindia.com/reports/fii-dii",
           creator: { "@type": "Organization", name: "Shri Parasram Holdings Pvt. Ltd.", url: "https://www.sphpnp.com" },
+          license: "https://www.sphpnp.com/terms",
+          isAccessibleForFree: true,
           spatialCoverage: "India",
           variableMeasured: ["FII gross purchase", "FII gross sales", "FII net", "DII gross purchase", "DII gross sales", "DII net", "FII index futures long share"],
         }}

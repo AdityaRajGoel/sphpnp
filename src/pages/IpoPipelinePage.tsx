@@ -165,7 +165,7 @@ export default function IpoPipelinePage() {
                 aria-pressed={view === v.id}
                 className={`rounded-full border px-3 py-1.5 text-sm font-semibold transition-colors ${view === v.id ? "border-secondary bg-secondary text-secondary-foreground" : "border-border text-muted-foreground hover:text-foreground"}`}
               >
-                {v.label} <span className="ml-1 text-xs opacity-80">{counts[v.id]}</span>
+                {v.label} <span className="ml-1 text-xs font-normal tabular-nums">{counts[v.id]}</span>
               </button>
             ))}
           </div>

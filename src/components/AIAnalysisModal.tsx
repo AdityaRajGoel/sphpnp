@@ -745,7 +745,7 @@ export const AIAnalysisModal = ({ isOpen, onClose, stock }: AIAnalysisModalProps
                     }}
                     title="Deep committee mode: two AI models analyse in parallel and their independent verdicts are compared"
                     aria-pressed={useCommittee}
-                    className={`ml-auto my-2 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold border transition-colors ${useCommittee ? "bg-brand-orange text-white border-brand-orange" : "bg-card border-border text-muted-foreground hover:text-foreground hover:border-brand-orange/40"}`}
+                    className={`ml-auto my-2 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold border transition-colors ${useCommittee ? "bg-brand-orange text-white dark:text-brand-charcoal border-brand-orange" : "bg-card border-border text-muted-foreground hover:text-foreground hover:border-brand-orange/40"}`}
                   >
                     <Cpu className="w-3 h-3" /> Committee
                   </button>
@@ -763,7 +763,7 @@ export const AIAnalysisModal = ({ isOpen, onClose, stock }: AIAnalysisModalProps
                     }}
                     title="Debate mode: a bull case, a bear case and a risk review are argued separately, then weighed against each other in the report"
                     aria-pressed={useDebate}
-                    className={`my-2 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold border transition-colors ${useDebate ? "bg-brand-orange text-white border-brand-orange" : "bg-card border-border text-muted-foreground hover:text-foreground hover:border-brand-orange/40"}`}
+                    className={`my-2 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold border transition-colors ${useDebate ? "bg-brand-orange text-white dark:text-brand-charcoal border-brand-orange" : "bg-card border-border text-muted-foreground hover:text-foreground hover:border-brand-orange/40"}`}
                   >
                     <Scale className="w-3 h-3" /> Debate
                   </button>

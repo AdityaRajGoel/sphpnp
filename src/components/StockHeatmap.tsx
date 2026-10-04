@@ -6,7 +6,7 @@ import { formatCrore } from "@/lib/fundamentals";
 
 /** Symmetric steps either side of flat: the same move up or down gets the same strength of colour. */
 const STEPS = [0.1, 1, 2, 3];
-const ALPHA = [0.25, 0.45, 0.7, 0.9];
+const ALPHA = [0.25, 0.45, 0.6, 0.9];
 
 /** The tile's fill: grey within ±0.1%, then green or red in four matching steps. */
 export const heatColor = (pct: number): string => {
@@ -16,8 +16,14 @@ export const heatColor = (pct: number): string => {
   return `hsl(var(${pct > 0 ? "--secondary" : "--destructive"}) / ${ALPHA[step]})`;
 };
 
-/** Strong fills carry white text in both themes; pale ones the page's own text colour. */
-export const heatTextColor = (pct: number): string => (Math.abs(pct) >= 1 ? "#ffffff" : "hsl(var(--foreground))");
+/**
+ * The strongest step is near-solid, so it takes the fill's own foreground token
+ * (white in light, dark ink on the brighter dark-theme green/red). Every lighter
+ * step is a tint of the card, where the page's text colour reads: white on the
+ * light-theme tints measured 2.0-3.8:1.
+ */
+export const heatTextColor = (pct: number): string =>
+  Math.abs(pct) >= STEPS[3] ? `hsl(var(${pct > 0 ? "--secondary-foreground" : "--destructive-foreground"}))` : "hsl(var(--foreground))";
 
 const formatCap = (cr: number) => formatCrore(cr);
 
@@ -74,7 +80,7 @@ const StockHeatmap = ({ stocks, maxItems = 50 }: Props) => {
                 aria-label={`${stock.name} (${stock.symbol}) ${change}, open stock page`}
               >
                 <span className="font-bold text-[10px] md:text-xs leading-tight">{stock.symbol}</span>
-                <span className="text-[9px] md:text-[10px] font-medium opacity-90">{change}</span>
+                <span className="text-[9px] md:text-[10px] font-medium tabular-nums">{change}</span>
               </Link>
             </motion.div>
           );

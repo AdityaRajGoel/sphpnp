@@ -186,8 +186,10 @@ const ScrollySteps = ({ steps }: { steps: ScrollyStep[] }) => {
                 <step.icon className="w-6 h-6 text-secondary" />
               </motion.div>
               <motion.div
-                className="bg-card border border-border/50 rounded-xl p-5 flex-1 shadow-sm transition-shadow duration-base"
-                animate={prefersReducedMotion ? undefined : { opacity: active >= 0 && !isActive ? 0.55 : 1, y: isActive ? -2 : 0 }}
+                // The active step is marked by its border, not by fading the others:
+                // inactive steps at 55% opacity read at 2.3:1 (Oct 2026 axe sweep).
+                className={`bg-card border rounded-xl p-5 flex-1 transition-[border-color,box-shadow] duration-base ${isActive ? "border-secondary/60 shadow-md" : "border-border/50 shadow-sm"}`}
+                animate={prefersReducedMotion ? undefined : { y: isActive ? -2 : 0 }}
                 transition={{ duration: 0.3 }}
               >
                 <div className="flex items-center gap-3 mb-2 flex-wrap">

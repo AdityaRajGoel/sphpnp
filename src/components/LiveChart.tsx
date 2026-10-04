@@ -239,10 +239,11 @@ const RangeBar = memo(({ label, low, high, current, lowLabel, highLabel }: { lab
         <span className="text-muted-foreground font-medium">{label}</span>
         <span className="text-foreground font-semibold">{clampedPct.toFixed(0)}% from low</span>
       </div>
-      <div className="relative h-2 bg-muted rounded-full overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-destructive/40 via-brand-gold/40 to-secondary/40 rounded-full" />
+      {/* Neutral track: where the price sits in its range is not good or bad, so no red-to-green. */}
+      <div className="relative h-1.5 bg-muted rounded-full">
+        <div className="absolute inset-y-0 left-0 bg-primary/25 rounded-full" style={{ width: `${clampedPct}%` }} />
         <div
-          className="absolute top-1/2 -translate-y-1/2 w-3 h-3 bg-brand-orange rounded-full border-2 border-background shadow-md z-10"
+          className="absolute top-1/2 w-3 h-3 bg-primary rounded-full border-2 border-card shadow-sm z-10"
           style={{ left: `${clampedPct}%`, transform: `translateX(-50%) translateY(-50%)` }}
         />
       </div>
@@ -384,7 +385,7 @@ const LiveChart = () => {
     : marketStatusText === "Pre-Market"
       ? "bg-brand-orange/10 text-brand-orange border-brand-orange/20"
       : marketStatusText === "After Hours"
-        ? "bg-purple-500/10 text-purple-400 border-purple-500/20"
+        ? "bg-purple-500/10 text-purple-700 dark:text-purple-400 border-purple-500/20"
         : "bg-destructive/10 text-destructive border-destructive/20";
 
   const dotColor = marketOpen 
@@ -403,14 +404,8 @@ const LiveChart = () => {
 
   return (
     <section className="py-8 md:py-16 bg-background relative overflow-hidden">
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute inset-0 opacity-[0.02]" style={{ backgroundImage: `linear-gradient(hsl(var(--foreground)) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--foreground)) 1px, transparent 1px)`, backgroundSize: '40px 40px' }} />
-      </div>
       <div className="container mx-auto px-4 relative z-10">
         <motion.div className="flex items-center flex-wrap gap-2 mb-6" {...revealSection}>
-          <div className="w-8 h-8 rounded-lg bg-brand-orange/10 flex items-center justify-center">
-            <BarChart3 className="w-4 h-4 text-brand-orange" />
-          </div>
           <h2 className="font-heading text-xl md:text-2xl font-bold text-foreground">Market Watch</h2>
           <Link to="/indices" className="text-xs font-semibold text-secondary hover:underline underline-offset-4">All NSE indices</Link>
           <div className="ml-auto flex items-center gap-2 flex-wrap justify-end">
@@ -443,8 +438,7 @@ const LiveChart = () => {
               const isActive = activeIndexKey === idx.key;
               return (
                 <motion.button key={idx.key} onClick={() => setActiveIndexKey(idx.key)}
-                  className={`flex items-center gap-3 p-3 rounded-xl border transition-colors min-w-[180px] sm:min-w-[200px] lg:min-w-0 snap-start text-left ${isActive ? "bg-card border-brand-orange/40 shadow-lg" : "bg-card/50 border-border/30 hover:border-border"}`}
-                  whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                  className={`flex items-center gap-3 p-3 rounded-xl border transition-colors min-w-[180px] sm:min-w-[200px] lg:min-w-0 snap-start text-left ${isActive ? "bg-card border-brand-orange/40 shadow-lg" : "bg-card/50 border-border/30 hover:border-border"}`} whileTap={{ scale: 0.98 }}>
                   <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${idx.up ? "bg-secondary/10" : "bg-destructive/10"}`}>
                     {idx.up ? <TrendingUp className="w-4 h-4 text-secondary" /> : <TrendingDown className="w-4 h-4 text-destructive" />}
                   </div>
@@ -614,7 +608,7 @@ const LiveChart = () => {
               ].map((item) => {
                 const Icon = item.icon;
                 return (
-                  <motion.div key={item.label} className="bg-card border border-border/50 rounded-xl p-3" whileHover={{ y: -2 }}>
+                  <motion.div key={item.label} className="bg-card border border-border/50 rounded-xl p-3">
                     <div className="flex items-center gap-1.5 mb-1">
                       <Icon className={`w-3 h-3 ${item.color || "text-brand-orange"}`} />
                       <span className="text-[10px] text-muted-foreground font-medium">{item.label}</span>

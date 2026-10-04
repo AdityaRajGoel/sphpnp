@@ -146,9 +146,10 @@ export const cleanIpoName = (value: string): string =>
 
 /**
  * Status markers the list sites glue to the end of a name with no separator:
- * O(pen), U(pcoming), C(losed), L(isted), P and CT (closing today).
+ * O(pen), U(pcoming), C(losed), L(isted), P, CT (closing today) and LT
+ * (listing today - NSE's own IPO was stored as "... (NSE) LT" on 2026-09-24).
  */
-const STATUS_MARKER = /\s+(?:CT|[OUCLP])$/;
+const STATUS_MARKER = /\s+(?:CT|LT|[OUCLP])$/;
 
 /**
  * The key two sources' names for one issue have in common.

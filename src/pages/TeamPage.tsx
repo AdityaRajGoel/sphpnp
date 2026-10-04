@@ -102,7 +102,6 @@ const TeamMemberCard = ({ member, index }: { member: typeof teamMembers[0]; inde
     <motion.div
       className="group bg-card rounded-2xl border border-border/50 hover:border-secondary/30 shadow-lg hover:shadow-2xl transition-[color,background-color,border-color,box-shadow] duration-slow relative overflow-hidden"
       {...revealSection}
-      whileHover={{ y: -2 }}
     >
       {/* Top gradient bar */}
       <div className={`h-1.5 bg-gradient-to-r ${member.accent}`} />
@@ -207,17 +206,6 @@ const TeamPage = () => {
 
       {/* Hero Section */}
       <motion.section ref={heroRef} style={{ opacity: heroOpacity }} className="py-10 md:py-28 bg-background relative overflow-hidden">
-        {/* Ambient background */}
-        <div className="absolute inset-0 pointer-events-none">
-                    <div
-            className="absolute inset-0 opacity-[0.02]"
-            style={{
-              backgroundImage: `linear-gradient(hsl(var(--foreground)) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--foreground)) 1px, transparent 1px)`,
-              backgroundSize: '60px 60px',
-            }}
-          />
-        </div>
-
         <div className="container mx-auto px-4 relative z-10">
           <motion.div
             className="text-center mb-6"
@@ -236,12 +224,6 @@ const TeamPage = () => {
             <h1 className="font-heading text-3xl md:text-4xl lg:text-5xl font-bold text-foreground mb-4">
               Meet Our Team
             </h1>
-            <motion.div
-              className="w-20 h-1 bg-secondary mx-auto rounded-full mb-6"
-              initial={{ width: 0 }}
-              animate={{ width: 80 }}
-              transition={{ delay: 0.4, duration: 0.6 }}
-            />
             <p className="text-muted-foreground text-lg max-w-2xl mx-auto mb-6">
               Meet the people behind Parasram Panipat
             </p>

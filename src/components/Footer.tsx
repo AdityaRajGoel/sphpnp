@@ -232,7 +232,7 @@ const Footer = () => {
                   target={item.href.startsWith("http") ? "_blank" : undefined}
                   rel={item.href.startsWith("http") ? "noopener noreferrer" : undefined}
                   aria-label={item.label}
-                  className="flex h-9 w-9 items-center justify-center rounded-full bg-primary-foreground/10 transition-[background-color,transform] duration-fast ease-out hover:-translate-y-0.5 hover:bg-secondary"
+                  className="flex h-9 w-9 items-center justify-center rounded-full bg-primary-foreground/10 transition-[background-color,transform] duration-fast ease-out hover:bg-secondary"
                 >
                   <item.icon className="h-4 w-4" aria-hidden />
                 </a>
@@ -386,7 +386,7 @@ const Footer = () => {
             <button
               onClick={scrollToTop}
               aria-label="Scroll to top"
-              className="w-10 h-10 bg-secondary/20 hover:bg-secondary rounded-full flex items-center justify-center text-primary-foreground transition-[color,background-color,border-color,transform] ease-out hover:-translate-y-0.5 active:scale-[0.97]"
+              className="w-10 h-10 bg-secondary/20 hover:bg-secondary rounded-full flex items-center justify-center text-primary-foreground transition-[color,background-color,border-color,transform] ease-out active:scale-[0.97]"
             >
               <ArrowUp className="w-5 h-5" />
             </button>

@@ -10,7 +10,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { Link } from "react-router-dom";
 
-import { revealBar, revealItem, revealSection } from "@/lib/motion";
+import { revealItem, revealSection } from "@/lib/motion";
 import { formatGmp, formatGmpPercent, formatListingGain, formatSubscription, gmpPercent, type Ipo } from "@/lib/ipo";
 import { trackerTab } from "@/lib/ipo-filters";
 
@@ -31,7 +31,6 @@ const IPOCard = ({ ipo, index }: { ipo: DisplayIpo; index: number }) => (
     className="bg-card border border-border/50 rounded-xl p-4 hover:shadow-lg hover:border-brand-orange/30 transition-[box-shadow,color,background-color,border-color] cursor-pointer group"
     {...revealItem()}
     transition={{ delay: index * 0.06 }}
-    whileHover={{ y: -2 }}
   >
     <div className="flex items-start justify-between mb-3">
       <div className="flex-1 min-w-0">
@@ -150,7 +149,7 @@ const IPOTracker = () => {
 
       <div className="container mx-auto px-4 relative z-10">
         <motion.div className="text-center mb-10" {...revealSection}>
-          <motion.span className="inline-flex items-center gap-1.5 bg-brand-orange/10 text-brand-orange text-xs font-bold uppercase tracking-wider px-3 py-1.5 rounded-full mb-3">
+          <motion.span className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-secondary mb-3">
             <Rocket className="w-3.5 h-3.5" />
             IPO Central
           </motion.span>
@@ -158,7 +157,6 @@ const IPOTracker = () => {
           <p className="text-muted-foreground text-sm max-w-lg mx-auto">
             Track upcoming, open, and recently listed IPOs with GMP updates
           </p>
-          <motion.div className="w-20 h-1 bg-secondary mx-auto rounded-full mt-3" {...revealBar} />
           {fetchedAt && (
             <div className="flex items-center justify-center gap-2 mt-3 text-[10px] text-muted-foreground">
               <span>Last updated: {new Date(fetchedAt).toLocaleString("en-IN", { hour: "2-digit", minute: "2-digit", day: "numeric", month: "short" })}</span>
@@ -183,13 +181,13 @@ const IPOTracker = () => {
                 onClick={() => setActiveTab(tab.key)}
                 className={`flex min-h-[44px] items-center justify-center gap-1.5 whitespace-nowrap px-3 py-2.5 rounded-xl text-xs font-bold transition-colors sm:px-4 ${
                   activeTab === tab.key
-                    ? "bg-brand-orange text-white dark:text-brand-charcoal shadow-lg"
+                    ? "bg-primary text-primary-foreground shadow-sm"
                     : "bg-card border border-border/50 text-muted-foreground hover:text-foreground hover:bg-muted"
                 }`}
               >
                 <Icon className="w-3.5 h-3.5" />
                 {tab.label}
-                <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${activeTab === tab.key ? "bg-black/25 dark:bg-white/30" : "bg-muted"}`}>
+                <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${activeTab === tab.key ? "bg-white/20" : "bg-muted"}`}>
                   {tabCounts[tab.key]}
                 </span>
               </button>
@@ -249,7 +247,7 @@ const IPOTracker = () => {
               className="relative bg-card border border-border/50 rounded-xl p-4 hover:border-brand-orange/40 hover:shadow-md transition-[color,background-color,border-color,box-shadow]"
               variants={{ hidden: { opacity: 0, y: 16 }, visible: { opacity: 1, y: 0, transition: { duration: 0.4 } } }}
             >
-              <span className="absolute -top-2.5 left-4 text-[10px] font-bold bg-brand-orange text-white dark:text-brand-charcoal px-2 py-0.5 rounded-full">
+              <span className="absolute -top-2.5 left-4 text-[10px] font-bold bg-primary text-primary-foreground px-2 py-0.5 rounded-full">
                 Step {s.num}
               </span>
               <h4 className="font-heading text-sm font-bold text-foreground mt-2 mb-1">{s.title}</h4>

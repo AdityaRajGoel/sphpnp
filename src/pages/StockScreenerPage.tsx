@@ -700,7 +700,7 @@ const StockScreenerPage = () => {
                       const range = s.high_52 - s.low_52;
                       const pct52 = range > 0 ? ((s.price - s.low_52) / range) * 100 : 50;
                       return (
-                        <motion.tr key={s.symbol} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.01 }} onClick={openRow(s.symbol)} title={`Open ${s.name}`} className="border-b border-border/50 hover:bg-muted/40 transition-colors cursor-pointer group/row">
+                        <tr key={s.symbol} onClick={openRow(s.symbol)} title={`Open ${s.name}`} className="border-b border-border/50 hover:bg-muted/40 transition-colors cursor-pointer group/row">
                           <td className="px-4 py-3">
                             <div className="flex items-start gap-1.5">
                             <WatchlistButton symbol={s.symbol} name={s.name} className="-ml-1.5 mt-0.5" />
@@ -784,7 +784,7 @@ const StockScreenerPage = () => {
                               </Link>
                             </div>
                           </td>
-                        </motion.tr>
+                        </tr>
                       );
                     })}
                   </tbody>

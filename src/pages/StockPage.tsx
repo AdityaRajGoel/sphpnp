@@ -235,7 +235,7 @@ export default function StockPage() {
                       <Button
                         size="sm"
                         aria-label={`AI analysis of ${aiStock.name}`}
-                        className="h-11 gap-1.5 bg-brand-orange px-3 text-xs font-semibold text-white hover:bg-brand-orange/90 md:h-8"
+                        className="h-11 gap-1.5 bg-brand-orange px-3 text-xs font-semibold text-white hover:bg-brand-orange/90 dark:text-brand-charcoal md:h-8"
                         onClick={() => setAskingAI(true)}
                       >
                         <Bot aria-hidden="true" /> AI analysis

@@ -58,7 +58,7 @@ export default function HomeMarketGlance() {
           ? Array.from({ length: 4 }, (_, i) => <Skeleton key={i} className="h-24" />)
           : tiles.map((t, i) => (
               <motion.div key={t.label} {...revealItem(i)}>
-                <Link to={t.href} className="block h-full rounded-lg border bg-card p-4 transition-[border-color,transform] duration-fast hover:-translate-y-0.5 hover:border-secondary/40">
+                <Link to={t.href} className="block h-full rounded-lg border bg-card p-4 transition-[border-color,transform] duration-fast hover:border-secondary/40">
                   <div className="text-xs font-medium text-muted-foreground">{t.label}</div>
                   <AnimatedNumber value={t.share.pct} format={(v) => `${v.toFixed(0)}%`} className={`mt-1 block text-3xl font-bold ${t.tone}`} />
                   <div className="text-xs text-muted-foreground tabular-nums">{t.share.count} of {t.share.known} tracked stocks</div>

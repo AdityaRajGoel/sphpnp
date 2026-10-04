@@ -4,7 +4,7 @@ import {
   Shield, Smartphone, Award, PhoneCall, Percent,
   Headphones, MapPin, TrendingUp, MessageCircle
 } from "lucide-react";
-import { EASE_OUT, revealBar, revealSection, revealTracking } from "@/lib/motion";
+import { EASE_OUT, revealSection, revealTracking } from "@/lib/motion";
 
 const usps = [
   {
@@ -85,10 +85,6 @@ const WhyChooseUs = () => {
           <h2 className="font-heading text-3xl md:text-4xl font-bold text-foreground mb-3">
             <RevealText text="Why Choose Us?" />
           </h2>
-          <motion.div
-            className="w-20 h-1 bg-secondary mx-auto rounded-full mb-4"
-            {...revealBar}
-          />
           <p className="text-muted-foreground max-w-xl mx-auto">
             Panipat's most trusted investment partner - combining national-level expertise with personal, local service.
           </p>
@@ -107,7 +103,6 @@ const WhyChooseUs = () => {
               <motion.div
                 key={usp.title}
                 variants={itemVariants}
-                whileHover={{ y: -2 }}
                 className="group relative bg-card border border-border/50 rounded-2xl p-4 sm:p-5 hover:border-secondary/40 hover:shadow-xl transition-[color,background-color,border-color,box-shadow] duration-base overflow-hidden"
               >
                 {/* Hover gradient overlay */}
@@ -129,13 +124,6 @@ const WhyChooseUs = () => {
                   </p>
                 </div>
 
-                {/* Bottom accent */}
-                <motion.div
-                  className="absolute bottom-0 left-0 h-0.5 bg-secondary"
-                  initial={{ width: 0 }}
-                  whileHover={{ width: "100%" }}
-                  transition={{ duration: 0.3 }}
-                />
               </motion.div>
             );
           })}

@@ -89,6 +89,8 @@ export default function MutualFundsPage() {
           ...(navDate ? { dateModified: navDate } : {}),
           isBasedOn: "https://www.amfiindia.com/net-asset-value",
           creator: { "@type": "Organization", name: "Shri Parasram Holdings Pvt. Ltd.", url: "https://www.sphpnp.com" },
+          license: "https://www.sphpnp.com/terms",
+          isAccessibleForFree: true,
           spatialCoverage: "India",
           variableMeasured: ["NAV", "1-month return", "1-year return", "3-year CAGR", "5-year CAGR"],
         }}
@@ -132,7 +134,7 @@ export default function MutualFundsPage() {
               <li key={c}>
                 <button type="button" aria-pressed={activeCategory === c} onClick={() => { setCategory(c); setShown(PAGE); }}
                   className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${activeCategory === c ? "border-secondary bg-secondary/10 text-secondary" : "border-border text-muted-foreground hover:border-secondary/40 hover:text-foreground"}`}>
-                  {c} <span className="tabular-nums opacity-70">{n}</span>
+                  {c} <span className="tabular-nums font-normal">{n}</span>
                 </button>
               </li>
             ))}

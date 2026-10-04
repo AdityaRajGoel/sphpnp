@@ -47,7 +47,7 @@ function ServiceCard({ s }: { s: Service }) {
     <Link
       to={s.href}
       id={s.id}
-      className="group relative flex h-full scroll-mt-24 flex-col rounded-lg border border-border bg-card p-5 transition-[border-color,box-shadow,transform] duration-base hover:-translate-y-px hover:border-secondary/50 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-2"
+      className="group relative flex h-full scroll-mt-24 flex-col rounded-lg border border-border bg-card p-5 transition-[border-color,box-shadow,transform] duration-base hover:border-secondary/50 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-2"
     >
       <div className="flex items-center gap-3">
         <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary/[0.07] text-primary transition-colors duration-base group-hover:bg-secondary/10 group-hover:text-secondary">

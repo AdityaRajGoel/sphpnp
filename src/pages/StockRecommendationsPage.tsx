@@ -8,7 +8,7 @@ import ScrollProgress from "@/components/ScrollProgress";
 import VisibleBreadcrumbs from "@/components/VisibleBreadcrumbs";
 import WhatsAppButton from "@/components/WhatsAppButton";
 import { AlertTriangle, ShieldAlert } from "lucide-react";
-import { revealBar, revealSection } from "@/lib/motion";
+import { revealSection } from "@/lib/motion";
 
 const StockRecommendationsPage = () => {
   return (
@@ -48,10 +48,6 @@ const StockRecommendationsPage = () => {
             <h1 className="font-heading text-3xl md:text-5xl font-bold text-foreground mb-3">
               Stock Recommendations
             </h1>
-            <motion.div
-              className="w-20 h-1 bg-secondary rounded-full mb-4"
-              {...revealBar}
-            />
             <p className="text-muted-foreground max-w-2xl">
               SEBI-compliant equity calls and market updates from the research analysts at
               StockAnts, our research partner, published to our Telegram channel and mirrored here. Filter by call type or search

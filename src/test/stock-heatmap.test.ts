@@ -15,9 +15,10 @@ describe("heatColor", () => {
     expect(heatColor(-0.5)).toContain("--destructive");
   });
 
-  it("keeps white text on strong fills in both themes", () => {
-    expect(heatTextColor(2)).toBe("#ffffff");
-    expect(heatTextColor(-2)).toBe("#ffffff");
-    expect(heatTextColor(0.2)).toBe("hsl(var(--foreground))");
+  it("uses the fill's own ink on the strongest step and page text below it", () => {
+    expect(heatTextColor(3.5)).toBe("hsl(var(--secondary-foreground))");
+    expect(heatTextColor(-3.5)).toBe("hsl(var(--destructive-foreground))");
+    // White on the light-theme 45-70% tints measured 2.0-3.8:1; page text clears 4:1.
+    for (const p of [0.2, 1.5, -2.5]) expect(heatTextColor(p)).toBe("hsl(var(--foreground))");
   });
 });

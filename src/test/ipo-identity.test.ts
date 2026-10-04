@@ -26,6 +26,8 @@ const PRODUCTION_PAIRS: [string, string][] = [
   // Two rows on 2026-09-11: GMP on one, subscription on the other.
   ["Asset Reconstruction Co.(India)", "Asset Reconstruction"],
   ["Asset Reconstruction Company (India) Limited", "Asset Reconstruction"],
+  // LT (listing today), seen on NSE's own IPO on its listing day, 2026-09-24.
+  ["National Stock Exchange of India (NSE) LT", "National Stock Exchange of India (NSE)"],
 ];
 
 describe("ipoMatchKey", () => {
@@ -54,8 +56,11 @@ describe("parseChittorgarh", () => {
     const html = `<table><tr><th>Company</th><th>Pricing Method</th><th>Opening Date</th><th>Closing Date</th>` +
       `<th>Listing Date</th><th>Issue Price (Rs.)</th><th>Total Issue Amount</th><th>Fresh</th><th>OFS</th>` +
       `<th>Issue Amount (Rs.cr.)</th><th>Listing at</th><th>Lead Manager</th><th>Compare</th></tr>` +
-      cells("Kanohar Electricals Ltd. CT") + cells("Apana Logistics Ltd. P") + `</table>`;
-    expect(parseChittorgarh(html, "sme").rows.map((r) => r.name)).toEqual(["Kanohar Electricals", "Apana Logistics"]);
+      cells("Kanohar Electricals Ltd. CT") + cells("Apana Logistics Ltd. P") +
+      cells("National Stock Exchange of India (NSE) Ltd. LT") + `</table>`;
+    expect(parseChittorgarh(html, "sme").rows.map((r) => r.name)).toEqual([
+      "Kanohar Electricals", "Apana Logistics", "National Stock Exchange of India (NSE)",
+    ]);
   });
 });
 

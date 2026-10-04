@@ -111,6 +111,8 @@ export default function CommodityResearchPage() {
           ...(stats.last ? { dateModified: stats.last.trade_date, temporalCoverage: `${series[0].trade_date}/${stats.last.trade_date}` } : {}),
           isBasedOn: ["https://fred.stlouisfed.org/series/DCOILBRENTEU", "https://fred.stlouisfed.org/series/DCOILWTICO", "https://fred.stlouisfed.org/series/DHHNGSP"],
           creator: { "@type": "Organization", name: "Shri Parasram Holdings Pvt. Ltd.", url: "https://www.sphpnp.com" },
+          license: "https://www.sphpnp.com/terms",
+          isAccessibleForFree: true,
           variableMeasured: ["Annualised return", "Volatility", "Maximum drawdown", "Monthly average return", "Correlation"],
         }}
       />
@@ -195,9 +197,10 @@ export default function CommodityResearchPage() {
               <div className="mt-4 grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-12">
                 {stats.season.map((m) => (
                   <div key={m.month} className="rounded-md px-2 py-3 text-center" style={{ background: m.avg === null ? undefined : divergingFill(heatStep(m.avg, MONTH_CUTS)) }}>
-                    <div className="text-xs font-semibold text-muted-foreground">{MONTHS[m.month]}</div>
+                    {/* Page text, not muted grey: grey on the tinted cells measured 3.1:1. */}
+                    <div className="text-xs font-semibold text-foreground">{MONTHS[m.month]}</div>
                     <div className="mt-1 text-sm font-semibold tabular-nums">{pct(m.avg)}</div>
-                    <div className="text-[11px] text-muted-foreground">{m.up} of {m.years} up</div>
+                    <div className="text-[11px] text-foreground">{m.up} of {m.years} up</div>
                   </div>
                 ))}
               </div>

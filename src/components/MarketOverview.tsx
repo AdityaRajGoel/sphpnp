@@ -28,7 +28,7 @@ const ChartSpinner = () => (
 );
 import type { ApiChartPoint } from "@/lib/chart-data";
 import { useCorporateActions, useMarketFlows, useMfNavs } from "@/hooks/useMarketFeed";
-import { revealBar, revealItemX, revealSection } from "@/lib/motion";
+import { revealItemX, revealSection } from "@/lib/motion";
 import { pressable } from "@/lib/pressable";
 import Nifty50Overview from "@/components/markets/Nifty50Overview";
 
@@ -118,7 +118,6 @@ const CalendarRow = ({ action, index }: { action: CalendarAction; index: number 
   <motion.div
     className="flex items-center justify-between py-3 px-3 sm:px-4 rounded-xl hover:bg-muted/50 transition-colors duration-fast cursor-default group border-b border-border/30 last:border-0"
     {...revealItemX("left")}
-    whileHover={{ x: 2 }}
   >
     <div className="flex items-center gap-3 min-w-0 flex-1">
       <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-bold shrink-0 ${action.up ? "bg-secondary/10 text-secondary" : "bg-destructive/10 text-destructive"}`}>
@@ -252,12 +251,12 @@ const MarketOverview = () => {
 
   const marketStats = useMemo(() => [
     // Breadth share and unchanged count live in the breadth bar below; repeated here they were noise.
-    { icon: TrendingUp, label: "Advances", value: hasBreadth ? liveAdvances.toLocaleString() : "—", color: "text-secondary", bgColor: "bg-secondary/10" },
-    { icon: TrendingDown, label: "Declines", value: hasBreadth ? liveDeclines.toLocaleString() : "—", color: "text-destructive", bgColor: "bg-destructive/10" },
-    { icon: Eye, label: "Most Active", value: liveMostActive, color: "text-primary", bgColor: "bg-primary/10" },
-    { icon: Activity, label: "India VIX", value: liveVix, color: "text-brand-gold", bgColor: "bg-brand-gold/10" },
-    { icon: IndianRupee, label: "FII Flow", value: fiiFlow?.value ?? "—", color: fiiFlow ? (fiiFlow.up ? "text-secondary" : "text-destructive") : "text-muted-foreground", bgColor: fiiFlow ? (fiiFlow.up ? "bg-secondary/10" : "bg-destructive/10") : "bg-muted/40" },
-    { icon: Percent, label: "DII Flow", value: diiFlow?.value ?? "—", color: diiFlow ? (diiFlow.up ? "text-secondary" : "text-destructive") : "text-muted-foreground", bgColor: diiFlow ? (diiFlow.up ? "bg-secondary/10" : "bg-destructive/10") : "bg-muted/40" },
+    { label: "Advances", value: hasBreadth ? liveAdvances.toLocaleString() : "—", color: "text-secondary" },
+    { label: "Declines", value: hasBreadth ? liveDeclines.toLocaleString() : "—", color: "text-destructive" },
+    { label: "Most Active", value: liveMostActive, color: "text-foreground" },
+    { label: "India VIX", value: liveVix, color: "text-foreground" },
+    { label: "FII Flow", value: fiiFlow?.value ?? "—", color: fiiFlow ? (fiiFlow.up ? "text-secondary" : "text-destructive") : "text-muted-foreground" },
+    { label: "DII Flow", value: diiFlow?.value ?? "—", color: diiFlow ? (diiFlow.up ? "text-secondary" : "text-destructive") : "text-muted-foreground" },
   ], [hasBreadth, liveAdvances, liveDeclines, liveMostActive, liveVix, fiiFlow, diiFlow]);
 
   // Real history for the selected scrip. Previously this component generated a
@@ -302,37 +301,28 @@ const MarketOverview = () => {
 
   return (
     <section id="market-overview" ref={sectionRef} className="py-8 md:py-16 bg-muted/30 relative overflow-hidden">
-      {/* Subtle background */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-[0.03]">
-        <div style={{ backgroundImage: `linear-gradient(hsl(213 80% 25%) 1px, transparent 1px), linear-gradient(90deg, hsl(213 80% 25%) 1px, transparent 1px)`, backgroundSize: '60px 60px', width: '100%', height: '100%' }} />
-      </div>
-
       <div className="container mx-auto px-4 relative z-10">
         {/* Header */}
         <motion.div className="text-center mb-12" {...revealSection}>
-          <motion.span className="inline-flex items-center gap-1.5 bg-brand-orange/10 text-brand-orange font-semibold text-sm uppercase tracking-wider px-3 py-1.5 rounded-full mb-3">
+          <motion.span className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-secondary mb-3">
             <BarChart3 className="w-3.5 h-3.5" />
             Market Pulse
           </motion.span>
           <h2 className="font-heading text-3xl md:text-4xl font-bold text-foreground mb-4">Today's Market Overview</h2>
-          <motion.div className="w-20 h-1 bg-secondary mx-auto rounded-full" {...revealBar} />
           <p className="text-muted-foreground mt-3 max-w-xl mx-auto text-sm">
             Real-time market data across equities, derivatives, mutual funds & commodities
           </p>
         </motion.div>
 
-        {/* Stats strip */}
-        <motion.div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-12" {...revealSection}>
+        {/* Stats strip: one readout panel, hairline dividers via gap-px over the border colour */}
+        <motion.dl className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-px overflow-hidden rounded-surface border bg-border mb-12 shadow-sm" {...revealSection}>
           {marketStats.map((stat, i) => (
-            <motion.div key={stat.label} className={`bg-card border border-border/50 rounded-xl p-3 text-center group ${i >= 4 ? 'hidden sm:block' : ''}`} whileHover={{ y: -2 }} transition={{ type: "spring", stiffness: 300 }}>
-              <div className={`w-9 h-9 mx-auto mb-1.5 rounded-xl flex items-center justify-center ${stat.bgColor}`}>
-                <stat.icon className={`w-4 h-4 ${stat.color}`} />
-              </div>
-              <div className="text-sm font-bold text-foreground">{stat.value}</div>
-              <div className="text-[10px] text-muted-foreground">{stat.label}</div>
-            </motion.div>
+            <div key={stat.label} className={`bg-card px-4 py-3 ${i >= 4 ? "hidden sm:block" : ""}`}>
+              <dt className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">{stat.label}</dt>
+              <dd className={`mt-1 truncate text-base font-semibold tabular-nums ${stat.color}`}>{stat.value}</dd>
+            </div>
           ))}
-        </motion.div>
+        </motion.dl>
 
         {/* Nifty 50 first, then the broader market and sectors (Nifty50Overview). */}
         <Nifty50Overview />

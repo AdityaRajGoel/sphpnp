@@ -6,7 +6,6 @@ import {
   revealItem,
   revealItemX,
   revealFade,
-  revealBar,
   revealPop,
 } from "@/lib/motion";
 
@@ -42,20 +41,6 @@ describe("motion presets", () => {
     expect(revealFade.whileInView).toEqual({ opacity: 1 });
   });
 
-  /**
-   * The decorative rules under section headings used to animate `width` from 0,
-   * which forces layout on every frame while scrolling. scaleX is visually the
-   * same on a solid bar and stays on the compositor.
-   */
-  it("grows decorative rules on scaleX, never width", () => {
-    expect(revealBar.initial).not.toHaveProperty("width");
-    expect(revealBar.whileInView).not.toHaveProperty("width");
-    expect(revealBar.initial.scaleX).toBe(0);
-    expect(revealBar.whileInView.scaleX).toBe(1);
-    // Centre, not left: these rules are all mx-auto, and the width animation
-    // they replace opened symmetrically from the middle.
-    expect(revealBar.style.transformOrigin).toBe("center");
-  });
 
   /**
    * Cards and badges that arrive by growing slightly rather than lifting.

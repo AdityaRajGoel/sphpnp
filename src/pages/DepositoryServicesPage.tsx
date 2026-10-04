@@ -114,7 +114,7 @@ const DepositoryServicesPage = () => {
               {features.map((feature, idx) => (
                 <motion.div 
                   key={feature.title}
-                  className="bg-muted/30 p-6 rounded-2xl border border-border/50 hover:bg-muted/60 hover:border-secondary/30 transition-[color,background-color,border-color,transform] ease-out duration-base transform hover:-translate-y-0.5"
+                  className="bg-muted/30 p-6 rounded-2xl border border-border/50 hover:bg-muted/60 hover:border-secondary/30 transition-[color,background-color,border-color,transform] ease-out duration-base transform"
                   {...revealSection}
                   transition={{ delay: idx * 0.1 }}
                 >

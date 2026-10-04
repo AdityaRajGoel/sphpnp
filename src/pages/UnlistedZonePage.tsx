@@ -12,7 +12,7 @@ import PageTransition from "@/components/PageTransition";
 import { motion } from "motion/react";
 import { Phone, Search, BadgeCheck, Vault, TrendingUp } from "lucide-react";
 import ScrollySteps, { ScrollyStep } from "@/components/ScrollySteps";
-import { revealBar, revealItemX, revealSection } from "@/lib/motion";
+import { revealItemX, revealSection } from "@/lib/motion";
 
 const unlistedSteps: ScrollyStep[] = [
   { icon: Search, title: "Browse Verified Companies", desc: "Explore 50+ verified unlisted & pre-IPO companies - NSE, Tata Capital, SBI Mutual Fund and more, with indicative prices.", num: "01", accent: "pulse" },
@@ -90,10 +90,6 @@ const UnlistedSpacePage = () => {
                 guide to buying unlisted shares in India
               </a>{" "}- process, risks and taxation.
             </p>
-            <motion.div
-              className="w-20 h-1 bg-secondary mx-auto rounded-full"
-              {...revealBar}
-            />
           </motion.div>
 
           <ScrollySteps steps={unlistedSteps} />

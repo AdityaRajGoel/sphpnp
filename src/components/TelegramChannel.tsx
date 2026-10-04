@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { Link } from "react-router-dom";
-import { revealBar, revealFade, revealItem, revealSection, revealTracking } from "@/lib/motion";
+import { revealFade, revealItem, revealSection, revealTracking } from "@/lib/motion";
 
 type TelegramMessage = {
   id: string;
@@ -194,7 +194,7 @@ const MessageCard = ({ message, index }: { message: TelegramMessage; index: numb
                   </span>
                 )}
               </div>
-              <span className="text-[11px] text-muted-foreground/70 flex items-center gap-1 whitespace-nowrap flex-shrink-0">
+              <span className="text-[11px] text-muted-foreground flex items-center gap-1 whitespace-nowrap flex-shrink-0">
                 <Clock className="w-3 h-3" />
                 {getTimeAgo(message.message_date)}
               </span>
@@ -386,10 +386,6 @@ const TelegramChannel = ({ limit = 10, showViewAll = false, showFilters = false 
           <h2 className="font-heading text-3xl md:text-4xl font-bold text-foreground mb-3">
             {t("page.recommendations")}
           </h2>
-          <motion.div
-            className="w-20 h-1 bg-gradient-to-r from-[#229ED9] to-[#1a7aab] mx-auto rounded-full mb-4"
-            {...revealBar}
-          />
           <p className="text-muted-foreground max-w-xl mx-auto">
             Latest stock picks and market updates from StockAnts' research analysts, our research partner, delivered in real time.
           </p>
@@ -416,7 +412,7 @@ const TelegramChannel = ({ limit = 10, showViewAll = false, showFilters = false 
         {showFilters && !loading && messages.length > 0 && (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
             {[
-              { label: "Buy Calls", value: counts.buy ?? 0, icon: TrendingUp, cls: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-50 dark:bg-emerald-950/40" },
+              { label: "Buy Calls", value: counts.buy ?? 0, icon: TrendingUp, cls: "text-emerald-700 dark:text-emerald-400", bg: "bg-emerald-50 dark:bg-emerald-950/40" },
               { label: "Sell / Exit Calls", value: counts.sell ?? 0, icon: TrendingDown, cls: "text-red-600 dark:text-red-400", bg: "bg-red-50 dark:bg-red-950/40" },
               { label: "Targets Hit", value: counts.target ?? 0, icon: Target, cls: "text-blue-600 dark:text-blue-400", bg: "bg-blue-50 dark:bg-blue-950/40" },
               { label: "Total Updates", value: messages.length, icon: Send, cls: "text-[#229ED9]", bg: "bg-[#229ED9]/10" },

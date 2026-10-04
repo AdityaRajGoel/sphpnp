@@ -183,7 +183,7 @@ const Header = () => {
       </a>
       <UtilityBar />
 
-      <div className={`relative bg-card/95 backdrop-blur-md transition-shadow duration-base ease-out ${scrolled ? "shadow-lg" : "shadow-sm"} border-b border-border/60`}>
+      <div className={`relative bg-card transition-shadow duration-base ease-out ${scrolled ? "shadow-lg" : "shadow-sm"} border-b border-border/60`}>
         <div className="container mx-auto flex items-center justify-between gap-4 px-4 py-1">
           {/* Fixed-height logo box so the header never changes size; the shrink on
               scroll is a transform, which costs no layout. */}

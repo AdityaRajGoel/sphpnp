@@ -2,7 +2,7 @@ import { Star, ExternalLink, MessageSquare } from "lucide-react";
 import { motion, Variants, useScroll, useTransform } from "motion/react";
 import { Button } from "@/components/ui/button";
 import { useRef } from "react";
-import { EASE_OUT, revealBar, revealFade, revealPop, revealSection, revealSpin } from "@/lib/motion";
+import { EASE_OUT, revealFade, revealPop, revealSection, revealSpin } from "@/lib/motion";
 import { GOOGLE_REVIEWS_SNAPSHOT } from "@/data/googleReviewsSnapshot";
 
 // Reviews come from the committed capture of the Google Business Profile
@@ -87,10 +87,6 @@ const GoogleReviews = () => {
           <h2 className="font-heading text-3xl md:text-4xl lg:text-5xl font-bold text-foreground mb-6">
             Shri Parasram Holdings Panipat reviews
           </h2>
-          <motion.div
-            className="w-20 h-1 bg-secondary mx-auto rounded-full mb-6"
-            {...revealBar}
-          />
 
           {/* Rating summary. The figures are either live from the GBP feed or,
               when that fails, the verified snapshot - which is dated on screen
@@ -99,7 +95,6 @@ const GoogleReviews = () => {
           <motion.div
             className="inline-flex items-center gap-4 bg-card border border-border rounded-2xl px-8 py-4 shadow-lg"
             {...revealPop()}
-            whileHover={{ y: -2 }}
           >
             <motion.div
               className="text-5xl font-bold text-foreground"
@@ -168,7 +163,6 @@ const GoogleReviews = () => {
               key={`${review.name}-${review.time}`}
               className="group bg-card rounded-2xl p-6 shadow-md hover:shadow-xl transition-shadow duration-slow border border-border/50 relative"
               variants={cardVariants}
-              whileHover={{ y: -2 }}
             >
               {/* Google icon badge */}
               <motion.div
@@ -237,7 +231,7 @@ const GoogleReviews = () => {
           {...revealSection}
           transition={{ delay: 0.4 }}
         >
-          <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}>
+          <motion.div whileTap={{ scale: 0.97 }}>
             <Button asChild className="bg-secondary hover:bg-secondary/90 text-secondary-foreground font-semibold">
               <a
                 href="https://search.google.com/local/writereview?placeid=ChIJ6zHm2PzbDTkRJ_5hCPHVKaw"
@@ -249,7 +243,7 @@ const GoogleReviews = () => {
               </a>
             </Button>
           </motion.div>
-          <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}>
+          <motion.div whileTap={{ scale: 0.97 }}>
             <Button asChild variant="outline" className="border-border">
               <a
                 href="https://share.google/BzommM8rixb1emIzj"

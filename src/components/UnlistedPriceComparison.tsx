@@ -3,7 +3,7 @@ import { motion } from "motion/react";
 import { ArrowUpRight, Info, Layers, Scale } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
-import { revealBar, revealItem, revealSection } from "@/lib/motion";
+import { revealItem, revealSection } from "@/lib/motion";
 import { isQuoteStale } from "@/lib/unlisted";
 
 /**
@@ -161,10 +161,6 @@ const UnlistedPriceComparison = () => {
           >
             What Other Dealers Are Quoting
           </h2>
-          <motion.div
-            className="w-20 h-1 bg-secondary mx-auto rounded-full mb-4"
-            {...revealBar}
-          />
           <p className="text-sm text-muted-foreground max-w-2xl mx-auto">
             Indicative rates published by other unlisted dealers for the same companies, collected
             automatically each morning. Reference only — every dealer quotes on their own lot size

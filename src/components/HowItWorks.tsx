@@ -1,7 +1,7 @@
 import { motion } from "motion/react";
 import { Rocket, Shield, Users, Globe } from "lucide-react";
 import ScrollySteps, { ScrollyStep } from "@/components/ScrollySteps";
-import { revealBar, revealSection } from "@/lib/motion";
+import { revealSection } from "@/lib/motion";
 
 const steps: ScrollyStep[] = [
   { icon: Globe, title: "Visit Our Branch Or Call Us", desc: "Walk into our Panipat office at Shakuntala Complex, call us or fill out the form for us to contact you.", num: "01", accent: "pulse" },
@@ -25,10 +25,6 @@ const HowItWorks = () => {
           <h2 className="font-heading text-3xl md:text-4xl font-bold text-foreground mb-4">
             How It Works
           </h2>
-          <motion.div
-            className="w-20 h-1 bg-secondary mx-auto rounded-full"
-            {...revealBar}
-          />
         </motion.div>
 
         <ScrollySteps steps={steps} />

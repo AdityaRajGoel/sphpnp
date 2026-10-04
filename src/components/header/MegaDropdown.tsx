@@ -84,7 +84,7 @@ const MegaDropdown = ({ item, onClose }: MegaDropdownProps) => {
                 width={SCREEN_SIZE.width}
                 height={SCREEN_SIZE.height}
                 decoding="async"
-                className="relative -mb-10 ml-3 w-20 shrink-0 self-end rounded-xl border-[3px] border-foreground/90 shadow-xl transition-transform duration-base group-hover:-translate-y-0.5"
+                className="relative -mb-10 ml-3 w-20 shrink-0 self-end rounded-xl border-[3px] border-foreground/90 shadow-xl transition-transform duration-base"
               />
             )}
           </Link>

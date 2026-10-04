@@ -48,7 +48,7 @@ const StoreButtons = ({ app, tone = "onDark", size = "md", className = "" }: Pro
           target="_blank"
           rel="noopener noreferrer"
           aria-label={fill(t("store.aria"), { app: t(app.nameKey), store: label })}
-          className={`inline-flex items-center rounded-xl font-semibold shadow-sm transition-[background-color,transform] duration-fast ease-out hover:-translate-y-0.5 active:translate-y-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-2 ${skin} ${scale}`}
+          className={`inline-flex items-center rounded-xl font-semibold shadow-sm transition-[background-color,transform] duration-fast ease-out active:translate-y-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-2 ${skin} ${scale}`}
         >
           <Glyph />
           <span className="flex flex-col items-start leading-none">

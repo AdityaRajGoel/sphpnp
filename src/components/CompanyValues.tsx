@@ -1,6 +1,6 @@
 import { motion } from "motion/react";
 import { Heart, Shield, Target, Lightbulb, Handshake, Scale } from "lucide-react";
-import { revealBar, revealSection } from "@/lib/motion";
+import { revealSection } from "@/lib/motion";
 
 const values = [
   { icon: Shield, title: "Trust & Integrity", desc: "Transparent dealings with every client. No hidden charges, no misleading advice.", color: "bg-primary/10 text-primary" },
@@ -20,14 +20,10 @@ const CompanyValues = () => {
           className="text-center mb-12"
           {...revealSection}
         >
-          <span className="inline-block text-brand-gold font-semibold text-sm uppercase tracking-wider mb-3">What We Stand For</span>
+          <span className="inline-block text-secondary font-semibold text-sm uppercase tracking-wider mb-3">What We Stand For</span>
           <h2 className="font-heading text-3xl md:text-4xl font-bold text-foreground mb-4">
             Our Core Values
           </h2>
-          <motion.div
-            className="w-20 h-1 bg-secondary mx-auto rounded-full"
-            {...revealBar}
-          />
         </motion.div>
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -37,7 +33,6 @@ const CompanyValues = () => {
               className="bg-card border border-border/50 rounded-xl p-6 hover:shadow-xl hover:border-secondary/30 transition-[box-shadow,color,background-color,border-color] group"
               {...revealSection}
               transition={{ delay: i * 0.08 }}
-              whileHover={{ y: -2 }}
             >
               <motion.div
                 className={`w-12 h-12 rounded-xl ${v.color} flex items-center justify-center mb-4 transition-transform`}

@@ -59,7 +59,7 @@ export default function LegalWatch({ symbol }: { symbol: string }) {
             onClick={() => { setTopic(t); setExpanded(false); }}
             className={`pressable rounded-full border px-3 py-1 text-xs font-medium transition-colors ${topic === t ? "border-secondary bg-secondary text-secondary-foreground" : "border-border text-muted-foreground hover:border-secondary/50 hover:text-foreground"}`}
           >
-            {t === "all" ? "All" : t} <span className="tabular-nums opacity-70">{n}</span>
+            {t === "all" ? "All" : t} <span className="tabular-nums font-normal">{n}</span>
           </button>
         ))}
       </div>

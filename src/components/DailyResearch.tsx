@@ -1,7 +1,7 @@
 import { motion } from "motion/react";
 import { FileText, Download, TrendingUp, Newspaper, ArrowUpRight, BarChart2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { revealBar, revealSection, revealTracking } from "@/lib/motion";
+import { revealSection, revealTracking } from "@/lib/motion";
 
 const researchCards = [
   {
@@ -57,10 +57,6 @@ const DailyResearch = () => {
           <h2 className="font-heading text-3xl md:text-4xl font-bold text-foreground mb-3">
             Daily Market Research
           </h2>
-          <motion.div
-            className="w-20 h-1 bg-secondary mx-auto rounded-full mb-4"
-            {...revealBar}
-          />
           <p className="text-muted-foreground max-w-xl mx-auto">
             Access expert research reports, daily market insights, and trading ideas from our experienced analysts.
           </p>
@@ -76,7 +72,6 @@ const DailyResearch = () => {
               className="group relative overflow-hidden rounded-2xl bg-card border border-border/50 hover:border-transparent transition-[color,background-color,border-color,box-shadow] duration-base hover:shadow-2xl block"
               {...revealSection}
               transition={{ delay: i * 0.1, duration: 0.5 }}
-              whileHover={{ y: -2 }}
             >
               {/* Top gradient strip */}
               <div className={`h-1.5 bg-gradient-to-r ${card.color}`} />
@@ -110,17 +105,10 @@ const DailyResearch = () => {
 
                 <div className={`inline-flex items-center gap-2 text-sm font-semibold ${card.textColor}`}>
                   {card.cta}
-                  <ArrowUpRight className="w-4 h-4 transition-transform duration-base ease-out group-hover:translate-x-1 group-hover:-translate-y-0.5" />
+                  <ArrowUpRight className="w-4 h-4 transition-transform duration-base ease-out group-hover:translate-x-1" />
                 </div>
               </div>
 
-              {/* Bottom accent line on hover */}
-              <motion.div
-                className={`absolute bottom-0 left-0 h-0.5 bg-gradient-to-r ${card.color}`}
-                initial={{ width: 0 }}
-                whileHover={{ width: "100%" }}
-                transition={{ duration: 0.3 }}
-              />
             </motion.a>
           ))}
         </div>

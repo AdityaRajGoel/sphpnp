@@ -117,7 +117,7 @@ const FloatingActions = () => {
             exit={{ opacity: 0, scale: 0.8, y: 10 }}
             onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
             aria-label="Scroll to top"
-            className="max-md:hidden w-10 h-10 rounded-full bg-card/90 backdrop-blur-md border border-border/50 text-muted-foreground hover:text-foreground hover:bg-accent shadow-lg flex items-center justify-center transition-colors"
+            className="max-md:hidden w-10 h-10 rounded-full bg-card border border-border/50 text-muted-foreground hover:text-foreground hover:bg-accent shadow-lg flex items-center justify-center transition-colors"
           >
             <ArrowUp className="w-4 h-4" />
           </motion.button>

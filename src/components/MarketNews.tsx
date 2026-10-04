@@ -20,7 +20,7 @@ type NewsItem = {
 
 
 const categoryColors: Record<string, string> = {
-  Markets: "bg-secondary/20 text-secondary",
+  Markets: "bg-secondary/10 text-secondary",
   Economy: "bg-brand-gold/20 text-brand-gold",
   Business: "bg-primary/10 text-primary",
   Policy: "bg-destructive/10 text-destructive",
@@ -126,7 +126,7 @@ const NewsCard = ({ item, index }: { item: NewsItem; index: number }) => {
                   {item.title}
                 </h3>
                 <p className="text-xs text-muted-foreground mt-1.5 line-clamp-2">{item.summary}</p>
-                <p className="text-[10px] text-muted-foreground/60 mt-2 font-medium flex items-center gap-1">
+                <p className="text-[10px] text-muted-foreground mt-2 font-medium flex items-center gap-1">
                   {item.source}{href && <ExternalLink className="w-2.5 h-2.5" />}
                 </p>
               </div>

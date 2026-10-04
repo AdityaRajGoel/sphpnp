@@ -33,7 +33,6 @@ const BrandBanner = () => {
               src={brandImage}
               alt="Parasram - Science of Investment"
               className="w-full h-auto"
-              whileHover={{ scale: 1.02 }}
               transition={{ duration: 0.4 }}
             />
           </motion.div>
@@ -47,7 +46,6 @@ const BrandBanner = () => {
             <motion.a
               href="tel:+919416400314"
               className="flex items-center gap-2 hover:text-secondary transition-colors"
-              whileHover={{ scale: 1.02 }}
             >
               <Phone className="w-4 h-4" />
               +91 9416400314
@@ -57,7 +55,6 @@ const BrandBanner = () => {
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-2 hover:text-secondary transition-colors"
-              whileHover={{ scale: 1.02 }}
             >
               <Instagram className="w-4 h-4" />
               @parasrampanipat
@@ -67,14 +64,12 @@ const BrandBanner = () => {
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-2 hover:text-secondary transition-colors"
-              whileHover={{ scale: 1.02 }}
             >
               <Facebook className="w-4 h-4" />
               Facebook
             </motion.a>
             <motion.span
               className="flex items-center gap-2"
-              whileHover={{ scale: 1.02 }}
             >
               <MapPin className="w-4 h-4" />
               Panipat - 132103

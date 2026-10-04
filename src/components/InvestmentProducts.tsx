@@ -49,7 +49,7 @@ const InvestmentProducts = () => {
           </ul>
           <Link
             to="/open-account"
-            className="mt-6 inline-flex items-center gap-2 rounded-xl bg-secondary px-6 py-3 font-bold text-secondary-foreground shadow-sm transition-[box-shadow,transform] duration-base ease-out hover:-translate-y-px hover:bg-secondary/90 hover:shadow-md"
+            className="mt-6 inline-flex items-center gap-2 rounded-xl bg-secondary px-6 py-3 font-bold text-secondary-foreground shadow-sm transition-[box-shadow,transform] duration-base ease-out hover:bg-secondary/90 hover:shadow-md"
           >
             Open Free Demat Account <ArrowRight className="h-4 w-4" aria-hidden />
           </Link>

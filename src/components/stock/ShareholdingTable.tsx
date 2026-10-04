@@ -42,7 +42,7 @@ export default function ShareholdingTable({ shareholding, filing = null }: { sha
                       {byDate.has(d) ? `${byDate.get(d)!.toFixed(2)}%` : <span className="text-muted-foreground">—</span>}
                     </td>
                   ))}
-                  <td className={`text-right p-3 tabular-nums ${latest?.change ? (latest.change > 0 ? "text-emerald-600 dark:text-emerald-400" : "text-destructive") : "text-muted-foreground"}`}>
+                  <td className={`text-right p-3 tabular-nums ${latest?.change ? (latest.change > 0 ? "text-emerald-700 dark:text-emerald-400" : "text-destructive") : "text-muted-foreground"}`}>
                     {latest?.change === null || latest?.change === undefined
                       ? "—"
                       : `${latest.change > 0 ? "+" : ""}${latest.change.toFixed(2)} pp`}

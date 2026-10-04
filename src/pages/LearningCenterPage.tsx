@@ -594,7 +594,7 @@ const LearningCenterPage = () => {
                           const isRead = readArticles.has(article.id);
                           return (
                             <motion.div key={article.id} initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }}
-                              transition={{ delay: i * 0.06 }} whileHover={{ y: -2 }}>
+                              transition={{ delay: i * 0.06 }}>
                               <Card className={`p-6 h-full flex flex-col cursor-pointer group overflow-hidden border-t-4 ${{
                                 basics: "border-t-primary", trading: "border-t-brand-orange",
                                 analysis: "border-t-secondary", investing: "border-t-brand-gold",
@@ -651,7 +651,7 @@ const LearningCenterPage = () => {
                           const isRead = readArticles.has(article.id);
                           return (
                             <motion.div key={article.id} initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }}
-                              transition={{ delay: i * 0.04 }} whileHover={{ y: -2 }}>
+                              transition={{ delay: i * 0.04 }}>
                               <Card className={`p-5 h-full flex flex-col cursor-pointer group overflow-hidden ${isRead ? "bg-muted/40" : "hover:shadow-md"} transition-[opacity,box-shadow]`}
                                 onClick={() => openArticle(article)} {...pressable(() => openArticle(article))}>
                                 <div className="flex items-center justify-between mb-2.5">

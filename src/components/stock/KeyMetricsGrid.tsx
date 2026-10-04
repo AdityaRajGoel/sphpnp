@@ -64,7 +64,7 @@ export default function KeyMetricsGrid({ keyMetrics, roe, ratios, movingAverages
                       <td key={m.days} className="text-right p-3 tabular-nums whitespace-nowrap">
                         {rupees(m.nse!)}
                         {above !== null && (
-                          <span className={`block text-xs ${above ? "text-emerald-600 dark:text-emerald-400" : "text-destructive"}`}>
+                          <span className={`block text-xs ${above ? "text-emerald-700 dark:text-emerald-400" : "text-destructive"}`}>
                             {above ? "Price above" : "Price below"}
                           </span>
                         )}

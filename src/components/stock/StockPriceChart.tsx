@@ -140,7 +140,7 @@ const StockPriceChart = ({ symbol, name, events = NO_EVENTS }: { symbol: string;
                   {range.label} change{" "}
                   <span
                     className={`font-semibold tabular-nums ${
-                      changePct >= 0 ? "text-emerald-600" : "text-destructive"
+                      changePct >= 0 ? "text-emerald-700 dark:text-emerald-400" : "text-destructive"
                     }`}
                   >
                     {changePct >= 0 ? "+" : ""}
@@ -162,7 +162,7 @@ const StockPriceChart = ({ symbol, name, events = NO_EVENTS }: { symbol: string;
                       zone.tone === "over"
                         ? "text-destructive"
                         : zone.tone === "under"
-                          ? "text-emerald-600"
+                          ? "text-emerald-700 dark:text-emerald-400"
                           : "text-muted-foreground"
                     }
                   >

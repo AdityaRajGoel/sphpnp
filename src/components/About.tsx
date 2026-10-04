@@ -70,7 +70,6 @@ const About = ({ headingLevel = "h1" }: { headingLevel?: "h1" | "h2" } = {}) => 
               className="flex flex-col items-center text-center gap-3 group"
               {...revealSection}
               transition={{ delay: i * 0.1, duration: 0.5 }}
-              whileHover={{ y: -2 }}
             >
               <motion.div
                 className="w-12 h-12 rounded-xl bg-white border border-border/50 shadow-sm flex items-center justify-center group-hover:shadow-md transition-shadow"
@@ -126,7 +125,6 @@ const About = ({ headingLevel = "h1" }: { headingLevel?: "h1" | "h2" } = {}) => 
                   key={feature}
                   className="flex items-center gap-3 group"
                   variants={itemVariants}
-                  whileHover={{ x: 2 }}
                   transition={{ type: "spring", stiffness: 300 }}
                 >
                   <motion.div
@@ -154,7 +152,6 @@ const About = ({ headingLevel = "h1" }: { headingLevel?: "h1" | "h2" } = {}) => 
           >
             <motion.div
               className="bg-hero rounded-2xl p-8 lg:p-12 text-primary-foreground shadow-2xl"
-              whileHover={{ scale: 1.02 }}
               transition={{ type: "spring", stiffness: 300 }}
             >
               <h2 className="font-heading text-2xl font-bold mb-6">Why Choose Our Panipat Branch?</h2>
@@ -168,7 +165,6 @@ const About = ({ headingLevel = "h1" }: { headingLevel?: "h1" | "h2" } = {}) => 
                     key={item.num}
                     className="flex gap-4 group"
                     {...revealItemX("right")}
-                    whileHover={{ x: 2 }}
                   >
                     <motion.span
                       className="w-8 h-8 bg-secondary rounded-full flex items-center justify-center flex-shrink-0 text-secondary-foreground font-bold"
@@ -237,7 +233,7 @@ const About = ({ headingLevel = "h1" }: { headingLevel?: "h1" | "h2" } = {}) => 
             {...revealSection}
             transition={{ duration: 0.5, delay: 0.1 }}
           >
-            <span className="inline-block text-brand-gold font-semibold text-xs uppercase tracking-[0.15em] mb-2">Our Mission</span>
+            <span className="inline-block text-secondary font-semibold text-xs uppercase tracking-[0.15em] mb-2">Our Mission</span>
             <p className="text-foreground/90 leading-relaxed">
               Foster investor confidence through fair practice, transparent
               pricing and personal guidance - so every client in Panipat invests

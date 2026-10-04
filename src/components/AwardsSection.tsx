@@ -98,7 +98,7 @@ const AwardsSection = () => {
                   hover:border-brand-gold/60
                   focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-gold focus-visible:ring-offset-2 focus-visible:ring-offset-background
                   transition-[border-color,box-shadow,transform] duration-base ease-out
-                  motion-safe:hover:-translate-y-0.5
+                  motion-safe:
                 "
                 aria-label={`View certificate: ${cert.issuer} ${cert.title}`}
               >

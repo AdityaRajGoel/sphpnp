@@ -1,7 +1,7 @@
 import { motion, useScroll, useTransform } from "motion/react";
 import { useRef } from "react";
 import { Building2, TrendingUp, Award, Users, Globe, Landmark, Sparkles } from "lucide-react";
-import { revealBar, revealItemX, revealSection } from "@/lib/motion";
+import { revealItemX, revealSection } from "@/lib/motion";
 
 const milestones = [
   { year: "1970", title: "Foundation", desc: "Parasram begins serving investors, establishing a trusted name in financial services.", icon: Building2 },
@@ -30,14 +30,10 @@ const CompanyTimeline = () => {
           className="text-center mb-16"
           {...revealSection}
         >
-          <span className="inline-block text-brand-orange font-semibold text-sm uppercase tracking-wider mb-3">Our Journey</span>
+          <span className="inline-block text-secondary font-semibold text-sm uppercase tracking-wider mb-3">Our Journey</span>
           <h2 className="font-heading text-3xl md:text-4xl font-bold text-foreground mb-4">
-            50+ Years of Trust & Excellence
+            Serving investors since 1970
           </h2>
-          <motion.div
-            className="w-20 h-1 bg-secondary mx-auto rounded-full"
-            {...revealBar}
-          />
         </motion.div>
 
         <div className="max-w-4xl mx-auto relative">
@@ -74,7 +70,6 @@ const CompanyTimeline = () => {
                   <div className={`ml-16 md:ml-0 md:w-[calc(50%-40px)] ${isLeft ? "md:pr-4" : "md:pl-4"}`}>
                     <motion.div
                       className="bg-card border border-border/50 rounded-xl p-5 shadow-md hover:shadow-xl hover:border-secondary/30 transition-[box-shadow,color,background-color,border-color] group"
-                      whileHover={{ y: -2 }}
                     >
                       <div className="flex items-center gap-3 mb-2">
                         <span className={`text-xs font-bold px-2.5 py-1 rounded-full bg-primary/10 text-primary`}>

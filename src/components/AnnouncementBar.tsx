@@ -131,7 +131,7 @@ const AnnouncementBar = () => {
       // Not collapsed on scroll: the bar is not sticky and scrolls away by itself,
       // and collapsing it pulled the page 32px up under the reader's finger.
       // Same slate as the ticker below it, so the two read as one market band.
-      className="relative h-8 overflow-hidden border-b border-white/5 bg-[#1a1f2e] dark:bg-brand-charcoal md:h-10"
+      className="on-dark relative h-8 overflow-hidden border-b border-white/5 bg-[#1a1f2e] dark:bg-brand-charcoal md:h-10"
     >
       <div className="flex items-center h-8 md:h-10">
         <div className="flex items-center gap-1.5 md:gap-2 px-2.5 md:px-4 h-full shrink-0 bg-brand-gold/15 border-r border-brand-gold/20">

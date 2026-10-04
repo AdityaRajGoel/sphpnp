@@ -63,7 +63,7 @@ export default function FeatureStory({ id, eyebrow, heading, intro, items, class
                   )}
                   <Link to={item.to} className="group mt-7 inline-flex items-center gap-3 rounded-full bg-brand-navy py-1.5 pl-5 pr-1.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-brand-navy/90 pressable">
                     {item.cta}
-                    <span className="grid h-8 w-8 place-items-center rounded-full bg-white/15 transition-transform duration-base group-hover:translate-x-0.5 group-hover:-translate-y-px"><ArrowRight className="h-4 w-4" aria-hidden="true" /></span>
+                    <span className="grid h-8 w-8 place-items-center rounded-full bg-white/15 transition-transform duration-base group-hover:translate-x-0.5"><ArrowRight className="h-4 w-4" aria-hidden="true" /></span>
                   </Link>
                 </motion.div>
               </article>

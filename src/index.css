@@ -47,8 +47,10 @@
     --destructive: 0 72% 42%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 210 30% 90%;
-    --input: 210 30% 90%;
+    /* 87% (was 90%): 1.37:1 against cards, level with the dark theme's 1.36:1.
+       At 90% (1.27:1) white cards on the near-white page had no edge. */
+    --border: 214 28% 87%;
+    --input: 214 28% 87%;
     --ring: 150 60% 29%; /* the green of the global focus outline, so every control rings alike */
 
     --radius: 0.5rem;
@@ -80,6 +82,9 @@
        designed, so new UI picks one of the three. */
     --radius-surface: 0.875rem;
     --radius-pill: 9999px;
+
+    /* Shadow colour for the whole elevation scale (tailwind.config boxShadow). */
+    --shadow-tint: 213 60% 20%;
 
     /* ---- Site chrome -------------------------------------------------
        Combined height of everything stacked above the hero in normal
@@ -172,6 +177,8 @@
 
     --border: 216 16% 20%;
     --input: 216 16% 20%;
+
+    --shadow-tint: 220 40% 2%;
     --ring: 150 45% 45%;
 
     /* Chart palette, dark. Chosen against the dark card surface, not derived
@@ -254,6 +261,8 @@
   .dark .text-primary,
   :root:not(.dark) :is(.bg-hero, .on-dark) .text-secondary,
   :root:not(.dark) :is(.bg-hero, .on-dark) .hover\:text-secondary:hover { color: hsl(150 60% 55%); }
+  /* Red as text on the navy bands: the light-theme red measured 1.9:1 there. */
+  :root:not(.dark) :is(.bg-hero, .on-dark) .text-destructive { color: hsl(0 90% 72%); }
   :root:not(.dark) .text-brand-gold:not(:is(.bg-hero, .on-dark) *) { color: hsl(38 96% 29%); }
   :root:not(.dark) .text-brand-orange:not(:is(.bg-hero, .on-dark) *) { color: hsl(22 95% 35%); }
 

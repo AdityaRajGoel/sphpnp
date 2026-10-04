@@ -7,7 +7,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 
-import { revealBar, revealSection } from "@/lib/motion";
+import { revealSection } from "@/lib/motion";
 type FAQItem = { q: string; a: string };
 
 type FAQProps = {
@@ -25,16 +25,12 @@ const FAQ = ({ title = "Frequently Asked Questions", subtitle, items }: FAQProps
           className="text-center mb-12"
           {...revealSection}
         >
-          <motion.span className="inline-flex items-center gap-1.5 bg-brand-orange/10 text-brand-orange text-xs font-bold uppercase tracking-wider px-3 py-1.5 rounded-full mb-3">
+          <motion.span className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-secondary mb-3">
             <HelpCircle className="w-3.5 h-3.5" />
             FAQ
           </motion.span>
           <h2 className="font-heading text-3xl md:text-4xl font-bold text-foreground mb-2">{title}</h2>
           {subtitle && <p className="text-muted-foreground max-w-xl mx-auto">{subtitle}</p>}
-          <motion.div
-            className="w-20 h-1 bg-secondary mx-auto rounded-full mt-4"
-            {...revealBar}
-          />
         </motion.div>
 
         <motion.div

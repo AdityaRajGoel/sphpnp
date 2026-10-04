@@ -1,6 +1,7 @@
 import { useState, useEffect, useId, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Mail, ArrowRight } from 'lucide-react';
+import { X, ArrowRight } from 'lucide-react';
+import { DURATION, EASE_OUT } from '@/lib/motion';
 import { useEngagement } from '@/hooks/useEngagement';
 import { Button } from '@/components/ui/button';
 import { useLocation, Link } from 'react-router-dom';
@@ -92,18 +93,18 @@ const SmartPopup = () => {
           className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center pointer-events-none p-4 pb-8 sm:p-0"
         >
           <motion.div 
-            className="fixed inset-0 bg-background/80 backdrop-blur-sm pointer-events-auto"
+            className="fixed inset-0 bg-foreground/40 pointer-events-auto"
             onClick={handleClose}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
           />
           <motion.div 
-            className="bg-card w-full max-w-md p-6 sm:p-8 rounded-3xl border border-border shadow-2xl relative z-10 pointer-events-auto overflow-hidden"
+            className="bg-card w-full max-w-md p-6 sm:p-8 rounded-surface border border-border shadow-2xl relative z-10 pointer-events-auto overflow-hidden"
             initial={{ opacity: 0, y: 12, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
-            transition={{ type: "spring", duration: 0.5 }}
+            transition={{ duration: DURATION.base, ease: EASE_OUT }}
           >
             
             <button 
@@ -116,20 +117,17 @@ const SmartPopup = () => {
               <X className="w-4 h-4" />
             </button>
             
-            <div className="relative z-10 text-center">
-              <div className="w-16 h-16 mx-auto bg-primary/10 rounded-full flex items-center justify-center mb-5">
-                <Mail className="w-8 h-8 text-primary" />
-              </div>
-              <h2 id={titleId} className="text-2xl font-bold font-heading text-foreground mb-3">Maximize Your Wealth</h2>
+            <div className="relative z-10">
+              <h2 id={titleId} className="text-2xl font-bold font-heading text-foreground mb-3 pr-8">Talk to the Panipat branch</h2>
               <p className="text-muted-foreground mb-6 leading-relaxed">
-                You've been exploring our tools! Let our experts guide your portfolio strategy. Need help starting your investment journey?
+                Questions about a demat account, an IPO or a SIP? Our team answers by phone, by email or at the branch.
               </p>
               
               <div className="flex flex-col gap-3">
-                <Button asChild className="w-full text-base py-6 bg-brand-gold hover:bg-brand-gold/90 text-primary-foreground font-bold rounded-xl shadow-md">
+                <Button asChild className="w-full text-base py-6 bg-secondary hover:bg-secondary/90 text-secondary-foreground font-semibold">
                   <Link to="/open-account" onClick={handleClose}>Open Account <ArrowRight className="w-4 h-4 ml-2" /></Link>
                 </Button>
-                <Button asChild variant="outline" className="w-full text-base py-6 border-primary/20 text-primary hover:bg-primary/5 rounded-xl">
+                <Button asChild variant="outline" className="w-full text-base py-6">
                   <a href={`mailto:${PRIMARY_EMAIL}`} onClick={handleClose}>Contact an Advisor</a>
                 </Button>
               </div>

@@ -103,6 +103,17 @@ export default {
         surface: "var(--radius-surface)",
         pill: "var(--radius-pill)",
       },
+      // Tailwind's scale, cast in the navy of the brand instead of pure black
+      // (--shadow-tint, index.css). Grey-black shadows on the blue-white page
+      // read as dirt; a tinted, two-layer shadow reads as a lifted surface.
+      boxShadow: {
+        sm: "0 1px 2px 0 hsl(var(--shadow-tint) / 0.06), 0 1px 3px 0 hsl(var(--shadow-tint) / 0.05)",
+        DEFAULT: "0 1px 3px 0 hsl(var(--shadow-tint) / 0.08), 0 1px 2px -1px hsl(var(--shadow-tint) / 0.08)",
+        md: "0 4px 6px -1px hsl(var(--shadow-tint) / 0.08), 0 2px 4px -2px hsl(var(--shadow-tint) / 0.06)",
+        lg: "0 10px 15px -3px hsl(var(--shadow-tint) / 0.08), 0 4px 6px -4px hsl(var(--shadow-tint) / 0.06)",
+        xl: "0 20px 25px -5px hsl(var(--shadow-tint) / 0.09), 0 8px 10px -6px hsl(var(--shadow-tint) / 0.06)",
+        "2xl": "0 25px 50px -12px hsl(var(--shadow-tint) / 0.2)",
+      },
       transitionTimingFunction: {
         // `ease-out` / `ease-in-out` are overridden on purpose: the CSS
         // defaults are too soft to read as deliberate.

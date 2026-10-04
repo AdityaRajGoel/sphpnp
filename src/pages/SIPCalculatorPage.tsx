@@ -60,7 +60,7 @@ const SIPCalculatorPage = () => (
               </p>
               <Link to="/contact#contact-form" className="group mt-6 inline-flex items-center gap-3 rounded-full bg-secondary py-1.5 pl-5 pr-1.5 text-sm font-semibold text-secondary-foreground shadow-sm transition-colors hover:bg-secondary/90 pressable">
                 Plan my SIPs with an advisor
-                <span className="grid h-8 w-8 place-items-center rounded-full bg-white/15 transition-transform duration-base group-hover:translate-x-0.5 group-hover:-translate-y-px"><ArrowRight className="h-4 w-4" aria-hidden="true" /></span>
+                <span className="grid h-8 w-8 place-items-center rounded-full bg-white/15 transition-transform duration-base group-hover:translate-x-0.5"><ArrowRight className="h-4 w-4" aria-hidden="true" /></span>
               </Link>
             </div>
           </div>
