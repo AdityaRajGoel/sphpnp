@@ -1,3 +1,5 @@
+import { normaliseIndianMobile } from "../_shared/indian-mobile.ts";
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
@@ -30,10 +32,6 @@ function sanitize(val: unknown, maxLen = 500): string {
     const map: Record<string, string> = { '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#x27;', '&': '&amp;' };
     return map[c] || c;
   });
-}
-
-function isValidPhone(phone: string): boolean {
-  return /^(\+?91)?[6-9]\d{9}$/.test(phone.replace(/[\s-]/g, ''));
 }
 
 function isValidEmail(email: string): boolean {
@@ -147,7 +145,8 @@ Deno.serve(async (req) => {
     }
 
     const name = sanitize(body.name, 100);
-    const phone = sanitize(body.phone, 20);
+    // Same rule as the forms (_shared/indian-mobile.ts); stored as the bare 10 digits.
+    const phone = normaliseIndianMobile(typeof body.phone === 'string' ? body.phone.slice(0, 20) : '');
     const email = body.email ? sanitize(body.email, 255) : null;
     const city = body.city ? sanitize(body.city, 100) : null;
     const message = body.message ? sanitize(body.message, 1000) : null;
@@ -159,7 +158,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    if (!phone || !isValidPhone(phone)) {
+    if (!phone) {
       return new Response(
         JSON.stringify({ success: false, error: 'Valid Indian phone number is required' }),
         { status: 400, headers: responseHeaders }

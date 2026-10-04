@@ -7,8 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
 import { revealItem, revealItemX, revealTracking } from "@/lib/motion";
-const PHONE_REGEX = /^(\+?91)?[6-9]\d{9}$/;
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+import { required, validateAll, validateEmail, validateName, validatePhone } from "@/lib/form-validation";
 
 const benefits = [
   { icon: Briefcase, text: "Full product suite - Equity, F&O, MF, Insurance" },
@@ -32,14 +31,13 @@ const BecomePartner = () => {
   };
 
   const validate = (): boolean => {
-    const newErrors: Record<string, string> = {};
-    const trimName = form.name.trim();
-    const trimPhone = form.phone.trim().replace(/[\s-]/g, "");
-
-    if (!trimName || trimName.length < 2) newErrors.name = "Name required";
-    if (!trimPhone || !PHONE_REGEX.test(trimPhone)) newErrors.phone = "Valid Indian phone required";
-    if (form.email.trim() && !EMAIL_REGEX.test(form.email.trim())) newErrors.email = "Invalid email";
-    if (!form.city.trim()) newErrors.city = "City required";
+    // Same rules and messages as the contact and open-account forms.
+    const newErrors: Record<string, string> = validateAll(form, {
+      name: validateName,
+      phone: validatePhone,
+      email: validateEmail({ optional: true }),
+      city: required("City"),
+    });
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -155,8 +153,9 @@ const BecomePartner = () => {
               </motion.div>
             ) : (
               <form
+                noValidate
                 onSubmit={handleSubmit}
-                className="bg-card/10 backdrop-blur-md border border-white/10 rounded-2xl p-6 md:p-8 space-y-4"
+                className="bg-card/10 border border-white/10 rounded-2xl p-6 md:p-8 space-y-4"
               >
                 <h3 className="font-heading text-lg font-bold text-primary-foreground mb-1">Apply to Become a Partner</h3>
                 <p className="text-primary-foreground/60 text-sm mb-4">Fill in your details and our team will get in touch.</p>
@@ -173,6 +172,7 @@ const BecomePartner = () => {
                       <Input
                         name="name"
                         aria-invalid={!!errors.name}
+                        aria-describedby={errors.name ? "partner-name-error" : undefined}
                         aria-label="Your Name"
                         placeholder="Your Name *"
                         value={form.name}
@@ -182,7 +182,7 @@ const BecomePartner = () => {
                         required
                       />
                     </div>
-                    {errors.name && <p className="text-destructive text-xs mt-1">{errors.name}</p>}
+                    {errors.name && <p id="partner-name-error" role="alert" className="text-destructive text-xs mt-1">{errors.name}</p>}
                   </div>
                   <div>
                     <div className="relative">
@@ -193,16 +193,17 @@ const BecomePartner = () => {
                         inputMode="tel"
                         autoComplete="tel"
                         aria-invalid={!!errors.phone}
+                        aria-describedby={errors.phone ? "partner-phone-error" : undefined}
                         aria-label="Phone Number"
                         placeholder="Phone *"
                         value={form.phone}
                         onChange={handleChange}
                         className="pl-10 bg-white/10 border-white/20 text-primary-foreground placeholder:text-primary-foreground/40"
-                        maxLength={15}
+                        maxLength={20}
                         required
                       />
                     </div>
-                    {errors.phone && <p className="text-destructive text-xs mt-1">{errors.phone}</p>}
+                    {errors.phone && <p id="partner-phone-error" role="alert" className="text-destructive text-xs mt-1">{errors.phone}</p>}
                   </div>
                 </div>
 
@@ -215,6 +216,7 @@ const BecomePartner = () => {
                         type="email"
                         autoComplete="email"
                         aria-invalid={!!errors.email}
+                        aria-describedby={errors.email ? "partner-email-error" : undefined}
                         aria-label="Email Address"
                         placeholder="Email"
                         value={form.email}
@@ -223,7 +225,7 @@ const BecomePartner = () => {
                         maxLength={255}
                       />
                     </div>
-                    {errors.email && <p className="text-destructive text-xs mt-1">{errors.email}</p>}
+                    {errors.email && <p id="partner-email-error" role="alert" className="text-destructive text-xs mt-1">{errors.email}</p>}
                   </div>
                   <div>
                     <div className="relative">
@@ -231,6 +233,7 @@ const BecomePartner = () => {
                       <Input
                         name="city"
                         aria-invalid={!!errors.city}
+                        aria-describedby={errors.city ? "partner-city-error" : undefined}
                         aria-label="City or District"
                         placeholder="City / District *"
                         value={form.city}
@@ -240,7 +243,7 @@ const BecomePartner = () => {
                         required
                       />
                     </div>
-                    {errors.city && <p className="text-destructive text-xs mt-1">{errors.city}</p>}
+                    {errors.city && <p id="partner-city-error" role="alert" className="text-destructive text-xs mt-1">{errors.city}</p>}
                   </div>
                 </div>
 

@@ -21,10 +21,9 @@ export const validateName: FieldCheck = (v) => {
 };
 
 /** Indian mobile: 10 digits starting 6-9, with or without +91 / 0 and spaces or dashes. */
-export function normaliseIndianMobile(v: string): string | null {
-  const digits = v.replace(/[\s()-]/g, "").replace(/^(\+91|0091|91(?=\d{10}$)|0(?=\d{10}$))/, "");
-  return /^[6-9]\d{9}$/.test(digits) ? digits : null;
-}
+// Shared with submit-lead so the form and the server accept the same numbers.
+import { normaliseIndianMobile } from "../../supabase/functions/_shared/indian-mobile";
+export { normaliseIndianMobile };
 
 export const validatePhone: FieldCheck = (v) => {
   if (!v.trim()) return "Enter your mobile number";
