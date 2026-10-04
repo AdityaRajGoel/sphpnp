@@ -13,6 +13,7 @@
 
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { errorText } from "../_shared/errors.ts";
+import { parse52Week } from "../_shared/nse-52wk.ts";
 
 const BROWSER_HEADERS = {
   "User-Agent":
@@ -240,6 +241,39 @@ async function syncDeals(supabase: ReturnType<typeof createClient>): Promise<{ b
   }
 }
 
+// ── 52-week high/low for every security (same archive, fail-soft) ───────────
+// The bhavcopy keeps one day, so it cannot give a year's range; NSE's report
+// does, adjusted for corporate actions. It can lag the bhavcopy by a day, so
+// walk back a few files. Rows whose report is older than this one are dropped
+// (delisted or suspended), keeping the table to the current report.
+async function sync52Week(supabase: ReturnType<typeof createClient>, from: Date): Promise<{ effective: string | null; rows: number } | { error: string }> {
+  try {
+    const cookie = await warmupCookie();
+    const headers = cookie ? { ...BROWSER_HEADERS, Cookie: cookie } : BROWSER_HEADERS;
+    for (let back = 0; back < 6; back++) {
+      const d = new Date(from.getTime() - back * 86400000);
+      if (d.getUTCDay() === 0 || d.getUTCDay() === 6) continue;
+      const ddmmyyyy = `${pad2(d.getUTCDate())}${pad2(d.getUTCMonth() + 1)}${d.getUTCFullYear()}`;
+      for (const host of ARCHIVE_HOSTS) {
+        const res = await fetch(`${host}/content/CM_52_wk_High_low_${ddmmyyyy}.csv`, { headers }).catch(() => null);
+        if (!res?.ok) continue;
+        const { effectiveDate, rows } = parse52Week(await res.text());
+        if (!effectiveDate || rows.length < 1000) continue; // a block page or a truncated file
+        const stamped = rows.map((r) => ({ ...r, effective_date: effectiveDate }));
+        for (let i = 0; i < stamped.length; i += 500) {
+          const { error } = await supabase.from("nse_52wk").upsert(stamped.slice(i, i + 500), { onConflict: "symbol,series" });
+          if (error) return { error: `upsert: ${error.message}` };
+        }
+        await supabase.from("nse_52wk").delete().lt("effective_date", effectiveDate);
+        return { effective: effectiveDate, rows: stamped.length };
+      }
+    }
+    return { error: "no 52-week report reachable" };
+  } catch (e) {
+    return { error: errorText(e) };
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: cors });
 
@@ -280,11 +314,12 @@ Deno.serve(async (req) => {
     // Keep only the latest trading day.
     await supabase.from("bhavcopy_eod").delete().neq("trade_date", tradeDate);
 
-    // Piggyback: bulk & block deals from the same archive (fail-soft).
+    // Piggyback: bulk & block deals and the 52-week report from the same archive (fail-soft).
     const deals = await syncDeals(supabase);
+    const week52 = await sync52Week(supabase, new Date(`${tradeDate}T12:00:00Z`));
 
     return new Response(
-      JSON.stringify({ success: true, trade_date: tradeDate, rows_upserted: upserted, file: file.ddmmyyyy, deals }),
+      JSON.stringify({ success: true, trade_date: tradeDate, rows_upserted: upserted, file: file.ddmmyyyy, deals, week52 }),
       { headers: { ...cors, "Content-Type": "application/json" } },
     );
   } catch (e) {
