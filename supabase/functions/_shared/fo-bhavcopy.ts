@@ -27,7 +27,9 @@ export async function unzipFirstFile(bytes: Uint8Array): Promise<string> {
   const data = bytes.subarray(start, start + compressedSize);
   if (method === 0) return new TextDecoder().decode(data);
   if (method !== 8) throw new Error(`unsupported zip compression ${method}`);
-  const source = new ReadableStream<Uint8Array>({ start(controller) { controller.enqueue(data); controller.close(); } });
+  // BufferSource, not Uint8Array: TS 5.9 types DecompressionStream's input that way and
+  // rejected the Uint8Array stream (Dependabot PR #2). Valid under 5.8 too.
+  const source = new ReadableStream<BufferSource>({ start(controller) { controller.enqueue(data.slice()); controller.close(); } });
   const stream = source.pipeThrough(new DecompressionStream("deflate-raw"));
   return await new Response(stream).text();
 }
