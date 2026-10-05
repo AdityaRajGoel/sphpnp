@@ -1,41 +1,39 @@
 import { motion } from "motion/react";
-import { FileText, Download, TrendingUp, Newspaper, ArrowUpRight, BarChart2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { revealSection, revealTracking } from "@/lib/motion";
+import { ArrowUpRight, BadgeCheck, BarChart2, Download, Newspaper } from "lucide-react";
+import { revealItem, revealSection, revealTracking } from "@/lib/motion";
 
+/**
+ * Two daily PDFs from the research desk, and StockAnts Premium. The third card
+ * used to read "Weekly Report - Download Report" while linking to StockAnts,
+ * so it promised a PDF and opened a sign-up; it now says what the link is.
+ */
 const researchCards = [
   {
     title: "SR Levels",
-    subtitle: "Daily Support & Resistance",
-    description: "Get today's key support & resistance levels for NIFTY, BANKNIFTY, and top stocks. Updated every morning before market open.",
+    subtitle: "Daily support and resistance",
+    description: "Key support and resistance levels for NIFTY, BANKNIFTY and leading stocks, updated every morning before the open.",
     icon: BarChart2,
-    color: "from-secondary to-brand-green",
-    bgAccent: "bg-secondary/10",
-    textColor: "text-secondary",
     href: "https://www.parasramindia.com/downloads/SR-LEVELS.pdf",
-    cta: "View SR Levels",
+    cta: "View SR levels",
+    pdf: true,
   },
   {
     title: "Daily Newsletter",
-    subtitle: "Market Insights & Picks",
-    description: "Daily newsletter with market outlook, stock picks, sectoral analysis, and trading ideas by our research team.",
+    subtitle: "Market outlook and ideas",
+    description: "The day's market outlook, stock ideas and sector notes from our research team.",
     icon: Newspaper,
-    color: "from-primary to-brand-navy",
-    bgAccent: "bg-primary/10",
-    textColor: "text-primary",
     href: "https://www.parasramindia.com/downloads/DAILY-NEWSLETTER.pdf",
-    cta: "Read Newsletter",
+    cta: "Read the newsletter",
+    pdf: true,
   },
   {
-    title: "Weekly Report",
-    subtitle: "In-Depth Analysis",
-    description: "Weekly market wrap, FII/DII analysis, top performers, upcoming events, and portfolio strategies for the week ahead.",
-    icon: FileText,
-    color: "from-brand-gold to-amber-600",
-    bgAccent: "bg-brand-gold/10",
-    textColor: "text-brand-gold",
+    title: "StockAnts Premium",
+    subtitle: "Free for Parasram clients",
+    description: "Research and stock calls from StockAnts, our research partner. Every registered Parasram client gets premium access at no charge.",
+    icon: BadgeCheck,
     href: "https://parasram.stockants.com/",
-    cta: "Download Report",
+    cta: "Get your free access",
+    pdf: false,
   },
 ];
 
@@ -58,7 +56,7 @@ const DailyResearch = () => {
             Daily Market Research
           </h2>
           <p className="text-muted-foreground max-w-xl mx-auto">
-            Access expert research reports, daily market insights, and trading ideas from our experienced analysts.
+            Daily levels and a newsletter from our research desk, and StockAnts Premium free for every registered client.
           </p>
         </motion.div>
 
@@ -69,46 +67,22 @@ const DailyResearch = () => {
               href={card.href}
               target="_blank"
               rel="noopener noreferrer"
-              className="group relative overflow-hidden rounded-2xl bg-card border border-border/50 hover:border-transparent transition-[color,background-color,border-color,box-shadow] duration-base hover:shadow-2xl block"
-              {...revealSection}
-              transition={{ delay: i * 0.1, duration: 0.5 }}
+              className="group flex flex-col rounded-surface border bg-card p-6 shadow-sm transition-[border-color,box-shadow] duration-fast ease-out hover:border-secondary/40 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              {...revealItem(i)}
             >
-              {/* Top gradient strip */}
-              <div className={`h-1.5 bg-gradient-to-r ${card.color}`} />
-
-              {/* Gradient background on hover */}
-              <div className={`absolute inset-0 bg-gradient-to-br ${card.color} opacity-0 group-hover:opacity-5 transition-opacity duration-slow`} />
-
-              <div className="p-6 relative z-10">
-                <div className="flex items-start justify-between mb-4">
-                  <div className={`w-14 h-14 rounded-xl ${card.bgAccent} flex items-center justify-center transition-transform duration-base`}>
-                    <card.icon className={`w-7 h-7 ${card.textColor}`} />
-                  </div>
-                  <motion.div
-                    className="opacity-0 group-hover:opacity-100 transition-opacity duration-base"
-                    animate={{ x: [0, 3, 0] }}
-                    transition={{ duration: 1.5, repeat: Infinity }}
-                  >
-                    <Download className={`w-5 h-5 ${card.textColor}`} />
-                  </motion.div>
-                </div>
-
-                <h3 className={`font-heading text-xl font-bold mb-1 group-hover:${card.textColor} transition-colors`}>
-                  {card.title}
-                </h3>
-                <p className={`text-sm font-medium ${card.textColor} mb-3`}>
-                  {card.subtitle}
-                </p>
-                <p className="text-muted-foreground text-sm mb-5">
-                  {card.description}
-                </p>
-
-                <div className={`inline-flex items-center gap-2 text-sm font-semibold ${card.textColor}`}>
-                  {card.cta}
-                  <ArrowUpRight className="w-4 h-4 transition-transform duration-base ease-out group-hover:translate-x-1" />
-                </div>
+              <div className="mb-4 flex items-start justify-between">
+                <span className="flex h-11 w-11 items-center justify-center rounded-lg bg-muted text-foreground">
+                  <card.icon className="h-5 w-5" aria-hidden="true" />
+                </span>
+                {card.pdf && <span className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground"><Download className="h-3.5 w-3.5" aria-hidden="true" /> PDF</span>}
               </div>
-
+              <h3 className="font-heading text-xl font-bold text-foreground">{card.title}</h3>
+              <p className="mb-3 mt-0.5 text-sm font-medium text-secondary">{card.subtitle}</p>
+              <p className="mb-5 flex-1 text-sm text-muted-foreground">{card.description}</p>
+              <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-secondary">
+                {card.cta}
+                <ArrowUpRight className="h-4 w-4 transition-transform duration-fast ease-out group-hover:-translate-y-0.5 group-hover:translate-x-0.5" aria-hidden="true" />
+              </span>
             </motion.a>
           ))}
         </div>

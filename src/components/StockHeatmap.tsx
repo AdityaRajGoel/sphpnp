@@ -6,7 +6,7 @@ import { formatCrore } from "@/lib/fundamentals";
 
 /** Symmetric steps either side of flat: the same move up or down gets the same strength of colour. */
 const STEPS = [0.1, 1, 2, 3];
-const ALPHA = [0.25, 0.45, 0.6, 0.9];
+const ALPHA = [0.2, 0.4, 0.55, 0.9];
 
 /** The tile's fill: grey within ±0.1%, then green or red in four matching steps. */
 export const heatColor = (pct: number): string => {

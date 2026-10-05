@@ -168,7 +168,8 @@ const AppsPage = () => {
                 </div>
               </motion.div>
 
-              {/* One phone, with the two new features pinned beside it. */}
+              {/* One phone. Its features are the list beside it; floating chips over the
+                  mockup hid its status bar on phones and met the WhatsApp button. */}
               <motion.div {...revealItemX("right")} className="relative mx-auto w-full max-w-sm py-6">
                 <img
                   src={MONEY_HERO.src}
@@ -180,15 +181,6 @@ const AppsPage = () => {
                   decoding="async"
                   className="relative mx-auto w-64 rounded-[2.2rem] border-[7px] border-foreground/90 bg-foreground shadow-[0_40px_80px_-20px_rgb(0_0_0/0.6)] sm:w-72"
                 />
-                {[
-                  { icon: Bot, key: "apps.feature.tradetron.title", pos: "left-0 top-0 sm:-left-16" },
-                  { icon: Zap, key: "apps.feature.pledge.title", pos: "bottom-0 right-0 sm:-right-12" },
-                ].map(({ icon: Icon, key, pos }) => (
-                  <span key={key} className={`absolute ${pos} flex items-center gap-2 rounded-xl bg-card px-3.5 py-2.5 text-sm font-semibold text-foreground shadow-xl ring-1 ring-black/5`}>
-                    <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-secondary/15 text-secondary"><Icon className="h-4 w-4" aria-hidden /></span>
-                    {t(key)}
-                  </span>
-                ))}
               </motion.div>
             </div>
           </section>
