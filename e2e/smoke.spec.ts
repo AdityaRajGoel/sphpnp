@@ -43,7 +43,7 @@ test("pricing page renders the full charges tables", async ({ page }) => {
   await expect(page.locator("h1")).toContainText("Brokerage Charges");
   await expect(page.getByText("0.15%").first()).toBeVisible();
   await expect(page.getByText("₹885 / year")).toBeVisible();
-  await expect(page.getByText("Equity Options")).toBeVisible();
+  await expect(page.getByText("Equity Options", { exact: true })).toBeVisible();
 });
 
 /**

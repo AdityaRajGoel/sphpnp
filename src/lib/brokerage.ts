@@ -24,11 +24,17 @@ export const RATE_CARD: { id: RateCardId; label: string; rule: BrokerageRule }[]
   { id: "mcx", label: "Commodity (MCX)", rule: { kind: "perLot", amount: 30 } },
 ];
 
-const rule = (id: RateCardId) => RATE_CARD.find((r) => r.id === id)!.rule;
+/** The standard-plan rule for one rate-card line. */
+export const rateRule = (id: RateCardId) => RATE_CARD.find((r) => r.id === id)!.rule;
 
 /** "0.02%" or "₹30 per lot" - trailing zeros trimmed, as a rate card prints it. */
 export const formatRule = (r: BrokerageRule): string =>
   r.kind === "perLot" ? `₹${r.amount} per lot` : `${+(r.rate * 100).toFixed(4)}%`;
+
+const rateText = (id: RateCardId) => formatRule(rateRule(id));
+
+/** The standard plan in one phrase, for FAQs and meta descriptions that quote it. */
+export const RATE_SUMMARY = `${rateText("delivery")} on equity delivery, ${rateText("intraday")} on intraday, ${rateText("eqFutures")} on futures and ${rateText("eqOptions")} on options`;
 
 /**
  * Statutory rates as of September 2026: STT as revised from 1 April 2026 (futures
@@ -62,21 +68,21 @@ export type Segment = {
 };
 
 export const SEGMENTS: Segment[] = [
-  { key: "equity_delivery", label: "Equity Delivery", brokerage: rule("delivery"), byLot: false, isOption: false,
+  { key: "equity_delivery", label: "Equity Delivery", brokerage: rateRule("delivery"), byLot: false, isOption: false,
     sttBuy: 0.001, sttSell: 0.001, taxName: "STT", exchange: 0.0000307, exchangeNote: "NSE", stamp: 0.00015 },
-  { key: "equity_intraday", label: "Equity Intraday", brokerage: rule("intraday"), byLot: false, isOption: false,
+  { key: "equity_intraday", label: "Equity Intraday", brokerage: rateRule("intraday"), byLot: false, isOption: false,
     sttBuy: 0, sttSell: 0.00025, taxName: "STT", exchange: 0.0000307, exchangeNote: "NSE", stamp: 0.00003 },
-  { key: "futures", label: "Equity Futures", brokerage: rule("eqFutures"), byLot: true, isOption: false,
+  { key: "futures", label: "Equity Futures", brokerage: rateRule("eqFutures"), byLot: true, isOption: false,
     sttBuy: 0, sttSell: 0.0005, taxName: "STT", exchange: 0.0000183, exchangeNote: "NSE", stamp: 0.00002 },
-  { key: "options", label: "Equity Options", brokerage: rule("eqOptions"), byLot: true, isOption: true,
+  { key: "options", label: "Equity Options", brokerage: rateRule("eqOptions"), byLot: true, isOption: true,
     sttBuy: 0, sttSell: 0.0015, taxName: "STT", exchange: 0.0003553, exchangeNote: "NSE, on premium", stamp: 0.00003 },
-  { key: "currency_futures", label: "Currency Futures", brokerage: rule("curFutures"), byLot: true, isOption: false,
+  { key: "currency_futures", label: "Currency Futures", brokerage: rateRule("curFutures"), byLot: true, isOption: false,
     sttBuy: 0, sttSell: 0, taxName: "STT", exchange: 0.0000035, exchangeNote: "NSE", stamp: 0.000001 },
-  { key: "currency_options", label: "Currency Options", brokerage: rule("curOptions"), byLot: true, isOption: true,
+  { key: "currency_options", label: "Currency Options", brokerage: rateRule("curOptions"), byLot: true, isOption: true,
     sttBuy: 0, sttSell: 0, taxName: "STT", exchange: 0.000311, exchangeNote: "NSE, on premium", stamp: 0.000001 },
-  { key: "commodity_futures", label: "MCX Futures", brokerage: rule("mcx"), byLot: true, isOption: false,
+  { key: "commodity_futures", label: "MCX Futures", brokerage: rateRule("mcx"), byLot: true, isOption: false,
     sttBuy: 0, sttSell: 0.0001, taxName: "CTT", exchange: 0.000021, exchangeNote: "MCX", stamp: 0.00002 },
-  { key: "commodity_options", label: "MCX Options", brokerage: rule("mcx"), byLot: true, isOption: true,
+  { key: "commodity_options", label: "MCX Options", brokerage: rateRule("mcx"), byLot: true, isOption: true,
     sttBuy: 0, sttSell: 0.0005, taxName: "CTT", exchange: 0.000418, exchangeNote: "MCX, on premium", stamp: 0.00003 },
 ];
 

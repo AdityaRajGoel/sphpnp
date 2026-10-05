@@ -45,7 +45,7 @@ const usps = [
   {
     icon: Percent,
     title: "Custom Brokerage & MTF",
-    description: "Brokerage plans and margin (MTF) relationships tailored to your trading volume and needs",
+    description: "Brokerage plans tailored to your volume and needs, plus custom MTF exposure with no fixed cap for HNI and other clients",
   },
 ];
 

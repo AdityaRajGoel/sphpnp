@@ -10,8 +10,9 @@ import { Link } from "react-router-dom";
 import { IndianRupee, BadgeCheck, Calculator, ArrowRight, Phone, Info, Percent, Scale, PhoneCall, FileText } from "lucide-react";
 
 import { revealItem, revealSection } from "@/lib/motion";
-import { RATE_CARD, formatRule } from "@/lib/brokerage";
+import { RATE_CARD, RATE_SUMMARY, formatRule, rateRule } from "@/lib/brokerage";
 import ChargesBreakdown from "@/components/pricing/ChargesBreakdown";
+import BrokerComparison from "@/components/pricing/BrokerComparison";
 // Published tariff for Shri Parasram Holdings (as listed on broker-data
 // aggregators sourced from the firm's tariff sheet). Keep in sync with the
 // branch's current schedule - update here when rates change.
@@ -25,6 +26,11 @@ const accountCharges = [
 // Read from the shared rate card, which the Brokerage Calculator also uses.
 const brokerageCharges = RATE_CARD.map((r) => ({ segment: r.label, rate: formatRule(r.rule) }));
 
+const delivery = rateRule("delivery");
+const deliveryExample = delivery.kind === "percent"
+  ? ` For example, buying shares worth ₹1,00,000 costs ₹${(delivery.rate * 1e5).toLocaleString("en-IN")} in brokerage,`
+  : "";
+
 const otherCharges = [
   { item: "Exchange Transaction Charges", value: "0.00307% (NSE equity)" },
   { item: "GST", value: "18% on brokerage & fees" },
@@ -37,12 +43,12 @@ const usps = [
   {
     icon: Percent,
     title: "Custom Brokerage Plans",
-    desc: "Rates tailored to your needs and trading volume - not one-size-fits-all. Reviewed as your activity grows.",
+    desc: "Plans tailored to each client's trading volume and needs - not one-size-fits-all. Reviewed as your activity grows.",
   },
   {
     icon: Scale,
     title: "Flexible MTF & Margins",
-    desc: "Customised margin trading facility (MTF) and margin relationships structured around your portfolio and risk profile.",
+    desc: "Custom MTF exposure with no fixed cap - for HNI and other clients, set according to your risk profile and requirements.",
   },
   {
     icon: PhoneCall,
@@ -52,7 +58,7 @@ const usps = [
   {
     icon: FileText,
     title: "Tax & Paperwork Assistance",
-    desc: "Capital gains statements, P&L reports, help with tax-filing paperwork and related finance tasks - plus research-backed recommendations.",
+    desc: "Paperwork, physical statement copies, capital gains and P&L reports, and help with tax filing - free for every client. HNI clients also get advanced paperwork free, with services at their home or office.",
   },
 ];
 
@@ -63,7 +69,7 @@ const faqs = [
   },
   {
     q: "How is equity delivery brokerage calculated?",
-    a: "Delivery brokerage is 0.15% of the trade value. For example, buying shares worth ₹1,00,000 costs ₹150 in brokerage, plus statutory charges like STT, exchange transaction charges and GST.",
+    a: `Delivery brokerage is ${formatRule(delivery)} of the trade value.${deliveryExample} plus statutory charges like STT, exchange transaction charges and GST.`,
   },
   {
     q: "Are there hidden charges?",
@@ -75,11 +81,19 @@ const faqs = [
   },
   {
     q: "Do you offer MTF (Margin Trading Facility)?",
-    a: "Yes. MTF and trading margins are structured individually based on your portfolio, trading segments and risk profile. Speak to the branch to set up a margin relationship that fits how you trade.",
+    a: "Yes. We provide custom MTF exposure for HNI clients and other investors, set according to each client's risk profile and requirements. There is no fixed upper limit on MTF exposure. Speak to the branch to set up MTF that fits how you trade.",
+  },
+  {
+    q: "Do you help with algo trading?",
+    a: "Yes, free of cost. The branch handles algo registration and setup for you and helps with strategy building and deployment, and algo exposure can be planned around your risk profile and needs. Algo trading carries market risk; no returns are promised.",
+  },
+  {
+    q: "Why is your brokerage higher than a discount broker's?",
+    a: "On the headline rate a discount broker is cheaper per order. What the difference buys is a dealer desk, daily research, branch support and free algo registration and setup - with no hidden extras: DP charges on selling, call & trade, pledges, bank transfers, physical statements and paperwork are all ₹0 here. Against other full-service brokers our delivery brokerage is lower than most. Custom plans narrow the gap further for every client.",
   },
   {
     q: "Do you offer custom brokerage plans?",
-    a: "Yes - custom brokerage plans are a standard offering, not an exception. We tailor rates to your trading volume, segments and order profile. Call +91 9416400314 or visit the branch at Shakuntala Complex, Palika Bazaar to set one up.",
+    a: "Yes - custom brokerage plans are a standard offering, not an exception. Each plan is tailored to the client's trading volume and needs. Call +91 9416400314 or visit the branch at Shakuntala Complex, Palika Bazaar to set one up.",
   },
 ];
 
@@ -118,7 +132,7 @@ const PricingPage = () => {
       <div className="min-h-screen bg-background">
         <SEOHead
           title="Brokerage Charges & Pricing | Parasram India Panipat"
-          description="Transparent brokerage: free Demat account opening, 0.15% equity delivery, 0.02% intraday & futures, ₹30/lot options. Full charge sheet from Parasram India."
+          description={`Transparent brokerage: free Demat account opening, ${RATE_SUMMARY}. Full charge sheet from Parasram India.`}
           canonical="https://www.sphpnp.com/pricing"
           breadcrumbs={[{ name: "Home", url: "/" }, { name: "Pricing & Charges" }]}
           faqItems={faqs.map((f) => ({ question: f.q, answer: f.a }))}
@@ -137,8 +151,8 @@ const PricingPage = () => {
               Brokerage Charges, No Surprises
             </h1>
             <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-              Every charge published upfront - and if you trade actively, we tailor
-              brokerage to your volume and order profile.
+              Every charge published upfront - and we tailor brokerage to each
+              client's volume and needs.
             </p>
           </motion.div>
 
@@ -159,6 +173,7 @@ const PricingPage = () => {
             <ChargesTable title="Brokerage by Segment" rows={brokerageCharges} cols={["Segment", "Brokerage"]} />
             <ChargesBreakdown />
             <ChargesTable title="Other Charges" rows={otherCharges} cols={["Item", "Charge"]} />
+            <BrokerComparison />
           </div>
 
           {/* What sets us apart */}
@@ -272,7 +287,7 @@ const PricingPage = () => {
               Rates shown are the published tariff for Shri Parasram Holdings Pvt. Ltd. and are indicative;
               statutory charges (STT, exchange transaction fees, SEBI fees, stamp duty) apply additionally as per
               regulation. Please confirm the current schedule of charges at the Panipat branch or on your account
-              opening tariff sheet. Custom plans are available for active traders.
+              opening tariff sheet. Custom brokerage plans and MTF exposure are available on request.
             </p>
           </div>
 

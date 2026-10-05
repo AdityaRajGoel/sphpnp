@@ -13,6 +13,7 @@ import FAQ from "@/components/FAQ";
 import SEOHead from "@/components/SEOHead";
 import PageTransition from "@/components/PageTransition";
 import { BRANCH_EMAILS, PRIMARY_EMAIL } from "@/lib/contact";
+import { RATE_SUMMARY } from "@/lib/brokerage";
 
 const aboutFAQs = [
   { q: "How long has Parasram India been in business?", a: "Parasram has been serving investors since 1970, giving us over 50 years of experience in the financial markets. The business was incorporated as Shri Parasram Holdings Pvt. Ltd. in 1994 (CIN: U67120DL1994PTC060726). Our Panipat branch has been serving clients since 1997." },
@@ -20,7 +21,7 @@ const aboutFAQs = [
   { q: "What services does the Panipat branch offer?", a: "Our Panipat branch offers equity trading, derivatives, commodity trading, mutual fund investments, IPO applications, SIP planning, unlisted shares, portfolio management services, and personalized financial advisory." },
   { q: "How can I open a Demat account?", a: "You can open a free Demat account by visiting our branch at Shakuntala Complex, Palika Bazaar, Panipat, or by filling out the online form on our website. You'll need your PAN card, Aadhaar card, and bank details." },
   { q: "Do you provide research and advisory services?", a: "Yes, our research team provides daily market reports, stock recommendations, and personalized portfolio advisory. All research calls are SEBI-compliant." },
-  { q: "What are the brokerage charges?", a: "We offer competitive brokerage rates. Contact our Panipat branch for the latest rate card tailored to your trading volume and requirements." },
+  { q: "What are the brokerage charges?", a: `Demat and trading account opening is free. Standard brokerage is ${RATE_SUMMARY}. The full charge sheet is on our Pricing page, and custom brokerage plans are tailored to each client's trading volume and needs.` },
 ];
 
 const AboutPage = () => {

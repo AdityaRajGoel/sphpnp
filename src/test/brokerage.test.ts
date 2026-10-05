@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { calculateCharges, formatRule, RATE_CARD, SEGMENTS, segmentByKey } from "@/lib/brokerage";
+import { calculateCharges, formatRule, RATE_CARD, RATE_SUMMARY, SEGMENTS, segmentByKey } from "@/lib/brokerage";
 
 describe("calculateCharges", () => {
   it("prices an intraday round trip at 0.02% with STT on the sell side only", () => {
@@ -52,6 +52,10 @@ describe("rate card", () => {
       "Currency Options: ₹30 per lot",
       "Commodity (MCX): ₹30 per lot",
     ]);
+  });
+
+  it("quotes the rate card in the one-line summary the FAQs use", () => {
+    expect(RATE_SUMMARY).toBe("0.15% on equity delivery, 0.02% on intraday, 0.02% on futures and ₹30 per lot on options");
   });
 
   it("has every calculator segment read its brokerage from the rate card", () => {

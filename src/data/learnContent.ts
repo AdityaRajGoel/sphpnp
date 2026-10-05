@@ -475,7 +475,7 @@ The percentage brokerage buys things a flat-fee app cannot give you:
 1. **A human on the phone.** A [free call-to-trade desk](/pricing) means you can run your business while your dealer executes your order - no app, no screens.
 2. **Research you didn't have to do.** Daily reports, support/resistance levels and stock recommendations from SEBI-registered analysts.
 3. **Someone who knows your portfolio.** Advice on rebalancing, tax-loss harvesting timing, IPO applications and paperwork.
-4. **Negotiable pricing.** Full-service brokerage is rarely fixed - active clients get [custom plans](/pricing) that can approach discount-broker economics while keeping the service.
+4. **Negotiable pricing.** Full-service brokerage is rarely fixed - clients get [custom plans](/pricing) tailored to their trading volume and needs, which can approach discount-broker economics while keeping the service.
 
 ## The honest middle path
 
@@ -724,7 +724,7 @@ A SEBI study found **9 out of 10 individual traders in equity F&O incurred net l
 
 F&O income is **non-speculative business income** - see our [tax guide](/learn/tax-on-share-market-income) for how that changes your ITR.
 
-> Check exact margins before trading with our [F&O margin calculator](/margin-calculator), and get research-backed guidance from the Parasram desk - [custom brokerage for active F&O traders](/pricing).`,
+> Check exact margins before trading with our [F&O margin calculator](/margin-calculator), and get research-backed guidance from the Parasram desk - [custom brokerage plans tailored to your volume](/pricing).`,
   },
 
   "margin-trading-facility-mtf": {
@@ -787,7 +787,7 @@ MTF fits investors who want more of a stock they already believe in; [F&O](/lear
 
 Sensible: high-conviction large-cap positions where you expect the move to outpace interest costs. Not sensible: averaging losers, chasing momentum in weak stocks, or funding money you may need on short notice.
 
-> At Parasram India, **MTF terms and margins are structured per client** - based on your portfolio, segments and risk profile rather than a one-size sheet. [Talk to the branch](/pricing) to set up a margin relationship that fits how you invest.`,
+> At Parasram India, **MTF exposure is set per client** - for HNI clients and other investors alike, based on your risk profile and requirements, with no fixed cap. [Talk to the branch](/pricing) to set up MTF that fits how you invest.`,
   },
 
   "closing-auction-session-cas": {
