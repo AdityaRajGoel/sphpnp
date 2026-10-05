@@ -26,6 +26,9 @@ const PRODUCTION_PAIRS: [string, string][] = [
   // Two rows on 2026-09-11: GMP on one, subscription on the other.
   ["Asset Reconstruction Co.(India)", "Asset Reconstruction"],
   ["Asset Reconstruction Company (India) Limited", "Asset Reconstruction"],
+  // Plural on the last word: two rows on 2026-10-05 after the sources renamed it.
+  ["Jio Platforms", "Jio Platform"],
+  ["Glass Wall Systems", "Glass Wall System"],
   // LT (listing today), seen on NSE's own IPO on its listing day, 2026-09-24.
   ["National Stock Exchange of India (NSE) LT", "National Stock Exchange of India (NSE)"],
 ];
@@ -45,6 +48,14 @@ describe("ipoMatchKey", () => {
     expect(ipoMatchKey("Hero Motors")).not.toBe(ipoMatchKey("Hero MotoCorp"));
     expect(ipoMatchKey("India Glycols")).not.toBe(ipoMatchKey("Glycols"));
     expect(ipoMatchKey("Sham Foam")).not.toBe(ipoMatchKey("Shakti Polytarp"));
+  });
+
+  it("drops a plural s only on the last word, never from -ss words or short words", () => {
+    expect(ipoMatchKey("Classic Glass")).toBe("classicglass");
+    expect(ipoMatchKey("Blue Express")).toBe("blueexpress");
+    expect(ipoMatchKey("Mahindra Logistics")).toBe("mahindralogistic");
+    expect(ipoMatchKey("Platforms Builders")).toBe("platformsbuilder");
+    expect(ipoMatchKey("Ras")).toBe("ras");
   });
 });
 

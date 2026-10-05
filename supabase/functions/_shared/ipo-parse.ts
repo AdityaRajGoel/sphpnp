@@ -243,7 +243,14 @@ function ipoMatchWords(name: string): string[] {
     // Trailing "India", "Co." and "Company" are how different sources write the
     // same issuer: "Asset Reconstruction Co.(India)" is "Asset Reconstruction".
     .replace(/(?:\s+(?:india|co|company))+$/, "");
-  return words ? words.split(" ") : [];
+  if (!words) return [];
+  const list = words.split(" ");
+  // A plural on the last word is the same issuer: the sources renamed "Jio
+  // Platform" to "Jio Platforms" mid-cycle and it became two rows (5 Oct 2026).
+  // Not "-ss" words (Glass, Express) and not words of three letters or fewer.
+  const last = list.length - 1;
+  if (list[last].length > 3 && list[last].endsWith("s") && !list[last].endsWith("ss")) list[last] = list[last].slice(0, -1);
+  return list;
 }
 
 export const amount = (value: string): number | null => {
