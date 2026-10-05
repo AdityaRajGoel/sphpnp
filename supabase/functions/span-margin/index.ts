@@ -29,13 +29,15 @@ const searchCache = new Map<string, { at: number; contracts: Contract[] }>();
 
 /**
  * webtrade drops the odd request (five 502s on 3 Oct 2026, minutes apart, then fine):
- * one retry after a short pause on a network error or a 5xx; a 4xx is a real answer.
+ * one retry after a short pause on a network error, a 5xx or a 404. Its routes never
+ * answer 404 on purpose (no match is a 200 error body, bad input a 400), yet search
+ * answered 404 for an hour before the open on 5 Oct 2026. Other 4xx are real answers.
  */
 async function fetchUpstream(url: string, init: RequestInit, timeoutMs: number): Promise<Response> {
   for (let attempt = 1; ; attempt++) {
     try {
       const res = await fetch(url, { ...init, signal: AbortSignal.timeout(timeoutMs) });
-      if (res.status < 500 || attempt === 2) return res;
+      if ((res.status < 500 && res.status !== 404) || attempt === 2) return res;
       await res.body?.cancel();
     } catch (e) {
       if (attempt === 2) throw e;

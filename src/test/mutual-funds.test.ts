@@ -44,3 +44,26 @@ describe("median", () => {
     expect(median([null])).toBeNull();
   });
 });
+
+describe("cleanFundName casing", () => {
+  // 268 AMFI scheme names arrive in capitals; they sat beside "Parag Parikh Flexi Cap Fund" in the same table.
+  it.each([
+    ["BANK OF INDIA FLEXI CAP FUND - DIRECT PLAN - GROWTH", "Bank of India Flexi Cap Fund"],
+    ["SBI FLEXICAP FUND", "SBI Flexicap Fund"],
+    ["ANGEL ONE GOLD ETF FOF", "Angel One Gold ETF FOF"],
+    ["BANDHAN CRISIL IBX GILT APRIL 2026 INDEX FUND", "Bandhan CRISIL IBX Gilt April 2026 Index Fund"],
+    ["ADITYA BIRLA SUN LIFE BAL BHAVISHYA YOJNA", "Aditya Birla Sun Life Bal Bhavishya Yojna"],
+    ["BANDHAN CRISIL IBX 90:10 SDL PLUS GILT", "Bandhan CRISIL IBX 90:10 SDL Plus Gilt"],
+    ["ICICI PRUDENTIAL PSU EQUITY FUND", "ICICI Prudential PSU Equity Fund"],
+    ["ANGEL ONE NIFTY 1D RATE LIQUID ETF", "Angel One Nifty 1D Rate Liquid ETF"],
+    ["UNIFI FLEXI CAP FUND", "Unifi Flexi Cap Fund"],
+    ["360 ONE QUANT FUND", "360 One Quant Fund"],
+  ])("%s -> %s", (raw, expected) => {
+    expect(cleanFundName(raw)).toBe(expected);
+  });
+
+  it("leaves names that already have lower case alone", () => {
+    expect(cleanFundName("Parag Parikh Flexi Cap Fund - Direct Plan - Growth")).toBe("Parag Parikh Flexi Cap Fund");
+    expect(cleanFundName("HDFC Mid-Cap Opportunities Fund")).toBe("HDFC Mid-Cap Opportunities Fund");
+  });
+});

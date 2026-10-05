@@ -7,7 +7,7 @@ import { pressable } from "@/lib/pressable";
 
 const FILTERS: BuildUp[] = ["long_buildup", "short_covering", "short_buildup", "long_unwinding"];
 const TONE_CLASS = { up: "text-secondary", down: "text-destructive", flat: "text-muted-foreground" } as const;
-const BADGE_CLASS = { up: "bg-secondary/15 text-secondary", down: "bg-destructive/15 text-destructive", flat: "bg-muted text-muted-foreground" } as const;
+const BADGE_CLASS = { up: "bg-secondary/10 text-secondary", down: "bg-destructive/10 text-destructive", flat: "bg-muted text-muted-foreground" } as const;
 
 type SortKey = "oi" | "price" | "pcr" | "symbol";
 const signedPct = (v: number | null) => (v === null ? "—" : `${v >= 0 ? "+" : ""}${v.toFixed(2)}%`);

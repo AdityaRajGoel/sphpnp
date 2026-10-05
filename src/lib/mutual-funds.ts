@@ -114,10 +114,31 @@ export function normalizeCategory(raw: string): MfCategory {
 
 /** "HDFC Large Cap Fund - Growth Option - Direct Plan" -> "HDFC Large Cap Fund". */
 export function cleanFundName(name: string): string {
-  const parts = name.split(/\s*-\s*/);
+  // Split on " - " or on a dash before a plan suffix ("Fund-Direct Plan"), never
+  // inside a word: "Mid-Cap" used to come out as "Mid - Cap".
+  const parts = name.split(/\s+-\s+|\s*-\s*(?=(?:direct|regular|growth|plan|option)\b)/i);
   const tail = /^(direct|regular|growth|plan|option|direct plan|regular plan|growth option|growth plan)\b/i;
   while (parts.length > 1 && tail.test(parts[parts.length - 1])) parts.pop();
-  return parts.join(" - ").trim();
+  const cleaned = parts.join(" - ").trim();
+  return /[a-z]/.test(cleaned) ? cleaned : titleCaseFundName(cleaned);
+}
+
+/** Kept in capitals: fund-house and index acronyms seen in AMFI's all-caps names. */
+const FUND_ACRONYMS = new Set([
+  "SBI", "HDFC", "ICICI", "UTI", "DSP", "LIC", "HSBC", "IDFC", "IDBI", "IIFL", "PGIM", "JM", "NJ", "ITI", "BNP", "PPFAS",
+  "ETF", "FOF", "ELSS", "PSU", "CPSE", "MNC", "ESG", "IT", "FMCG", "CRISIL", "IBX", "SDL", "BSE", "NSE", "MSCI", "NASDAQ",
+  "AMC", "US", "EM", "AAA", "REIT", "TRI", "G-SEC", "IDCW", "1D",
+]);
+const FUND_SMALL_WORDS = new Set(["of", "and", "the", "in", "to", "for", "on", "&"]);
+
+/** "BANK OF INDIA FLEXI CAP FUND" -> "Bank of India Flexi Cap Fund"; acronyms stay capitals. */
+function titleCaseFundName(name: string): string {
+  return name.split(/\s+/).map((word, i) => {
+    if (FUND_ACRONYMS.has(word) || /^[\d:.]+$/.test(word)) return word;
+    const lower = word.toLowerCase();
+    if (i > 0 && FUND_SMALL_WORDS.has(lower)) return lower;
+    return lower.replace(/(^|[-(/])([a-z])/g, (_, sep: string, c: string) => sep + c.toUpperCase());
+  }).join(" ");
 }
 
 export const median = (values: (number | null)[]): number | null => {

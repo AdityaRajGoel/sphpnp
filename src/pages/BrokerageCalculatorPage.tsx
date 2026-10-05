@@ -70,8 +70,8 @@ export const pnlTone = (netPnL: number, isValid: boolean): PnLTone => {
 };
 
 const TONE = {
-  profit: { card: "bg-secondary/5", badge: "bg-secondary/15 text-secondary", text: "text-secondary", label: "Profit", sign: "+", Icon: TrendingUp },
-  loss: { card: "bg-destructive/5", badge: "bg-destructive/15 text-destructive", text: "text-destructive", label: "Loss", sign: "−", Icon: TrendingDown },
+  profit: { card: "bg-secondary/5", badge: "border border-secondary/40 bg-card text-secondary", text: "text-secondary", label: "Profit", sign: "+", Icon: TrendingUp },
+  loss: { card: "bg-destructive/5", badge: "border border-destructive/40 bg-card text-destructive", text: "text-destructive", label: "Loss", sign: "−", Icon: TrendingDown },
   flat: { card: "bg-muted/30", badge: "bg-muted text-muted-foreground", text: "text-foreground", label: "Break-even", sign: "", Icon: Minus },
   invalid: { card: "bg-muted/30", badge: "bg-muted text-muted-foreground", text: "text-muted-foreground", label: "Check inputs", sign: "", Icon: AlertCircle },
 } as const;

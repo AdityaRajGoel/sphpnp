@@ -176,7 +176,7 @@ const SectionShortcuts = () => {
                       aria-current={isActive ? "true" : undefined}
                       className={`flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-sm font-medium transition-[background-color,color] duration-fast ${
                         isActive
-                          ? "bg-secondary/15 text-secondary"
+                          ? "bg-secondary/10 text-secondary"
                           : "text-foreground/80 hover:bg-muted hover:text-foreground"
                       }`}
                     >

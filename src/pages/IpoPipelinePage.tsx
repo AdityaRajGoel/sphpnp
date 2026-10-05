@@ -39,7 +39,7 @@ const BATCH = 20;
 const STAGE_TONE: Record<PipelineStage, string> = {
   drhp_filed: "bg-muted text-foreground",
   udrhp_filed: "bg-brand-gold/15 text-foreground",
-  rhp_filed: "bg-secondary/15 text-secondary",
+  rhp_filed: "bg-secondary/10 text-secondary",
   launched: "bg-primary/10 text-primary",
 };
 

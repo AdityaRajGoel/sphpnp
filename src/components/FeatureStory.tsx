@@ -55,7 +55,7 @@ export default function FeatureStory({ id, eyebrow, heading, intro, items, class
                     <ul className="mt-5 space-y-2.5">
                       {item.points.map((p) => (
                         <li key={p} className="flex items-start gap-2.5 text-sm">
-                          <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-secondary/15 text-secondary"><Check className="h-3 w-3" aria-hidden="true" /></span>
+                          <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-secondary/10 text-secondary"><Check className="h-3 w-3" aria-hidden="true" /></span>
                           {p}
                         </li>
                       ))}

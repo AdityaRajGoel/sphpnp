@@ -72,7 +72,7 @@ function ExtremeTable({ rows, side }: { rows: Row[]; side: Side }) {
             <tr key={s.symbol} className="border-t hover:bg-muted/30">
               <td className="px-4 py-2">
                 <Link to={`/stock/${encodeURIComponent(s.symbol)}`} className="font-semibold hover:text-primary">{s.symbol}</Link>
-                {distance <= AT && <span className={`ml-2 rounded px-1.5 py-0.5 text-[10px] font-bold ${side === "high" ? "bg-secondary/15 text-secondary" : "bg-destructive/15 text-destructive"}`}>AT {side.toUpperCase()}</span>}
+                {distance <= AT && <span className={`ml-2 rounded px-1.5 py-0.5 text-[10px] font-bold ${side === "high" ? "bg-secondary/10 text-secondary" : "bg-destructive/10 text-destructive"}`}>AT {side.toUpperCase()}</span>}
                 <div className="max-w-[200px] truncate text-xs text-muted-foreground">{s.name} · {s.sector}</div>
               </td>
               <td className="px-3 py-2 text-right tabular-nums">₹{s.price.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>

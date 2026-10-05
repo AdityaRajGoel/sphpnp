@@ -999,7 +999,7 @@ export const AIAnalysisModal = ({ isOpen, onClose, stock }: AIAnalysisModalProps
                                 <span className="text-[9px] font-normal normal-case">({geminiVerdict.structured.analyst_consensus.count} analysts)</span>
                               </div>
                               {geminiVerdict.structured.analyst_consensus.rating && (
-                                <span className="text-[11px] font-black uppercase px-2.5 py-0.5 rounded-full bg-secondary/15 text-secondary border border-secondary/30">
+                                <span className="text-[11px] font-black uppercase px-2.5 py-0.5 rounded-full bg-secondary/10 text-secondary border border-secondary/30">
                                   {geminiVerdict.structured.analyst_consensus.rating.replace(/_/g, " ")}
                                 </span>
                               )}
@@ -1065,7 +1065,7 @@ export const AIAnalysisModal = ({ isOpen, onClose, stock }: AIAnalysisModalProps
                                 <Cpu className="w-3 h-3" /> AI Committee
                                 <span className="text-[9px] font-normal normal-case">independent second opinions</span>
                               </div>
-                              <span className={`text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full border ${geminiVerdict.structured.committee.agreement === "Unanimous" ? "bg-secondary/15 text-secondary border-secondary/30" : geminiVerdict.structured.committee.agreement === "Split" ? "bg-destructive/10 text-destructive border-destructive/30" : "bg-brand-gold/15 text-brand-gold border-brand-gold/30"}`}>
+                              <span className={`text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full border ${geminiVerdict.structured.committee.agreement === "Unanimous" ? "bg-secondary/10 text-secondary border-secondary/30" : geminiVerdict.structured.committee.agreement === "Split" ? "bg-destructive/10 text-destructive border-destructive/30" : "bg-brand-gold/15 text-brand-gold border-brand-gold/30"}`}>
                                 {geminiVerdict.structured.committee.agreement}
                               </span>
                             </div>

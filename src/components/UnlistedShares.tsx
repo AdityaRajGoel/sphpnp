@@ -1,11 +1,11 @@
-import { Search, Phone, TrendingUp, TrendingDown, ShieldCheck, Handshake, ArrowRight, Sparkles, Star, ChevronRight, BadgeCheck, Clock, AlertTriangle, Building2, MapPin, Calendar, BarChart3 } from "lucide-react";
+import { Search, Phone, TrendingUp, TrendingDown, ShieldCheck, Handshake, Sparkles, Star, ChevronRight, BadgeCheck, Clock, AlertTriangle, Building2, MapPin, Calendar, BarChart3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { IllustrationFrame } from "@/components/ui/illustration";
 import { motion, Variants, AnimatePresence } from "motion/react";
 import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { EASE_OUT, revealFade, revealPop, revealSection } from "@/lib/motion";
+import { EASE_OUT, revealFade, revealSection } from "@/lib/motion";
 import { pressable } from "@/lib/pressable";
 
 type StockItem = {
@@ -19,13 +19,6 @@ const benefits = [
   { icon: TrendingUp, title: "High Growth Potential", desc: "Invest early in companies before they go public for maximum returns.", stat: "300%+", statLabel: "Avg. Pre-IPO Returns" },
   { icon: ShieldCheck, title: "100% Verified", desc: "We deal only in thoroughly vetted and verified unlisted companies.", stat: "50+", statLabel: "Companies Listed" },
   { icon: Handshake, title: "Expert Guidance", desc: "Our team helps you choose the right unlisted shares based on your goals.", stat: "35+", statLabel: "Years Experience" },
-];
-
-const howItWorks = [
-  { step: "01", title: "Choose a Share", desc: "Browse our curated list of pre-IPO and unlisted shares." },
-  { step: "02", title: "Contact Us", desc: "Call or WhatsApp for live pricing and availability." },
-  { step: "03", title: "Complete KYC", desc: "Quick, simple KYC verification." },
-  { step: "04", title: "Start Investing", desc: "Get shares transferred to your Demat account." },
 ];
 
 const containerVariants: Variants = { hidden: { opacity: 0 }, visible: { opacity: 1, transition: { staggerChildren: 0.1 } } };
@@ -449,30 +442,6 @@ const UnlistedShares = () => {
         </div>
       </section>
 
-      {/* How it works */}
-      <section className="py-8 md:py-16 bg-background">
-        <div className="container mx-auto px-4">
-          <motion.div className="text-center mb-12" {...revealSection}>
-            <h2 className="font-heading text-2xl md:text-3xl font-bold text-foreground mb-2">How It Works</h2>
-            <p className="text-muted-foreground">Simple 4-step process to start investing in unlisted shares</p>
-          </motion.div>
-          <motion.div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6" variants={containerVariants} initial="hidden" whileInView="visible" viewport={{ once: true }}>
-            {howItWorks.map((step, i) => (
-              <motion.div key={step.step} variants={itemVariants} className="relative">
-                <Card className="h-full border-border/50 hover:border-secondary/50 transition-colors text-center">
-                  <CardContent className="p-6">
-                    <div className="text-4xl font-bold text-secondary/20 mb-3">{step.step}</div>
-                    <h3 className="font-heading text-lg font-semibold text-foreground mb-2">{step.title}</h3>
-                    <p className="text-muted-foreground text-sm">{step.desc}</p>
-                  </CardContent>
-                </Card>
-                {i < howItWorks.length - 1 && <div className="hidden lg:block absolute top-1/2 -right-3 z-10"><ChevronRight className="w-6 h-6 text-secondary/40" /></div>}
-              </motion.div>
-            ))}
-          </motion.div>
-        </div>
-      </section>
-
       {/* Disclaimer */}
       <section className="py-8 bg-muted/20">
         <div className="container mx-auto px-4">
@@ -502,26 +471,6 @@ const UnlistedShares = () => {
         </div>
       </section>
 
-      {/* CTA */}
-      <section className="py-8 md:py-16">
-        <div className="container mx-auto px-4">
-          <motion.div className="bg-hero rounded-3xl p-10 md:p-16 text-center text-primary-foreground relative overflow-hidden" {...revealPop()}>
-            <div className="relative z-10">
-              <h3 className="font-heading text-2xl md:text-3xl font-bold mb-4">Interested in Unlisted Shares?</h3>
-              <p className="text-primary-foreground/80 text-lg mb-8 max-w-xl mx-auto">Contact us now to explore premium unlisted share opportunities.</p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-8">
-                <Button asChild size="lg" className="bg-secondary hover:bg-secondary/90 text-secondary-foreground font-bold text-lg px-10 py-6 shadow-xl">
-                  <a href="#contact">Contact Now <ArrowRight className="ml-2 w-5 h-5" /></a>
-                </Button>
-              </div>
-              <div className="flex flex-col sm:flex-row gap-6 justify-center items-center text-primary-foreground/90">
-                <a href="tel:+919416400314" className="flex items-center gap-2 hover:text-secondary transition-colors text-lg"><Phone className="w-5 h-5" /> +91 9416400314</a>
-                <a href="tel:+919999790011" className="flex items-center gap-2 hover:text-secondary transition-colors text-lg"><Phone className="w-5 h-5" /> +91 9999790011</a>
-              </div>
-            </div>
-          </motion.div>
-        </div>
-      </section>
     </div>
   );
 };

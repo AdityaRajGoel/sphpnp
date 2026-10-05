@@ -196,14 +196,15 @@ const HolidayCalendarPage = () => {
               const d = new Date(`${h.date}T00:00:00Z`);
               return (
                 <motion.div key={h.date} {...revealItem()} className="min-w-0">
-                  <Card className={`flex items-center gap-4 px-4 py-3 transition-colors hover:bg-muted/40 ${isPast ? "opacity-45" : ""} ${isToday ? "ring-1 ring-secondary bg-secondary/5" : ""}`}>
+                  {/* Past holidays are flat and grey, not faded: opacity-45 put their text at 2-2.8:1. */}
+                  <Card className={`flex items-center gap-4 px-4 py-3 transition-colors hover:bg-muted/40 ${isPast ? "bg-muted/40 shadow-none" : ""} ${isToday ? "ring-1 ring-secondary bg-secondary/5" : ""}`}>
                     <div className="w-12 shrink-0 rounded-lg bg-muted/60 py-1 text-center">
                       <div className="text-[10px] font-semibold uppercase text-muted-foreground">{MONTHS[d.getUTCMonth()]}</div>
                       <div className="text-lg font-bold leading-none tabular-nums">{d.getUTCDate()}</div>
                     </div>
                     <div className="min-w-0 flex-1">
-                      <div className="font-medium truncate">{h.name}{isToday && <span className="ml-2 rounded-full bg-secondary px-1.5 py-0.5 text-[10px] font-bold text-secondary-foreground">TODAY</span>}</div>
-                      <div className="text-xs text-muted-foreground">{dayName(h.date)}{!isPast && !isToday && ` · in ${daysFrom(today, h.date)} days`}</div>
+                      <div className={`font-medium truncate ${isPast ? "text-muted-foreground" : ""}`}>{h.name}{isToday && <span className="ml-2 rounded-full bg-secondary px-1.5 py-0.5 text-[10px] font-bold text-secondary-foreground">TODAY</span>}</div>
+                      <div className="text-xs text-muted-foreground">{dayName(h.date)}{isPast ? " · past" : !isToday && ` · in ${daysFrom(today, h.date)} days`}</div>
                     </div>
                     <div className="flex shrink-0 flex-wrap justify-end gap-1">{h.exchanges.map((ex) => <Badge key={ex} className={`px-1.5 text-[10px] ${EXCHANGE_BADGE[ex]}`}>{ex}</Badge>)}</div>
                   </Card>

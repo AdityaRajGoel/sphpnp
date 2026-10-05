@@ -224,7 +224,7 @@ const AppsPage = () => {
                         />
                       </figure>
                       <div>
-                        <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-secondary/15 text-secondary"><Icon className="h-6 w-6" aria-hidden /></span>
+                        <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-secondary/10 text-secondary"><Icon className="h-6 w-6" aria-hidden /></span>
                         <h3 className="mt-5 font-heading text-2xl font-bold text-foreground md:text-4xl">{t(f.titleKey)}</h3>
                         <p className="mt-3 text-lg text-muted-foreground">{t(f.bodyKey)}</p>
                         <ul className="mt-6 space-y-3">
