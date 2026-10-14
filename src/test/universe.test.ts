@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { MAX_STORED_EXTRAS, mergeUniverse, sectorFor, withStoredStocks } from "../../supabase/functions/_shared/universe";
+import { mergeUniverse, sectorFor, withStoredStocks } from "../../supabase/functions/_shared/universe";
 
 const curated = [
   { symbol: "HDFCBANK", yahoo: "HDFCBANK.NS", name: "HDFC Bank", sector: "Banking" },
@@ -65,9 +65,3 @@ describe("withStoredStocks", () => {
   });
 });
 
-describe("withStoredStocks cap", () => {
-  it("adds at most MAX_STORED_EXTRAS stored rows, however many a search flood stored", () => {
-    const flood = Array.from({ length: 500 }, (_, i) => ({ symbol: `SYM${i}`, name: null, sector: null }));
-    expect(withStoredStocks([], flood)).toHaveLength(MAX_STORED_EXTRAS);
-  });
-});

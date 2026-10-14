@@ -49,8 +49,8 @@ describe("stock universe", () => {
   });
 
   it("points every entry at an NSE Yahoo ticker matching its symbol, or BSE's for a BSE-only listing", () => {
-    // NSDL lists on BSE only: a depository cannot list on the exchange it serves.
-    const BSE_ONLY = new Set(["NSDL"]);
+    // BSE only: a depository cannot list on the exchange it serves, nor an exchange on itself.
+    const BSE_ONLY = new Set(["NSDL", "NSE"]);
     for (const { symbol, yahoo } of entries) {
       expect(yahoo, `${symbol} -> ${yahoo}`).toBe(`${symbol}.${BSE_ONLY.has(symbol) ? "BO" : "NS"}`);
     }

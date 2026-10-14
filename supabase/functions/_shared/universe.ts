@@ -65,21 +65,16 @@ export function mergeUniverse(curated: UniverseStock[], constituents: IndexConst
 }
 
 /**
- * Rows already in screener_stocks that the lists above do not cover: a stock a
- * visitor's search added (a BSE-only listing such as NSE.BO keeps its suffix as
- * its key) or one that has left the index. Without these the refresh never
- * re-quotes them and their prices freeze where they were first stored.
+ * Rows already in screener_stocks that the lists above do not cover: a stock
+ * that has left the index since it was stored. Without these the refresh never
+ * re-quotes them and their prices freeze where they were last stored. Every row
+ * is server-written (visitor searches only quote, see fetch-screener-data), so
+ * the set stays as small as the index's churn.
  */
-// Any visitor's search can store a row (fetch-screener-data's symbol path), so the
-// extras are capped: a flood of added symbols cannot grow every refresh's Yahoo calls.
-// ponytail: first MAX_STORED_EXTRAS by symbol; rank by visits if real additions outgrow it.
-export const MAX_STORED_EXTRAS = 50;
-
 export function withStoredStocks(universe: UniverseStock[], stored: { symbol: string; name: string | null; sector: string | null }[]): UniverseStock[] {
   const seen = new Set(universe.map((s) => s.symbol));
   const extra: UniverseStock[] = [];
   for (const row of stored) {
-    if (extra.length >= MAX_STORED_EXTRAS) break;
     const symbol = row.symbol?.trim().toUpperCase();
     if (!symbol || seen.has(symbol) || !/^[A-Z0-9&-]{1,20}(\.(NS|BO))?$/.test(symbol)) continue;
     seen.add(symbol);

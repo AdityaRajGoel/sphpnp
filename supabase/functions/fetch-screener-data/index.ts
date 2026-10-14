@@ -199,6 +199,7 @@ const NSE_SYMBOLS: { symbol: string; yahoo: string; name: string; sector: string
   { symbol: "CDSL", yahoo: "CDSL.NS", name: "Central Depository Services", sector: "Diversified" },
   // Listed on BSE only (a depository cannot list on the exchange it serves), so Yahoo quotes its BSE line.
   { symbol: "NSDL", yahoo: "NSDL.BO", name: "National Securities Depository", sector: "Diversified" },
+  { symbol: "NSE", yahoo: "NSE.BO", name: "National Stock Exchange of India", sector: "Diversified" },
   { symbol: "BSE", yahoo: "BSE.NS", name: "BSE Ltd", sector: "Diversified" },
   { symbol: "SONACOMS", yahoo: "SONACOMS.NS", name: "Sona BLW Precision", sector: "Auto" },
   { symbol: "APLAPOLLO", yahoo: "APLAPOLLO.NS", name: "APL Apollo Tubes", sector: "Metals" },
@@ -679,11 +680,11 @@ Deno.serve(async (req) => {
     }
 
     if (requestedSymbol) {
-      console.log(`Searching/Updating dynamic symbol: ${requestedSymbol}`);
+      console.log(`Quoting searched symbol: ${requestedSymbol}`);
       // Search results identify the venue as e.g. RELIANCE.NS or RELIANCE.BO,
       // while our curated universe keys NSE rows by the bare symbol. Preserve
-      // the known sector for either listing, but retain the exchange suffix as
-      // the storage key for a dynamically selected BSE result.
+      // the known sector for either listing, and keep the exchange suffix so a
+      // selected BSE result is quoted from BSE.
       const baseSymbol = requestedSymbol.replace(/\.(?:NS|BO)$/, "");
       const stockInfo = NSE_SYMBOLS.find(s => s.symbol === baseSymbol);
       
@@ -701,26 +702,11 @@ Deno.serve(async (req) => {
             // quoteType is an instrument class such as "EQUITY", not a sector.
             sector: stockInfo?.sector || "General"
           };
+          // Read-only on purpose: a visitor's pick is quoted for the search card,
+          // never stored. Storing it let anyone add rows to the screener, its
+          // refresh and the prerendered /stock pages (NSE.BO, Oct 2026). A
+          // listing that belongs in the screener goes in NSE_SYMBOLS (see NSDL).
           const row = buildStockRow(discoveredStock, q);
-          // A single-row upsert has no shape-mixing risk (see groupRowsByShape
-          // below for the batch case), but a column buildStockRow omitted
-          // here is still worth logging: it means this run leaves whatever
-          // was already stored for that column untouched rather than writing
-          // a fresh value.
-          const omittedColumns = ["price", "change", "change_pct", "pe", "high_52", "low_52",
-            "volume", "day_high", "day_low", "open_price", "prev_close", "market_cap"]
-            .filter(col => !(col in row));
-          if (omittedColumns.length > 0) {
-            console.warn(
-              `[quote-fields] No usable ${omittedColumns.join(", ")} from Yahoo for ${requestedSymbol}; leaving existing stored value(s) untouched.`
-            );
-          }
-          // postgrest-js resolves with an { error } object on failure rather
-          // than throwing, so a bare await here would silently swallow it.
-          const { error: upsertError } = await sb.from("screener_stocks").upsert(row, { onConflict: "symbol" });
-          if (upsertError) {
-            console.error(`Upsert failed for ${requestedSymbol}:`, upsertError.message);
-          }
           return new Response(JSON.stringify({ success: true, stocks: [row] }), {
             headers: { ...corsHeaders, "Content-Type": "application/json" },
           });
