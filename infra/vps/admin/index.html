@@ -379,7 +379,11 @@
         $("rebuild").textContent = running ? "Building…" : "Rebuild now";
         if (running) setTimeout(pollBuild, 15000);
         else loadReleases();
-      } catch { /* the build continues regardless of this page */ }
+      } catch {
+        // The build continues regardless of this page; keep following it (an API restart
+        // or a network blip used to stop the log and leave the button on "Building…").
+        setTimeout(pollBuild, 30000);
+      }
     }
 
     const duration = (sec) => {

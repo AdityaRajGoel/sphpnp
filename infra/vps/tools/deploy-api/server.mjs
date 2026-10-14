@@ -11,7 +11,7 @@
 // also passes the signed-in name in X-Remote-User for the audit line.
 
 import { createServer } from "node:http";
-import { readdir, readlink, symlink, rename, rm, readFile, appendFile, writeFile } from "node:fs/promises";
+import { readdir, readlink, symlink, rename, rm, readFile, appendFile, writeFile, stat } from "node:fs/promises";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import path from "node:path";
@@ -122,6 +122,9 @@ async function switchTo(name, user) {
 }
 
 async function buildRunning() {
+  // A request sphpnp-build.path has not picked up yet counts: the panel polls at once,
+  // and reading "not running" in that gap re-enabled the button and stopped the log.
+  if (await stat(BUILD_REQUEST).then(() => true, () => false)) return true;
   // pgrep, not a lock file: flock releases the lock when the build exits, but a stale
   // lock file always remains.
   return run("pgrep", ["-f", "build-site.sh"]).then(() => true).catch(() => false);
