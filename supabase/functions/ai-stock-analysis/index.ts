@@ -1,5 +1,6 @@
 /// <reference lib="deno.ns" />
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { AI_DEADLINE_MS, AI_MIN_STEP_MS, runCascade, type CascadeStep } from "../_shared/ai-cascade.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { fetchCompanyRecord, formatCompanyRecord } from "../_shared/company-record.ts";
 import { reportChanges } from "../_shared/report-diff.ts";
@@ -32,18 +33,6 @@ const FREE_REPORT_MODELS = (Deno.env.get("FREE_REPORT_MODELS") ??
   .split(",").map((s) => s.trim()).filter(Boolean);
 // Per-attempt timeout for free models (they can be slower/oversubscribed).
 const FREE_MODEL_TIMEOUT_MS = 22_000;
-// Stop STARTING free-model attempts once this much of the 60s budget is spent
-// (worst case: attempt starts just under the deadline and runs its full
-// timeout, leaving the 12s minimum paid budget still inside the hard limit).
-const FREE_TIER_DEADLINE_MS = 24_000;
-// Wall-clock budget the last-ditch providers (NVIDIA, Bytez) share between them,
-// measured from the start of the cascade. 55s of the 60s hard limit, leaving
-// room for the reconcile + cache write that still have to happen after a hit.
-const LAST_DITCH_BUDGET_MS = 55_000;
-// Below this much remaining budget a last-ditch provider is skipped rather than
-// started: a sub-5s window is not enough for a 6000-token report, so attempting
-// one only spends what is left and still returns nothing.
-const LAST_DITCH_FLOOR_MS = 5_000;
 // Free model tried first for Q&A chat (falls back to the paid chat model).
 // llama-3.3-70b:free was withdrawn from OpenRouter's free tier, so every chat
 // request paid a 404 before falling back. gpt-oss-20b:free followed it out in
@@ -1522,6 +1511,9 @@ serve(async (req) => {
     });
   }
 
+  // The 60s edge limit counts from here, so the provider deadline does too: data
+  // enrichment and the debate round come out of the same budget.
+  const requestStartedAt = Date.now();
   try {
     const payload = await req.json();
     const { is_chat, chat_message, chat_history, context, use_web_search, committee, debate, ...stockData } = payload;
@@ -1677,13 +1669,15 @@ serve(async (req) => {
         errors.push(`Gemini Web Search Error: ${msg}`);
       }
     } else {
-      // Standard cascade: free open-weight models → paid OpenRouter → Groq → Cerebras → Gemini → NVIDIA NIM → Bytez
-      const cascadeStart = Date.now();
+      // Standard cascade: Groq → Cerebras → Gemini → (paid OpenRouter) → free OpenRouter → NVIDIA NIM → Bytez
+      const cascadeStart = requestStartedAt;
 
       // ── Committee mode (opt-in "Deep"): multiple free models in parallel,
       //    each also giving an INDEPENDENT verdict. Members are drawn from the
-      //    three proven free providers (OpenRouter free tier, Groq, Cerebras)
-      //    so the committee still convenes when one of them is down. NVIDIA and
+      //    proven free providers (Groq's two models, Cerebras) so the committee
+      //    still convenes when one of them is down. The free OpenRouter model was
+      //    dropped (Oct 2026): it timed out every run, and allSettled waited
+      //    22s for it before any report could show. NVIDIA and
       //    Bytez are free too but are deliberately NOT members: they sit at the
       //    bottom of the cascade precisely because they are unproven here, and
       //    a second opinion is only worth having from a provider whose output
@@ -1692,10 +1686,6 @@ serve(async (req) => {
       if (committeeMode) {
         const committeePrompt = finalPrompt + `\n\nADDITIONALLY: in structured_data include "independent_verdict" (exactly one of BUY | SELL | HOLD | WATCH) - YOUR OWN independent judgement from the raw market data above, which MAY differ from the quant engine - and "independent_conviction" (a number 0-100). Everything else must still respect the quant engine as instructed.`;
         const candidates: { name: string; run: () => Promise<{ result: unknown; model: string }> }[] = [];
-        if (OPENROUTER_API_KEY && FREE_REPORT_MODELS[0]) {
-          const m = FREE_REPORT_MODELS[0];
-          candidates.push({ name: m, run: () => askOpenRouter(committeePrompt, false, m) });
-        }
         if (GROQ_API_KEY) {
           // Most capable / most distinct Groq model first for diversity...
           const gm = GROQ_MODELS[GROQ_MODELS.length - 1] ?? "openai/gpt-oss-120b";
@@ -1732,118 +1722,30 @@ serve(async (req) => {
         console.log(`Committee members responded: ${committeeMembers.length}/${chosen.length}`);
       }
 
-      // ── Free tier (reports AND chat) ──
-      if (!result && OPENROUTER_API_KEY) {
-        const freeModels = is_chat ? [FREE_CHAT_MODEL] : FREE_REPORT_MODELS;
-        for (const freeModel of freeModels) {
-          if (Date.now() - cascadeStart > FREE_TIER_DEADLINE_MS) {
-            console.warn("Free-tier deadline reached; moving to the next provider");
-            break;
-          }
-          try {
-            console.log(`→ OpenRouter FREE (${freeModel})...`);
-            result = await withTimeout(askOpenRouter(finalPrompt, !!is_chat, freeModel), FREE_MODEL_TIMEOUT_MS, freeModel);
-            break;
-          } catch (e) {
-            const msg = e instanceof Error ? e.message : String(e);
-            console.warn(`✗ ${freeModel}:`, msg);
-            errors.push(`${freeModel}: ${msg.slice(0, 120)}`);
-          }
+      // ── Ordered by what answers (Oct 2026 logs): Groq served every report and
+      //    chat while the free OpenRouter models timed out (Nemotron, 22s each)
+      //    or were rate-limited (Gemma). Fast, proven providers first; the free
+      //    and unproven ones last, all inside one deadline (see ai-cascade.ts). ──
+      if (!result) {
+        const steps: CascadeStep<any>[] = [];
+        for (const groqModel of GROQ_API_KEY ? GROQ_MODELS : []) {
+          steps.push({ name: `Groq:${groqModel}`, maxMs: 20_000, run: () => askGroq(finalPrompt, !!is_chat, groqModel) });
         }
-      }
-
-      if (!result && OPENROUTER_API_KEY && OPENROUTER_PAID) {
-        try {
-          // Stay inside the 60s edge-function limit even after free-tier attempts.
-          const remaining = Math.max(12_000, 52_000 - (Date.now() - cascadeStart));
-          console.log(`→ OpenRouter (${REPORT_MODEL}, ${Math.round(remaining / 1000)}s budget)...`);
-          result = await withTimeout(askOpenRouter(finalPrompt, !!is_chat), remaining, "OpenRouter");
-        } catch (e) {
-          const msg = e instanceof Error ? e.message : String(e);
-          console.error("✗ OpenRouter:", msg);
-          errors.push(`OpenRouter: ${msg.slice(0, 120)}`);
+        if (CEREBRAS_API_KEY) steps.push({ name: `Cerebras:${CEREBRAS_MODEL}`, maxMs: 20_000, run: () => askCerebras(finalPrompt, !!is_chat) });
+        if (GEMINI_API_KEY) steps.push({ name: "Gemini", maxMs: 30_000, run: () => askGemini(finalPrompt, !!is_chat, false) });
+        if (OPENROUTER_API_KEY && OPENROUTER_PAID) steps.push({ name: `OpenRouter:${REPORT_MODEL}`, maxMs: 30_000, run: () => askOpenRouter(finalPrompt, !!is_chat) });
+        for (const freeModel of OPENROUTER_API_KEY ? (is_chat ? [FREE_CHAT_MODEL] : FREE_REPORT_MODELS) : []) {
+          steps.push({ name: freeModel, maxMs: FREE_MODEL_TIMEOUT_MS, run: () => askOpenRouter(finalPrompt, !!is_chat, freeModel) });
         }
-      }
+        if (NVIDIA_API_KEY) steps.push({ name: `NVIDIA:${NVIDIA_MODEL}`, maxMs: 18_000, run: () => askNvidia(finalPrompt, !!is_chat) });
+        if (BYTEZ_API_KEY) steps.push({ name: `Bytez:${BYTEZ_MODEL}`, maxMs: 15_000, run: () => askBytez(finalPrompt, !!is_chat) });
 
-      if (!result && GROQ_API_KEY) {
-        for (const groqModel of GROQ_MODELS) {
-          try {
-            console.log(`→ Groq (${groqModel})...`);
-            result = await withTimeout(askGroq(finalPrompt, !!is_chat, groqModel), 20000, `Groq:${groqModel}`);
-            break;
-          } catch (e) {
-            const msg = e instanceof Error ? e.message : String(e);
-            console.warn(`✗ Groq ${groqModel}:`, msg);
-            errors.push(`Groq ${groqModel}: ${msg.slice(0, 120)}`);
-          }
-        }
-      }
-
-      if (!result && CEREBRAS_API_KEY) {
-        try {
-          console.log(`→ Cerebras (${CEREBRAS_MODEL})...`);
-          result = await withTimeout(askCerebras(finalPrompt, !!is_chat), 20000, "Cerebras");
-        } catch (e) {
-          const msg = e instanceof Error ? e.message : String(e);
-          console.warn("✗ Cerebras:", msg);
-          errors.push(`Cerebras: ${msg.slice(0, 120)}`);
-        }
-      }
-
-      // Gemini fallback - ensures at least one provider can respond
-      if (!result && GEMINI_API_KEY) {
-        try {
-          console.log("→ Gemini Direct (fallback)...");
-          result = await withTimeout(askGemini(finalPrompt, !!is_chat, false), 35000, "GeminiDirect");
-        } catch (e) {
-          const msg = e instanceof Error ? e.message : String(e);
-          console.error("✗ Gemini Direct:", msg);
-          errors.push(`Gemini: ${msg.slice(0, 120)}`);
-        }
-      }
-
-      // ── Last-ditch open-weight fallbacks. Deliberately BELOW Gemini: they are
-      //    new and unproven here, and the providers above already answer the
-      //    overwhelming majority of requests, so they only fire on a genuine
-      //    multi-provider outage. By that point most of the 60s edge-function
-      //    budget is already spent, so each of these is gated on what is left of
-      //    it rather than on a fixed timeout: with every provider configured and
-      //    every one of them hanging, fixed timeouts stack well past 60s and a
-      //    last attempt becomes what turns a degraded run into a hard kill with
-      //    no report at all. Below the floor the provider is skipped outright -
-      //    a 3s window cannot produce a report, it can only eat the remainder. ──
-      const budgetLeft = () => LAST_DITCH_BUDGET_MS - (Date.now() - cascadeStart);
-
-      if (!result && NVIDIA_API_KEY) {
-        const left = budgetLeft();
-        if (left < LAST_DITCH_FLOOR_MS) {
-          console.warn(`Skipping NVIDIA: ${Math.round(left / 1000)}s of budget left`);
-        } else {
-          try {
-            console.log(`→ NVIDIA NIM (${NVIDIA_MODEL}, ${Math.round(Math.min(18_000, left) / 1000)}s budget)...`);
-            result = await withTimeout(askNvidia(finalPrompt, !!is_chat), Math.min(18_000, left), "NVIDIA");
-          } catch (e) {
-            const msg = e instanceof Error ? e.message : String(e);
-            console.warn("✗ NVIDIA:", msg);
-            errors.push(`NVIDIA: ${msg.slice(0, 120)}`);
-          }
-        }
-      }
-
-      if (!result && BYTEZ_API_KEY) {
-        const left = budgetLeft();
-        if (left < LAST_DITCH_FLOOR_MS) {
-          console.warn(`Skipping Bytez: ${Math.round(left / 1000)}s of budget left`);
-        } else {
-          try {
-            console.log(`→ Bytez (${BYTEZ_MODEL}, ${Math.round(Math.min(15_000, left) / 1000)}s budget)...`);
-            result = await withTimeout(askBytez(finalPrompt, !!is_chat), Math.min(15_000, left), "Bytez");
-          } catch (e) {
-            const msg = e instanceof Error ? e.message : String(e);
-            console.warn("✗ Bytez:", msg);
-            errors.push(`Bytez: ${msg.slice(0, 120)}`);
-          }
-        }
+        const run = await runCascade(steps, {
+          startedAt: cascadeStart, deadlineMs: AI_DEADLINE_MS, minStepMs: AI_MIN_STEP_MS,
+          log: (line) => (line.startsWith("✗") || line.startsWith("Skipping") ? console.warn(line) : console.log(line)),
+        });
+        errors.push(...run.errors);
+        if (run.result) result = run.result;
       }
     }
 

@@ -28,6 +28,8 @@ const invoke = vi.fn();
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
     functions: { invoke: (...args: unknown[]) => invoke(...args) },
+    // The modal looks up ROE and debt/equity itself; here the summary has no row.
+    from: () => ({ select: () => ({ eq: () => ({ maybeSingle: () => Promise.resolve({ data: null, error: null }) }) }) }),
   },
 }));
 

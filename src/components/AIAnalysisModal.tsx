@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 import { motion, AnimatePresence } from "motion/react";
@@ -16,6 +16,7 @@ import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip as Recharts
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { EASE_IN_OUT, EASE_OUT } from "@/lib/motion";
+import { analysisProgress, progressStep, SLOW_ANALYSIS_MS } from "@/lib/ai-progress";
 
 type ChatMessage = { role: 'user' | 'ai'; text: string; model?: string; failed?: boolean; retry?: string };
 
@@ -239,8 +240,53 @@ const AnalysisScanner = () => {
   );
 };
 
-export const AIAnalysisModal = ({ isOpen, onClose, stock }: AIAnalysisModalProps) => {
-  const [loadingStep, setLoadingStep] = useState(0);
+/**
+ * ROE and debt/equity from the fundamentals summary (screener.in, every listed
+ * stock) when the caller had none: the screener's rows carry neither, so the
+ * report showed "Not supplied for this stock" for TCS and the rest.
+ */
+function useSummaryFundamentals(symbol: string | undefined, isOpen: boolean) {
+  const [row, setRow] = useState<{ symbol: string; roe: number | null; debt_to_equity: number | null } | null>(null);
+  useEffect(() => {
+    if (!isOpen || !symbol) return;
+    let cancelled = false;
+    // Optional figures: a failed lookup leaves the cards "not supplied", as before.
+    Promise.resolve()
+      .then(() => (supabase.from("stock_fundamentals_summary" as never) as ReturnType<typeof supabase.from>)
+        .select("symbol,roe,debt_to_equity").eq("symbol", symbol.toUpperCase()).maybeSingle())
+      .then(({ data }) => { if (!cancelled && data) setRow(data as unknown as { symbol: string; roe: number | null; debt_to_equity: number | null }); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [symbol, isOpen]);
+  return row && row.symbol === symbol?.toUpperCase() ? row : null;
+}
+
+/** The report's verdict, levels and indicator readings as chat context lines; empty before a report exists. */
+export function reportFacts(sd: {
+  action_verdict?: string; rating_label?: string; sentiment_score?: number;
+  price_targets?: { support: number | null; resistance: number | null; target_1m: number; target_3m: number };
+  key_indicators?: Record<string, string>;
+} | undefined): string[] {
+  if (!sd) return [];
+  const lines: string[] = [];
+  if (sd.action_verdict) lines.push(`Report verdict: ${sd.action_verdict}${sd.rating_label ? ` (${sd.rating_label})` : ''}${typeof sd.sentiment_score === 'number' ? `, score ${sd.sentiment_score}/100` : ''}`);
+  const t = sd.price_targets;
+  if (t) lines.push(`Report levels: support ${t.support ?? 'N/A'} | resistance ${t.resistance ?? 'N/A'} | 1M target ${t.target_1m} | 3M target ${t.target_3m}`);
+  const ind = Object.entries(sd.key_indicators ?? {}).slice(0, 12).map(([k, v]) => `${k}: ${v}`);
+  if (ind.length) lines.push(`Report indicators: ${ind.join('; ')}`);
+  return lines;
+}
+
+export const AIAnalysisModal = ({ isOpen, onClose, stock: stockProp }: AIAnalysisModalProps) => {
+  const summary = useSummaryFundamentals(stockProp?.symbol, isOpen);
+  const stock = useMemo(
+    () => (stockProp && summary
+      ? { ...stockProp, roe: stockProp.roe ?? summary.roe, debt_equity: stockProp.debt_equity ?? summary.debt_to_equity }
+      : stockProp),
+    [stockProp, summary],
+  );
+  // Time since this analysis started; the loading bar is drawn from it (lib/ai-progress).
+  const [elapsedMs, setElapsedMs] = useState(0);
   const [isAnalyzing, setIsAnalyzing] = useState(true);
   const [minTimeElapsed, setMinTimeElapsed] = useState(false);
   const [retryNonce, setRetryNonce] = useState(0);
@@ -310,6 +356,8 @@ export const AIAnalysisModal = ({ isOpen, onClose, stock }: AIAnalysisModalProps
   // asking one model several different questions.
   const [useDebate, setUseDebate] = useState(false);
   const analysisSteps = useCommittee ? COMMITTEE_STEPS : REPORT_STEPS;
+  const progress = analysisProgress(elapsedMs, aiResponseReady);
+  const loadingStep = progressStep(progress, analysisSteps.length, aiResponseReady);
   const [copied, setCopied] = useState(false);
   
   // Research questions the chat can answer from the figures it is given.
@@ -336,21 +384,21 @@ export const AIAnalysisModal = ({ isOpen, onClose, stock }: AIAnalysisModalProps
     if (isOpen && stock) {
       // Invalidate any in-flight request immediately
       requestIdRef.current++;
-      setIsAnalyzing(true); setLoadingStep(0); setGeminiVerdict(null);
+      setIsAnalyzing(true); setElapsedMs(0); setGeminiVerdict(null);
       setChatHistory([]); setActiveTab('report');
       setMinTimeElapsed(false); setAiResponseReady(false);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps -- keyed on symbol/mount by design; object identities change every render
   }, [isOpen, stock?.symbol]);
 
-  // Step animation - purely visual progress; does NOT gate dismissal
+  // Elapsed time drives the loading bar; it does NOT gate dismissal. Restarts per
+  // stock and per re-run (mode switch, retry).
   useEffect(() => {
     if (!isOpen || !isAnalyzing) return;
-    const interval = setInterval(() => {
-      setLoadingStep(p => (p >= analysisSteps.length - 1 ? p : p + 1));
-    }, 550);
+    const started = Date.now();
+    const interval = setInterval(() => setElapsedMs(Date.now() - started), 250);
     return () => clearInterval(interval);
-  }, [isOpen, isAnalyzing, analysisSteps]);
+  }, [isOpen, isAnalyzing, stock?.symbol, retryNonce]);
 
   // Short minimum on-screen time so the loader doesn't flash if the AI is instant
   useEffect(() => {
@@ -545,8 +593,12 @@ export const AIAnalysisModal = ({ isOpen, onClose, stock }: AIAnalysisModalProps
       `Market Cap: ${na(stock?.market_cap, (n) => `₹${n} Cr`)}`,
       `Volume: ${na(stock?.volume, (n) => String(n))}`,
       `Patterns: ${analysis?.patterns?.length ? analysis.patterns.join(', ') : 'N/A'}`,
+      `ROE: ${na(stock?.roe, (n) => `${n}%`)} | Debt/Equity: ${na(stock?.debt_equity, (n) => String(n))}`,
       `Score: ${analysis?.score}/100`,
       `Momentum: ${analysis?.isBullish ? 'Bullish' : 'Bearish'}`,
+      // The report's own computed figures, so a follow-up ("is it above its
+      // 200-DMA?", "where is support?") is answered from them, not guessed.
+      ...reportFacts(geminiVerdict?.structured),
       'Any field marked N/A was not retrieved - do not estimate it, say it was unavailable.',
     ].join(' | ');
   };
@@ -674,18 +726,23 @@ export const AIAnalysisModal = ({ isOpen, onClose, stock }: AIAnalysisModalProps
                 <div className="w-64 flex items-center justify-between mb-1.5">
                   <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Analyzing</span>
                   <span className="text-[11px] font-bold text-brand-orange tabular-nums">
-                    {Math.round(((loadingStep + 1) / analysisSteps.length) * 100)}%
+                    {Math.round(progress)}%
                   </span>
                 </div>
                 <div className="w-64 h-2 bg-muted rounded-full overflow-hidden mb-8 shadow-inner">
                   <motion.div className="h-full bg-gradient-to-r from-secondary/40 via-secondary to-secondary/40 bg-[length:200%_100%]"
                     initial={{ width: "0%", backgroundPosition: "100% 0" }}
-                    animate={{ width: `${((loadingStep + 1) / analysisSteps.length) * 100}%`, backgroundPosition: "0% 0" }}
+                    animate={{ width: `${progress}%`, backgroundPosition: "0% 0" }}
                     transition={{
-                      width: { duration: 0.6 },
+                      width: { duration: 0.3, ease: "linear" },
                       backgroundPosition: { duration: 2, repeat: Infinity, ease: "linear" }
                     }} />
                 </div>
+                {elapsedMs > SLOW_ANALYSIS_MS && !aiResponseReady && (
+                  <p role="status" className="-mt-5 mb-6 max-w-[280px] text-center text-xs text-muted-foreground">
+                    Taking longer than usual. When one AI model is busy the next one takes over; the report is still coming.
+                  </p>
+                )}
                 <div className="space-y-2.5 w-full max-w-[280px]">
                   {analysisSteps.map((step, idx) => {
                     const done = idx < loadingStep;
@@ -738,7 +795,7 @@ export const AIAnalysisModal = ({ isOpen, onClose, stock }: AIAnalysisModalProps
                       requestIdRef.current++;
                       setGeminiVerdict(null);
                       setIsAnalyzing(true);
-                      setLoadingStep(0);
+                      setElapsedMs(0);
                       setMinTimeElapsed(false);
                       setAiResponseReady(false);
                       setRetryNonce(n => n + 1);
@@ -756,7 +813,7 @@ export const AIAnalysisModal = ({ isOpen, onClose, stock }: AIAnalysisModalProps
                       requestIdRef.current++;
                       setGeminiVerdict(null);
                       setIsAnalyzing(true);
-                      setLoadingStep(0);
+                      setElapsedMs(0);
                       setMinTimeElapsed(false);
                       setAiResponseReady(false);
                       setRetryNonce(n => n + 1);
@@ -1240,7 +1297,7 @@ export const AIAnalysisModal = ({ isOpen, onClose, stock }: AIAnalysisModalProps
                                     requestIdRef.current++;
                                     setGeminiVerdict(null);
                                     setIsAnalyzing(true);
-                                    setLoadingStep(0);
+                                    setElapsedMs(0);
                                     setMinTimeElapsed(false);
                                     setAiResponseReady(false);
                                     setRetryNonce(n => n + 1);
