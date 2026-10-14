@@ -396,7 +396,7 @@
       $("bp-fill").style.transform = `scaleX(${share / 100})`;
       $("bp-bar").setAttribute("aria-valuenow", String(Math.floor(share)));
       $("bp-elapsed").textContent = duration(p.elapsedSec);
-      $("bp-rate").textContent = p.ratePerMin ? `${p.ratePerMin} pages/min` : "–";
+      $("bp-rate").textContent = p.ratePerMin ? `${p.ratePerMin} pages/min${p.basis === "previous build" ? " (last build's pace)" : ""}` : "–";
       $("bp-left").textContent = p.etaSec !== null ? duration(p.etaSec) : p.phase === "building the app" ? "pages start in ~3 min" : "–";
       $("bp-finish").textContent = p.finishAt ? new Date(p.finishAt).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Kolkata" }) + " IST" : "–";
     }

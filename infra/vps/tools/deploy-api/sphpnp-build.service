@@ -1,0 +1,19 @@
+# A site build requested from the admin panel -> /etc/systemd/system/sphpnp-build.service
+# Started by sphpnp-build.path when deploy-api writes /var/lib/sphpnp/build-requested.
+# Its own unit, so the build gets the machine's memory rather than deploy-api's 192 MB
+# cap (it crawled at 2.5 pages/min inside it, 15 Oct 2026), and restarting the API
+# never kills a running build.
+
+[Unit]
+Description=sphpnp site build (requested from the admin panel)
+
+[Service]
+Type=oneshot
+User=deploy
+Group=deploy
+# A panel build runs now, even in market hours (build-site.sh otherwise defers).
+Environment=FORCE_BUILD=1
+ExecStartPre=/bin/rm -f /var/lib/sphpnp/build-requested
+# flock -n: never alongside the 04:30 cron build (same lock file in /tmp).
+ExecStart=/usr/bin/flock -n /tmp/build-site.lock /opt/sphpnp/jobs/build-site.sh
+TimeoutStartSec=4h

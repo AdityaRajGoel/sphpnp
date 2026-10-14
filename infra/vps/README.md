@@ -150,8 +150,8 @@ Install or update (listens on `127.0.0.1:3009` only):
 
 ```bash
 sudo install -D -m 644 -o deploy -g deploy infra/vps/tools/deploy-api/server.mjs /opt/sphpnp/deploy-api/server.mjs
-sudo install -m 644 infra/vps/tools/deploy-api/sphpnp-deploy-api.service /etc/systemd/system/
-sudo systemctl daemon-reload && sudo systemctl enable --now sphpnp-deploy-api
+sudo install -m 644 infra/vps/tools/deploy-api/sphpnp-deploy-api.service infra/vps/tools/deploy-api/sphpnp-build.service infra/vps/tools/deploy-api/sphpnp-build.path /etc/systemd/system/
+sudo systemctl daemon-reload && sudo systemctl enable --now sphpnp-deploy-api sphpnp-build.path
 sudo systemctl restart sphpnp-deploy-api   # after changing server.mjs
 ```
 

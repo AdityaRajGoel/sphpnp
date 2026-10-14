@@ -1,0 +1,12 @@
+# Starts sphpnp-build.service when the admin panel asks for a build
+# -> /etc/systemd/system/sphpnp-build.path   (sudo systemctl enable --now sphpnp-build.path)
+
+[Unit]
+Description=Watch for a site build requested from the admin panel
+
+[Path]
+PathExists=/var/lib/sphpnp/build-requested
+Unit=sphpnp-build.service
+
+[Install]
+WantedBy=multi-user.target

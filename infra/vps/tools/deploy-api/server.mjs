@@ -11,11 +11,11 @@
 // also passes the signed-in name in X-Remote-User for the audit line.
 
 import { createServer } from "node:http";
-import { readdir, readlink, symlink, rename, rm, readFile, appendFile } from "node:fs/promises";
+import { readdir, readlink, symlink, rename, rm, readFile, appendFile, writeFile } from "node:fs/promises";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import path from "node:path";
-import { buildProgress } from "./progress.mjs";
+import { buildProgress, priorRate } from "./progress.mjs";
 
 const run = promisify(execFile);
 
@@ -24,8 +24,7 @@ const HOST = "127.0.0.1";
 const ROOT = "/var/www/sphpnp";
 const RELEASES = path.join(ROOT, "releases");
 const CURRENT = path.join(ROOT, "current");
-const BUILD_SCRIPT = "/opt/sphpnp/jobs/build-site.sh";
-const BUILD_LOCK = "/tmp/build-site.lock";
+const BUILD_REQUEST = "/var/lib/sphpnp/build-requested";
 const BUILD_LOGS = "/opt/sphpnp/build-logs";
 const TOOLS_ENV = "/opt/sphpnp-tools/.env";
 const ORIGIN = "https://admin.sphpnp.com";
@@ -130,12 +129,12 @@ async function buildRunning() {
 
 async function startBuild(user) {
   if (await buildRunning()) return { status: 409, body: { error: "a build is already running" } };
-  // flock -n so this can never run alongside the 04:30 cron build; detached so the
-  // request returns immediately and the build survives a restart of this service.
-  // FORCE_BUILD=1: a build started from the panel runs now, even in market hours (the
-  // script otherwise defers to 15:50 and exits at once, which looked like a dead button).
-  const child = execFile("flock", ["-n", BUILD_LOCK, BUILD_SCRIPT], { detached: true, stdio: "ignore", env: { ...process.env, FORCE_BUILD: "1" } });
-  child.unref();
+  // The build runs as its own unit, sphpnp-build.service, started by sphpnp-build.path
+  // when this file appears. Spawned from here it ran inside this service's cgroup: under
+  // its 192 MB MemoryMax (2.5 pages/min instead of ~45, 15 Oct 2026) and killed with it
+  // on any restart. The unit keeps flock -n (never alongside the 04:30 cron build) and
+  // FORCE_BUILD=1 (a panel build runs now, even in market hours).
+  await writeFile(BUILD_REQUEST, `${user} ${new Date().toISOString()}\n`);
   await audit(`rebuild started by ${user}`);
   await notify("Site rebuild started", `Started from the admin panel by ${user}`);
   return { status: 202, body: { started: true } };
@@ -158,6 +157,18 @@ async function lastResult() {
   return null;
 }
 
+// The newest finished build's pace, for the estimate while a new build warms up.
+let prior = { file: null, rate: null };
+async function previousRate(files, current) {
+  const done = files.filter((f) => /^build-.*\.log$/.test(f) && f !== current).sort().reverse();
+  for (const f of done.slice(0, 5)) {
+    if (prior.file === f) return prior.rate;
+    const rate = priorRate(await readFile(path.join(BUILD_LOGS, f), "utf8").catch(() => ""));
+    if (rate) { prior = { file: f, rate }; return rate; }
+  }
+  return null;
+}
+
 async function buildLog() {
   const files = await readdir(BUILD_LOGS).catch(() => []);
   const newest = files.filter((f) => /^build-.*\.log$/.test(f)).sort().pop();
@@ -168,7 +179,7 @@ async function buildLog() {
   // every other line, so warnings and retries stay visible.
   const lines = text.replace(/\x1b\[[0-9;]*m/g, "").split("\n");
   const tail = lines.filter((l, i) => !/^(Saved|Prerendering) \//.test(l) || i >= lines.length - 6).slice(-40).join("\n");
-  return { running, file: newest, log: tail, progress: buildProgress(text, startedFromName(newest), Date.now(), running), lastResult: await lastResult() };
+  return { running, file: newest, log: tail, progress: buildProgress(text, startedFromName(newest), Date.now(), running, running ? await previousRate(files, newest) : null), lastResult: await lastResult() };
 }
 
 createServer(async (req, res) => {
