@@ -2,7 +2,7 @@
 // visitors never trigger third-party scraping or create GMP observations.
 
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { deriveIpoStatus, istDate } from "../_shared/ipo-status.ts";
+import { deriveIpoStatus, isOrphanIpo, istDate } from "../_shared/ipo-status.ts";
 import { performanceBySlug, type EodBar, type ListingPerformance, type NseIpoLink } from "../_shared/ipo-listing.ts";
 
 const cors = {
@@ -136,7 +136,9 @@ Deno.serve(async (req) => {
         // The list draws a sparkline, not the history table; its tail is enough.
         gmp_history: single ? history : history.slice(-LIST_HISTORY_POINTS),
       };
-    }).map((ipo) => forListing(ipo, single));
+    })
+      .filter((ipo) => single || !isOrphanIpo(ipo))
+      .map((ipo) => forListing(ipo, single));
 
     return new Response(JSON.stringify({ success: true, ipos: payload, fetchedAt: new Date().toISOString() }), { headers: { ...cors, "Content-Type": "application/json", "Cache-Control": "public, max-age=300" } });
   } catch (error) {

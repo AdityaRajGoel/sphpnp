@@ -135,3 +135,20 @@ describe("parseIpoWatch, single-table layout (2026-10)", () => {
     expect(bySlug.get("tna-solutions")).toMatchObject({ open_date: null, close_date: null });
   });
 });
+
+describe("parseIpoWatch, status word under the name (2026-10-15)", () => {
+  // The badge moved from a "(O)" tag to its own line: "Name<br><span>Open</span>".
+  // Read as one cell it stored "HD Fire Protect Open" beside "HD Fire Protect Upcoming".
+  const html = readFileSync(join(__dirname, "fixtures/ipo/ipowatch-gmp-2026-10-15.html"), "utf8");
+  const { rows } = parseIpoWatch(html);
+
+  it("keeps the status word out of the name, with or without a space before it", () => {
+    expect(rows.map((r) => r.name)).toEqual(["Jio Platforms", "Paras Healthcare", "HD Fire Protect"]);
+    expect(rows.map((r) => r.slug)).toEqual(["jio-platforms", "paras-healthcare", "hd-fire-protect"]);
+  });
+  it("reads the status from the word", () => {
+    expect(rows.map((r) => r.status)).toEqual(["upcoming", "upcoming", "open"]);
+    expect(rows[2]).toMatchObject({ gmp: 91, price_band_max: 271 });
+  });
+});
+

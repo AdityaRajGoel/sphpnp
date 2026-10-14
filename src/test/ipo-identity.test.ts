@@ -106,6 +106,23 @@ const stored = (over: Partial<StoredIpo> & Pick<StoredIpo, "id" | "slug" | "name
 });
 
 describe("planIpoMerges", () => {
+  it("folds rows minted from a status-polluted name into the clean one, keeping its slug", () => {
+    // Production, 15 Oct 2026: IPO Watch's badge glued onto the name made each status change a new row.
+    const plan = planIpoMerges([
+      stored({ id: "u", slug: "hd-fire-protect-upcoming", name: "HD Fire Protect Upcoming", created_at: "2026-10-08T00:00:00Z" }),
+      stored({ id: "o", slug: "hd-fire-protect-open", name: "HD Fire Protect Open", created_at: "2026-10-13T00:00:00Z" }),
+      stored({ id: "c", slug: "dove-soft-closed", name: "Dove Soft Closed", created_at: "2026-09-20T00:00:00Z" }),
+      stored({ id: "d", slug: "dove-soft", name: "Dove Soft", created_at: "2026-09-25T00:00:00Z" }),
+      stored({ id: "p", slug: "paras-healthcareupcoming", name: "Paras HealthcareUpcoming", created_at: "2026-10-10T00:00:00Z" }),
+      stored({ id: "q", slug: "paras-healthcare", name: "Paras Healthcare", created_at: "2026-10-12T00:00:00Z" }),
+    ]);
+    expect(plan.merges.map((m) => `${m.fromSlug}->${m.intoSlug}`).sort()).toEqual([
+      "dove-soft-closed->dove-soft",
+      "hd-fire-protect-open->hd-fire-protect-upcoming",
+      "paras-healthcareupcoming->paras-healthcare",
+    ]);
+  });
+
   it("keeps the first-seen row and folds a later duplicate into it", () => {
     const plan = planIpoMerges([
       stored({ id: "b", slug: "pranav-constructions-p", name: "Pranav Constructions P", created_at: "2026-09-08T00:00:00Z", open_date: "2026-09-07", close_date: "2026-09-09" }),
@@ -116,6 +133,15 @@ describe("planIpoMerges", () => {
       // The duplicate's dates fill the keeper's gaps; the keeper's lot size is untouched.
       patch: { open_date: "2026-09-07", close_date: "2026-09-09" },
     }]);
+  });
+
+  it("folds an issue rescheduled by a day into its first row", () => {
+    // Chittorgarh moved Ravita Engineering Services from 13 to 14 Oct 2026.
+    const plan = planIpoMerges([
+      stored({ id: "a", slug: "ravita-engineering-services", name: "Ravita Engineering Services", open_date: "2026-10-13", created_at: "2026-10-08T00:00:00Z" }),
+      stored({ id: "b", slug: "ravita-engineering", name: "Ravita Engineering Services", open_date: "2026-10-14", created_at: "2026-10-13T00:00:00Z" }),
+    ]);
+    expect(plan.merges.map((m) => `${m.fromSlug}->${m.intoSlug}`)).toEqual(["ravita-engineering->ravita-engineering-services"]);
   });
 
   it("never merges two issues whose open dates disagree", () => {
@@ -237,6 +263,18 @@ describe("truncated names", () => {
     expect(planIpoMerges([
       stored({ id: "1", slug: "manipal", name: "Manipal", price_band_max: 339 }),
       stored({ id: "2", slug: "manipal-payment", name: "Manipal Payment", price_band_max: 339 }),
+    ]).merges).toEqual([]);
+  });
+
+  it("folds a one-word name into the longer one when price band and lot size both agree", () => {
+    const plan = planIpoMerges([
+      stored({ id: "1", slug: "zetwerk-manufacturing-business", name: "Zetwerk Manufacturing Business", open_date: "2026-10-15", price_band_max: 151, lot_size: 99, created_at: "2026-10-12T00:00:00Z" }),
+      stored({ id: "2", slug: "zetwerk", name: "Zetwerk", price_band_max: 151, lot_size: 99, created_at: "2026-10-12T01:00:00Z" }),
+    ]);
+    expect(plan.merges.map((m) => `${m.fromSlug}->${m.intoSlug}`)).toEqual(["zetwerk->zetwerk-manufacturing-business"]);
+    expect(planIpoMerges([
+      stored({ id: "1", slug: "zetwerk-manufacturing-business", name: "Zetwerk Manufacturing Business", price_band_max: 151, lot_size: 99 }),
+      stored({ id: "2", slug: "zetwerk", name: "Zetwerk", price_band_max: 151, lot_size: 50 }),
     ]).merges).toEqual([]);
   });
 

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { deriveIpoStatus, istDate, advanceStatus } from "../../supabase/functions/_shared/ipo-status";
+import { deriveIpoStatus, istDate, advanceStatus, isOrphanIpo } from "../../supabase/functions/_shared/ipo-status";
 
 /*
  * An IPO's lifecycle is fixed by its calendar: it opens on open_date, stops
@@ -72,3 +72,17 @@ describe("istDate", () => {
     expect(istDate(new Date("2026-09-10T10:00:00Z"))).toBe("2026-09-10");
   });
 });
+
+describe("isOrphanIpo", () => {
+  const now = Date.parse("2026-10-15T00:00:00Z");
+  const row = { status: "upcoming" as const, open_date: null, data_as_of: "2026-10-10T03:20:00Z" };
+  it("drops an undated row no source has reported for three days", () => {
+    expect(isOrphanIpo(row, now)).toBe(true);
+  });
+  it("keeps a recent, dated or listed row", () => {
+    expect(isOrphanIpo({ ...row, data_as_of: "2026-10-14T13:20:00Z" }, now)).toBe(false);
+    expect(isOrphanIpo({ ...row, open_date: "2026-10-21" }, now)).toBe(false);
+    expect(isOrphanIpo({ ...row, status: "listed" }, now)).toBe(false);
+  });
+});
+

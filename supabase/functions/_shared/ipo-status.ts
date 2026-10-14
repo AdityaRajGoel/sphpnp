@@ -73,3 +73,16 @@ export function deriveIpoStatus(ipo: IpoDates, label: IpoStatus, today: string):
   const fromDates = statusFromDates(ipo, today);
   return fromDates === null ? label : advanceStatus(fromDates, label);
 }
+
+// The sources sync Monday to Saturday, so the longest normal gap is ~1.6 days.
+const ORPHAN_AFTER_MS = 3 * 86_400_000;
+
+/**
+ * A row no source has reported for days, with no dates to place it: a misspelt
+ * or since-renamed duplicate ("Bonfigloli Transmissions" beside Bonfiglioli,
+ * Oct 2026). It keeps its own page but is never listed as open or upcoming.
+ */
+export function isOrphanIpo(ipo: { status: IpoStatus; open_date: string | null; data_as_of: string }, now = Date.now()): boolean {
+  return ipo.status !== "listed" && ipo.open_date === null && Date.parse(ipo.data_as_of) <= now - ORPHAN_AFTER_MS;
+}
+

@@ -16,7 +16,11 @@
 
 import { canonicalIpoKey, ipoAliases, ipoMatchKey } from "./ipo-parse.ts";
 import { advanceStatus } from "./ipo-status.ts";
+
 import type { IpoStatus } from "./ipo-parse.ts";
+
+/** A slug minted from a name that carried IPO Watch's status word (see STATUS_WORD). */
+const STATUS_SLUG = /-?(?:upcoming|open|closed|listed)$/;
 
 /** Columns a duplicate may contribute when the surviving row has none. */
 export const FILLABLE = [
@@ -46,17 +50,23 @@ export type IpoMerge = {
 
 /**
  * Two rows can be one issue only if their open dates do not contradict each
- * other. The same name with a different open date is a different offering - a
- * company returning to market - and folding them together would graft one
- * issue's GMP history onto another's.
+ * other. The same name returning to market months or years later is a different
+ * offering, and folding them together would graft one issue's GMP history onto
+ * another's. A shift of a few days is the same issue rescheduled: Chittorgarh
+ * moved Ravita Engineering Services from 13 to 14 Oct 2026 and the catalogue
+ * grew a second row for it.
  */
+const RESCHEDULE_DAYS = 30;
+const DAY_MS = 86_400_000;
 const compatible = (a: { open_date: string | number | null }, b: { open_date: string | number | null }) =>
-  a.open_date === null || b.open_date === null || a.open_date === b.open_date;
+  a.open_date === null || b.open_date === null ||
+  Math.abs(Date.parse(`${a.open_date}T00:00:00Z`) - Date.parse(`${b.open_date}T00:00:00Z`)) <= RESCHEDULE_DAYS * DAY_MS;
 
-const aliasEntry = (row: { name: string; open_date?: string | number | null; price_band_max?: string | number | null }) => ({
+const aliasEntry = (row: { name: string; open_date?: string | number | null; price_band_max?: string | number | null; lot_size?: string | number | null }) => ({
   name: row.name,
   open_date: typeof row.open_date === "string" ? row.open_date : null,
   price_band_max: row.price_band_max === null || row.price_band_max === undefined ? null : Number(row.price_band_max),
+  lot_size: row.lot_size === null || row.lot_size === undefined ? null : Number(row.lot_size),
 });
 
 const groupByKey = (rows: StoredIpo[]): StoredIpo[][] => {
@@ -79,7 +89,11 @@ export function planIpoMerges(rows: StoredIpo[]): { merges: IpoMerge[]; survivor
   const survivors: StoredIpo[] = [];
 
   for (const group of groupByKey(rows)) {
-    const ordered = [...group].sort((a, b) => a.created_at.localeCompare(b.created_at) || a.slug.localeCompare(b.slug));
+    // Oldest first, but a slug minted from a status-polluted name ("hd-fire-protect-open")
+    // never outranks a clean one, so the merge keeps the clean URL.
+    const polluted = (row: StoredIpo) => (STATUS_SLUG.test(row.slug) ? 1 : 0);
+    const ordered = [...group].sort((a, b) =>
+      polluted(a) - polluted(b) || a.created_at.localeCompare(b.created_at) || a.slug.localeCompare(b.slug));
     const keepers: StoredIpo[] = [];
     for (const row of ordered) {
       const keeper = keepers.find((k) => compatible(k, row));
@@ -108,7 +122,7 @@ export function planIpoMerges(rows: StoredIpo[]): { merges: IpoMerge[]; survivor
  * one is the same issue, otherwise its own.
  */
 export function resolveSlug(
-  incoming: { slug: string; name: string; open_date: string | null; price_band_max?: number | null },
+  incoming: { slug: string; name: string; open_date: string | null; price_band_max?: number | null; lot_size?: number | null },
   survivors: StoredIpo[],
 ): string {
   const aliases = ipoAliases([aliasEntry(incoming), ...survivors.map(aliasEntry)]);

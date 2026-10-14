@@ -152,6 +152,14 @@ export const cleanIpoName = (value: string): string =>
 const STATUS_MARKER = /\s+(?:CT|LT|[OUCLP])$/;
 
 /**
+ * The status word IPO Watch prints under the name since Oct 2026 ("HD Fire
+ * Protect<br><span>Open</span>"). Read as one cell it glued onto the name, with
+ * or without a space ("Paras HealthcareUpcoming"), and every status change made
+ * the issue a new row. Capitalised only: it is a badge, not part of a name.
+ */
+export const STATUS_WORD = /\s*(?:Upcoming|Open|Closed|Listed)$/;
+
+/**
  * The key two sources' names for one issue have in common.
  *
  * A slug of the printed name is not an identity: the sites decorate names
@@ -175,7 +183,7 @@ export function ipoAbbreviationKey(name: string): string | null {
   return /^[A-Z][A-Z0-9&]{1,9}$/.test(inner) ? ipoMatchKey(inner) || null : null;
 }
 
-export type AliasEntry = { name: string; open_date?: string | null; price_band_max?: number | null };
+export type AliasEntry = { name: string; open_date?: string | null; price_band_max?: number | null; lot_size?: number | null };
 
 /**
  * Short key -> full-name key, for the two ways one source names an issue
@@ -186,8 +194,9 @@ export type AliasEntry = { name: string; open_date?: string | null; price_band_m
  * - by a truncated name ("Manipal Payment" for "Manipal Payment and Identity
  *   Solutions"). A prefix alone is not an identity - "Tata Capital" and "Tata
  *   Capital Housing Finance" are different issuers - so the shorter name must
- *   be at least two words, the prefix of exactly one other name, at the same
- *   known upper price band, with open dates that do not disagree.
+ *   be the prefix of exactly one other name, at the same known upper price
+ *   band, with open dates that do not disagree; a one-word name also needs the
+ *   same known lot size.
  */
 export function ipoAliases(entries: (string | AliasEntry)[]): Map<string, string> {
   const aliases = new Map<string, string>();
@@ -203,13 +212,18 @@ export function ipoAliases(entries: (string | AliasEntry)[]): Map<string, string
     .map((r) => ({ ...r, words: ipoMatchWords(r.name) }))
     .filter((r) => r.words.length > 0);
   for (const short of known) {
-    if (short.words.length < 2 || aliases.has(short.words.join(""))) continue;
+    if (aliases.has(short.words.join(""))) continue;
+    // One word ("Zetwerk") is too common a prefix on its own; it names the longer
+    // issue only when the lot size agrees as well as the price band.
+    const oneWord = short.words.length < 2;
+    if (oneWord && !short.lot_size) continue;
     const longer = new Set(
       known
         .filter((long) =>
           long.words.length > short.words.length &&
           short.words.every((w, i) => long.words[i] === w) &&
           long.price_band_max === short.price_band_max &&
+          (!oneWord || long.lot_size === short.lot_size) &&
           (!short.open_date || !long.open_date || short.open_date === long.open_date))
         .map((long) => long.words.join("")),
     );
@@ -235,6 +249,7 @@ function ipoMatchWords(name: string): string[] {
     .replace(/\s+/g, " ")
     .trim()
     .replace(STATUS_MARKER, "")
+    .replace(STATUS_WORD, "")
     .toLowerCase()
     .replace(/&/g, " and ")
     .replace(/\b(?:ipo|limited|ltd|private|pvt)\b\.?/g, " ")
@@ -388,7 +403,12 @@ export function parseIpoWatch(html: string): IpoWatchParseResult {
       if (!values) continue;
       const rawName = values[0] ?? "";
       const tag = rawName.match(NAME_TAG);
-      const name = cleanIpoName(tag ? rawName.slice(0, tag.index) : rawName);
+      // Untagged, the cell is "Name<br><span>Open</span>" (since 15 Oct 2026): the
+      // name is before the break and the status word after it. (The tagged layout
+      // put the board after its break: "TNA Solutions (O)<br> SME".)
+      const [nameHtml, ...below] = tag ? [] : (row.match(/<t[dh][^>]*>([\s\S]*?)<\/t[dh]>/i)?.[1] ?? "").split(/<br\s*\/?>/i);
+      const statusWord = stripTags(below.join(" "));
+      const name = cleanIpoName(tag ? rawName.slice(0, tag.index) : stripTags(nameHtml ?? rawName));
       if (name.length < 2 || name === "-" || name === "--") continue;
 
       if (isPerformanceTable) {
@@ -403,7 +423,9 @@ export function parseIpoWatch(html: string): IpoWatchParseResult {
       const estimated = estCol >= 0 ? amount((values[estCol] ?? "").split("(")[0]) : null;
       const [openDate, closeDate] = dateCol >= 0 ? parseDateRange(values[dateCol] ?? "") : [null, null];
       const board: Board = tag?.[2] ? (tag[2].toLowerCase() === "sme" ? "sme" : "mainboard") : headingBoard;
-      const status = tag ? STATUS_CODE[tag[1].toUpperCase()] ?? "upcoming" : statusFromLabel((values[statusCol] ?? "").toLowerCase());
+      const status = tag
+        ? STATUS_CODE[tag[1].toUpperCase()] ?? "upcoming"
+        : statusFromLabel((statusWord || values[statusCol] || "").toLowerCase());
 
       rows.push({
         slug: slugify(name), name, board, status,
