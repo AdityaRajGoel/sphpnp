@@ -300,13 +300,50 @@ async function getLiveNews() {
   return { indian, world, themes, sourcesTotal, sourcesOk, failedSources };
 }
 
+/**
+ * The feeds for every visitor this worker serves. Fetching ~15 publishers took
+ * ~2.8s on every request, and a third of visitors left before it answered
+ * (nginx 499s, Oct 2026). A copy under FRESH_MS is served as is; one under
+ * STALE_MS is served at once while a fresh one loads behind the response; a
+ * fetch where every source failed never replaces a good copy.
+ */
+const FRESH_MS = 3 * 60_000;
+const STALE_MS = 30 * 60_000;
+type LiveNews = Awaited<ReturnType<typeof getLiveNews>>;
+let newsCache: { at: number; news: LiveNews } | null = null;
+let refreshing: Promise<{ at: number; news: LiveNews }> | null = null;
+declare const EdgeRuntime: { waitUntil(promise: Promise<unknown>): void } | undefined;
+
+function refreshNews(): Promise<{ at: number; news: LiveNews }> {
+  refreshing ??= getLiveNews()
+    .then((news) => {
+      const fresh = { at: Date.now(), news };
+      if (news.sourcesOk > 0) newsCache = fresh;
+      return newsCache ?? fresh;
+    })
+    .finally(() => { refreshing = null; });
+  return refreshing;
+}
+
+async function cachedNews(): Promise<{ at: number; news: LiveNews }> {
+  const age = newsCache ? Date.now() - newsCache.at : Infinity;
+  if (newsCache && age < FRESH_MS) return newsCache;
+  if (newsCache && age < STALE_MS) {
+    const stale = newsCache;
+    const update = refreshNews().catch((e) => { console.error("Background news refresh failed:", e); return stale; });
+    if (typeof EdgeRuntime !== "undefined") EdgeRuntime.waitUntil(update);
+    return stale;
+  }
+  return refreshNews();
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const news = await getLiveNews();
+    const { at: fetchedAtMs, news } = await cachedNews();
 
     // Total failure: every single RSS source errored or returned non-OK.
     // Previously this still answered `success: true` with two empty arrays,
@@ -354,7 +391,7 @@ Deno.serve(async (req) => {
         sourcesTotal: news.sourcesTotal,
         failedSources: news.failedSources,
         ...(allSourcesFailed ? { error: 'All news sources are currently unavailable' } : {}),
-        fetchedAt: new Date().toISOString(),
+        fetchedAt: new Date(fetchedAtMs).toISOString(),
       }),
       {
         status: allSourcesFailed ? 502 : 200,
