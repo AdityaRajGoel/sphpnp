@@ -51,21 +51,49 @@ export function nameSlug(name: string): string {
   return name.toLowerCase().replace(/&/g, " and ").replace(/\b(limited|ltd)\b\.?/g, " ").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
 }
 
+/** Words that do not tell one company from another. */
+const FILLER = new Set(["the", "ltd", "limited", "co", "company", "india", "inds", "industries", "corp", "corporation", "and", "of", "partly", "paidup"]);
+
+const nameWords = (name: string): string[] =>
+  name.toLowerCase().replace(/&/g, " and ").replace(/['.]/g, "").replace(/\([^)]*\)/g, " ")
+    .split(/[^a-z0-9]+/).filter((w) => w && !FILLER.has(w));
+
+/** Shared words, a 4-letter stem counting half, and the first word's lead: 0 when the first words differ. */
+function nameScore(a: string[], b: string[]): number {
+  const stem = (w: string) => w.slice(0, 4);
+  if (!a.length || !b.length || stem(a[0]) !== stem(b[0])) return 0;
+  const shared = a.reduce((sum, w) => sum + (b.includes(w) ? 2 : w.length >= 4 && b.some((x) => x.startsWith(stem(w))) ? 1 : 0), 0);
+  return (shared + 2) / (a.length + b.length);
+}
+
+/** A guess must share the first word and most of the rest ("Ajanta Pharmaceuticals" -> "ajanta-pharma"). */
+const GUESS_MIN_SCORE = 0.75;
+
 /**
  * Stock pages in Tickertape's sitemap whose name part is this company's name,
  * or starts with it ("mahindra-and-mahindra-financial" finds
  * "...-financial-services-MMFS") - exact matches first, then the shortest.
- * Only candidates: the page's own ticker decides.
+ * With none, the closest names by shared words: Tickertape keeps old or shorter
+ * names ("pvr" for PVR INOX, "titagarh-wagons" for Titagarh Rail Systems), and
+ * 74 stocks went unmatched in Oct 2026. Only candidates: the page's own ticker
+ * decides, so a wrong guess costs a fetch, never a wrong profile.
  */
 export function sitemapCandidates(xml: string, companyName: string, limit = 3): string[] {
   const want = nameSlug(companyName);
   if (!want) return [];
-  const hits: { path: string; exact: boolean; len: number }[] = [];
-  for (const [, url] of xml.matchAll(/<loc>https:\/\/www\.tickertape\.in(\/stocks\/[a-z0-9-]+-[A-Za-z0-9]+)<\/loc>/g)) {
-    const namePart = url.slice("/stocks/".length).replace(/-[A-Za-z0-9]+$/, "");
-    if (namePart === want || namePart.startsWith(`${want}-`)) hits.push({ path: url, exact: namePart === want, len: namePart.length });
-  }
-  return hits.sort((a, b) => Number(b.exact) - Number(a.exact) || a.len - b.len).slice(0, limit).map((h) => h.path);
+  const pages = [...xml.matchAll(/<loc>https:\/\/www\.tickertape\.in(\/stocks\/[a-z0-9-]+-[A-Za-z0-9]+)<\/loc>/g)]
+    .map(([, path]) => ({ path, namePart: path.slice("/stocks/".length).replace(/-[A-Za-z0-9]+$/, "") }));
+  const hits = pages
+    .filter((p) => p.namePart === want || p.namePart.startsWith(`${want}-`))
+    .sort((a, b) => Number(b.namePart === want) - Number(a.namePart === want) || a.namePart.length - b.namePart.length);
+  if (hits.length) return hits.slice(0, limit).map((h) => h.path);
+  const words = nameWords(companyName);
+  return pages
+    .map((p) => ({ path: p.path, score: nameScore(words, nameWords(p.namePart.replace(/-/g, " "))) }))
+    .filter((p) => p.score >= GUESS_MIN_SCORE)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, limit)
+    .map((p) => p.path);
 }
 
 /** The page's embedded render data, or null when the page has none. */

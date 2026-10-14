@@ -66,7 +66,14 @@ describe("sitemapCandidates", () => {
     expect(sitemapCandidates(xml, "Larsen & Toubro")[0]).toBe("/stocks/larsen-and-toubro-LART");
   });
 
-  it("finds nothing for a renamed company rather than guessing", () => {
+  it("finds nothing for a renamed company whose old name shares no word", () => {
     expect(sitemapCandidates(xml, "Eternal")).toEqual([]);
+  });
+
+  it("falls back to the closest names when none starts with this one (Oct 2026: 74 unmatched)", () => {
+    expect(sitemapCandidates(xml, "Ajanta Pharmaceuticals")[0]).toBe("/stocks/ajanta-pharma-AJPH");
+    expect(sitemapCandidates(xml, "PVR INOX")[0]).toBe("/stocks/pvr-PVRL");
+    expect(sitemapCandidates(xml, "Titagarh Rail Systems")[0]).toBe("/stocks/titagarh-wagons-TITW");
+    expect(sitemapCandidates(xml, "The Ramco Cements")[0]).toBe("/stocks/ramco-cements-TRCE");
   });
 });

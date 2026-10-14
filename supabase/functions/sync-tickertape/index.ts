@@ -88,7 +88,7 @@ Deno.serve(async (req) => {
       const knownPath = storedPath.get(symbol) ?? TICKERTAPE_PATHS[symbol] ?? TICKERTAPE_RENAMED[symbol]?.path;
       let stock = knownPath ? await readPage(symbol, knownPath) : null;
       if (!stock) {
-        for (const path of (await sitemapPaths(symbol)).filter((p) => p !== knownPath).slice(0, 2)) {
+        for (const path of (await sitemapPaths(symbol)).filter((p) => p !== knownPath).slice(0, 3)) {
           await sleep(PACE_MS);
           stock = await readPage(symbol, path);
           if (stock) { viaSitemap++; break; }
