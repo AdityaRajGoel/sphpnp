@@ -66,9 +66,38 @@ export function visibleColumns(grid: StatementGrid, max: number): number[] {
 type Card = { label: string; value: string; hint?: string };
 
 /** Google Finance's key stats (via SerpApi) - the fallback for metrics IndianAPI did not report. */
-export type FallbackStats = { pe: number | null; eps: number | null; dividend_yield_pct: number | null; roe_pct: number | null };
+export type FallbackStats = { pe: number | null; eps: number | null; dividend_yield_pct: number | null; roe_pct: number | null; pb?: number | null };
 
-const NO_FALLBACK: FallbackStats = { pe: null, eps: null, dividend_yield_pct: null, roe_pct: null };
+const NO_FALLBACK: FallbackStats = { pe: null, eps: null, dividend_yield_pct: null, roe_pct: null, pb: null };
+
+/**
+ * The page's fallbacks, freshest first: screener.in's headline ratios (every
+ * stock, refreshed weekly), then Google Finance's. Price / book is today's price
+ * over screener.in's book value.
+ */
+export function fallbackStats(
+  screener: Record<string, number | null> | null | undefined,
+  google: { pe: number | null; eps: number | null; dividend_yield_pct: number | null } | null | undefined,
+  googleRoePct: number | null,
+  price: number | null,
+): FallbackStats {
+  const bookValue = screener?.book_value ?? null;
+  return {
+    pe: screener?.pe ?? google?.pe ?? null,
+    eps: google?.eps ?? null,
+    dividend_yield_pct: screener?.dividend_yield ?? google?.dividend_yield_pct ?? null,
+    roe_pct: screener?.roe ?? googleRoePct,
+    pb: price !== null && bookValue !== null && bookValue > 0 ? Math.round((price / bookValue) * 100) / 100 : null,
+  };
+}
+
+/** The 20/50/200-day averages from the daily price analytics, for pages without IndianAPI's. */
+export function analyticsAverages(a: { sma_20: number | null; sma_50: number | null; sma_200: number | null } | null | undefined): MovingAverage[] {
+  if (!a) return [];
+  return ([[20, a.sma_20], [50, a.sma_50], [200, a.sma_200]] as const)
+    .filter(([, v]) => v !== null && v > 0)
+    .map(([days, nse]) => ({ days, nse, bse: null }));
+}
 
 const metric = (km: KeyMetrics, group: string, key: string): number | null => km[group]?.[key] ?? null;
 const fixed = (n: number | null, digits: number, suffix = "") => (n === null ? ABSENT : `${n.toFixed(digits)}${suffix}`);
@@ -83,7 +112,7 @@ const rupeesOrAbsent = (n: number | null) => (n === null ? ABSENT : `₹${n.toFi
  */
 export function keyMetricCards(km: KeyMetrics, roe: RoePoint[], ratios: StatementRow[], fallback: FallbackStats = NO_FALLBACK): Card[] {
   const latestRoe = roe.length > 0 ? roe[roe.length - 1] : null;
-  // IndianAPI first; Google Finance only where IndianAPI reported nothing.
+  // IndianAPI first; the fallbacks (screener.in, then Google Finance) only where it reported nothing.
   const or = (primary: number | null, secondary: number | null) => primary ?? secondary;
   const roceRow = ratios.find((r) => r.label === "ROCE %");
   const roce = roceRow ? [...roceRow.values].reverse().find((v): v is number => v !== null) ?? null : null;
@@ -91,7 +120,7 @@ export function keyMetricCards(km: KeyMetrics, roe: RoePoint[], ratios: Statemen
     { label: "P/E (TTM)", value: fixed(or(metric(km, "valuation", "pPerEBasicExcludingExtraordinaryItemsTTM"), fallback.pe), 1) },
     // Upstream's own key, typos included ("Iitems", "12onth").
     { label: "EPS (TTM)", value: rupeesOrAbsent(or(metric(km, "persharedata", "eEPSExcludingExtraordinaryIitemsTrailing12onth"), fallback.eps)) },
-    { label: "Price / Book", value: fixed(metric(km, "valuation", "priceToBookMostRecentFiscalYear"), 2) },
+    { label: "Price / Book", value: fixed(or(metric(km, "valuation", "priceToBookMostRecentFiscalYear"), fallback.pb ?? null), 2) },
     {
       label: latestRoe ? `ROE (${fiscalLabel(latestRoe.period_end)})` : "ROE",
       value: latestRoe ? `${latestRoe.roe.toFixed(1)}%` : fallback.roe_pct === null ? ABSENT : `${fallback.roe_pct.toFixed(1)}%`,

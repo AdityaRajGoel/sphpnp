@@ -24,7 +24,7 @@ import { revealSection } from "@/lib/motion";
 import { formatCrore } from "@/lib/fundamentals";
 import { useStockFundamentals } from "@/hooks/useStockFundamentals";
 import { useStockStatements } from "@/hooks/useStockStatements";
-import { googleRoe, statementSourceLabel } from "@/lib/statements";
+import { analyticsAverages, fallbackStats, googleRoe, statementSourceLabel } from "@/lib/statements";
 import QuoteMetrics from "@/components/stock/QuoteMetrics";
 import StockPriceChart from "@/components/stock/StockPriceChart";
 import IncomeStatementTable from "@/components/stock/IncomeStatementTable";
@@ -294,14 +294,9 @@ export default function StockPage() {
                     keyMetrics={st.profile.key_metrics}
                     roe={st.profile.roe_history}
                     ratios={st.statements.ratios?.rows ?? []}
-                    movingAverages={st.profile.moving_averages}
+                    movingAverages={st.profile.moving_averages.length > 0 ? st.profile.moving_averages : analyticsAverages(analytics?.price)}
                     price={s.header?.price ?? null}
-                    fallback={{
-                      pe: st.profile.google_finance?.pe ?? null,
-                      eps: st.profile.google_finance?.eps ?? null,
-                      dividend_yield_pct: st.profile.google_finance?.dividend_yield_pct ?? null,
-                      roe_pct: googleRoe(st.statements),
-                    }}
+                    fallback={fallbackStats(st.profile.screener?.top_ratios, st.profile.google_finance, googleRoe(st.statements), s.header?.price ?? null)}
                   />
                 )}
                 <Suspense fallback={<Skeleton className="h-[420px] w-full" />}>

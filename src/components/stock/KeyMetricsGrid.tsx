@@ -9,7 +9,7 @@ type Props = {
   ratios: StatementRow[];
   movingAverages: MovingAverage[];
   price: number | null;
-  /** Google Finance's figures, used only where IndianAPI reported nothing. */
+  /** screener.in's then Google Finance's figures, used only where IndianAPI reported nothing (see fallbackStats). */
   fallback?: FallbackStats;
 };
 

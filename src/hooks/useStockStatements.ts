@@ -44,6 +44,21 @@ const EMPTY: StockStatementsState = { loading: true, error: null, statements: {}
  * sync-stock-statements reaches the symbol, which is an ordinary state: the
  * page falls back to the NSE-filing tables it had before.
  */
+/** sync-stock-statements refreshes a profile every 30 days; older means the sync has failed. */
+const INDIANAPI_MAX_AGE_MS = 31 * 86_400_000;
+
+/**
+ * The profile without IndianAPI's time-sensitive blocks once they are older than
+ * INDIANAPI_MAX_AGE_MS: its key was rate-limited from 10 Sep 2026, and 80 pages
+ * kept showing that day's TTM ratios and moving averages beside today's price.
+ * The page then falls back to screener.in's ratios and the daily analytics.
+ */
+export function withoutStaleIndianApi(profile: StockProfile, now = Date.now()): StockProfile {
+  const fetched = Date.parse(profile.fetched_at ?? "");
+  if (!Number.isFinite(fetched) || now - fetched <= INDIANAPI_MAX_AGE_MS) return profile;
+  return { ...profile, key_metrics: {}, moving_averages: [] };
+}
+
 export function useStockStatements(symbol: string | undefined): StockStatementsState {
   const [state, setState] = useState<StockStatementsState>(EMPTY);
 
@@ -80,7 +95,7 @@ export function useStockStatements(symbol: string | undefined): StockStatementsS
           error: null,
           statements,
           // A profile row that only records failed attempts has nothing to show.
-          profile: profile?.fetched_at || profile?.google_finance_fetched_at || profile?.screener_fetched_at || profile?.tickertape_fetched_at ? profile : null,
+          profile: profile?.fetched_at || profile?.google_finance_fetched_at || profile?.screener_fetched_at || profile?.tickertape_fetched_at ? withoutStaleIndianApi(profile) : null,
         });
       } catch (error) {
         if (!cancelled) setState({ ...EMPTY, loading: false, error: (error as Error).message });

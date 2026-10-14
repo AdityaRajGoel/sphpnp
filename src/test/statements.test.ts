@@ -5,8 +5,11 @@ import {
   keyMetricCards,
   latestHolding,
   statementTabs,
+  fallbackStats,
+  analyticsAverages,
   type StatementGrid,
 } from "@/lib/statements";
+import { withoutStaleIndianApi, type StockProfile } from "@/hooks/useStockStatements";
 
 /*
  * Display rules for the IndianAPI statements on a stock page.
@@ -136,5 +139,28 @@ describe("statementTabs", () => {
     const tabs = statementTabs({ gf_income_quarterly: grid("gf_income_quarterly"), gf_balance_annual: grid("gf_balance_annual") });
     expect(tabs.source).toBe("google_finance");
     expect(tabs.tabs.map((t) => t.kind)).toEqual(["gf_income_quarterly", "gf_balance_annual"]);
+  });
+});
+
+describe("fresher fallbacks once IndianAPI goes quiet", () => {
+  it("prefers screener.in's ratios, then Google Finance, and derives price/book from book value", () => {
+    const f = fallbackStats({ pe: 14, roe: 51.8, dividend_yield: 3.01, book_value: 329 }, { pe: 99, eps: 140, dividend_yield_pct: 9 }, 40, 2125);
+    expect(f).toEqual({ pe: 14, eps: 140, dividend_yield_pct: 3.01, roe_pct: 51.8, pb: 6.46 });
+    expect(fallbackStats(null, { pe: 22, eps: 5, dividend_yield_pct: 1 }, 12, null)).toEqual({ pe: 22, eps: 5, dividend_yield_pct: 1, roe_pct: 12, pb: null });
+    const pb = keyMetricCards({}, [], [], f).find((c) => c.label === "Price / Book");
+    expect(pb?.value).toBe("6.46");
+  });
+
+  it("reads the 20/50/200-day averages from the daily analytics", () => {
+    expect(analyticsAverages({ sma_20: 2100, sma_50: null, sma_200: 2400 })).toEqual([
+      { days: 20, nse: 2100, bse: null }, { days: 200, nse: 2400, bse: null },
+    ]);
+    expect(analyticsAverages(null)).toEqual([]);
+  });
+
+  it("drops IndianAPI's trailing metrics and averages once they outlive its 30-day refresh", () => {
+    const profile = { fetched_at: "2026-09-10T00:00:00Z", key_metrics: { valuation: { x: 1 } }, moving_averages: [{ days: 50, nse: 1, bse: null }] } as unknown as StockProfile;
+    expect(withoutStaleIndianApi(profile, Date.parse("2026-10-15T00:00:00Z"))).toMatchObject({ key_metrics: {}, moving_averages: [] });
+    expect(withoutStaleIndianApi(profile, Date.parse("2026-10-01T00:00:00Z"))).toBe(profile);
   });
 });
