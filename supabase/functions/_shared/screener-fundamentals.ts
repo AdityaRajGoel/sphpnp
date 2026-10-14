@@ -97,9 +97,10 @@ export function summariseFundamentals(input: SummaryInput): FundamentalsSummary 
       sales_growth_yoy: quarters ? yoyGrowth(quarters, /^(Sales|Revenue)$/) : null,
       profit_growth_yoy: quarters ? yoyGrowth(quarters, "Net Profit") : null,
       debt_to_equity: equity !== null && equity > 0 && borrowings !== null ? borrowings / equity : null,
-      pb: metric(keyMetrics, "valuation", "priceToBookMostRecentFiscalYear") ?? ratio(sr?.price, sr?.book_value),
-      dividend_yield: metric(keyMetrics, "valuation", "currentDividendYieldCommonStockPrimaryIssueLTM") ?? sr?.dividend_yield ?? null,
-      eps_ttm: metric(keyMetrics, "persharedata", "eEPSExcludingExtraordinaryIitemsTrailing12onth") ?? ratio(sr?.price, sr?.pe),
+      // screener.in's weekly figures first: IndianAPI's key metrics froze on 10 Sep 2026.
+      pb: ratio(sr?.price, sr?.book_value) ?? metric(keyMetrics, "valuation", "priceToBookMostRecentFiscalYear"),
+      dividend_yield: sr?.dividend_yield ?? metric(keyMetrics, "valuation", "currentDividendYieldCommonStockPrimaryIssueLTM"),
+      eps_ttm: ratio(sr?.price, sr?.pe) ?? metric(keyMetrics, "persharedata", "eEPSExcludingExtraordinaryIitemsTrailing12onth"),
       latest_quarter: qEnd,
     };
   }

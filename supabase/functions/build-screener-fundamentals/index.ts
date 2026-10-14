@@ -7,6 +7,7 @@
 
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { summariseFundamentals, type SummaryInput } from "../_shared/screener-fundamentals.ts";
+import { allPages } from "../_shared/paging.ts";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -35,8 +36,22 @@ Deno.serve(async (req) => {
     statements.push(...(data ?? []) as StatementRow[]);
     if (!data || data.length < 1000) break;
   }
-  const { data: profiles, error: pErr } = await supabase.from("stock_profiles").select("symbol,key_metrics,roe_history,google_finance,screener");
-  if (pErr) return json({ error: `profiles read: ${pErr.message}` }, 500);
+  // Paged: one read stopped at PostgREST's 1,000 rows of 3,170, so two thirds of
+  // stocks (TCS among them) never got screener.in's ROE or P/B (Oct 2026).
+  type ProfileRow = {
+    symbol: string;
+    key_metrics: SummaryInput["keyMetrics"] | null;
+    roe_history: SummaryInput["roeHistory"] | null;
+    google_finance: SummaryInput["googleStats"] | null;
+    screener: { top_ratios?: SummaryInput["screenerRatios"] } | null;
+  };
+  let profiles: ProfileRow[];
+  try {
+    profiles = await allPages<ProfileRow>((from, to) =>
+      supabase.from("stock_profiles").select("symbol,key_metrics,roe_history,google_finance,screener").order("symbol").range(from, to));
+  } catch (e) {
+    return json({ error: `profiles read: ${(e as Error).message}` }, 500);
+  }
 
   const bySymbol = new Map<string, Map<string, Grid>>();
   const quarterSource = new Map<string, string>();
