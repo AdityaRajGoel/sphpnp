@@ -290,7 +290,8 @@ async function prerender() {
   app.use((req, res) => {
     // A missing file (e.g. /insights.js, served by nginx in production, not from
     // dist/) must not get the HTML shell: the page would try to run HTML as a script.
-    if (/\.[a-z0-9]+$/i.test(req.path)) {
+    // Stock routes are exempt: BSE-only symbols carry a dot (/stock/NSE.BO).
+    if (!req.path.startsWith('/stock/') && /\.[a-z0-9]+$/i.test(req.path)) {
       res.status(404).end();
       return;
     }

@@ -31,7 +31,9 @@ w = {"title": os.environ["TITLE"], "url": os.environ["URL"],
      "time_between_check": {"hours": int(os.environ["HOURS"])},
      "notification_urls": [os.environ["NOTIFY"]],
      "notification_title": "Page changed: {{watch_title}}",
-     "notification_body": "{{watch_url}}\n\n{{diff_added}}"}
+     # ntfy refuses a message over 4,096 bytes ("attachments not allowed"), and an
+     # RBI page diff ran past it, so the alert carries the start of the diff only.
+     "notification_body": "{{watch_url}}\n\n{{diff_added|truncate(3500)}}"}
 if os.environ["FILTER"]:
     w["include_filters"] = [os.environ["FILTER"]]
 print(json.dumps(w))')

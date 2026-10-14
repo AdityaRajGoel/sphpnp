@@ -98,6 +98,7 @@ export const megaMenuItems: MegaMenuItem[] = [
           { label: "Stock Comparison", href: "/compare", icon: GitCompare, description: "Two stocks side by side" },
           { label: "52 Week Tracker", href: "/52-week-tracker", icon: ArrowUpDown, description: "Near 52-week highs and lows" },
           { label: "F&O Dashboard", href: "/fno", icon: Activity, description: "Option chain and OI analysis" },
+          { label: "Quant Dashboard", href: "https://dashboard.sphpnp.com", icon: LayoutGrid, description: "Advanced personalised dashboard", external: true },
         ],
       },
       {

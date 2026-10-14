@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { isTradingDay } from "@/lib/market-holidays";
 import { isPrerender } from "@/lib/prerender";
 import { fetchUniverseFile } from "@/lib/universe-file";
+import { readUniverseTable } from "@/lib/universe-table";
 
 export type ScreenerStock = {
   symbol: string;
@@ -104,7 +105,7 @@ export function useScreenerStocks() {
         const recent = file && Date.now() - Date.parse(file.generated_at) < FILE_FOR_QUOTES_MS;
         const cached = recent
           ? ([...file.quotes] as Parameters<typeof mapStock>[0][]).sort((a, b) => Number(b.market_cap) - Number(a.market_cap))
-          : (await supabase.from("screener_stocks").select("*").order("market_cap", { ascending: false })).data;
+          : (await readUniverseTable<Parameters<typeof mapStock>[0]>("quotes").catch(() => null))?.sort((a, b) => Number(b.market_cap) - Number(a.market_cap));
 
         const freshest = cached?.reduce((max, row) => (row.updated_at > max ? row.updated_at : max), "") ?? "";
         if (cached && cached.length > 0 && snapshotIsShowable(freshest)) {

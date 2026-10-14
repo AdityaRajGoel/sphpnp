@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { mergeUniverse, sectorFor } from "../../supabase/functions/_shared/universe";
+import { mergeUniverse, sectorFor, withStoredStocks } from "../../supabase/functions/_shared/universe";
 
 const curated = [
   { symbol: "HDFCBANK", yahoo: "HDFCBANK.NS", name: "HDFC Bank", sector: "Banking" },
@@ -44,5 +44,23 @@ describe("mergeUniverse", () => {
 
   it("falls back to the curated list when the constituents are missing", () => {
     expect(mergeUniverse(curated, [])).toEqual(curated);
+  });
+});
+
+describe("withStoredStocks", () => {
+  const base = [{ symbol: "TCS", yahoo: "TCS.NS", name: "TCS", sector: "IT" }];
+
+  it("re-quotes stored rows the index lists miss, keeping a BSE suffix as the Yahoo symbol", () => {
+    const u = withStoredStocks(base, [
+      { symbol: "TCS", name: "Tata Consultancy", sector: "IT" },
+      { symbol: "NSE.BO", name: "National Stock Exchange of Ind", sector: "General" },
+      { symbol: "CCAVENUE", name: null, sector: null },
+      { symbol: "bad sym", name: "x", sector: "x" },
+    ]);
+    expect(u).toEqual([
+      base[0],
+      { symbol: "NSE.BO", yahoo: "NSE.BO", name: "National Stock Exchange of Ind", sector: "General" },
+      { symbol: "CCAVENUE", yahoo: "CCAVENUE.NS", name: "CCAVENUE", sector: "General" },
+    ]);
   });
 });

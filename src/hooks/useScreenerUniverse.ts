@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { readUniverseTable } from "@/lib/universe-table";
 import { currentStocks, type ScreenerStock } from "@/hooks/useScreenerStocks";
 import { getFundamentalsSummaries, type FundamentalsSummary } from "@/lib/screener-fundamentals";
 import { getRiskSummaries, type RiskSummary } from "@/lib/screener-risk";
@@ -33,10 +33,7 @@ async function loadUniverse(): Promise<Map<string, MetricRow>> {
   // Every part reads the cached static file first (lib/universe-file), one request in all.
   const file = await fetchUniverseFile();
   const [quotes, fundamentals, risk, scores] = await Promise.all([
-    file ? toQuotes(file.quotes) : supabase.from("screener_stocks").select("*").then(({ data, error }) => {
-      if (error) throw new Error(error.message);
-      return toQuotes(data ?? []);
-    }),
+    toQuotes(file ? file.quotes : await readUniverseTable("quotes")),
     getFundamentalsSummaries().catch(() => new Map<string, FundamentalsSummary>()),
     getRiskSummaries().catch(() => new Map<string, RiskSummary>()),
     getScoreSummaries().catch(() => new Map<string, ScoreSummary>()),

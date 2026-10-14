@@ -26,9 +26,12 @@ for name in $(docker ps -a --format '{{.Names}}' | grep -E '^(supabase|realtime|
   # Gatus logging passing checks ("success=true; errors=0"), access-log lines that
   # answered 2xx/3xx but mention "error" in the URL, clients hanging up mid-response,
   # and Supavisor's scheduler monitor (its messages carry "timeout:"). Those were ~95%
-  # of the ~4,000 lines a day and buried the real ones.
+  # of the ~4,000 lines a day and buried the real ones. Also: the edge runtime's TCP
+  # health probe closing its socket ("Transport endpoint is not connected"), [info]
+  # lines whose random request_id happens to contain "oom", and changedetection's
+  # mime-type guess warning.
   zcat "$out" | grep -iE "$ERR" \
-    | grep -viE 'healthcheck|x-sync-secret|Unauthorized|401|success=true|" [23][0-9]{2} |connection reset by peer|broken pipe|ErlSysMon' \
+    | grep -viE 'healthcheck|x-sync-secret|Unauthorized|401|success=true|" [23][0-9]{2} |connection reset by peer|broken pipe|ErlSysMon|Transport endpoint is not connected|\[info\]|puremagic' \
     | sed "s/^/[$name] /" | cut -c1-400 >> "$DIGEST"
 done
 

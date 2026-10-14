@@ -243,9 +243,9 @@ async function getLiveNews() {
     // search.cnbc.com/... now answers 503 - same CNBC "Finance" category (id
     // 10000664), different still-live endpoint.
     fetchRss("https://www.cnbc.com/id/10000664/device/rss/rss.html", "CNBC", "Global"),
-    // query2.finance.yahoo.com/... now answers 429 (rate-limited) - swapped for
-    // Yahoo's own front-end RSS index, which isn't gated the same way.
-    fetchRss("https://finance.yahoo.com/news/rssindex", "Yahoo Finance", "Markets"),
+    // Yahoo dropped: finance.yahoo.com/news/rssindex and /rss/topstories answer
+    // 404 since Oct 2026, query2 answers 429, and feeds.finance.yahoo.com's
+    // headline feed serves weeks-old items (a stale mirror, see above).
     fetchFinnhub(),
   ]).then((all) => all.filter((r): r is RssFetchResult => r !== null));
   // India themes: Google News searches, keyless, one per desk a terminal user
@@ -279,7 +279,7 @@ async function getLiveNews() {
     "Economic Times", "Business Standard", "LiveMint",
     "BusinessLine", "NDTV Profit", "Business Today",
   ];
-  const WORLD_SOURCES = ["CNBC", "Yahoo Finance", "Finnhub"];
+  const WORLD_SOURCES = ["CNBC", "Finnhub"];
 
   // Deep enough that the client's featured story + 9-card grid still leaves
   // stories behind the "Show more" button.

@@ -1,5 +1,5 @@
-import { supabase } from "@/integrations/supabase/client";
 import { UNIVERSE_SOURCES, fetchUniverseFile } from "@/lib/universe-file";
+import { readUniverseTable } from "@/lib/universe-table";
 
 /**
  * The screener's composite-score view (stock_fundamental_scores_latest), built
@@ -35,9 +35,5 @@ export const SCORE_FIELDS = UNIVERSE_SOURCES.scores.select;
 export async function getScoreSummaries(): Promise<Map<string, ScoreSummary>> {
   const file = await fetchUniverseFile();
   if (file) return new Map((file.scores as unknown as ScoreSummary[]).map((row) => [row.symbol, row]));
-  const { data, error } = await (supabase.from("stock_fundamental_scores_latest" as never) as ReturnType<typeof supabase.from>)
-    .select(SCORE_FIELDS)
-    .limit(1000);
-  if (error) throw new Error(error.message);
-  return new Map(((data ?? []) as unknown as ScoreSummary[]).map((row) => [row.symbol, row]));
+  return new Map((await readUniverseTable<ScoreSummary>("scores")).map((row) => [row.symbol, row]));
 }

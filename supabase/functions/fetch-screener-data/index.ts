@@ -1,6 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { dailyQuote } from "../_shared/yahoo-daily-quote.ts";
-import { mergeUniverse, type UniverseStock } from "../_shared/universe.ts";
+import { mergeUniverse, withStoredStocks, type UniverseStock } from "../_shared/universe.ts";
+import { allPages } from "../_shared/paging.ts";
 import { buildStockRow, exchangeCloseRow, groupRowsByShape, isStaleQuote, type ExchangeBar } from "../_shared/screener-row.ts";
 
 const corsHeaders = {
@@ -418,6 +419,18 @@ async function fetchBatchQuotes(symbols: string[], crumb: string, cookie: string
 const UNIVERSE_INDICES = ["NIFTY TOTAL MARKET", "NIFTY 500"];
 
 async function loadUniverse(sb: ReturnType<typeof createClient>): Promise<UniverseStock[]> {
+  const base = await loadIndexUniverse(sb);
+  try {
+    const stored = await allPages<{ symbol: string; name: string | null; sector: string | null }>((from, to) =>
+      sb.from("screener_stocks").select("symbol,name,sector").order("symbol").range(from, to));
+    return withStoredStocks(base, stored);
+  } catch (e) {
+    console.error("universe: stored rows read failed:", (e as Error).message);
+    return base;
+  }
+}
+
+async function loadIndexUniverse(sb: ReturnType<typeof createClient>): Promise<UniverseStock[]> {
   for (const index of UNIVERSE_INDICES) {
     const { data, error } = await sb.from("index_constituents").select("symbol,company,industry").eq("index_name", index);
     if (error) { console.error(`universe: ${index} read failed:`, error.message); continue; }

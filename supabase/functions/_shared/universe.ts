@@ -63,3 +63,21 @@ export function mergeUniverse(curated: UniverseStock[], constituents: IndexConst
   }
   return [...curated, ...added];
 }
+
+/**
+ * Rows already in screener_stocks that the lists above do not cover: a stock a
+ * visitor's search added (a BSE-only listing such as NSE.BO keeps its suffix as
+ * its key) or one that has left the index. Without these the refresh never
+ * re-quotes them and their prices freeze where they were first stored.
+ */
+export function withStoredStocks(universe: UniverseStock[], stored: { symbol: string; name: string | null; sector: string | null }[]): UniverseStock[] {
+  const seen = new Set(universe.map((s) => s.symbol));
+  const extra: UniverseStock[] = [];
+  for (const row of stored) {
+    const symbol = row.symbol?.trim().toUpperCase();
+    if (!symbol || seen.has(symbol) || !/^[A-Z0-9&-]{1,20}(\.(NS|BO))?$/.test(symbol)) continue;
+    seen.add(symbol);
+    extra.push({ symbol, yahoo: symbol.includes(".") ? symbol : `${symbol}.NS`, name: row.name || symbol, sector: row.sector || "General" });
+  }
+  return [...universe, ...extra];
+}
