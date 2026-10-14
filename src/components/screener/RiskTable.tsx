@@ -15,6 +15,8 @@ import {
 
 type Props = {
   rows: ScreenerStock[];
+  /** Rows drawn, after this table's own sort: the screener pages long lists. */
+  limit?: number;
   summaries: Map<string, RiskSummary>;
   /** Opens a stock's page; a click anywhere on its row except the name link. */
   onOpen?: (symbol: string) => void;
@@ -31,7 +33,7 @@ type Props = {
  * that describe rather than judge (volatility, beta, drawdown) carry no colour;
  * see riskTone for why.
  */
-export default function RiskTable({ rows, summaries, onOpen, onAnalyse }: Props) {
+export default function RiskTable({ rows, limit, summaries, onOpen, onAnalyse }: Props) {
   const [sortKey, setSortKey] = useState<RiskKey | null>(null);
   const [dir, setDir] = useState<"asc" | "desc">("desc");
 
@@ -72,7 +74,7 @@ export default function RiskTable({ rows, summaries, onOpen, onAnalyse }: Props)
             </tr>
           </thead>
           <tbody>
-            {sorted.map((s) => {
+            {(limit === undefined ? sorted : sorted.slice(0, limit)).map((s) => {
               const r = summaries.get(s.symbol);
               return (
                 <tr

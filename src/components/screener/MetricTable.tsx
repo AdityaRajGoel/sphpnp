@@ -9,6 +9,8 @@ import AiAnalysisButton from "@/components/screener/AiAnalysisButton";
 
 type Props = {
   rows: ScreenerStock[];
+  /** Rows drawn, after this table's own sort: the screener pages long lists. */
+  limit?: number;
   metricRows: Map<string, MetricRow>;
   columns: Metric[];
   /** The footnote: what the columns are computed from and what a dash means. */
@@ -23,7 +25,7 @@ type Props = {
  * scores and custom views. Missing figures sort last in both directions and
  * render as a dash, never zero.
  */
-export default function MetricTable({ rows, metricRows, columns, note, onOpen, onAnalyse }: Props) {
+export default function MetricTable({ rows, limit, metricRows, columns, note, onOpen, onAnalyse }: Props) {
   const [sortId, setSortId] = useState<string | null>(null);
   const [dir, setDir] = useState<"asc" | "desc">("desc");
   const sortMetric = columns.find((c) => c.id === sortId) ?? null;
@@ -64,7 +66,7 @@ export default function MetricTable({ rows, metricRows, columns, note, onOpen, o
             </tr>
           </thead>
           <tbody>
-            {sorted.map((s) => {
+            {(limit === undefined ? sorted : sorted.slice(0, limit)).map((s) => {
               const row = metricRows.get(s.symbol);
               return (
                 <tr

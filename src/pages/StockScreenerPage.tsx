@@ -55,6 +55,8 @@ const MAX_COMPARE = 4;
 // what search engines read of one file. The browser renders the full list, and
 // every stock page is in the sitemap.
 const PRERENDER_ROWS = 120;
+/** Rows drawn at a time: with the end-of-day stocks the screener holds ~2,300. */
+const PAGE_ROWS = 200;
 
 const THEMATIC_BASKETS = [
   { id: "banking", name: "Banking & Finance", desc: "Top private & PSU banks", icon: Landmark, filter: (s: ScreenerStock) => s.sector === "Banking" || s.sector === "NBFC" || s.sector === "Insurance" },
@@ -223,7 +225,7 @@ const MarketSnapshot = () => {
 
 const StockScreenerPage = () => {
   const { t } = useT();
-  const { stocks, loading, refreshing: bgRefreshing, updatedAt, error, refresh } = useScreenerStocks();
+  const { stocks, loading, refreshing: bgRefreshing, updatedAt, error, refresh } = useScreenerStocks({ includeEod: true });
   const { summaries } = useFundamentalsSummaries();
   const { summaries: riskSummaries } = useRiskSummaries();
   const { summaries: scoreSummaries } = useScoreSummaries();
@@ -350,6 +352,9 @@ const StockScreenerPage = () => {
   }, [rules, parsedQuery]);
 
   const sectors = useMemo(() => [...new Set(stocks.map(s => s.sector))].sort(), [stocks]);
+  const [visibleRows, setVisibleRows] = useState(PAGE_ROWS);
+  // Back to the first page when the screen changes - not on the 5-minute price refresh.
+  useEffect(() => setVisibleRows(PAGE_ROWS), [search, sector, peRange, capRange, indexFilter, moveFilter, activeBasket, activeScans, rules, query, sortKey, sortDir, viewMode]);
 
   const analyseSymbol = (symbol: string) => setAnalyzingStock(stocks.find((x) => x.symbol === symbol) ?? null);
   const filtered = useMemo(() => {
@@ -385,6 +390,8 @@ const StockScreenerPage = () => {
     });
     return list;
   }, [stocks, search, sector, peRange, capRange, indexFilter, moveFilter, membership.data, sortKey, sortDir, activeBasket, activeScans, rules, parsedQuery, metricRows]);
+  const rowLimit = isPrerender() ? PRERENDER_ROWS : visibleRows;
+  const shown = filtered.slice(0, rowLimit);
 
   const toggleSort = (key: SortKey) => {
     if (sortKey === key) setSortDir(d => d === "asc" ? "desc" : "asc");
@@ -644,10 +651,10 @@ const StockScreenerPage = () => {
                   </Suspense>
                 </motion.div>
               ) : viewMode === "fundamentals" ? (
-                <FundamentalsTable rows={filtered} summaries={summaries} onOpen={(symbol) => navigate(`/stock/${encodeURIComponent(symbol)}`)} onAnalyse={analyseSymbol} />
+                <FundamentalsTable rows={filtered} limit={rowLimit} summaries={summaries} onOpen={(symbol) => navigate(`/stock/${encodeURIComponent(symbol)}`)} onAnalyse={analyseSymbol} />
               ) : viewMode === "technicals" ? (
                 <MetricTable
-                  rows={filtered}
+                  rows={filtered} limit={rowLimit}
                   metricRows={metricRows}
                   columns={TECHNICAL_COLUMNS}
                   note="Indicators computed daily from each stock's own split-adjusted bars. Readings describe where an indicator sits, not what to do."
@@ -655,7 +662,7 @@ const StockScreenerPage = () => {
                 />
               ) : viewMode === "scores" ? (
                 <MetricTable
-                  rows={filtered}
+                  rows={filtered} limit={rowLimit}
                   metricRows={metricRows}
                   columns={SCORE_COLUMNS}
                   note="Factor scores are percentiles (0-100) among the tracked stocks and move as the others do. Magic Formula excludes financials. Piotroski shows passed/testable."
@@ -663,14 +670,14 @@ const StockScreenerPage = () => {
                 />
               ) : viewMode === "custom" ? (
                 <MetricTable
-                  rows={filtered}
+                  rows={filtered} limit={rowLimit}
                   metricRows={metricRows}
                   columns={customColumns}
                   note={rules.length > 0 ? "Columns follow the metrics in your custom screen." : "Add a rule below to screen on any metric; its column appears here."}
                   onOpen={(symbol) => navigate(`/stock/${encodeURIComponent(symbol)}`)} onAnalyse={analyseSymbol}
                 />
               ) : viewMode === "risk" ? (
-                <RiskTable rows={filtered} summaries={riskSummaries} onOpen={(symbol) => navigate(`/stock/${encodeURIComponent(symbol)}`)} onAnalyse={analyseSymbol} />
+                <RiskTable rows={filtered} limit={rowLimit} summaries={riskSummaries} onOpen={(symbol) => navigate(`/stock/${encodeURIComponent(symbol)}`)} onAnalyse={analyseSymbol} />
               ) : viewMode === "heatmap" ? (
                 <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} className="min-h-[50vh]">
                   <StockHeatmap stocks={filtered} maxItems={150} />
@@ -696,7 +703,7 @@ const StockScreenerPage = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {(isPrerender() ? filtered.slice(0, PRERENDER_ROWS) : filtered).map((s, i) => {
+                    {shown.map((s, i) => {
                       const range = s.high_52 - s.low_52;
                       const pct52 = range > 0 ? ((s.price - s.low_52) / range) * 100 : 50;
                       return (
@@ -721,7 +728,10 @@ const StockScreenerPage = () => {
                             </Link>
                             </div>
                           </td>
-                          <td className="px-4 py-3 text-right font-medium text-foreground">₹{s.price.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                          <td className="px-4 py-3 text-right font-medium text-foreground">
+                            ₹{s.price.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            {s.eod && <span className="ml-1 align-middle text-[10px] font-semibold text-muted-foreground" title="Last NSE close (end of day)">EOD</span>}
+                          </td>
                           <td className="px-4 py-3 text-right">
                             <span className={`inline-flex items-center gap-1 font-medium ${s.change_pct >= 0 ? "text-secondary" : "text-destructive"}`}>
                               {s.change_pct >= 0 ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
@@ -792,9 +802,17 @@ const StockScreenerPage = () => {
               </Card>
               )}
 
+              {viewMode !== "chart" && viewMode !== "heatmap" && filtered.length > shown.length && !isPrerender() && (
+                <div className="mt-4 flex justify-center">
+                  <Button variant="outline" size="sm" onClick={() => setVisibleRows((n) => n + PAGE_ROWS)}>
+                    Show {Math.min(PAGE_ROWS, filtered.length - shown.length)} more of {filtered.length - shown.length}
+                  </Button>
+                </div>
+              )}
+
               <p className="text-xs text-muted-foreground mt-4 text-center">
                 Prices may be delayed up to 15 minutes and refresh every 5. Fundamentals from company filings, rebuilt daily.
-                Delivery % from NSE's end-of-day bhavcopy.
+                Delivery % from NSE's end-of-day bhavcopy. Stocks marked EOD are outside the live universe and show their last NSE close.
               </p>
             </motion.div>
           )}

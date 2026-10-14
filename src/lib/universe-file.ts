@@ -27,7 +27,34 @@ export const UNIVERSE_SOURCES = {
 } as const;
 
 export type UniversePart = keyof typeof UNIVERSE_SOURCES;
-export type UniverseFile = { generated_at: string } & Record<UniversePart, Record<string, unknown>[]>;
+
+/**
+ * An NSE stock outside the screener's live universe, at its last close: the
+ * end-of-day close and 52-week range from the bhavcopy, market cap and P/E from
+ * stock_lite_metrics. Written only by the host job; the live table reads have
+ * no equivalent, so a stale file simply leaves these out.
+ */
+export type LiteQuote = {
+  symbol: string;
+  name: string;
+  close: number;
+  prev_close: number | null;
+  change_pct: number | null;
+  volume: number | null;
+  high_52: number | null;
+  low_52: number | null;
+  market_cap_cr: number | null;
+  pe: number | null;
+  trade_date: string;
+};
+
+/** Read by the lite join, apart from the four table parts. */
+export const LITE_SOURCE = {
+  metrics: { table: "stock_lite_metrics", select: "symbol,series,close,prev_close,change_pct,volume,high_52,low_52,market_cap_cr,pe,trade_date" },
+  names: { table: "nse_securities", select: "symbol,name,series" },
+} as const;
+
+export type UniverseFile = { generated_at: string; lite?: LiteQuote[] } & Record<UniversePart, Record<string, unknown>[]>;
 
 export const UNIVERSE_FILE_URL = "/data/screener-universe.json";
 /** Older than this and the job has stopped; read the tables instead. */

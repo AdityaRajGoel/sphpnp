@@ -15,6 +15,8 @@ import {
 
 type Props = {
   rows: ScreenerStock[];
+  /** Rows drawn, after this table's own sort: the screener pages long lists. */
+  limit?: number;
   summaries: Map<string, FundamentalsSummary>;
   /** Opens a stock's page; a click anywhere on its row except the name link. */
   onOpen?: (symbol: string) => void;
@@ -26,7 +28,7 @@ const quarterLabel = (iso: string | null) =>
   iso ? new Date(`${iso}T00:00:00Z`).toLocaleDateString("en-IN", { month: "short", year: "numeric", timeZone: "UTC" }) : "—";
 
 /** The screener's fundamentals view: returns, margins, growth, leverage and valuation per stock. */
-export default function FundamentalsTable({ rows, summaries, onOpen, onAnalyse }: Props) {
+export default function FundamentalsTable({ rows, limit, summaries, onOpen, onAnalyse }: Props) {
   const [sortKey, setSortKey] = useState<FundamentalsKey | null>(null);
   const [dir, setDir] = useState<"asc" | "desc">("desc");
 
@@ -68,7 +70,7 @@ export default function FundamentalsTable({ rows, summaries, onOpen, onAnalyse }
             </tr>
           </thead>
           <tbody>
-            {sorted.map((s) => {
+            {(limit === undefined ? sorted : sorted.slice(0, limit)).map((s) => {
               const f = summaries.get(s.symbol);
               return (
                 <tr key={s.symbol} onClick={(e) => { if (!(e.target as HTMLElement).closest("a, button")) onOpen?.(s.symbol); }} title={`Open ${s.name}`} className={`border-b border-border/50 hover:bg-muted/40 transition-colors ${onOpen ? "cursor-pointer" : ""}`}>

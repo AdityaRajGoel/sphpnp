@@ -1,8 +1,8 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { isTradingDay } from "@/lib/market-holidays";
 import { isPrerender } from "@/lib/prerender";
-import { fetchUniverseFile } from "@/lib/universe-file";
+import { fetchUniverseFile, type LiteQuote } from "@/lib/universe-file";
 import { readUniverseTable } from "@/lib/universe-table";
 
 export type ScreenerStock = {
@@ -22,7 +22,27 @@ export type ScreenerStock = {
   open_price: number;
   prev_close: number;
   updated_at: string;
+  /** An NSE stock outside the live universe, at its last close (see LiteQuote). */
+  eod?: boolean;
 };
+
+/** A lite row as a screener row, timed at that day's 15:30 IST close. */
+export function liteStock(q: LiteQuote): ScreenerStock {
+  const prev = q.prev_close ?? 0;
+  return {
+    symbol: q.symbol, name: q.name, sector: "General",
+    price: q.close, change: prev ? q.close - prev : 0, change_pct: q.change_pct ?? 0,
+    market_cap: q.market_cap_cr ?? 0, pe: q.pe ?? 0, high_52: q.high_52 ?? 0, low_52: q.low_52 ?? 0,
+    volume: q.volume ?? 0, day_high: 0, day_low: 0, open_price: 0, prev_close: prev,
+    updated_at: `${q.trade_date}T10:00:00Z`, eod: true,
+  };
+}
+
+/** The live rows, then every lite row the live universe does not already hold. */
+export function withLite(live: ScreenerStock[], lite: ScreenerStock[]): ScreenerStock[] {
+  const have = new Set(live.map((s) => s.symbol));
+  return [...live, ...lite.filter((s) => !have.has(s.symbol))];
+}
 
 const WEEK_MS = 7 * 86_400_000;
 
@@ -66,12 +86,15 @@ export function currentStocks(stocks: ScreenerStock[]): ScreenerStock[] {
 /** The static file's quotes paint the table only while this fresh; the live refresh follows either way. */
 const FILE_FOR_QUOTES_MS = 15 * 60_000;
 
-export function useScreenerStocks() {
+/** `includeEod` adds the end-of-day rows (the screener); heatmaps and trackers keep the live universe. */
+export function useScreenerStocks({ includeEod = false }: { includeEod?: boolean } = {}) {
   const [stocks, setStocks] = useState<ScreenerStock[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [updatedAt, setUpdatedAt] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // The end-of-day rows from the universe file, kept across live refreshes.
+  const lite = useRef<ScreenerStock[]>([]);
 
   const mapStock = useCallback((s: { symbol: string; name: string; sector?: string; yahoo?: string; updated_at: string } & Record<string, unknown>): ScreenerStock => ({
     symbol: s.symbol,
@@ -102,6 +125,7 @@ export function useScreenerStocks() {
       if (!refresh) {
         // The static universe file when it is recent enough to stand in for the table read.
         const file = await fetchUniverseFile();
+        if (includeEod && file?.lite) lite.current = file.lite.map(liteStock);
         const recent = file && Date.now() - Date.parse(file.generated_at) < FILE_FOR_QUOTES_MS;
         const cached = recent
           ? ([...file.quotes] as Parameters<typeof mapStock>[0][]).sort((a, b) => Number(b.market_cap) - Number(a.market_cap))
@@ -109,7 +133,7 @@ export function useScreenerStocks() {
 
         const freshest = cached?.reduce((max, row) => (row.updated_at > max ? row.updated_at : max), "") ?? "";
         if (cached && cached.length > 0 && snapshotIsShowable(freshest)) {
-          setStocks(currentStocks(cached.map(mapStock)));
+          setStocks(currentStocks(withLite(cached.map(mapStock), lite.current)));
           setUpdatedAt(freshest || null);
           setLoading(false); // Show the table now - the snapshot is current enough to be true.
         }
@@ -129,7 +153,7 @@ export function useScreenerStocks() {
       if (fnError) throw fnError;
 
       if (data?.success && data.stocks?.length > 0) {
-        setStocks(currentStocks(data.stocks.map(mapStock)));
+        setStocks(currentStocks(withLite(data.stocks.map(mapStock), lite.current)));
         setUpdatedAt(data.updated_at);
       }
     } catch (e) {
@@ -139,7 +163,7 @@ export function useScreenerStocks() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [mapStock]);
+  }, [mapStock, includeEod]);
 
   useEffect(() => {
     fetchStocks();
