@@ -35,6 +35,9 @@ const INDUSTRY_SECTOR: Record<string, string> = {
   "Services": "Infra",
   "Telecommunication": "Telecom",
   "Textiles": "Consumer",
+  // Water treatment and utility engineering (Va Tech Wabag, Ion Exchange): no hand-picked
+  // precedent, and "Diversified" made them peers of paint and aviation (Oct 2026).
+  "Utilities": "Infra",
 };
 
 /** NSE files banks, insurers and lenders alike under "Financial Services"; the name tells them apart. */

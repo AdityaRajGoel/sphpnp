@@ -17,6 +17,7 @@ describe("sectorFor", () => {
     expect(sectorFor("Information Technology", "Mphasis Ltd.")).toBe("IT");
     expect(sectorFor("Power", "JSW Energy Ltd.")).toBe("Energy");
     expect(sectorFor("Realty", "Oberoi Realty Ltd.")).toBe("Infra");
+    expect(sectorFor("Utilities", "Va Tech Wabag Ltd.")).toBe("Infra");
     expect(sectorFor("Something New", "X Ltd.")).toBe("Diversified");
     expect(sectorFor(null, "X Ltd.")).toBe("Diversified");
   });
