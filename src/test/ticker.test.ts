@@ -145,4 +145,13 @@ describe("globalItems", () => {
     ]);
     expect(items).toEqual([{ kind: "global", tag: "GLOBAL", text: "S&P 500 7,676 +1.0%", href: "/market-pulse#global", tone: "up", external: false }]);
   });
+  it("names the currency of dollar and rupee series", () => {
+    const text = globalItems([
+      { ticker: "XAUUSD.FOREX", name: "Gold (per oz)", trade_date: "2026-10-14", close: 4171.95, unit: "dollars" },
+      { ticker: "XAUUSD.FOREX", name: "Gold (per oz)", trade_date: "2026-10-15", close: 4155.27, unit: "dollars" },
+      { ticker: "USDINR.FOREX", name: "USD / INR", trade_date: "2026-10-14", close: 95.77, unit: "rupees" },
+      { ticker: "USDINR.FOREX", name: "USD / INR", trade_date: "2026-10-15", close: 95.29, unit: "rupees" },
+    ]).map((i) => i.text);
+    expect(text).toEqual(["Gold (per oz) $4,155.27 -0.4%", "USD / INR ₹95.29 -0.5%"]);
+  });
 });

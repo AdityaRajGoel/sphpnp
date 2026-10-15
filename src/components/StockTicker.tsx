@@ -79,7 +79,11 @@ const TickerRow = ({ items, direction = "left", bgClass = "bg-brand-charcoal", t
       <div className="absolute left-0 top-0 bottom-0 w-16 z-10 pointer-events-none bg-gradient-to-r from-[#1a1f2e] dark:from-[hsl(220,20%,10%)] to-transparent" />
       <div className="absolute right-0 top-0 bottom-0 w-16 z-10 pointer-events-none bg-gradient-to-l from-[#1a1f2e] dark:from-[hsl(220,20%,10%)] to-transparent" />
 
+      {/* autoFill repeats the items until one copy spans the row: without it each copy
+          is stretched to the row's width, and the 10 commodities (2,288px) left a blank
+          stretch before GOLD on any screen wider than that (272px at 2560, 1,152px at 3440). */}
       <Marquee
+        autoFill
         speed={100}
         gradient={false}
         pauseOnHover={true}

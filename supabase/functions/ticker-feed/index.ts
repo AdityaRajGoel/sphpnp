@@ -56,8 +56,11 @@ Deno.serve(async (req) => {
 
   const today = istDate();
   // The markets a trader checks first; the rest are on Market Pulse.
-  const TICKER_GLOBALS = ["GSPC.INDX", "IXIC.INDX", "N225.INDX", "HSI.INDX", "USDINR.FOREX", "XAUUSD.FOREX", "BNO.US", "BTC-USD.CC"];
+  // No Brent ETF (BNO.US): its $65 price read as the oil price, and the price ticker
+  // already carries MCX crude in rupees.
+  const TICKER_GLOBALS = ["GSPC.INDX", "IXIC.INDX", "N225.INDX", "HSI.INDX", "USDINR.FOREX", "XAUUSD.FOREX", "BTC-USD.CC"];
   const nameOf = new Map(GLOBAL_TICKERS.map((t) => [t.ticker, t.name]));
+  const unitOf = new Map(GLOBAL_TICKERS.map((t) => [t.ticker, t.unit]));
   const [ipoRes, stockRes, actionRes, annRes, news, globalRes] = await Promise.all([
     supabase.from("ipos")
       .select("id,slug,name,status,open_date,close_date,listing_date,price_band_min,price_band_max,subscription_total,listing_gain_pct")
@@ -69,7 +72,7 @@ Deno.serve(async (req) => {
     marketNews().catch((e: Error) => { console.error("ticker news", e.message); return [] as TickerItem[]; }),
     supabase.from("global_markets_daily").select("ticker,trade_date,close").in("ticker", TICKER_GLOBALS).gte("trade_date", addDays(today, -10)).order("trade_date"),
   ]);
-  const globals = globalItems((globalRes.data ?? []).map((b) => ({ ticker: b.ticker as string, name: nameOf.get(b.ticker as string) ?? (b.ticker as string), trade_date: b.trade_date as string, close: Number(b.close) })));
+  const globals = globalItems((globalRes.data ?? []).map((b) => ({ ticker: b.ticker as string, name: nameOf.get(b.ticker as string) ?? (b.ticker as string), trade_date: b.trade_date as string, close: Number(b.close), unit: unitOf.get(b.ticker as string) })));
   const failed = [ipoRes, stockRes, actionRes, annRes].find((r) => r.error);
   if (failed?.error) {
     if (cached) return json({ ...cached, cached: true, stale: true });
