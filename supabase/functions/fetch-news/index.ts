@@ -1,4 +1,5 @@
 import { hasFeedItems, parseFeedDate } from "../_shared/rss.ts";
+import { decodeEntities } from "../_shared/html-entities.ts";
 import { FINNHUB_NEWS_URL, parseFinnhubNews } from "../_shared/finnhub.ts";
 
 const corsHeaders = {
@@ -96,7 +97,8 @@ async function fetchRss(url: string, sourceName: string, defaultCategory: string
       const rawUrl = linkMatch ? linkMatch[1].trim() : "";
       const url = /^https?:\/\//i.test(rawUrl) ? rawUrl : "";
 
-      const title = titleMatch ? stripTags(titleMatch[1]).trim() : "Market Update";
+      // Titles arrive entity-encoded too ("L&amp;T Tech"); they render as React text, so decoding is safe.
+      const title = titleMatch ? decodeEntities(stripTags(titleMatch[1])).trim() : "Market Update";
       let summary = descMatch ? descMatch[1] : "Click to read more details about this market event.";
 
       // Decode basic HTML entities before stripping tags, so an entity-encoded
