@@ -2,7 +2,7 @@
 //
 //   POST { dataset: "index_valuation" | "participant_oi" | "option_chain" | "fo_bhavcopy" | "eq_eod"
 //          | "pledges" | "deals" | "nse_ipos" | "fpi" | "fpi_sectors" | "week52" | "movers"
-//          | "constituents" | "securities" | "surveillance" | "lot_sizes" | "calendar"
+//          | "constituents" | "securities" | "surveillance" | "mwpl" | "oi_spurts" | "lot_sizes" | "calendar"
 //          | "macro_ingest", backfill?: true, rows?: [...] }
 //
 // A daily call takes the latest file; `backfill` walks back through dates from
@@ -22,7 +22,7 @@ import { canonicalIpoKey, ipoAliases } from "../_shared/ipo-parse.ts";
 import { symbolResolver } from "../_shared/ticker.ts";
 import {
   ddmmyyyy, isoDate, parseAsm, parseBseBhavcopy, parseConstituents, parseDeals, parseFoBan, parseGsm, parseIndexCloseAll,
-  parseLotSizes, parseMovers, parseNseBhavdataFull, parseNseIpos, parseParticipantOi, parsePledges, parseWeek52,
+  parseCombineOi, parseLotSizes, parseMovers, parseOiSpurts, parseNseBhavdataFull, parseNseIpos, parseParticipantOi, parsePledges, parseWeek52,
   parseBandHitters, parseBreadth, parseMarketStatus, parsePreOpen, parseVariations, parseWeek52Live,
   weekdaysBack, yyyymmdd, type DealKind,
 } from "../_shared/market-files.ts";
@@ -396,6 +396,32 @@ async function run(ctx: Ctx, dataset: string, body: Record<string, unknown>): Pr
       if (flags.length === 0) return { rows: 0, note: "nothing listed - kept the previous flags" };
       await sb.from("surveillance_flags").delete().neq("symbol", "");
       return { rows: await upsert(sb, "surveillance_flags", flags, "symbol,flag"), ban: ban.length, asm: asm.length, gsm: gsm.length };
+    }
+    case "mwpl": {
+      // Combined OI against the market-wide position limit, published each evening
+      // for that trade date. The ban list says who is in; this says who is close.
+      for (const date of weekdaysBack(today, 6)) {
+        try {
+          const rows = parseCombineOi(await unzipFirstFile(await fetchBytes(`${ARCHIVE}/archives/nsccl/mwpl/combineoi_${ddmmyyyy(date)}.zip`)));
+          if (rows.length === 0) continue;
+          const asOf = rows[0].as_of;
+          const written = await upsert(sb, "fo_mwpl", rows.map((r) => ({ ...r, updated_at: new Date().toISOString() })), "symbol");
+          // Stocks that left the F&O segment drop out rather than showing a stale figure.
+          await sb.from("fo_mwpl").delete().lt("as_of", asOf);
+          return { date: asOf, rows: written, in_ban: rows.filter((r) => /no fresh/i.test(r.limit_next_day ?? "")).length, above_80: rows.filter((r) => r.utilisation_pct >= 80).length };
+        } catch (e) {
+          if (!(e instanceof NotFound) && !/not a zip/.test((e as Error).message)) throw e;
+        }
+        await sleep(500);
+      }
+      return { rows: 0, note: "no combined OI file in the last week - kept the previous figures" };
+    }
+    case "oi_spurts": {
+      const rows = parseOiSpurts(await fetchJson("https://www.nseindia.com/api/live-analysis-oi-spurts-underlyings"));
+      if (rows.length === 0) return { rows: 0, note: "empty report - kept the previous figures" };
+      const written = await upsert(sb, "fo_oi_spurts", rows.map((r) => ({ ...r, updated_at: new Date().toISOString() })), "symbol");
+      await sb.from("fo_oi_spurts").delete().lt("trade_date", rows[0].trade_date);
+      return { date: rows[0].trade_date, rows: written };
     }
     case "lot_sizes": {
       const rows = parseLotSizes(await fetchText(`${ARCHIVE}/content/fo/fo_mktlots.csv`)).map((r) => ({ ...r, as_of: today }));

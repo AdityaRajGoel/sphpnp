@@ -1,0 +1,72 @@
+{
+ "data": [
+  {
+   "symbol": "UJJIVANSFB",
+   "latestOI": 13022,
+   "prevOI": 10170,
+   "changeInOI": 2852,
+   "avgInOI": 28.04,
+   "volume": 43462,
+   "futValue": 48391.048,
+   "optValue": 18394328560,
+   "total": 52137.2136,
+   "premValue": 3746.1656,
+   "underlyingValue": 63
+  },
+  {
+   "symbol": "ANGELONE",
+   "latestOI": 44437,
+   "prevOI": 34740,
+   "changeInOI": 9697,
+   "avgInOI": 27.91,
+   "volume": 115195,
+   "futValue": 92835.0545,
+   "optValue": 81496004650,
+   "total": 105739.726,
+   "premValue": 12904.6715,
+   "underlyingValue": 300
+  },
+  {
+   "symbol": "TECHM",
+   "latestOI": 85839,
+   "prevOI": 68837,
+   "changeInOI": 17002,
+   "avgInOI": 24.7,
+   "volume": 442762,
+   "futValue": 242328.43518,
+   "optValue": 443065642926,
+   "total": 310066.50444,
+   "premValue": 67738.06926,
+   "underlyingValue": 1790
+  },
+  {
+   "symbol": "MFSL",
+   "latestOI": 28680,
+   "prevOI": 28683,
+   "changeInOI": -3,
+   "avgInOI": -0.01,
+   "volume": 12172,
+   "futValue": 9793.8678,
+   "optValue": 5499692980,
+   "total": 10513.5976,
+   "premValue": 719.7298,
+   "underlyingValue": 1294
+  },
+  {
+   "symbol": "SOLARINDS",
+   "latestOI": 38096,
+   "prevOI": 38106,
+   "changeInOI": -10,
+   "avgInOI": -0.03,
+   "volume": 26571,
+   "futValue": 17161.09203,
+   "optValue": 26253115793,
+   "total": 19983.62496,
+   "premValue": 2822.53293,
+   "underlyingValue": 20011
+  }
+ ],
+ "timestamp": "16-Oct-2026 15:40:13",
+ "currTradingDate": "16-Oct-2026",
+ "prevTradingDate": "15-Oct-2026"
+}

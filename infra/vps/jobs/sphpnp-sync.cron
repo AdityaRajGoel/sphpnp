@@ -16,6 +16,8 @@ J=/opt/sphpnp/jobs/sync.sh
 50 8  * * 1-5   deploy flock -n /tmp/sync-movers.lock $J once sync-market-data '{"dataset":"movers"}' 170
 */15 9-15 * * 1-5 deploy flock -n /tmp/sync-movers.lock $J once sync-market-data '{"dataset":"movers"}' 170
 15 16 * * 1-5   deploy flock -n /tmp/sync-movers.lock $J once sync-market-data '{"dataset":"movers"}' 170
+# OI spurts are a live NSE report: every 15 minutes in market hours, plus the 19:00 market-data pass for the close.
+*/15 9-15 * * 1-5 deploy flock -n /tmp/sync-oi-spurts.lock $J once sync-market-data '{"dataset":"oi_spurts"}' 120
 30 19 * * 1-5   deploy flock -n /tmp/sync-bhavcopy.lock $J once sync-bhavcopy '{}' 180
 30 21 * * 1-5   deploy flock -n /tmp/sync-bhavcopy.lock $J once sync-bhavcopy '{}' 180
 45 18 * * 1-5   deploy flock -n /tmp/sync-market-feed.lock $J once sync-market-feed '{}' 120

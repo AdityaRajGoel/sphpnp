@@ -530,6 +530,64 @@ export function parseGsm(raw: unknown): SurveillanceFlag[] {
 // ---------------------------------------------------------------------------
 
 /** DDMMYYYY, as NSE archive file names spell a date. */
+// ---------------------------------------------------------------------------
+// Position limits: combined OI against MWPL, and OI spurts
+// ---------------------------------------------------------------------------
+
+export type MwplRow = {
+  symbol: string; isin: string | null; name: string | null;
+  mwpl: number; open_interest: number; fut_equiv_oi: number;
+  limit_next_day: string | null; utilisation_pct: number; as_of: string;
+};
+
+/**
+ * nsccl/mwpl/combineoi_<DDMMYYYY>.csv: "Date, ISIN, Scrip Name, NSE Symbol, MWPL,
+ * Open Interest, Future Equivalent Open Interest, Limit for Next Day". The ban
+ * test is future-equivalent OI against MWPL (above 95% in, below 80% out), so
+ * that is the utilisation shown - not raw OI, which counts options at full size.
+ */
+export function parseCombineOi(csv: string): MwplRow[] {
+  return records(csv, (c) => c.some((x) => /NSE Symbol/i.test(x))).flatMap((r) => {
+    const symbol = str(r["NSE Symbol"]);
+    const mwpl = num(r["MWPL"]);
+    const oi = num(r["Open Interest"]);
+    const feoi = num(r["Future Equivalent Open Interest"]);
+    const as_of = isoDate(r["Date"]);
+    if (!symbol || !mwpl || oi === null || feoi === null || !as_of) return [];
+    return [{
+      symbol, isin: str(r["ISIN"]), name: str(r["Scrip Name"]),
+      mwpl, open_interest: oi, fut_equiv_oi: feoi,
+      limit_next_day: str(r["Limit for Next Day"]),
+      utilisation_pct: Math.round((feoi / mwpl) * 10000) / 100,
+      as_of,
+    }];
+  });
+}
+
+export type OiSpurt = {
+  symbol: string; latest_oi: number; prev_oi: number; change_oi: number;
+  change_pct: number | null; volume: number | null; underlying: number | null; trade_date: string;
+};
+
+/** /api/live-analysis-oi-spurts-underlyings: { data: [{ symbol, latestOI, prevOI, changeInOI, avgInOI, volume, underlyingValue }], currTradingDate }. */
+export function parseOiSpurts(raw: unknown): OiSpurt[] {
+  const d = isRecord(raw) ? raw : {};
+  const trade_date = isoDate(d.currTradingDate);
+  if (!trade_date) return [];
+  return jsonRows(d.data).flatMap((r) => {
+    const symbol = str(r.symbol);
+    const latest = num(r.latestOI);
+    const prev = num(r.prevOI);
+    if (!symbol || latest === null || prev === null) return [];
+    // avgInOI is NSE's percentage change; recomputed when it is missing.
+    const pct = num(r.avgInOI) ?? (prev ? Math.round(((latest - prev) / prev) * 10000) / 100 : null);
+    return [{
+      symbol, latest_oi: latest, prev_oi: prev, change_oi: num(r.changeInOI) ?? latest - prev,
+      change_pct: pct, volume: num(r.volume), underlying: num(r.underlyingValue), trade_date,
+    }];
+  });
+}
+
 export const ddmmyyyy = (iso: string) => `${iso.slice(8, 10)}${iso.slice(5, 7)}${iso.slice(0, 4)}`;
 /** YYYYMMDD, as BSE's file names spell it. */
 export const yyyymmdd = (iso: string) => iso.replace(/-/g, "");

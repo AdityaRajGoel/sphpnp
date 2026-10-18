@@ -19,6 +19,7 @@ import PageTransition from "@/components/PageTransition";
 import PageHeader from "@/components/PageHeader";
 import { EASE_IN_OUT } from "@/lib/motion";
 import DerivativesSection from "@/components/markets/DerivativesSection";
+import PositionLimitsSection from "@/components/markets/PositionLimitsSection";
 
 /** Contracts in Indian units, one system across the page: 85,432 · 2.4 L · 1.2 Cr. */
 const fmtOI = (n: number) => (n >= 1e7 ? `${(n / 1e7).toFixed(2)} Cr` : n >= 1e5 ? `${(n / 1e5).toFixed(1)} L` : Math.round(n).toLocaleString("en-IN"));
@@ -536,6 +537,11 @@ const FnODashboardPage = () => {
             every F&O stock. Shared with Market Pulse. */}
         <div className="mt-12">
           <DerivativesSection />
+        </div>
+
+        {/* Nearing the ban (combined OI against MWPL) and the day's largest OI moves. */}
+        <div className="mt-12">
+          <PositionLimitsSection />
         </div>
 
         {/* SEBI risk transparency - serious-broker pattern (ref: SEBI study, Jan 2023) */}

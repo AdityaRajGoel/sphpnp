@@ -168,6 +168,24 @@ export async function recentDeals(limit = 200): Promise<Deal[]> {
   return rows<Deal>(table("deal_history").select("deal_key,trade_date,kind,symbol,company,client,side,quantity,price").order("trade_date", { ascending: false }).limit(limit));
 }
 
+export type MwplRow = { symbol: string; name: string | null; utilisation_pct: number; limit_next_day: string | null; as_of: string };
+export type OiSpurtRow = { symbol: string; latest_oi: number; prev_oi: number; change_oi: number; change_pct: number | null; underlying: number | null; trade_date: string };
+
+/** F&O stocks by how much of the market-wide position limit their open interest uses (fo_mwpl). */
+export async function mwplUtilisation(limit = 30): Promise<MwplRow[]> {
+  return rows<MwplRow>(table("fo_mwpl").select("symbol,name,utilisation_pct,limit_next_day,as_of").order("utilisation_pct", { ascending: false }).limit(limit));
+}
+
+/** Every underlying in NSE's OI-spurts report (fo_oi_spurts), ~220 rows. */
+export async function oiSpurts(): Promise<OiSpurtRow[]> {
+  return rows<OiSpurtRow>(table("fo_oi_spurts").select("symbol,latest_oi,prev_oi,change_oi,change_pct,underlying,trade_date").order("change_pct", { ascending: false }));
+}
+
+/** A stock is in the ban while NSE allows "No Fresh Positions"; it entered above 95% and leaves below 80%. */
+export const MWPL_BAN_ENTRY = 95;
+export const MWPL_BAN_EXIT = 80;
+export const isInBan = (r: Pick<MwplRow, "limit_next_day">) => /no fresh/i.test(r.limit_next_day ?? "");
+
 export async function surveillanceFlags(): Promise<SurveillanceFlag[]> {
   return rows<SurveillanceFlag>(table("surveillance_flags").select("*").order("symbol"));
 }

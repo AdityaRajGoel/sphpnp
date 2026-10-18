@@ -68,7 +68,7 @@ case "$mode" in
 
   market-data)
     failed=0
-    for ds in index_valuation participant_oi option_chain fo_bhavcopy eq_eod pledges deals nse_ipos fpi fpi_sectors week52 movers constituents surveillance lot_sizes calendar; do
+    for ds in index_valuation participant_oi option_chain fo_bhavcopy eq_eod pledges deals nse_ipos fpi fpi_sectors week52 movers constituents surveillance mwpl oi_spurts lot_sizes calendar; do
       call sync-market-data "{\"dataset\":\"$ds\"}" 170
       log "sync-market-data $ds ($CODE): $BODY"
       [ "$CODE" = "200" ] || failed=$((failed + 1))
