@@ -583,3 +583,23 @@ input[type="range"]::-moz-range-thumb {
   }
   :root :is(.overflow-auto, .overflow-x-auto) table :is(th, td):first-child { padding-left: 0.75rem; }
 }
+
+/*
+ * Scroll cue for every horizontally scrolling table: a soft shadow shows at
+ * whichever edge still has columns hidden, and disappears once that edge is
+ * reached (the local "covers" scroll with the content and hide the shadows).
+ * One rule for all ~45 table wrappers rather than a class on each. The covers
+ * use the card colour, which is what these wrappers sit on.
+ */
+/* Outside @layer: Tailwind would otherwise treat .overflow-x-auto here as a component class. */
+:is(.overflow-x-auto, .overflow-auto):has(> table) {
+  background-image:
+      linear-gradient(to right, hsl(var(--card)) 30%, hsl(var(--card) / 0)),
+      linear-gradient(to left, hsl(var(--card)) 30%, hsl(var(--card) / 0)),
+      radial-gradient(farthest-side at 0 50%, hsl(var(--foreground) / 0.14), transparent),
+      radial-gradient(farthest-side at 100% 50%, hsl(var(--foreground) / 0.14), transparent);
+  background-position: 0 0, 100% 0, 0 0, 100% 0;
+  background-size: 40px 100%, 40px 100%, 14px 100%, 14px 100%;
+  background-repeat: no-repeat;
+  background-attachment: local, local, scroll, scroll;
+}

@@ -16,9 +16,10 @@ export default {
     container: {
       center: true,
       padding: "2rem",
+      // Stops at 2xl: a 1920px step made pages edge-to-edge on large monitors,
+      // putting a stock's name and its price 1,800px apart.
       screens: {
         "2xl": "1536px",
-        "3xl": "1920px",
       },
     },
     extend: {

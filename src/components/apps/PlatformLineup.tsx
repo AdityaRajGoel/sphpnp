@@ -33,7 +33,7 @@ const Ext = ({ href, children }: { href: string; children: ReactNode }) => (
 const PlatformLineup = () => {
   const { t } = useT();
   return (
-    <div className="grid gap-6 lg:grid-cols-2">
+    <div className="grid gap-6 lg:grid-cols-2 [&>*]:min-w-0">
       <article className="relative overflow-hidden rounded-3xl border-2 border-secondary/60 bg-card p-6 shadow-lg md:p-8">
         <span className="inline-flex items-center gap-1.5 rounded-full bg-secondary px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider text-secondary-foreground">
           <Sparkles className="h-3 w-3" aria-hidden /> {t("apps.platforms.new")}

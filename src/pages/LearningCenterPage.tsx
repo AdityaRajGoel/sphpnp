@@ -539,8 +539,8 @@ const LearningCenterPage = () => {
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <Input placeholder="Search articles..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
                 </div>
-                <Tabs value={category} onValueChange={setCategory}>
-                  <TabsList>
+                <Tabs value={category} onValueChange={setCategory} className="max-w-full">
+                  <TabsList className="max-w-full justify-start overflow-x-auto">
                     {CATEGORIES.map(c => (
                       <TabsTrigger key={c.key} value={c.key} className="text-xs sm:text-sm">{c.label}</TabsTrigger>
                     ))}

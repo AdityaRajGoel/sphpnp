@@ -52,9 +52,9 @@ function LongRunChart() {
   return (
     <Card className="min-w-0 p-4 sm:p-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <label className="flex items-center gap-2 text-sm">
+        <label className="flex min-w-0 max-w-full items-center gap-2 text-sm">
           <span className="text-muted-foreground">Market</span>
-          <select value={ticker} onChange={(e) => setTicker(e.target.value)} className="h-9 rounded-md border border-input bg-background px-2 text-sm font-medium">
+          <select value={ticker} onChange={(e) => setTicker(e.target.value)} className="h-9 min-w-0 max-w-full rounded-md border border-input bg-background px-2 text-sm font-medium">
             {LONG_RUN.map((t) => <option key={t.ticker} value={t.ticker}>{t.name}</option>)}
           </select>
         </label>
@@ -111,7 +111,7 @@ function InvestAbroad() {
   return (
     <section aria-labelledby="invest-abroad" className="mt-14 scroll-mt-28" id="invest-abroad">
       <SectionHeading id="invest-abroad" title="Invest in US stocks and ETFs from India" subtitle="Through India INX Global Access in GIFT City, regulated by IFSCA. Parasram refers you; the international broker holds your account." />
-      <div className="mt-5 grid gap-5 lg:grid-cols-[1.3fr_1fr]">
+      <div className="mt-5 grid gap-5 lg:grid-cols-[1.3fr_1fr] [&>*]:min-w-0">
         <Card className="p-5">
           <ol className="space-y-4">
             {[
@@ -129,7 +129,8 @@ function InvestAbroad() {
             ))}
           </ol>
           <div className="mt-6 flex flex-wrap gap-3">
-            <Button asChild className="bg-secondary text-secondary-foreground hover:bg-secondary/90">
+            {/* Wraps on a 320px phone instead of pushing the page sideways (Button is nowrap by default). */}
+            <Button asChild className="h-auto min-h-10 whitespace-normal py-2.5 text-center bg-secondary text-secondary-foreground hover:bg-secondary/90">
               <a href={INXGA_MEMBER_PAGE} target="_blank" rel="noopener noreferrer">Open a global account with Parasram <ExternalLink className="ml-1.5 h-4 w-4" aria-hidden /></a>
             </Button>
             <Button asChild variant="outline">

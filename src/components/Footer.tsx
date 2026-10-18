@@ -353,7 +353,7 @@ const Footer = () => {
               href="https://parasramindia.com"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 text-secondary hover:underline text-sm"
+              className="inline-flex min-h-6 items-center gap-2 text-secondary hover:underline text-sm"
             >
               Visit Main Website
               <ExternalLink className="w-4 h-4" />

@@ -180,19 +180,21 @@ const GoogleReviews = () => {
               {/* Author row */}
               <div className="flex items-center gap-3 mb-4">
                 <motion.div
-                  className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center text-white font-bold text-sm overflow-hidden shrink-0"
+                  className="relative w-10 h-10 rounded-full bg-secondary flex items-center justify-center text-white font-bold text-sm overflow-hidden shrink-0"
                 >
-                  {review.photo ? (
+                  {/* The initial sits underneath; a photo that fails to load hides itself and leaves it showing. */}
+                  {review.name.charAt(0).toUpperCase()}
+                  {review.photo && (
                     <img
                       src={review.photo}
                       alt=""
                       loading="lazy"
                       width={40}
                       height={40}
-                      className="w-full h-full object-cover"
+                      referrerPolicy="no-referrer"
+                      onError={(e) => { e.currentTarget.hidden = true; }}
+                      className="absolute inset-0 w-full h-full object-cover"
                     />
-                  ) : (
-                    review.name.charAt(0).toUpperCase()
                   )}
                 </motion.div>
                 <div>

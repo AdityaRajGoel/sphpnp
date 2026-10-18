@@ -187,11 +187,11 @@ const MarginCalculatorPage = () => {
                 <div className="space-y-3">
                   <div className="flex justify-between py-2 border-b border-border/50">
                     <span className="text-sm text-muted-foreground">Trade Value</span>
-                    <span className="font-mono font-semibold">{fmt(equityMargin.totalValue)}</span>
+                    <span className="font-mono font-semibold break-all text-right">{fmt(equityMargin.totalValue)}</span>
                   </div>
                   <div className="flex justify-between py-3 bg-primary/5 rounded-lg px-3">
                     <span className="font-semibold text-foreground">Margin Required</span>
-                    <span className="font-mono font-bold text-lg text-primary">{fmt(equityMargin.required)}</span>
+                    <span className="font-mono font-bold text-lg text-primary break-all text-right">{fmt(equityMargin.required)}</span>
                   </div>
                   <div className="flex justify-between py-2">
                     <span className="text-sm text-muted-foreground">Leverage</span>

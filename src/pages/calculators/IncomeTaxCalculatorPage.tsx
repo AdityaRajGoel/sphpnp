@@ -83,7 +83,7 @@ export default function IncomeTaxCalculatorPage() {
         { question: "Which deductions does the new regime not allow?", answer: "Most old-regime deductions, including investments under section 123, health insurance under section 126, interest on a self-occupied home loan and the HRA exemption." },
       ]}
     >
-      <div className="grid gap-6 lg:grid-cols-5">
+      <div className="grid gap-6 lg:grid-cols-5 [&>*]:min-w-0">
         <Card className="space-y-4 p-5 lg:col-span-2 lg:self-start">
           <div>
             <p className="mb-1.5 text-xs font-medium text-muted-foreground">Your age during the year</p>

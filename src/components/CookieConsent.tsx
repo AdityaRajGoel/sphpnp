@@ -202,7 +202,7 @@ const CookieConsent = () => {
                   onClick={() => setShowDetails((v) => !v)}
                   aria-expanded={showDetails}
                   aria-controls={detailsId}
-                  className="mt-1.5 inline-flex items-center gap-1 rounded text-[0.8125rem] font-medium text-foreground/80 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  className="mt-1.5 inline-flex min-h-6 items-center gap-1 rounded text-[0.8125rem] font-medium text-foreground/80 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
                   {/* Deliberately avoids "accept", "allow" or "reject": this only
                       expands details and must never read as a consent control. */}

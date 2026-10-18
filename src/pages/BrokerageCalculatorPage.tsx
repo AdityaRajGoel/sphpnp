@@ -208,7 +208,7 @@ const BrokerageCalculatorPage = () => {
           ))}
         </div>
 
-        <div className="grid lg:grid-cols-5 gap-6">
+        <div className="grid lg:grid-cols-5 gap-6 [&>*]:min-w-0">
           {/* Inputs */}
           <div className="lg:col-span-2">
             <Card className="p-6 space-y-5 border-border/60 bg-card shadow-lg">
@@ -217,7 +217,7 @@ const BrokerageCalculatorPage = () => {
                 <h2 className="font-heading font-semibold text-lg text-foreground">Trade details</h2>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-3 [&>*]:min-w-0">
                 <div>
                   <FieldLabel htmlFor="buy-price">Buy {priceWord} (₹)</FieldLabel>
                   <Input id="buy-price" type="number" inputMode="decimal" min="0.01" max={MAX_INPUT} step="0.05" value={buyPrice} onChange={(e) => setBuyPrice(e.target.value)} {...invalidProps("buy-price")} />
@@ -231,7 +231,7 @@ const BrokerageCalculatorPage = () => {
               </div>
 
               {seg.byLot ? (
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 gap-3 [&>*]:min-w-0">
                   <div>
                     <FieldLabel htmlFor="lot-size">Lot size</FieldLabel>
                     <Input id="lot-size" type="number" inputMode="numeric" min="1" max={MAX_INPUT} step="1" value={lotSize} onChange={(e) => setLotSize(e.target.value)} {...invalidProps("lot-size")} />
@@ -254,14 +254,14 @@ const BrokerageCalculatorPage = () => {
                 </div>
               )}
 
-              <div className="grid grid-cols-2 gap-3 pt-2">
+              <div className="grid grid-cols-2 gap-3 pt-2 [&>*]:min-w-0">
                 <div className="rounded-lg bg-muted/40 p-3 text-center">
                   <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">Buy value</p>
-                  <p className="font-mono text-sm font-semibold text-foreground">{fmt(charges.buyValue)}</p>
+                  <p className="font-mono text-sm font-semibold text-foreground break-all">{fmt(charges.buyValue)}</p>
                 </div>
                 <div className="rounded-lg bg-muted/40 p-3 text-center">
                   <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">Sell value</p>
-                  <p className="font-mono text-sm font-semibold text-foreground">{fmt(charges.sellValue)}</p>
+                  <p className="font-mono text-sm font-semibold text-foreground break-all">{fmt(charges.sellValue)}</p>
                 </div>
               </div>
             </Card>
@@ -353,13 +353,13 @@ const BrokerageCalculatorPage = () => {
                       <span className="text-sm text-foreground">{row.label}</span>
                       <span className="text-[11px] text-muted-foreground">{row.hint}</span>
                     </dt>
-                    <dd className="font-mono text-sm font-medium text-foreground tabular-nums">{fmt(row.value)}</dd>
+                    <dd className="min-w-0 break-all text-right font-mono text-sm font-medium text-foreground tabular-nums">{fmt(row.value)}</dd>
                   </div>
                 ))}
               </dl>
               <div className="mt-4 flex items-center justify-between bg-primary/5 rounded-xl px-4 py-3.5">
                 <span className="font-heading font-bold text-foreground">Total charges</span>
-                <span className="font-mono text-lg font-bold text-primary tabular-nums">{fmt(charges.total)}</span>
+                <span className="min-w-0 break-all text-right font-mono text-lg font-bold text-primary tabular-nums">{fmt(charges.total)}</span>
               </div>
               <dl className="mt-3 space-y-1 px-1 text-xs text-muted-foreground">
                 <div className="flex items-center justify-between">

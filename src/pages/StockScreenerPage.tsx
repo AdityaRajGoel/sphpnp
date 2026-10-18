@@ -473,22 +473,11 @@ const StockScreenerPage = () => {
         </PageHeader>
 
         {/* Market context first: any-stock search, snapshot, movers, deals and circuits.
-            The screen (filters, then the list) follows it. */}
+            The screen (filters, then the list) follows it; movers and deals come after the list. */}
         <GlobalStockSearch className="mb-6" />
 
         {/* Exchange-style market snapshot */}
         <MarketSnapshot />
-
-        {/* Exchange-homepage-style movers board */}
-        {!loading && stocks.length > 0 && (
-          <MarketMovers stocks={stocks} onPick={addToChart} />
-        )}
-
-        {/* EOD smart-money boards: bulk/block deals + circuit hitters */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 empty:hidden">
-          <BulkBlockDeals />
-          <CircuitWatch rows={bhavRows} asOf={bhavAsOf} loading={bhavLoading} />
-        </div>
 
         {/* The screen: every filter, then the list it narrows. */}
         <h2 id="screen" className="mb-3 mt-2 scroll-mt-24 font-heading text-xl font-bold">Screen {stocks.length > 0 ? stocks.length.toLocaleString("en-IN") : ""} stocks</h2>
@@ -818,6 +807,18 @@ const StockScreenerPage = () => {
           )}
         </AnimatePresence>
 
+        {/* Movers and the EOD smart-money boards follow the screen rather than
+            preceding it: above it they pushed the results table ~2,000px down,
+            below the first screen on a desktop. */}
+        <div className="mt-10 space-y-8">
+          {!loading && stocks.length > 0 && (
+            <MarketMovers stocks={stocks} onPick={addToChart} />
+          )}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 empty:hidden">
+            <BulkBlockDeals />
+            <CircuitWatch rows={bhavRows} asOf={bhavAsOf} loading={bhavLoading} />
+          </div>
+        </div>
 
         {/* Lazy: recharts only downloads when an analysis is opened */}
         {analyzingStock && (
