@@ -1,4 +1,4 @@
-import { lazy, Suspense, useMemo, useState } from "react";
+import { lazy, Suspense, useMemo, useRef, useState } from "react";
 import { priceEvents } from "@/lib/chart-data";
 import { stockPageTitle } from "@/lib/seo-title";
 import { stockDataset, stockFaqItems } from "@/lib/stock-structured-data";
@@ -33,6 +33,7 @@ import CorporateActionsList from "@/components/stock/CorporateActionsList";
 import SebiActionsList from "@/components/stock/SebiActionsList";
 import StockNews from "@/components/stock/StockNews";
 import StockSignals from "@/components/stock/StockSignals";
+import StockSectionNav from "@/components/stock/StockSectionNav";
 import StockDeals from "@/components/stock/StockDeals";
 import CompanyInsights from "@/components/stock/CompanyInsights";
 import CompanyDocuments from "@/components/stock/CompanyDocuments";
@@ -80,6 +81,7 @@ export default function StockPage() {
   // into the static HTML for search engines (see lib/prerender).
   const interactive = !isPrerender();
   const [askingAI, setAskingAI] = useState(false);
+  const contentRef = useRef<HTMLDivElement>(null);
   const chartEvents = useMemo(() => priceEvents(s.actions, s.resultDates), [s.actions, s.resultDates]);
 
   // `synced` and `basis` are set together by selectBasis() inside the hook
@@ -171,7 +173,7 @@ export default function StockPage() {
         }
       />
       <Header />
-      <main className="container mx-auto px-4 py-8 max-w-5xl">
+      <main className="container mx-auto px-4 py-8 max-w-7xl">
         <VisibleBreadcrumbs
           items={[
             { name: "Home", url: "/" },
@@ -197,6 +199,7 @@ export default function StockPage() {
           // assertion to "not a skeleton" - it could not detect the empty-table
           // regression it was written to catch.
           <div
+            ref={contentRef}
             className="space-y-10"
             data-stock-state={hasFinancials ? "ready" : "unsynced"}
           >
@@ -254,6 +257,8 @@ export default function StockPage() {
               {s.header && <QuoteMetrics header={s.header} />}
               {s.header && interactive && <div className="mt-4"><StockSignals symbol={s.header.symbol} price={s.header.price} /></div>}
             </motion.header>
+
+            {interactive && <StockSectionNav root={contentRef} />}
 
             {/* The chart is deliberately OUTSIDE the financials gate below: it
                 reads live quotes, not filings, so a symbol the fundamentals
@@ -349,12 +354,17 @@ export default function StockPage() {
             <FundamentalScorePanel scores={analytics?.fundamentals ?? null} />
             <ForecastPanel forecast={analytics?.forecast ?? null} />
 
-            <CorporateActionsList actions={s.actions} />
             {disclosures && <InsiderTrades trades={disclosures.trades} />}
-            {s.header && interactive && <StockDeals symbol={s.header.symbol} />}
-            {disclosures && <BseAnnouncements items={disclosures.announcements} bseCode={st.profile?.bse_code ?? null} />}
-            {s.header && interactive && <LegalWatch symbol={s.header.symbol} />}
-            {s.header && <SebiActionsList symbol={s.header.symbol} />}
+            {/* Short lists, two to a row on wide screens: one per row left half
+                of a desktop blank and made the page's tail a long scroll. Each
+                renders nothing when empty, so the grid closes up. */}
+            <div className="grid gap-10 xl:grid-cols-2 [&>*]:min-w-0 empty:hidden">
+              <CorporateActionsList actions={s.actions} />
+              {s.header && interactive && <StockDeals symbol={s.header.symbol} />}
+              {disclosures && <BseAnnouncements items={disclosures.announcements} bseCode={st.profile?.bse_code ?? null} />}
+              {s.header && interactive && <LegalWatch symbol={s.header.symbol} />}
+              {s.header && <SebiActionsList symbol={s.header.symbol} />}
+            </div>
             {st.profile?.screener && <CompanyDocuments documents={st.profile.screener.documents} />}
             <StockProvenance filing={s.filing} />
           </div>

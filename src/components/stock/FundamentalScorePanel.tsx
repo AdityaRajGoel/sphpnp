@@ -4,6 +4,9 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { revealSection } from "@/lib/motion";
 import { formatNumber, formatPct, type FundamentalScores } from "@/lib/stock-analytics";
+import { formatCrore } from "@/lib/fundamentals";
+
+const RUPEES_PER_CRORE = 1e7;
 
 /**
  * Piotroski's F-Score and the balance-sheet quality ratios behind it.
@@ -40,11 +43,12 @@ export default function FundamentalScorePanel({ scores }: { scores: FundamentalS
 
   const hasScore = scores.piotroski_score !== null && scores.piotroski_testable !== null;
   const metrics: Metric[] = [
-    { label: "Free cash flow", value: scores.free_cash_flow === null ? "—" : `₹${scores.free_cash_flow.toLocaleString("en-IN", { maximumFractionDigits: 0 })}` },
+    // Stored in rupees; shown in crore - "₹6,91,97,00,00,000" was unreadable.
+    { label: "Free cash flow", value: scores.free_cash_flow === null ? "—" : formatCrore(scores.free_cash_flow / RUPEES_PER_CRORE) },
     { label: "FCF yield", value: scores.fcf_yield === null ? "—" : formatPct(scores.fcf_yield * 100), hint: "Free cash flow against market capitalisation." },
     { label: "Cash conversion", value: formatNumber(scores.cash_conversion), hint: "Operating cash flow per rupee of reported profit. Below 1 means profit is not arriving as cash." },
     { label: "Accruals ratio", value: formatNumber(scores.accruals_ratio, 3), hint: "(Profit − operating cash flow) / assets. High and positive is the earnings-quality warning." },
-    { label: "Net debt", value: scores.net_debt === null ? "—" : `₹${scores.net_debt.toLocaleString("en-IN", { maximumFractionDigits: 0 })}`, hint: "Debt less cash. Negative means more cash than debt." },
+    { label: "Net debt", value: scores.net_debt === null ? "—" : formatCrore(scores.net_debt / RUPEES_PER_CRORE), hint: "Debt less cash. Negative means more cash than debt." },
     { label: "Net debt / equity", value: formatNumber(scores.net_debt_to_equity) },
     { label: "EV / sales", value: formatNumber(scores.ev_to_sales), hint: "Enterprise value over revenue. EV/EBITDA is not shown - depreciation is not collected, so EBITDA cannot be built honestly." },
     { label: "PEG", value: formatNumber(scores.peg), hint: "P/E over profit growth. Withheld when profit is flat or falling, where the ratio is meaningless." },

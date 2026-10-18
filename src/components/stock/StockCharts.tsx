@@ -82,14 +82,14 @@ function ChartCard({ title, subtitle, children, className = "", index }: { title
 
 function Stat({ label, value, tone }: { label: string; value: string; tone?: "up" | "down" }) {
   return (
-    <div className="flex h-full flex-col justify-between gap-1 rounded-surface border bg-card p-3 shadow-sm">
-      <div className="text-[11px] uppercase tracking-wide text-muted-foreground">{label}</div>
-      <div className={`text-xl font-bold tabular-nums ${tone === "up" ? "text-secondary" : tone === "down" ? "text-destructive" : ""}`}>{value}</div>
+    <div className="flex h-full flex-col justify-between gap-1 rounded-surface border bg-card p-4 shadow-sm">
+      <div className="text-xs text-muted-foreground">{label}</div>
+      <div className={`text-lg font-semibold tabular-nums ${tone === "up" ? "text-secondary" : tone === "down" ? "text-destructive" : ""}`}>{value}</div>
     </div>
   );
 }
 
-const toneOf = (v: number | null) => (v === null ? undefined : v >= 0 ? "up" : "down");
+const toneOf = (v: number | null) => (v === null || v === 0 ? undefined : v > 0 ? "up" : "down");
 const signed = (v: number | null) => (v === null ? "—" : `${v >= 0 ? "+" : ""}${v.toFixed(1)}%`);
 
 /** A small panel label, for the lower half of a two-panel chart. */

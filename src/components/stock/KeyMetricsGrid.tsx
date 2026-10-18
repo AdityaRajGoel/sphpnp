@@ -46,35 +46,19 @@ export default function KeyMetricsGrid({ keyMetrics, roe, ratios, movingAverages
       {averages.length > 0 && (
         <div className="mt-6">
           <h3 className="text-sm font-semibold mb-2">Moving averages (NSE)</h3>
-          <Card className="p-0 overflow-x-auto">
-            <table className="w-full text-sm">
-              <caption className="sr-only">Simple moving averages of the NSE price, and where the last price sits against each</caption>
-              <thead>
-                <tr className="border-b">
-                  {averages.map((m) => (
-                    <th key={m.days} scope="col" className="text-right p-3 font-medium whitespace-nowrap">{m.days}-day</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  {averages.map((m) => {
-                    const above = price !== null && m.nse !== null ? price >= m.nse : null;
-                    return (
-                      <td key={m.days} className="text-right p-3 tabular-nums whitespace-nowrap">
-                        {rupees(m.nse!)}
-                        {above !== null && (
-                          <span className={`block text-xs ${above ? "text-emerald-700 dark:text-emerald-400" : "text-destructive"}`}>
-                            {above ? "Price above" : "Price below"}
-                          </span>
-                        )}
-                      </td>
-                    );
-                  })}
-                </tr>
-              </tbody>
-            </table>
-          </Card>
+          {/* Three figures, not a table: a one-row table stretched them a page-width apart. */}
+          <dl className="grid grid-cols-3 gap-3 sm:max-w-xl">
+            {averages.map((m) => {
+              const above = price !== null && m.nse !== null ? price >= m.nse : null;
+              return (
+                <div key={m.days} className="rounded-surface border bg-card text-card-foreground shadow-sm p-3 sm:p-4">
+                  <dt className="text-xs text-muted-foreground">{m.days}-day</dt>
+                  <dd className="mt-1 font-semibold tabular-nums">{rupees(m.nse!)}</dd>
+                  {above !== null && <dd className="text-xs text-muted-foreground">Price {above ? "above" : "below"}</dd>}
+                </div>
+              );
+            })}
+          </dl>
         </div>
       )}
     </motion.section>

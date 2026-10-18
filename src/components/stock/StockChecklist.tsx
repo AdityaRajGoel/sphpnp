@@ -44,7 +44,7 @@ export default function StockChecklist({ symbol }: { symbol: string }) {
           <h2 id="checklist-heading" className="flex items-center gap-2 text-lg font-bold">
             <ListChecks className="h-4 w-4 text-secondary" aria-hidden="true" /> Checklist
           </h2>
-          <p className="flex items-center gap-4 text-sm">
+          <p className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
             {order.map((v) => (
               <span key={v} className="inline-flex items-center gap-1.5">
                 <span className={`h-2.5 w-2.5 rounded-full ${TONE[v].bar}`} aria-hidden="true" />

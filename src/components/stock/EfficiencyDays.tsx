@@ -33,7 +33,6 @@ export default function EfficiencyDays({ ratios }: { ratios: StatementGrid | und
             const first = known[0];
             const last = known[known.length - 1];
             const change = known.length > 1 ? last - first : null;
-            const improving = change !== null && change !== 0 && (line.label === "Days Payable" ? change > 0 : change < 0);
             return (
               <figure key={line.label} className="min-w-0">
                 <figcaption className="flex items-baseline justify-between gap-2 text-sm">
@@ -50,12 +49,13 @@ export default function EfficiencyDays({ ratios }: { ratios: StatementGrid | und
                       transition={{ duration: DURATION.slow, delay: i * STAGGER, ease: EASE_OUT }}
                       title={`${periods[i]}: ${v ?? "not reported"}`}
                       style={{ height: `${v === null ? 4 : Math.max(6, (Math.abs(v) / max) * 100)}%`, transformOrigin: "bottom" }}
-                      className={`flex-1 rounded-sm ${v === null ? "bg-muted" : v < 0 ? "bg-destructive/60" : i === values.length - 1 ? "bg-secondary" : "bg-secondary/35"}`}
+                      // Below-zero days get a neutral grey, not red: a negative cycle is a fact, not a verdict.
+                      className={`flex-1 rounded-sm ${v === null ? "bg-muted" : v < 0 ? (i === values.length - 1 ? "bg-muted-foreground/70" : "bg-muted-foreground/30") : i === values.length - 1 ? "bg-secondary" : "bg-secondary/35"}`}
                     />
                   ))}
                 </div>
                 {change !== null && (
-                  <p className={`mt-1 text-xs tabular-nums ${improving ? "text-secondary" : change === 0 ? "text-muted-foreground" : "text-destructive"}`}>
+                  <p className="mt-1 text-xs tabular-nums text-muted-foreground">
                     {change > 0 ? "+" : ""}{Math.round(change)} days since {periods[values.findIndex((v) => v !== null)]}
                   </p>
                 )}
