@@ -603,3 +603,26 @@ input[type="range"]::-moz-range-thumb {
   background-repeat: no-repeat;
   background-attachment: local, local, scroll, scroll;
 }
+
+/*
+ * Research-table density, as on screener.in / tickertape (measured 19 Oct 2026:
+ * ~36px rows, light zebra, muted headers) - ours ran 45px rows with no zebra,
+ * so a 12-quarter statement read as a wall. Opt-in per table: class "data-table".
+ * Pinned (sticky) cells repaint the zebra opaquely so scrolled figures never
+ * show through them.
+ */
+.data-table th,
+.data-table td {
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+}
+.data-table thead th {
+  font-weight: 500;
+  color: hsl(var(--muted-foreground));
+}
+.data-table tbody tr:nth-child(even):not([aria-current]) {
+  background-color: hsl(var(--muted) / 0.45);
+}
+.data-table tbody tr:nth-child(even):not([aria-current]) > .sticky {
+  background-color: color-mix(in srgb, hsl(var(--muted)) 45%, hsl(var(--card)));
+}

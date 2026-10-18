@@ -120,7 +120,7 @@ export default function AnalystFundView({ tickertape, pe }: { tickertape: Ticker
           {funds.length > 0 && (
             <motion.div {...revealItem(i++)} className="min-w-0 lg:col-span-2">
               <Card className="p-0 overflow-x-auto h-full">
-                <table className="w-full text-sm min-w-[520px]">
+                <table className="data-table w-full text-sm min-w-[520px]">
                   <caption className="text-left p-3 font-semibold text-sm">Mutual funds holding the most</caption>
                   <thead>
                     <tr className="border-y text-left">

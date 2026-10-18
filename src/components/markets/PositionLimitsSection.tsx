@@ -23,7 +23,7 @@ function LimitBar({ row }: { row: MwplRow }) {
   const width = Math.min(100, row.utilisation_pct);
   return (
     <div className="relative h-2 w-full rounded-full bg-muted" role="img" aria-label={`${row.utilisation_pct.toFixed(1)}% of the market-wide position limit`}>
-      <div className={`h-full rounded-full ${banned ? "bg-destructive" : "bg-secondary"}`} style={{ width: `${width}%` }} />
+      <div className={`h-full rounded-full ${banned ? "bg-destructive" : "bg-primary/60"}`} style={{ width: `${width}%` }} />
       {[MWPL_BAN_EXIT, MWPL_BAN_ENTRY].map((mark) => (
         <span key={mark} className="absolute -top-0.5 h-3 w-px bg-foreground/40" style={{ left: `${mark}%` }} aria-hidden="true" />
       ))}

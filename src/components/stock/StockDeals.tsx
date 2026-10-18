@@ -21,7 +21,7 @@ export default function StockDeals({ symbol }: { symbol: string }) {
         {(bought > 0 || sold > 0) && <span className="text-sm text-muted-foreground">Bought <strong className="text-secondary">{lakhs(bought)}</strong> · sold <strong className="text-destructive">{lakhs(sold)}</strong> shares</span>}
       </div>
       <Card className="p-0 overflow-x-auto">
-        <table className="w-full text-sm min-w-[560px]">
+        <table className="data-table w-full text-sm min-w-[560px]">
           <caption className="sr-only">Large deals reported to NSE in this stock</caption>
           <thead><tr className="border-b text-left text-muted-foreground">
             <th className="p-3 font-medium">Date</th><th className="p-3 font-medium">Client</th><th className="p-3 font-medium">Type</th>

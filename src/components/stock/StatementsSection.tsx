@@ -34,7 +34,7 @@ function StatementTable({ grid, caption }: { grid: StatementGrid; caption: strin
       {/* A focusable scroll region (keyboard users scroll it with arrows); the ring is inset
           because the card's overflow-hidden clipped an outside outline completely. */}
       <div ref={scroller} tabIndex={0} role="region" aria-label={caption} className="overflow-x-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring">
-      <table className="w-full text-sm min-w-[640px]">
+      <table className="data-table w-full text-sm min-w-[640px]">
         <caption className="sr-only">{caption}, oldest period first, figures in rupees crore</caption>
         <thead>
           <tr className="border-b">

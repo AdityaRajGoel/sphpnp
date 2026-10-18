@@ -53,7 +53,7 @@ export default function IncomeStatementTable({
       </div>
 
       <Card className="p-0 overflow-x-auto">
-        <table className="w-full text-sm min-w-[640px]">
+        <table className="data-table w-full text-sm min-w-[640px]">
           <caption className="sr-only">
             Quarterly income statement on a {basis} basis, most recent first
           </caption>

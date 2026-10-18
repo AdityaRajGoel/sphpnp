@@ -33,7 +33,7 @@ export default function PeerComparison({ symbol }: { symbol: string }) {
       </div>
       <Card className="overflow-hidden p-0">
         <div className="relative overflow-x-auto">
-          <table className="w-full min-w-[720px] text-sm">
+          <table className="data-table w-full min-w-[720px] text-sm">
             <caption className="sr-only">Largest {peers.sector} companies tracked, with sector medians</caption>
             <thead>
               <tr className="border-b bg-muted/40">

@@ -19,7 +19,7 @@ export default function ShareholdingTable({ shareholding, filing = null }: { sha
     <motion.section {...revealSection} aria-labelledby="shareholding-heading">
       <h2 id="shareholding-heading" className="text-2xl font-bold mb-4">Shareholding pattern</h2>
       <Card className="p-0 overflow-x-auto">
-        <table className="w-full text-sm min-w-[520px]">
+        <table className="data-table w-full text-sm min-w-[520px]">
           <caption className="sr-only">Percentage of shares held by each category at each quarter end</caption>
           <thead>
             <tr className="border-b">

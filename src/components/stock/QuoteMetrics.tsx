@@ -28,7 +28,7 @@ const compactVolume = (value: number): string => {
 
 const Metric = ({ label, value }: { label: string; value: string | null }) => (
   <div className="min-w-0">
-    <dt className="text-[11px] uppercase tracking-wide text-muted-foreground">{label}</dt>
+    <dt className="text-xs text-muted-foreground">{label}</dt>
     <dd
       className={`mt-0.5 text-sm font-semibold tabular-nums ${
         value === null ? "text-muted-foreground/60" : "text-foreground"

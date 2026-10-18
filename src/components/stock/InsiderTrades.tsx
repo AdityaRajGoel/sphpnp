@@ -41,7 +41,7 @@ export default function InsiderTrades({ trades }: { trades: InsiderTrade[] }) {
         )}
       </Card>
       <Card className="p-0 overflow-x-auto">
-        <table className="w-full text-sm min-w-[640px]">
+        <table className="data-table w-full text-sm min-w-[640px]">
           <caption className="sr-only">Latest insider trades disclosed to NSE</caption>
           <thead>
             <tr className="border-b text-left">
