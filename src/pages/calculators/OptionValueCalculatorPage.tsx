@@ -36,7 +36,7 @@ export default function OptionValueCalculatorPage() {
       path="/option-value-calculator"
       name="Option Value Calculator"
       seoTitle="Option Value Calculator: Black-Scholes and Greeks"
-      description="Black-Scholes value of a European call and put from the underlying price, strike, days to expiry, volatility and interest rate, with delta, gamma, theta, vega and rho."
+      description="Black-Scholes value of a European call and put from price, strike, expiry, volatility and rate, with delta, gamma, theta, vega and rho."
       intro="The Black-Scholes model value of a call and a put, and the Greeks, from the inputs you give it. A model value, not a market quote."
       notes="Black-Scholes values a European option (exercised only at expiry) on an underlying that pays no dividend, with volatility and interest rate held constant. Days are calendar days on a 365-day year. The volatility you enter drives the answer more than anything else; a traded premium also reflects demand, liquidity and the bid-ask spread."
       faqItems={[

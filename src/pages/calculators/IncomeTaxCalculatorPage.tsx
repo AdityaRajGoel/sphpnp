@@ -70,7 +70,7 @@ export default function IncomeTaxCalculatorPage() {
       path="/income-tax-calculator"
       name="Income Tax Calculator"
       seoTitle="Income Tax Calculator FY 2026-27: Old vs New Regime"
-      description={`Compare income tax under the old and new regimes for ${TAX_YEAR_LABEL}: slabs, standard deduction, rebate, surcharge and cess, with common old-regime deductions.`}
+      description={`Compare income tax under the old and new regimes for ${TAX_YEAR_LABEL}: slabs, standard deduction, rebate, surcharge and cess.`}
       intro={`Tax on salary and other income under the new regime and the old one, side by side, for ${TAX_YEAR_LABEL}. Sections are those of the Income-tax Act, 2025.`}
       relatedGuides={INCOME_TAX_GUIDES}
       notes={

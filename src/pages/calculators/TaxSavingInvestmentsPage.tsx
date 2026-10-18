@@ -30,7 +30,7 @@ export default function TaxSavingInvestmentsPage() {
       path="/tax-saving-investments"
       name="Tax-Saving Investments"
       seoTitle="Tax-Saving Investments FY 2026-27: ELSS vs PPF vs NPS"
-      description={`Compare ELSS, PPF, NPS, Sukanya Samriddhi, NSC, SCSS and tax-saver FDs for ${TAX_YEAR_LABEL}: lock-in, returns, tax on returns, and the tax each one saves you.`}
+      description={`Compare ELSS, PPF, NPS, Sukanya Samriddhi, NSC, SCSS and tax-saver FDs for ${TAX_YEAR_LABEL}: lock-in, returns and the tax each one saves you.`}
       intro={`Under the old regime, investments listed in Schedule XV of the Income-tax Act, 2025 reduce taxable income by up to ${inr(CAPS.investments.value)} (section 123), and NPS by up to ${inr(CAPS.npsSelf.value)} more (section 124(3)). The new regime allows neither, so check which regime you file under first.`}
       notes={
         <>

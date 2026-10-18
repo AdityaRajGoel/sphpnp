@@ -61,7 +61,7 @@ export default function LiteStockPage({ symbol }: { symbol: string }) {
     <div className="min-h-screen bg-background">
       <SEOHead
         title={`${shortName} (${symbol}) Share Price Today`}
-        description={`${name} (NSE: ${symbol}) share price, day range, 52-week high and low, returns, delivery percentage and listing details, from NSE's daily data.`}
+        description={`${name} (NSE: ${symbol}) share price, 52-week high and low, returns and delivery % from NSE's daily data.`}
         breadcrumbs={crumbs}
         faqItems={faq.map((f) => ({ question: f.q, answer: f.a }))}
       />

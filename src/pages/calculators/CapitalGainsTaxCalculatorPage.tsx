@@ -112,7 +112,7 @@ export default function CapitalGainsTaxCalculatorPage() {
       path="/capital-gains-tax-calculator"
       name="Capital Gains Tax Calculator"
       seoTitle="Capital Gains Tax Calculator: Shares & Equity Funds"
-      description={`Estimate short- and long-term capital gains tax on listed shares and equity mutual funds for ${TAX_YEAR_LABEL}: 20% short-term, 12.5% long-term above ₹1.25 lakh, with cess.`}
+      description={`Capital gains tax on shares and equity funds for ${TAX_YEAR_LABEL}: 20% short-term, 12.5% long-term above ₹1.25 lakh, with cess.`}
       intro={`Tax on selling listed equity shares or equity mutual fund units (STT paid) in ${TAX_YEAR_LABEL}, at the rates in the Income-tax Act, 2025.`}
       relatedGuides={CAPITAL_GAINS_GUIDES}
       notes={

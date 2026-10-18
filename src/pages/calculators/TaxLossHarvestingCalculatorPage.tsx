@@ -46,7 +46,7 @@ export default function TaxLossHarvestingCalculatorPage() {
       path="/tax-loss-harvesting-calculator"
       name="Tax-Loss Harvesting Calculator"
       seoTitle="Tax-Loss Harvesting Calculator India: Save Capital Gains Tax"
-      description={`See how much capital-gains tax booking your losing stocks could save in ${TAX_YEAR_LABEL}: short- and long-term set-off, the ₹1.25 lakh exemption and carry-forward.`}
+      description={`How much capital-gains tax booking your losing stocks could save in ${TAX_YEAR_LABEL}: set-off, the ₹1.25 lakh exemption and carry-forward.`}
       intro={`Selling shares that are below cost turns a paper loss into a capital loss, which reduces the tax on gains you have already booked this year. Enter those gains and your holdings; ${TAX_YEAR_LABEL} rules.`}
       notes={
         <>

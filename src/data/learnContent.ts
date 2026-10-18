@@ -23,7 +23,7 @@ export type LearnArticle = {
 export const LEARN_ARTICLES: Record<string, LearnArticle> = {
   "demat-account": {
     slug: "demat-account",
-    title: "What is a Demat Account? A Beginner's Guide for Indian Investors",
+    title: "What is a Demat Account? A Beginner's Guide for India",
     metaDescription:
       "A Demat account holds your shares electronically. Learn how it works, documents needed, charges, and how to open a free Demat account in India in 2026.",
     category: "basics",
@@ -96,7 +96,7 @@ Without a Demat account you simply cannot buy or hold shares, apply for IPOs, or
 
   "pe-ratio": {
     slug: "pe-ratio",
-    title: "P/E Ratio Explained: How to Tell if a Stock is Cheap or Expensive",
+    title: "P/E Ratio Explained: Is a Stock Cheap or Expensive?",
     metaDescription:
       "The P/E ratio is the most-used stock valuation metric. Learn how to calculate it, what a good P/E is, its limits, and how Indian investors use it wisely.",
     category: "analysis",
@@ -229,7 +229,7 @@ The most important factor isn't SIP vs lumpsum - it's **staying invested for the
 
   "power-of-compounding": {
     slug: "power-of-compounding",
-    title: "The Power of Compounding: Why Starting Early Beats Investing More",
+    title: "The Power of Compounding: Why Starting Early Wins",
     metaDescription:
       "Compounding turns small, regular investments into large sums over time. Learn how it works, the Rule of 72, and why starting early matters most in India.",
     category: "investing",
@@ -300,7 +300,7 @@ At a 12% return, ₹1 lakh becomes ₹2 lakh in 6 years, ₹4 lakh in 12 years, 
 
   "mutual-funds-guide": {
     slug: "mutual-funds-guide",
-    title: "Mutual Funds Explained: Types, Benefits & How to Invest in India",
+    title: "Mutual Funds Explained: Types and How to Invest in India",
     metaDescription:
       "A complete beginner's guide to mutual funds in India - equity, debt, hybrid and index funds, NAV, expense ratio, SEBI categories, and how to start investing.",
     category: "basics",
@@ -369,7 +369,7 @@ The Securities and Exchange Board of India (**SEBI**) strictly regulates every m
 
   "ipo-guide": {
     slug: "ipo-guide",
-    title: "IPO Guide for Beginners: Process, Allotment & Listing in India",
+    title: "IPO Guide for Beginners: Process, Allotment and Listing",
     metaDescription:
       "Understand how IPOs work in India - DRHP, price bands, lot size, ASBA/UPI application, GMP, allotment and listing day. A clear beginner's guide for 2026.",
     category: "basics",
@@ -430,7 +430,7 @@ No. A listing "pop" is never guaranteed - many IPOs list flat or below their iss
 
   "full-service-vs-discount-broker": {
     slug: "full-service-vs-discount-broker",
-    title: "Full-Service vs Discount Broker in India: Which Should You Pick?",
+    title: "Full-Service vs Discount Broker in India: Which to Pick?",
     metaDescription:
       "Zerodha-style discount broker or a full-service broker like Parasram? Compare costs, research, support and call-to-trade to pick what fits your investing style.",
     category: "basics",
@@ -498,7 +498,7 @@ For occasional investors, the fee gap is small in absolute terms - what matters 
 
   "tax-on-share-market-income": {
     slug: "tax-on-share-market-income",
-    title: "Tax on Share Market Income in India: STCG, LTCG & F&O Explained",
+    title: "Tax on Share Market Income: STCG, LTCG and F&O Explained",
     metaDescription:
       "How share market income is taxed in India: 20% STCG, 12.5% LTCG above ₹1.25 lakh, F&O as business income, intraday as speculative income, plus STT and TDS.",
     category: "investing",
@@ -573,7 +573,7 @@ Securities Transaction Tax is deducted automatically on every trade:
 
   "how-to-buy-unlisted-shares": {
     slug: "how-to-buy-unlisted-shares",
-    title: "How to Buy Unlisted Shares in India: Process, Risks & Taxation",
+    title: "How to Buy Unlisted Shares in India: Process and Tax",
     metaDescription:
       "Step-by-step guide to buying unlisted and pre-IPO shares in India: how off-market transfers work, minimum lots, the 6-month lock-in, risks and taxation.",
     category: "investing",
@@ -638,7 +638,7 @@ The unlisted market has no SEBI order-matching protections - your counterparty *
 
   "fno-basics": {
     slug: "fno-basics",
-    title: "Futures and Options (F&O) Basics: A Beginner's Guide for India",
+    title: "F&O Basics: A Beginner's Guide to Futures and Options",
     metaDescription:
       "Understand F&O trading in India: futures and options explained, lots and expiry, SPAN margins, premiums, CE/PE, hedging vs speculation, and the risks involved.",
     category: "trading",
@@ -729,7 +729,7 @@ F&O income is **non-speculative business income** - see our [tax guide](/learn/t
 
   "margin-trading-facility-mtf": {
     slug: "margin-trading-facility-mtf",
-    title: "What is MTF? Margin Trading Facility in India Explained Simply",
+    title: "What is MTF? Margin Trading Facility Explained",
     metaDescription:
       "MTF lets you buy delivery stocks by paying part of the value while your broker funds the rest. How margins, pledging, interest and square-offs work in India.",
     category: "trading",
@@ -792,7 +792,7 @@ Sensible: high-conviction large-cap positions where you expect the move to outpa
 
   "closing-auction-session-cas": {
     slug: "closing-auction-session-cas",
-    title: "Closing Auction Session (CAS): How the Closing Price Works From 3 August 2026",
+    title: "Closing Auction Session (CAS): How the Closing Price Works",
     metaDescription:
       "SEBI replaced the 30-minute VWAP closing price with a Closing Auction Session from 3 August 2026. Timings, price bands, order rules and what changes for you.",
     category: "trading",
@@ -953,7 +953,7 @@ As in CAS, **market orders get execution priority over limit orders**, and **ice
 
   "pre-open-auction-session-2026": {
     slug: "pre-open-auction-session-2026",
-    title: "The Pre-Open Session Changes on 7 September 2026: New Timings and Order Rules",
+    title: "Pre-Open Session Changes from 7 Sep 2026: Timings and Rules",
     metaDescription:
       "From 7 September 2026 SEBI rebuilds the 9:00-9:15 a.m. pre-open session to match the Closing Auction Session: new sub-sessions, random close, no stop loss.",
     category: "trading",

@@ -67,7 +67,7 @@ const HolidayCalendarPage = () => {
     <div className="min-h-screen bg-background">
       <SEOHead
         title={`NSE Holidays ${HOLIDAY_YEAR}: Stock Market Holiday List & F&O Expiry`}
-        description={`NSE, BSE and MCX trading holidays for ${HOLIDAY_YEAR}, every Nifty and Sensex weekly and monthly F&O expiry with holiday shifts, market timings and upcoming company results and board meetings.`}
+        description={`NSE, BSE and MCX trading holidays for ${HOLIDAY_YEAR}, Nifty and Sensex F&O expiry dates with holiday shifts, market timings and upcoming results.`}
         breadcrumbs={[{ name: "Home", url: "/" }, { name: "Market Calendar" }]}
         jsonLd={{
           "@type": "ItemList",

@@ -132,7 +132,7 @@ const PricingPage = () => {
       <div className="min-h-screen bg-background">
         <SEOHead
           title="Brokerage Charges & Pricing | Parasram India Panipat"
-          description={`Transparent brokerage: free Demat account opening, ${RATE_SUMMARY}. Full charge sheet from Parasram India.`}
+          description={`Free Demat account opening, ${RATE_SUMMARY}. Parasram India's full charge sheet.`}
           canonical="https://www.sphpnp.com/pricing"
           breadcrumbs={[{ name: "Home", url: "/" }, { name: "Pricing & Charges" }]}
           faqItems={faqs.map((f) => ({ question: f.q, answer: f.a }))}
