@@ -278,6 +278,29 @@ describe("truncated names", () => {
     ]).merges).toEqual([]);
   });
 
+  // IPO Watch's GMP table lists "Zetwerk" with no dates and no lot size; the
+  // lot-size rule alone let that stub return after every merge (19 Oct 2026).
+  it("folds a dateless, lotless one-word stub into the one dated issue at its price band", () => {
+    const plan = planIpoMerges([
+      stored({ id: "1", slug: "zetwerk-manufacturing-business", name: "Zetwerk Manufacturing Business", open_date: "2026-10-15", price_band_max: 151, lot_size: 99, created_at: "2026-10-12T00:00:00Z" }),
+      stored({ id: "2", slug: "zetwerk", name: "Zetwerk", price_band_max: 151, created_at: "2026-10-16T00:00:00Z" }),
+    ]);
+    expect(plan.merges.map((m) => `${m.fromSlug}->${m.intoSlug}`)).toEqual(["zetwerk->zetwerk-manufacturing-business"]);
+    expect(resolveSlug({ slug: "zetwerk", name: "Zetwerk", open_date: null, price_band_max: 151, lot_size: null }, plan.survivors)).toBe("zetwerk-manufacturing-business");
+  });
+
+  it("keeps a dateless one-word stub apart when the longer issue is undated too, or two issues match", () => {
+    expect(planIpoMerges([
+      stored({ id: "1", slug: "zetwerk-manufacturing-business", name: "Zetwerk Manufacturing Business", price_band_max: 151 }),
+      stored({ id: "2", slug: "zetwerk", name: "Zetwerk", price_band_max: 151 }),
+    ]).merges).toEqual([]);
+    expect(planIpoMerges([
+      stored({ id: "1", slug: "tata-capital", name: "Tata Capital", open_date: "2026-10-06", price_band_max: 326 }),
+      stored({ id: "2", slug: "tata-technologies", name: "Tata Technologies", open_date: "2026-10-07", price_band_max: 326 }),
+      stored({ id: "3", slug: "tata", name: "Tata", price_band_max: 326 }),
+    ]).merges).toEqual([]);
+  });
+
   it("resolves an incoming truncated name to the stored full-name row", () => {
     const survivors = [stored({ id: "1", slug: "manipal-payment-identity-solutions", name: "Manipal Payment and Identity Solutions", open_date: "2026-09-09", price_band_max: 339 })];
     expect(resolveSlug({ slug: "manipal-payment", name: "Manipal Payment", open_date: null, price_band_max: 339 }, survivors)).toBe("manipal-payment-identity-solutions");

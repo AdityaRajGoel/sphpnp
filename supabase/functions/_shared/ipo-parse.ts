@@ -214,16 +214,20 @@ export function ipoAliases(entries: (string | AliasEntry)[]): Map<string, string
   for (const short of known) {
     if (aliases.has(short.words.join(""))) continue;
     // One word ("Zetwerk") is too common a prefix on its own; it names the longer
-    // issue only when the lot size agrees as well as the price band.
+    // issue only when the lot size agrees as well as the price band - or, for a
+    // bare GMP-table stub with no lot and no dates, when the longer issue is the
+    // one dated record at that price (the stub otherwise returned after every
+    // merge, 19 Oct 2026). A one-word row with dates but no lot still stays apart.
     const oneWord = short.words.length < 2;
-    if (oneWord && !short.lot_size) continue;
+    const bareStub = oneWord && !short.lot_size && !short.open_date;
+    if (oneWord && !short.lot_size && !bareStub) continue;
     const longer = new Set(
       known
         .filter((long) =>
           long.words.length > short.words.length &&
           short.words.every((w, i) => long.words[i] === w) &&
           long.price_band_max === short.price_band_max &&
-          (!oneWord || long.lot_size === short.lot_size) &&
+          (!oneWord || (bareStub ? Boolean(long.open_date) : long.lot_size === short.lot_size)) &&
           (!short.open_date || !long.open_date || short.open_date === long.open_date))
         .map((long) => long.words.join("")),
     );
