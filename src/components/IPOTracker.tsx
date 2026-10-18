@@ -11,7 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Link } from "react-router-dom";
 
 import { revealItem, revealSection } from "@/lib/motion";
-import { formatGmp, formatGmpPercent, formatListingGain, formatSubscription, gmpPercent, type Ipo } from "@/lib/ipo";
+import { formatGmp, formatGmpPercent, formatListingGain, formatSubscription, gmpPercent, signTone, type Ipo } from "@/lib/ipo";
 import { trackerTab } from "@/lib/ipo-filters";
 
 /** The reconciled catalogue row plus the two display-only fields derived from it. */
@@ -68,8 +68,8 @@ const IPOCard = ({ ipo, index }: { ipo: DisplayIpo; index: number }) => (
         ) : (
           <>
             <div className="text-[10px] text-muted-foreground mb-0.5">GMP</div>
-            <div className={`text-xs font-bold flex items-center gap-0.5 ${ipo.gmp === null ? "text-muted-foreground" : ipo.gmp >= 0 ? "text-secondary" : "text-destructive"}`}>
-              {ipo.gmp !== null && (ipo.gmp >= 0 ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />)}
+            <div className={`text-xs font-bold flex items-center gap-0.5 ${signTone(ipo.gmp)}`}>
+              {ipo.gmp !== null && ipo.gmp !== 0 && (ipo.gmp > 0 ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />)}
               {formatGmp(ipo.gmp)}
               {gmpPercent(ipo) !== null && <span className="font-medium">({formatGmpPercent(gmpPercent(ipo))})</span>}
             </div>

@@ -106,6 +106,10 @@ export async function getIpos(slug?: string): Promise<Ipo[]> {
   return data.ipos ?? [];
 }
 
+/** Colour for a signed figure; zero and unknown stay neutral (a ₹0 GMP is not "up"). */
+export const signTone = (value: number | null): string =>
+  value === null || value === 0 ? "text-muted-foreground" : value > 0 ? "text-secondary" : "text-destructive";
+
 export const formatRupees = (value: number | null, fractionDigits = 0) =>
   value === null ? "—" : new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: fractionDigits }).format(value);
 
@@ -156,6 +160,18 @@ export function formatMinInvestment(ipo: MinInvestmentFields): { amount: string;
  * columns do (financials, lot sizes, KPIs); two-column tables are label/value
  * pairs and do not.
  */
+/** "1,600", "₹2,86,400", "49.97%", "2.18x", "16.20" - a figure, so right-aligned and kept on one line. */
+const SECTION_FIGURE = /^[-+−]?\s*₹?\s*[\d,]+(\.\d+)?\s*(%|x|×|Cr\.?)?$/i;
+export const isSectionFigure = (cell: string): boolean => cell === "" || cell === "—" || SECTION_FIGURE.test(cell);
+
+/** Decode, mark a trailing "T" as tentative, and group bare share counts ("1600" -> "1,600"); years are left alone. */
+export function tidySectionCell(raw: string): string {
+  const cell = decodeEntities(raw).trim().replace(/\s+T$/, " (tentative)");
+  if (!/^\d{4,}$/.test(cell)) return cell;
+  const n = Number(cell);
+  return n >= 1900 && n <= 2100 ? cell : n.toLocaleString("en-IN");
+}
+
 export const sectionTableHasHeader = (rows: string[][]): boolean =>
   rows.length > 1 && (rows[0]?.length ?? 0) >= 3;
 
@@ -179,6 +195,7 @@ export const formatSubscription = (times: number | null): string | null =>
 const NAMED_ENTITIES: Record<string, string> = {
   amp: "&", nbsp: " ", quot: '"', apos: "'", lt: "<", gt: ">", minus: "−", ndash: "–", mdash: "—",
   rsquo: "’", lsquo: "‘", ldquo: "“", rdquo: "”", hellip: "…", times: "×", bull: "•", middot: "·", rupee: "₹",
+  raquo: "»", laquo: "«", rarr: "→", larr: "←",
 };
 
 /**

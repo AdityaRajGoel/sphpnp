@@ -1,5 +1,5 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { formatRupees, type GmpSnapshot } from "@/lib/ipo";
+import { formatRupees, signTone, type GmpSnapshot } from "@/lib/ipo";
 
 /**
  * The chart plots `gmp` over time, but each observation also carries an
@@ -28,7 +28,7 @@ export default function IPOGmpHistoryTable({ history }: { history: GmpSnapshot[]
               <TableCell className="whitespace-nowrap text-muted-foreground">
                 {new Intl.DateTimeFormat("en-IN", { dateStyle: "medium", timeStyle: "short" }).format(new Date(point.captured_at))}
               </TableCell>
-              <TableCell className={`text-right font-semibold tabular-nums ${point.gmp >= 0 ? "text-secondary" : "text-destructive"}`}>{formatRupees(point.gmp)}</TableCell>
+              <TableCell className={`text-right font-semibold tabular-nums ${signTone(point.gmp)}`}>{formatRupees(point.gmp)}</TableCell>
               <TableCell className="text-right tabular-nums">{formatRupees(point.est_listing_price)}</TableCell>
             </TableRow>
           ))}

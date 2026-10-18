@@ -7,7 +7,7 @@ import { describe, it, expect, vi } from "vitest";
 // file never touches a real client for functions that need no network at all.
 vi.mock("@/integrations/supabase/client", () => ({ supabase: {} }));
 
-import { formatGmp, formatGmpPercent, formatListingGain, formatLotSize, formatMinInvestment, formatRegistrar, formatSubscription, gmpPercent, sectionTableHasHeader } from "@/lib/ipo";
+import { formatGmp, formatGmpPercent, formatListingGain, formatLotSize, formatMinInvestment, formatRegistrar, formatSubscription, gmpPercent, isSectionFigure, sectionTableHasHeader, signTone, tidySectionCell } from "@/lib/ipo";
 
 /*
  * Formatting helpers for the IPO surfaces. The one rule every one of these
@@ -117,5 +117,30 @@ describe("formatSubscription", () => {
     expect(formatSubscription(4.71)).toBe("4.71x");
     expect(formatSubscription(459.2)).toBe("459.20x");
     expect(formatSubscription(null)).toBeNull();
+  });
+});
+
+describe("scraped section cells", () => {
+  it("groups bare share counts but leaves years and figures alone", () => {
+    expect(tidySectionCell("1600")).toBe("1,600");
+    expect(tidySectionCell("2026")).toBe("2026");
+    expect(tidySectionCell("₹2,86,400")).toBe("₹2,86,400");
+  });
+
+  it("spells out the tentative marker and decodes entities", () => {
+    expect(tidySectionCell("Fri, Oct 23, 2026 T")).toBe("Fri, Oct 23, 2026 (tentative)");
+    expect(tidySectionCell("View More &raquo;")).toBe("View More »");
+  });
+
+  it("treats figures as numeric and prose as text", () => {
+    expect(["1,600", "49.97%", "2.18x", "₹ 54 Cr", "—"].every(isSectionFigure)).toBe(true);
+    expect(isSectionFigure("Repayment or prepayment of borrowings")).toBe(false);
+  });
+
+  it("keeps zero and unknown neutral", () => {
+    expect(signTone(0)).toBe("text-muted-foreground");
+    expect(signTone(null)).toBe("text-muted-foreground");
+    expect(signTone(5)).toBe("text-secondary");
+    expect(signTone(-1)).toBe("text-destructive");
   });
 });

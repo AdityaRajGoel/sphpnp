@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { formatDate, formatGmp, formatGmpPercent, formatLotSize, formatMinInvestment, formatSubscription, gmpPercent, type Ipo } from "@/lib/ipo";
+import { formatDate, formatGmp, formatGmpPercent, formatLotSize, formatMinInvestment, formatSubscription, gmpPercent, signTone, type Ipo } from "@/lib/ipo";
 import { MAX_COMPARE, type SortDir, type SortKey } from "@/lib/ipo-filters";
 
 const STATUS_LABEL: Record<Ipo["status"], string> = { upcoming: "Upcoming", open: "Open", closed: "Closed", listed: "Listed" };
@@ -37,13 +37,13 @@ type Props = {
 /** Dense, scannable, sortable — the comparison surface a card grid can't be. */
 export default function IPOTable({ ipos, sortKey, sortDir, onSort, compareSlugs, onToggleCompare }: Props) {
   return (
-    <div className="rounded-xl border border-border overflow-x-auto">
-      <Table>
+    <div className="rounded-xl border border-border overflow-hidden">
+      {/* 14 columns: compact cells, and the checkbox + name stay pinned while the figures scroll on phones. */}
+      <Table className="[&_th]:h-10 [&_th]:px-3 [&_th]:whitespace-nowrap [&_td]:px-3 [&_td]:py-2.5">
         <TableHeader>
           <TableRow className="hover:bg-transparent">
-            <TableHead className="w-10" />
             {COLUMNS.map((col) => (
-              <TableHead key={col.key} className={col.align === "right" ? "text-right" : ""}>
+              <TableHead key={col.key} className={col.align === "right" ? "text-right" : col.key === "name" ? "sticky left-0 z-[1] bg-card !pl-10" : ""}>
                 <button
                   onClick={() => onSort(col.key)}
                   className={`inline-flex items-center gap-1 font-semibold hover:text-foreground transition-colors ${sortKey === col.key ? "text-foreground" : "text-muted-foreground"}`}
@@ -61,16 +61,17 @@ export default function IPOTable({ ipos, sortKey, sortDir, onSort, compareSlugs,
             const disabled = !checked && compareSlugs.length >= MAX_COMPARE;
             return (
               <TableRow key={ipo.id}>
-                <TableCell>
-                  <Checkbox
-                    checked={checked}
-                    disabled={disabled}
-                    onCheckedChange={() => onToggleCompare(ipo.slug)}
-                    aria-label={`Add ${ipo.name} to comparison`}
-                  />
-                </TableCell>
-                <TableCell className="font-semibold max-w-[220px]">
-                  <Link to={`/ipo/${ipo.slug}`} className="hover:text-secondary transition-colors line-clamp-1">{ipo.name}</Link>
+                {/* Checkbox and name share one pinned cell, so nothing shows through a gap between two pinned columns. */}
+                <TableCell className="sticky left-0 z-[1] bg-card font-semibold min-w-[170px] max-w-[250px]">
+                  <span className="flex items-center gap-3">
+                    <Checkbox
+                      checked={checked}
+                      disabled={disabled}
+                      onCheckedChange={() => onToggleCompare(ipo.slug)}
+                      aria-label={`Add ${ipo.name} to comparison`}
+                    />
+                    <Link to={`/ipo/${ipo.slug}`} className="hover:text-secondary transition-colors line-clamp-1">{ipo.name}</Link>
+                  </span>
                 </TableCell>
                 <TableCell><Badge variant="outline" className="capitalize">{STATUS_LABEL[ipo.status]}</Badge></TableCell>
                 <TableCell className="capitalize text-muted-foreground">{ipo.board === "sme" ? "SME" : "Mainboard"}</TableCell>
@@ -80,20 +81,20 @@ export default function IPOTable({ ipos, sortKey, sortDir, onSort, compareSlugs,
                 <TableCell className="text-right tabular-nums whitespace-nowrap">{formatMinInvestment(ipo)?.amount ?? <span className="text-muted-foreground">—</span>}</TableCell>
                 <TableCell className="text-right tabular-nums whitespace-nowrap">{formatDate(ipo.close_date)}</TableCell>
                 <TableCell className="text-right tabular-nums whitespace-nowrap">{formatDate(ipo.listing_date)}</TableCell>
-                <TableCell className={`text-right tabular-nums font-semibold ${ipo.gmp === null ? "text-muted-foreground" : ipo.gmp >= 0 ? "text-secondary" : "text-destructive"}`}>
+                <TableCell className={`text-right tabular-nums font-semibold ${signTone(ipo.gmp)}`}>
                   <span className="inline-flex items-center justify-end gap-2">
                     <GmpSparkline history={ipo.gmp_history ?? []} />
                     {formatGmp(ipo.gmp)}
                   </span>
                 </TableCell>
-                <TableCell className={`text-right tabular-nums whitespace-nowrap ${gmpPercent(ipo) === null ? "text-muted-foreground" : gmpPercent(ipo)! >= 0 ? "text-secondary" : "text-destructive"}`}>
+                <TableCell className={`text-right tabular-nums whitespace-nowrap ${signTone(gmpPercent(ipo))}`}>
                   {formatGmpPercent(gmpPercent(ipo)) ?? "—"}
                 </TableCell>
                 <TableCell className="text-right tabular-nums whitespace-nowrap">
                   {formatSubscription(ipo.subscription_total) ?? <span className="text-muted-foreground">—</span>}
                 </TableCell>
                 <TableCell
-                  className={`text-right tabular-nums whitespace-nowrap font-semibold ${ipo.listing_gain_pct === null ? "text-muted-foreground" : ipo.listing_gain_pct >= 0 ? "text-secondary" : "text-destructive"}`}
+                  className={`text-right tabular-nums whitespace-nowrap font-semibold ${signTone(ipo.listing_gain_pct)}`}
                   title={ipo.gain_since_issue_pct != null ? `${ipo.gain_since_issue_pct >= 0 ? "+" : ""}${ipo.gain_since_issue_pct.toFixed(1)}% since issue` : undefined}
                 >
                   {ipo.listing_gain_pct === null ? "—" : `${ipo.listing_gain_pct >= 0 ? "+" : ""}${ipo.listing_gain_pct.toFixed(1)}%`}

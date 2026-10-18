@@ -37,10 +37,13 @@ type IpoRow = {
   data_as_of: string;
 };
 
+/** Indian digit grouping: "₹1,065–1,119", not "₹1065–1119". */
+const inr = (n: number) => n.toLocaleString("en-IN", { maximumFractionDigits: 2 });
+
 const formatPriceBand = (ipo: IpoRow) => {
   if (ipo.price_band_min === null) return "TBA";
-  if (ipo.price_band_min === ipo.price_band_max || ipo.price_band_max === null) return `₹${ipo.price_band_min}`;
-  return `₹${ipo.price_band_min}–${ipo.price_band_max}`;
+  if (ipo.price_band_min === ipo.price_band_max || ipo.price_band_max === null) return `₹${inr(ipo.price_band_min)}`;
+  return `₹${inr(ipo.price_band_min)}–${inr(ipo.price_band_max)}`;
 };
 
 const formatDateRange = (ipo: IpoRow) => {
@@ -130,7 +133,7 @@ Deno.serve(async (req) => {
         type: ipo.board === "sme" ? "SME" : "Mainboard",
         price: formatPriceBand(ipo),
         date: formatDateRange(ipo),
-        size: ipo.issue_size_crore === null ? "—" : `₹${ipo.issue_size_crore} Cr`,
+        size: ipo.issue_size_crore === null ? "—" : `₹${inr(ipo.issue_size_crore)} Cr`,
         gmp: latest?.gmp ?? null,
         est_listing_price: latest?.est_listing_price ?? null,
         // The list draws a sparkline, not the history table; its tail is enough.

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { FileText } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
-import { decodeEntities, sectionTableHasHeader, type IpoPageSection } from "@/lib/ipo";
+import { decodeEntities, isSectionFigure as isFigure, sectionTableHasHeader, tidySectionCell as tidyCell, type IpoPageSection } from "@/lib/ipo";
 import { deriveSectionInfographic } from "@/lib/ipo-infographics";
 import IPOSectionInfographic from "@/components/ipo/IPOSectionInfographic";
 import IPOSectionViewToggle, { SECTION_VIEW_KEY, type SectionView } from "@/components/ipo/IPOSectionViewToggle";
@@ -14,17 +14,26 @@ const isWide = (section: IpoPageSection) =>
   section.tables.some((rows) => (rows[0]?.length ?? 0) >= 4) || section.lines.join(" ").length > 400;
 
 function SectionTable({ rows }: { rows: string[][] }) {
-  const hasHeader = sectionTableHasHeader(rows);
-  const header = hasHeader ? rows[0] : null;
-  const body = hasHeader ? rows.slice(1) : rows;
+  const tidy = rows.map((row) => row.map(tidyCell)).filter((row) => row.some((cell) => cell !== ""));
+  const hasHeader = sectionTableHasHeader(tidy);
+  const header = hasHeader ? tidy[0] : null;
+  const body = hasHeader ? tidy.slice(1) : tidy;
+  // A column is numeric when every body cell in it is a figure; text columns
+  // wrap and sit left. Right-aligning and no-wrapping every column stretched
+  // "Objects of the issue" to 918px and pushed its descriptions off-screen.
+  const numeric = (header ?? body[0] ?? []).map((_, i) => i > 0 && body.every((row) => isFigure(row[i] ?? "")));
+  // Wide tables scroll on phones; the row label stays pinned so figures keep their meaning.
+  // A serial "#" column ("Objects of the issue") is neither pinned nor widened.
+  const labelled = body.some((row) => (row[0] ?? "").length > 3);
+  const pin = header !== null && header.length >= 3 && labelled ? "sticky left-0 z-[1]" : "";
   return (
     <div className="overflow-x-auto rounded-lg border border-border">
       <table className="w-full text-sm">
         {header && (
-          <thead className="bg-muted/40">
+          <thead className="bg-muted">
             <tr>
               {header.map((cell, i) => (
-                <th key={i} scope="col" className={`p-2.5 font-semibold whitespace-nowrap ${i === 0 ? "text-left" : "text-right"}`}>{decodeEntities(cell)}</th>
+                <th key={i} scope="col" className={`p-2.5 font-semibold ${numeric[i] ? "text-right whitespace-nowrap" : "text-left"} ${i === 0 ? `${pin} bg-muted` : ""}`}>{cell}</th>
               ))}
             </tr>
           </thead>
@@ -34,9 +43,18 @@ function SectionTable({ rows }: { rows: string[][] }) {
             <tr key={r} className="border-t border-border first:border-t-0">
               {row.map((cell, i) =>
                 i === 0 ? (
-                  <th key={i} scope="row" className={`p-2.5 text-left font-normal text-muted-foreground align-top ${header ? "min-w-[9rem]" : ""}`}>{decodeEntities(cell)}</th>
+                  <th key={i} scope="row" className={`p-2.5 text-left font-normal text-muted-foreground align-top ${header && labelled ? `min-w-[8rem] ${pin} bg-card` : ""}`}>{cell}</th>
                 ) : (
-                  <td key={i} className={`p-2.5 align-top tabular-nums break-words ${header ? "text-right whitespace-nowrap" : "text-right"}`}>{decodeEntities(cell) || "—"}</td>
+                  <td
+                    key={i}
+                    className={`p-2.5 align-top break-words ${
+                      header
+                        ? numeric[i] ? "text-right tabular-nums whitespace-nowrap" : "text-left min-w-[10rem]"
+                        : `text-right tabular-nums ${cell.length <= 24 ? "whitespace-nowrap" : ""}`
+                    }`}
+                  >
+                    {cell || "—"}
+                  </td>
                 ),
               )}
             </tr>
@@ -46,6 +64,9 @@ function SectionTable({ rows }: { rows: string[][] }) {
     </div>
   );
 }
+
+/** Link captions the source page left behind without their links ("View More »", "IPO Anchor Investors List"). */
+const ORPHAN_LINK = /^(view more|ipo .{3,40} (details|list))\W*$/i;
 
 /**
  * Every section of the issue's Chittorgarh page, as the page published it:
@@ -137,7 +158,7 @@ export default function IPOPageSections({ sections, fetchedAt }: { sections: Ipo
                 </dl>
               ) : section.lines.length > 0 && (
                 <div className="space-y-2 text-sm text-muted-foreground leading-relaxed">
-                  {section.lines.map((line, i) => <p key={i} className="break-words">{decodeEntities(line)}</p>)}
+                  {section.lines.map((line) => decodeEntities(line).trim()).filter((line) => !ORPHAN_LINK.test(line)).map((line, i) => <p key={i} className="break-words">{line}</p>)}
                 </div>
               )}
             </CardContent>

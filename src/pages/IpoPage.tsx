@@ -19,7 +19,7 @@ import IpoMarketStats from "@/components/ipo/IpoMarketStats";
 import StockTicker from "@/components/StockTicker";
 import PageHeader, { HeaderStat } from "@/components/PageHeader";
 import { istToday } from "@/lib/market-data";
-import { formatGmp, formatGmpPercent, formatMinInvestment, formatSubscription, getIpos, gmpPercent, type Ipo } from "@/lib/ipo";
+import { formatGmp, formatGmpPercent, formatMinInvestment, formatSubscription, getIpos, gmpPercent, signTone, type Ipo } from "@/lib/ipo";
 import IpoTimeline from "@/components/ipo/IpoTimeline";
 import {
   compareSlugsToParam,
@@ -101,7 +101,7 @@ export default function IpoPage() {
     <Header />
     <StockTicker />
     <main>
-      <section className="container mx-auto px-4 max-w-6xl pt-4 md:pt-6 pb-28">
+      <section className="container mx-auto px-4 max-w-7xl pt-4 md:pt-6 pb-28">
         <PageHeader
           className="mb-6"
           eyebrow={<><Rocket className="h-3.5 w-3.5" aria-hidden="true" /> IPO Central</>}
@@ -134,7 +134,7 @@ export default function IpoPage() {
         {/* The prerender waits for "ready" before capturing - see scripts/lib/ipo-routes.mjs. */}
         <div className="mt-6" data-ipo-state={loading ? "loading" : error ? "error" : "ready"}>
           {loading ? (
-            <div className="grid md:grid-cols-2 gap-4">{[1, 2, 3, 4].map((item) => <div key={item} className="h-56 animate-pulse rounded-xl bg-muted" />)}</div>
+            <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">{[1, 2, 3, 4, 5, 6].map((item) => <div key={item} className="h-56 animate-pulse rounded-xl bg-muted" />)}</div>
           ) : error ? (
             <Card><CardContent className="p-6 text-sm text-muted-foreground">{error}. Please try again shortly.</CardContent></Card>
           ) : ipos.length === 0 ? (
@@ -146,7 +146,7 @@ export default function IpoPage() {
           ) : (
             // Every card is rendered and those past the limit are only hidden, so the
             // prerendered page still links to each IPO's own page.
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">{sorted.map((ipo, i) => (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">{sorted.map((ipo, i) => (
               <IpoCard key={ipo.id} hidden={i >= limit} ipo={ipo} selected={compareSlugs.includes(ipo.slug)} compareDisabled={!compareSlugs.includes(ipo.slug) && compareSlugs.length >= MAX_COMPARE} onToggleCompare={() => toggleCompare(ipo.slug)} />
             ))}</div>
           )}
@@ -189,7 +189,7 @@ function IpoCard({ ipo, hidden, selected, compareDisabled, onToggleCompare }: Ip
       </div>
       <dl className="grid grid-cols-3 gap-x-3 gap-y-4 mt-5 text-sm">
         <div className="min-w-0"><dt className="text-xs text-muted-foreground">Price band</dt><dd className="font-semibold mt-1 break-words">{ipo.price}</dd></div>
-        <div className="min-w-0"><dt className="text-xs text-muted-foreground">Latest GMP</dt><dd className={`font-semibold mt-1 ${ipo.gmp === null ? "text-muted-foreground" : ipo.gmp >= 0 ? "text-secondary" : "text-destructive"}`}>{formatGmp(ipo.gmp)}{gmpPct !== null && <span className="block sm:inline sm:ml-1 text-xs font-medium">({formatGmpPercent(gmpPct)})</span>}</dd></div>
+        <div className="min-w-0"><dt className="text-xs text-muted-foreground">Latest GMP</dt><dd className={`font-semibold mt-1 ${signTone(ipo.gmp)}`}>{formatGmp(ipo.gmp)}{gmpPct !== null && <span className="block sm:inline sm:ml-1 text-xs font-medium">({formatGmpPercent(gmpPct)})</span>}</dd></div>
         <div className="min-w-0"><dt className="text-xs text-muted-foreground">Subscribed</dt><dd className="font-semibold mt-1">{subscribed ?? <span className="text-muted-foreground font-normal text-xs">{ipo.status === "upcoming" ? "Opens soon" : "Not yet reported"}</span>}</dd></div>
         <div className="min-w-0"><dt className="text-xs text-muted-foreground">Min. investment</dt><dd className="font-semibold mt-1">{min ?? <span className="text-muted-foreground font-normal text-xs">Not yet published</span>}</dd></div>
         <div className="min-w-0"><dt className="text-xs text-muted-foreground">Lot size</dt><dd className="font-semibold mt-1">{ipo.lot_size === null ? <span className="text-muted-foreground font-normal text-xs">Not disclosed</span> : `${ipo.lot_size.toLocaleString("en-IN")} shares`}</dd></div>

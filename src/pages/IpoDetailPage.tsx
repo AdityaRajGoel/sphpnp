@@ -48,7 +48,7 @@ export default function IpoDetailPage() {
 
   return <PageTransition><ScrollProgress /><SEOHead faqItems={faqItems} jsonLd={ipoDataset(ipo) ?? undefined} title={ipo ? `${ipo.name} IPO: GMP and dates` : "IPO details"} description={ipo ? ipoMetaDescription(ipo) : "IPO details and GMP history."} noindex={!ipo} breadcrumbs={[{ name: "Home", url: "/" }, { name: "IPO Tracker", url: "/ipo" }, { name: ipo?.name ?? "IPO details" }]} /><Header />
     {/* "ready" only once the IPO has rendered: until then SEOHead is noindex, and the prerender must not capture that. */}
-    <main className="container mx-auto max-w-6xl px-4 py-8 md:py-12" data-ipo-state={loading ? "loading" : error ? "error" : ipo ? "ready" : "missing"}><VisibleBreadcrumbs items={[{ name: "Home", url: "/" }, { name: "IPO Tracker", url: "/ipo" }, { name: ipo?.name ?? "IPO details" }]} />
+    <main className="container mx-auto max-w-7xl px-4 py-8 md:py-12" data-ipo-state={loading ? "loading" : error ? "error" : ipo ? "ready" : "missing"}><VisibleBreadcrumbs items={[{ name: "Home", url: "/" }, { name: "IPO Tracker", url: "/ipo" }, { name: ipo?.name ?? "IPO details" }]} />
       {loading ? <div className="space-y-5 mt-6"><div className="h-28 w-2/3 animate-pulse bg-muted rounded-xl" /><div className="h-72 animate-pulse bg-muted rounded-xl" /></div> : error ? <Message text={error} /> : !ipo ? <Message text="This IPO is not currently in our published catalogue." /> : <>
         <section className="mt-6 pb-8 border-b border-border"><div className="flex flex-wrap items-start justify-between gap-5"><div className="min-w-0"><div className="flex gap-2"><Badge>{ipo.type}</Badge><Badge variant="outline" className="capitalize">{ipo.status}</Badge></div><h1 className="mt-4 font-heading text-3xl md:text-5xl font-bold break-words">{ipo.name} IPO</h1><p className="mt-3 text-muted-foreground">Updated {new Intl.DateTimeFormat("en-IN", { dateStyle: "medium", timeStyle: "short" }).format(new Date(ipo.data_as_of))}.</p></div><Link to="/open-account" className="inline-flex w-full sm:w-auto justify-center items-center gap-2 rounded-lg bg-secondary px-4 py-3 text-sm font-bold text-secondary-foreground hover:bg-secondary/90">Open Demat Account <ExternalLink className="w-4 h-4" /></Link></div></section>
         <div className="mt-6 rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm"><strong>GMP disclaimer:</strong> GMP is unofficial and unregulated. It is not a recommendation or a reliable estimate of listing price or returns. Consider the RHP and your own risk assessment before applying.</div>
@@ -74,7 +74,7 @@ export default function IpoDetailPage() {
         )}
         <div className="mt-6"><NseExchangeCard ipo={ipo} /></div>
         <div className="mt-6"><IPOAllotmentCard ipo={ipo} /></div>
-        <section className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-8">
+        <section className="grid grid-cols-1 lg:grid-cols-3 lg:items-start gap-6 mt-8">
           <Card className="min-w-0 lg:col-span-2"><CardContent className="p-4 md:p-6">
             <SectionTitle icon={BarChart3} title="GMP history" subtitle="Each point is a recorded observation from the scheduled data sync." />
             <div className="mt-5"><IPOGmpChart history={ipo.gmp_history} /></div>

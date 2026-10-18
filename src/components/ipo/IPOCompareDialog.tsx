@@ -3,7 +3,7 @@ import { X } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { formatDate, formatGmp, formatGmpPercent, formatLotSize, formatMinInvestment, formatSubscription, gmpPercent, type Ipo } from "@/lib/ipo";
+import { formatDate, formatGmp, formatGmpPercent, formatLotSize, formatMinInvestment, formatSubscription, gmpPercent, signTone, type Ipo } from "@/lib/ipo";
 import { compareInfographic } from "@/lib/ipo-infographics";
 import IPOSectionInfographic from "@/components/ipo/IPOSectionInfographic";
 
@@ -23,7 +23,7 @@ const ROWS: Row[] = [
   { label: "Listing date", render: (ipo) => formatDate(ipo.listing_date) },
   {
     label: "Latest GMP",
-    render: (ipo) => <span className={ipo.gmp === null ? "text-muted-foreground" : ipo.gmp >= 0 ? "text-secondary font-semibold" : "text-destructive font-semibold"}>{formatGmp(ipo.gmp)}</span>,
+    render: (ipo) => <span className={`${signTone(ipo.gmp)} ${ipo.gmp === null ? "" : "font-semibold"}`}>{formatGmp(ipo.gmp)}</span>,
   },
 ];
 

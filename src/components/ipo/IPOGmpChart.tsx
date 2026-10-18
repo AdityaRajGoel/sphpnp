@@ -1,6 +1,10 @@
 import { useEffect, useRef } from "react";
-import { ColorType, createChart, LineSeries, type UTCTimestamp } from "lightweight-charts";
+import { ColorType, createChart, LineSeries, type AutoscaleInfo, type UTCTimestamp } from "lightweight-charts";
 import type { GmpSnapshot } from "@/lib/ipo";
+
+/** A flat or near-flat series (a ₹0 GMP all week) still gets whole-rupee ticks, not "₹0.06 … ₹-0.02". */
+const MIN_RANGE = 10;
+const rupee = (price: number) => `${price < 0 ? "−" : ""}₹${Math.abs(price).toLocaleString("en-IN", { maximumFractionDigits: 2 })}`;
 
 export default function IPOGmpChart({ history }: { history: GmpSnapshot[] }) {
   const container = useRef<HTMLDivElement>(null);
@@ -14,11 +18,19 @@ export default function IPOGmpChart({ history }: { history: GmpSnapshot[] }) {
       grid: { vertLines: { color: "rgba(115,115,115,0.10)" }, horzLines: { color: "rgba(115,115,115,0.10)" } },
       rightPriceScale: { borderColor: "rgba(115,115,115,0.18)" },
       timeScale: { borderColor: "rgba(115,115,115,0.18)", timeVisible: true, secondsVisible: false },
-      localization: { priceFormatter: (price) => `₹${price.toLocaleString("en-IN")}` },
+      localization: { priceFormatter: rupee },
     });
     const series = chart.addSeries(LineSeries, {
       color: "#e86b1f", lineWidth: 3, crosshairMarkerBackgroundColor: "#e86b1f",
       priceLineVisible: false, lastValueVisible: true,
+      autoscaleInfoProvider: (original: () => AutoscaleInfo | null) => {
+        const info = original();
+        if (!info?.priceRange) return info;
+        const { minValue, maxValue } = info.priceRange;
+        if (maxValue - minValue >= MIN_RANGE) return info;
+        const mid = (minValue + maxValue) / 2;
+        return { ...info, priceRange: { minValue: mid - MIN_RANGE / 2, maxValue: mid + MIN_RANGE / 2 } };
+      },
     });
     series.setData(history.map((point) => ({
       time: Math.floor(new Date(point.captured_at).getTime() / 1000) as UTCTimestamp,
