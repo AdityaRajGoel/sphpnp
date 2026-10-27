@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { cleanIpoName, ipoMatchKey, parseChittorgarh } from "../../supabase/functions/_shared/ipo-parse";
 import { reconcileIpos } from "../../supabase/functions/_shared/ipo-reconcile";
-import { planIpoMerges, preferFullName, resolveSlug, type StoredIpo } from "../../supabase/functions/_shared/ipo-identity";
+import { adoptStoredIdentity, planIpoMerges, preferFullName, resolveSlug, type StoredIpo } from "../../supabase/functions/_shared/ipo-identity";
 
 /*
  * One IPO, one row.
@@ -316,5 +316,41 @@ describe("preferFullName", () => {
     expect(preferFullName("Manipal Payment and Identity Solutions", "Manipal Payment")).toBe("Manipal Payment and Identity Solutions");
     expect(preferFullName("Rentomojo", null)).toBe("Rentomojo");
     expect(preferFullName("Hero Motors", "Hero MotoCorp")).toBe("Hero Motors");
+  });
+});
+
+describe("adoptStoredIdentity", () => {
+  // Production data, 27 Oct 2026: InvestorGain's JSON calls it "Zetwerk", Chittorgarh's list
+  // "Zetwerk Manufacturing Business" with no lot size. Reconciled apart, both resolved to the
+  // stored slug and the upsert would have carried that slug twice.
+  const survivors = [stored({
+    id: "z", slug: "zetwerk-manufacturing-business", name: "Zetwerk Manufacturing Business",
+    open_date: "2026-10-15", price_band_max: 151, lot_size: 99,
+  })];
+  const gain = {
+    slug: "zetwerk", name: "Zetwerk", board: "mainboard" as const, status: "closed" as const,
+    gmp: 3, lot_size: 99, issue_size_crore: 5012.33, price_band_max: 151, open_date: "2026-10-15", close_date: "2026-10-17",
+  };
+  const chittorgarh = {
+    slug: "zetwerk-manufacturing-business", name: "Zetwerk Manufacturing Business", board: "mainboard" as const,
+    price_band_min: 143, price_band_max: 151, open_date: "2026-10-15", close_date: "2026-10-17",
+    listing_date: null, issue_size_crore: 5012.33, detail_url: null,
+  };
+
+  it("gives a source row the stored issue's name, so reconcile groups the sources as one issue", () => {
+    const reconciled = reconcileIpos({
+      ipowatch: [],
+      investorgain: adoptStoredIdentity([gain], survivors),
+      chittorgarh: adoptStoredIdentity([chittorgarh], survivors),
+    });
+
+    expect(reconciled).toHaveLength(1);
+    expect(resolveSlug(reconciled[0], survivors)).toBe("zetwerk-manufacturing-business");
+    expect(reconciled[0]).toMatchObject({ gmp: 3, lot_size: 99, price_band_min: 143 });
+  });
+
+  it("leaves a row that matches nothing on record untouched", () => {
+    const fresh = { ...gain, slug: "new-co", name: "New Co", price_band_max: 90 };
+    expect(adoptStoredIdentity([fresh], survivors)).toEqual([fresh]);
   });
 });

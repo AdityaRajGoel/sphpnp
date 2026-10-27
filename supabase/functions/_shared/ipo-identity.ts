@@ -132,6 +132,26 @@ export function resolveSlug(
 }
 
 /**
+ * Source rows renamed to the stored issue they match, before reconciling.
+ *
+ * reconcileIpos groups by name, and a source with a short name and no lot size
+ * on the other side ("Zetwerk" vs Chittorgarh's "Zetwerk Manufacturing
+ * Business") stays a separate entry; both then resolve to the stored slug, and
+ * one upsert carrying a slug twice fails outright. The stored row has the lot
+ * size and price the match needs, so identity is settled against it first.
+ */
+export function adoptStoredIdentity<T extends Omit<Parameters<typeof resolveSlug>[0], "open_date"> & { open_date?: string | null }>(
+  rows: T[],
+  survivors: StoredIpo[],
+): T[] {
+  const bySlug = new Map(survivors.map((row) => [row.slug, row]));
+  return rows.map((row) => {
+    const match = bySlug.get(resolveSlug({ ...row, open_date: row.open_date ?? null }, survivors));
+    return match && match.slug !== row.slug ? { ...row, slug: match.slug, name: match.name } : row;
+  });
+}
+
+/**
  * The name to write for an issue already on record. A source that truncates
  * ("Manipal Payment") must not overwrite the full name another source gave
  * ("Manipal Payment and Identity Solutions"), or the page title flips with

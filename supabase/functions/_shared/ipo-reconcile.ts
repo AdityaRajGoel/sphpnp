@@ -43,7 +43,10 @@ export type SourceBundle = {
  * - InvestorGain sits second for lot size and issue size, which it publishes
  *   in a structured column while IPO Watch does not carry them at all.
  * - IPO Watch is the fallback for the subscription window because it is the
- *   most promptly updated of the three when dates move.
+ *   most promptly updated of the three when dates move. InvestorGain's JSON
+ *   carries the window and the upper price too and is the last resort for both,
+ *   for an issue only it lists - the price also lets a short InvestorGain name
+ *   ("Zetwerk") be matched to the full one (see ipoAliases).
  * - GMP is deliberately handled outside this table (see `pickGmp`): it is an
  *   unofficial estimate that genuinely differs between sites, so taking the
  *   median of what the sources say is more honest than declaring a winner.
@@ -54,9 +57,9 @@ export type SourceBundle = {
  */
 export const FIELD_PRECEDENCE: Record<string, SourceName[]> = {
   price_band_min: ["chittorgarh", "ipowatch"],
-  price_band_max: ["chittorgarh", "ipowatch"],
-  open_date: ["chittorgarh", "ipowatch"],
-  close_date: ["chittorgarh", "ipowatch"],
+  price_band_max: ["chittorgarh", "ipowatch", "investorgain"],
+  open_date: ["chittorgarh", "ipowatch", "investorgain"],
+  close_date: ["chittorgarh", "ipowatch", "investorgain"],
   listing_date: ["chittorgarh"],
   issue_size_crore: ["chittorgarh", "investorgain"],
   lot_size: ["investorgain"],

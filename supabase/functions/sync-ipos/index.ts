@@ -8,18 +8,22 @@
 // one source reporting zero rows, both of which are recorded, rather than as
 // quietly wrong numbers.
 //
-// Triggered by GitHub Actions; not a visitor-facing scraper. Every successful
+// Triggered by the VPS cron; not a visitor-facing scraper. Every successful
 // collection appends a GMP observation, preserving the history the public
 // detail chart draws - GMP snapshots are never rewritten.
 
 import { createClient } from "npm:@supabase/supabase-js@2";
 import {
+  type Board,
+  type ChittorgarhRow,
+  parseChittorgarhApi,
+  parseInvestorGainApi,
   parseIpoWatch,
   toCatalogueRow,
 } from "../_shared/ipo-parse.ts";
 import { reconcileIpos } from "../_shared/ipo-reconcile.ts";
 import { deriveIpoStatus, istDate } from "../_shared/ipo-status.ts";
-import { FILLABLE, planIpoMerges, preferFullName, resolveSlug, type IpoMerge, type StoredIpo } from "../_shared/ipo-identity.ts";
+import { adoptStoredIdentity, FILLABLE, planIpoMerges, preferFullName, resolveSlug, type IpoMerge, type StoredIpo } from "../_shared/ipo-identity.ts";
 import { sanitizeChittorgarhRows, sanitizeInvestorGainRows } from "../_shared/ipo-ingest.ts";
 import { errorText } from "../_shared/errors.ts";
 
@@ -27,25 +31,26 @@ const SOURCES = {
   ipowatch: "https://ipowatch.in/ipo-grey-market-premium-latest-ipo-gmp/",
   investorgain: "https://www.investorgain.com/report/ipo-gmp-live/331/",
   chittorgarh: "https://www.chittorgarh.com/report/ipo-in-india-list-main-board-sme/82/",
-  // IPO Watch is fetched directly from this runtime because it is
-  // server-rendered - a plain fetch sees its real table.
+  // All three are fetched directly from this runtime. IPO Watch is
+  // server-rendered. InvestorGain and Chittorgarh ship an empty table and fill
+  // it from a JSON API on webnodejs.<site>.com, which answers a plain fetch
+  // (found 2026-10-27 with scripts/discover-endpoints.mts) - see the API URLs
+  // below and parseInvestorGainApi/parseChittorgarhApi.
   //
-  // InvestorGain and Chittorgarh both ship an empty <table> and inject their
-  // rows with JavaScript - fetched raw, InvestorGain's table reads literally
-  // "No data available", and Chittorgarh's report URLs redirect to a list page
-  // with no table at all. A Deno edge function has no DOM and cannot run their
-  // scripts, so no parser written here can ever see those rows. Verified
-  // against both live pages, not assumed.
-  //
-  // Those two sources are instead rendered by a real headless browser in the
-  // `ipo-browser-sync` GitHub Actions workflow (scripts/ipo-browser-scrape.mts),
-  // parsed there with the exact same parseInvestorGain/parseChittorgarh this
-  // file already imports, and POSTed here as plain JSON rows - see the
-  // `browserPayload` handling below. This function is the single place the
-  // catalogue is reconciled and upserted regardless of which runtime collected
-  // each source, so a call with no body (the plain three-times-daily cron in
-  // ipo-sync.yml) still works exactly as before, ipowatch only.
+  // The headless-browser path (scripts/ipo-browser-scrape.mts, run by hand via
+  // infra/vps/jobs/ipo-browser.sh) still POSTs rendered rows; they are used only
+  // for a source whose API returned nothing this run.
 } as const;
+
+// Both take a year and a "2026-27"-style segment. InvestorGain validates the
+// year but returns its current list whatever it is. Chittorgarh filters by the
+// calendar year the issue opened (the second segment is ignored), so January
+// also reads the previous year to keep issues that opened in late December.
+const yearPath = (year: number) => `${year}/${year}-${String((year + 1) % 100).padStart(2, "0")}`;
+const investorGainApi = (year: number) =>
+  `https://webnodejs.investorgain.com/cloud/v2/report/data-read/331/1/10/${yearPath(year)}/0/all`;
+const chittorgarhApi = (year: number, board: Board) =>
+  `https://webnodejs.chittorgarh.com/cloud/report/data-read/82/1/10/${yearPath(year)}/0/${board}/0`;
 
 const USER_AGENT = "Mozilla/5.0 (compatible; sphpnp-ipo-monitor/1.0; +https://www.sphpnp.com)";
 const FETCH_TIMEOUT_MS = 30_000;
@@ -79,7 +84,7 @@ async function collect<T, E extends Record<string, unknown> = Record<string, nev
 ): Promise<{ rows: T[]; report: SourceReport } & Partial<E>> {
   try {
     const response = await fetch(url, {
-      headers: { "User-Agent": USER_AGENT, Accept: "text/html" },
+      headers: { "User-Agent": USER_AGENT, Accept: "text/html,application/json" },
       signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
     });
     if (!response.ok) {
@@ -153,13 +158,9 @@ Deno.serve(async (req) => {
     return json({ error: "Unauthorized" }, 401);
   }
 
-  // The plain three-times-daily cron (ipo-sync.yml) POSTs with no body at all,
-  // which must keep working exactly as it always has. The ipo-browser-sync
-  // workflow POSTs a JSON body of rows it rendered in a real browser and
-  // parsed with parseInvestorGain/parseChittorgarh - never raw HTML, so this
-  // function does not need to duplicate parsing for a second runtime. A
-  // malformed body degrades to "neither browser source ran this call" rather
-  // than 500ing the whole request: IPO Watch alone must still get through.
+  // A body is only sent by the browser fallback (ipo-browser.sh): rows it
+  // rendered and parsed, never raw HTML. A malformed body is ignored rather than
+  // 500ing the request - the APIs and IPO Watch must still get through.
   let browserPayload: { investorgain?: unknown; chittorgarh?: unknown } = {};
   const rawBody = await req.text();
   if (rawBody) {
@@ -167,34 +168,43 @@ Deno.serve(async (req) => {
       const parsed = JSON.parse(rawBody);
       if (parsed && typeof parsed === "object") browserPayload = parsed;
     } catch {
-      console.error("sync-ipos: ignoring malformed JSON body, proceeding with ipowatch only");
+      console.error("sync-ipos: ignoring malformed JSON body");
     }
   }
-  const investorgainAttempted = Array.isArray(browserPayload.investorgain);
-  const chittorgarhAttempted = Array.isArray(browserPayload.chittorgarh);
-  const investorgainRows = sanitizeInvestorGainRows(browserPayload.investorgain);
-  const chittorgarhRows = sanitizeChittorgarhRows(browserPayload.chittorgarh);
 
   try {
-    // Fetched in parallel: they are independent sites and one slow response
-    // should not push the whole run toward the function's time budget.
-    const [watch] = await Promise.all([
+    const today = istDate();
+    const year = Number(today.slice(0, 4));
+    const years = today.slice(5, 7) === "01" ? [year, year - 1] : [year];
+    const boards: Board[] = ["mainboard", "sme"];
+    // Fetched in parallel: independent sites, and one slow response should not
+    // push the whole run toward the function's time budget.
+    const [watch, gain, ...chittorgarhParts] = await Promise.all([
       collect("ipowatch", SOURCES.ipowatch, (html) => parseIpoWatch(html)),
+      collect("investorgain", investorGainApi(year), (text) => parseInvestorGainApi(JSON.parse(text))),
+      ...years.flatMap((y) => boards.map((board) =>
+        collect(`chittorgarh ${board} ${y}`, chittorgarhApi(y, board), (text) => parseChittorgarhApi(JSON.parse(text), board)))),
     ]);
 
-    const reports = [watch.report];
-    // Only reported when this call actually carried that source's rows - a
-    // plain cron call never attempted them and must not be shown as if it did.
-    if (investorgainAttempted) {
-      reports.push(investorgainRows.length > 0
-        ? { source: "investorgain", ok: true, rows: investorgainRows.length }
-        : { source: "investorgain", ok: false, rows: 0, reason: "0 usable rows in browser-rendered payload" });
-    }
-    if (chittorgarhAttempted) {
-      reports.push(chittorgarhRows.length > 0
-        ? { source: "chittorgarh", ok: true, rows: chittorgarhRows.length }
-        : { source: "chittorgarh", ok: false, rows: 0, reason: "0 usable rows in browser-rendered payload" });
-    }
+    // A board/year list can legitimately be empty (no SME issue yet in January),
+    // so the source counts as failed only when every list failed.
+    const chittorgarhApiRows = chittorgarhParts.flatMap((part) => part.rows as ChittorgarhRow[]);
+    const chittorgarhApiFailed = chittorgarhParts.every((part) => !part.report.ok);
+    const browserInvestorGain = sanitizeInvestorGainRows(browserPayload.investorgain);
+    const browserChittorgarh = sanitizeChittorgarhRows(browserPayload.chittorgarh);
+    const investorgainRows = gain.rows.length > 0 ? gain.rows : browserInvestorGain;
+    const chittorgarhRows = chittorgarhApiRows.length > 0 ? chittorgarhApiRows : browserChittorgarh;
+
+    const sourceReport = (source: string, rows: number, apiReport: string | undefined): SourceReport =>
+      rows > 0 ? { source, ok: true, rows } : { source, ok: false, rows: 0, reason: apiReport ?? "0 rows" };
+    const reports: SourceReport[] = [
+      watch.report,
+      sourceReport("investorgain", investorgainRows.length, gain.report.reason),
+      sourceReport("chittorgarh", chittorgarhRows.length,
+        chittorgarhApiFailed ? chittorgarhParts.map((p) => `${p.report.source}: ${p.report.reason}`).join("; ") : undefined),
+    ];
+    if (gain.rows.length === 0 && browserInvestorGain.length > 0) console.log("sync-ipos: investorgain from the browser fallback");
+    if (chittorgarhApiRows.length === 0 && browserChittorgarh.length > 0) console.log("sync-ipos: chittorgarh from the browser fallback");
     for (const report of reports) {
       if (!report.ok) console.error(`sync-ipos source failed: ${report.source} - ${report.reason}`);
       else console.log(`sync-ipos source ok: ${report.source} (${report.rows} rows)`);
@@ -214,15 +224,9 @@ Deno.serve(async (req) => {
         : { ...row, listing_price: listingPrice };
     });
 
-    const reconciled = reconcileIpos({
-      ipowatch: ipowatchRows,
-      investorgain: investorgainRows,
-      chittorgarh: chittorgarhRows,
-    });
-
     // Every source failing is a real outage, not a quiet no-op: fail loudly so
-    // the workflow surfaces it rather than reporting a successful empty run.
-    if (reconciled.length === 0) {
+    // the run surfaces it rather than reporting a successful empty run.
+    if (ipowatchRows.length + investorgainRows.length + chittorgarhRows.length === 0) {
       return json(
         { error: "No IPO rows collected from any source", sources: reports },
         502,
@@ -233,10 +237,11 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
-    // One stored row per issue: fold existing duplicates, then write each
-    // incoming issue under the slug already on record for it. Without the
-    // second step a source dropping out would mint a fresh row for an issue
-    // the catalogue already holds. See _shared/ipo-identity.ts.
+    // One stored row per issue: fold existing duplicates, then settle each
+    // source row's identity against the catalogue before reconciling, and write
+    // each issue under the slug already on record for it. Without that a source
+    // dropping out, or naming an issue more briefly than another, would mint a
+    // fresh row for an issue the catalogue already holds. See _shared/ipo-identity.ts.
     const { data: storedRows, error: storedErr } = await supabase
       .from("ipos").select(["id", "slug", "name", "created_at", "status", ...FILLABLE].join(","));
     if (storedErr) throw new Error(`reading stored IPOs failed: ${storedErr.message}`);
@@ -248,10 +253,25 @@ Deno.serve(async (req) => {
       else console.log(`sync-ipos merged duplicate ${merge.fromSlug} into ${merge.intoSlug}`);
     }
     for (const failure of mergeFailures) console.error(`sync-ipos merge failed: ${failure}`);
+
+    const reconciled = reconcileIpos({
+      ipowatch: adoptStoredIdentity(ipowatchRows, survivors),
+      investorgain: adoptStoredIdentity(investorgainRows, survivors),
+      chittorgarh: adoptStoredIdentity(chittorgarhRows, survivors),
+    });
     const storedName = new Map(survivors.map((row) => [row.slug, row.name]));
-    const resolved = reconciled.map((ipo) => {
+    // A slug twice in one upsert fails the whole batch ("cannot affect row a
+    // second time"), so a clash adoptStoredIdentity did not settle is skipped
+    // and logged rather than costing every other issue this run.
+    const written = new Set<string>();
+    const resolved = reconciled.flatMap((ipo) => {
       const slug = resolveSlug(ipo, survivors);
-      return { ...ipo, slug, name: preferFullName(ipo.name, storedName.get(slug)) };
+      if (written.has(slug)) {
+        console.error(`sync-ipos: skipped "${ipo.name}", a second issue resolving to ${slug}`);
+        return [];
+      }
+      written.add(slug);
+      return [{ ...ipo, slug, name: preferFullName(ipo.name, storedName.get(slug)) }];
     });
 
     const capturedAt = new Date().toISOString();
@@ -267,7 +287,6 @@ Deno.serve(async (req) => {
     // Status from the calendar, with the reconciled label only able to move it
     // forward. Reconciling labels alone stored every Chittorgarh-only issue as
     // "upcoming" indefinitely - see _shared/ipo-status.ts.
-    const today = istDate();
     const catalogueRows = resolved.map((ipo) =>
       toCatalogueRow(
         { ...ipo, status: deriveIpoStatus(ipo, ipo.status, today) },

@@ -478,6 +478,11 @@ export type InvestorGainRow = {
   gmp: number | null;
   lot_size: number | null;
   issue_size_crore: number | null;
+  /** Only the JSON source (parseInvestorGainApi) carries these; the rendered table's are unreliable. */
+  open_date?: string | null;
+  close_date?: string | null;
+  /** The issue price, or a book-built band's upper end. */
+  price_band_max?: number | null;
 };
 
 const INVESTORGAIN_SUFFIX = /\s*(NSE SME|BSE SME|NSE|BSE|IPO)([UOC])(Allotted)?\s*$/i;
@@ -609,6 +614,89 @@ export function parseChittorgarh(html: string, board: Board): { rows: Chittorgar
 
   const seen = new Set<string>();
   return { rows: rows.filter((row) => row.slug && !seen.has(row.slug) && (seen.add(row.slug), true)), tablesMatched };
+}
+
+// ---------------------------------------------------------------------------
+// The JSON behind both lists
+// ---------------------------------------------------------------------------
+
+/*
+ * InvestorGain and Chittorgarh fill their tables from a JSON API on
+ * webnodejs.<site>.com (found 2026-10-27 by recording the pages' own requests,
+ * scripts/discover-endpoints.mts). It answers a plain fetch from the VPS, so
+ * sync-ipos reads it directly and no browser is needed. Each row holds the
+ * table's cells as HTML strings plus "~"-prefixed raw fields; cells are read
+ * with the same helpers as the rendered table, so slugs stay identical.
+ *
+ * Money cells carry the rupee sign as "&#8377;", whose digits amount() would
+ * take as the value, so numeric entities are removed before reading.
+ */
+type ApiRow = Record<string, unknown>;
+
+const apiTable = (body: unknown): ApiRow[] | null => {
+  const rows = (body as { reportTableData?: unknown } | null)?.reportTableData;
+  return Array.isArray(rows) ? rows.filter((row): row is ApiRow => !!row && typeof row === "object") : null;
+};
+
+const apiCell = (row: ApiRow, key: string): string =>
+  typeof row[key] === "string" ? stripTags((row[key] as string).replace(/&#\d+;/g, "")) : "";
+
+const isoDay = (value: string): string | null => (/^\d{4}-\d{2}-\d{2}$/.test(value) ? value : null);
+
+const uniqueBySlug = <T extends { slug: string }>(rows: T[]): T[] => {
+  const seen = new Set<string>();
+  return rows.filter((row) => row.slug && !seen.has(row.slug) && (seen.add(row.slug), true));
+};
+
+/**
+ * InvestorGain status codes: U upcoming, O open; C, CT, LP and LN are all past
+ * the subscription window and stored as closed - deriveIpoStatus moves an issue
+ * to listed from its calendar, not from this label.
+ */
+export function parseInvestorGainApi(body: unknown): { rows: InvestorGainRow[]; tablesMatched: number } {
+  const table = apiTable(body);
+  const rows: InvestorGainRow[] = [];
+  for (const row of table ?? []) {
+    const name = cleanIpoName(apiCell(row, "~ipo_name"));
+    if (name.length < 2) continue;
+    const code = apiCell(row, "~ipo_status1");
+    // "<b>14</b>" is a quote; "<b>--</b>" is none yet, not a zero premium.
+    const gmp = /<b>\s*(-?\d+(?:\.\d+)?)\s*<\/b>/.exec(String(row.GMP ?? ""))?.[1];
+    const lot = positiveAmount(apiCell(row, "Lot"));
+    rows.push({
+      slug: slugify(name), name,
+      board: apiCell(row, "~ipo_category1").toUpperCase().includes("SME") ? "sme" : "mainboard",
+      status: code === "U" ? "upcoming" : code === "O" ? "open" : "closed",
+      gmp: gmp === undefined ? null : Number(gmp),
+      lot_size: lot === null ? null : Math.round(lot),
+      issue_size_crore: positiveAmount(apiCell(row, "IPO Size")),
+      price_band_max: positiveAmount(apiCell(row, "Price (₹)")),
+      open_date: isoDay(apiCell(row, "~Srt_Open")),
+      close_date: isoDay(apiCell(row, "~Srt_Close")),
+    });
+  }
+  return { rows: uniqueBySlug(rows), tablesMatched: table ? 1 : 0 };
+}
+
+export function parseChittorgarhApi(body: unknown, board: Board): { rows: ChittorgarhRow[]; tablesMatched: number } {
+  const table = apiTable(body);
+  const rows: ChittorgarhRow[] = [];
+  for (const row of table ?? []) {
+    const company = typeof row.Company === "string" ? row.Company : "";
+    const name = cleanChittorgarhName(stripTags(company));
+    if (name.length < 2) continue;
+    const [min, max] = priceBand(apiCell(row, "Issue Price (Rs.)"));
+    rows.push({
+      slug: slugify(name), name, board,
+      price_band_min: min, price_band_max: max,
+      open_date: parseSingleDate(apiCell(row, "Opening Date")),
+      close_date: parseSingleDate(apiCell(row, "Closing Date")),
+      listing_date: parseSingleDate(apiCell(row, "Listing Date")),
+      issue_size_crore: positiveAmount(apiCell(row, "Issue Amount (Rs.cr.)")),
+      detail_url: issueLink(company),
+    });
+  }
+  return { rows: uniqueBySlug(rows), tablesMatched: table ? 1 : 0 };
 }
 
 // ---------------------------------------------------------------------------
