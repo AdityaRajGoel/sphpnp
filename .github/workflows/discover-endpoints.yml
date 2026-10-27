@@ -1,6 +1,7 @@
 # Finds the JSON endpoints behind the exchange, IPO, fundamentals and market pages the
-# syncs read, whether each answers a plain fetch, and which hosts no sync uses yet. A measurement, not a sync: it writes
-# nothing to the database and uses no secrets. See scripts/discover-endpoints.mts.
+# syncs read, whether each answers a plain fetch, and which hosts no sync uses yet. A
+# measurement, not a sync: it writes nothing to the database and uses no secrets. See
+# scripts/discover-endpoints.mts.
 #
 # The report is in the job summary and the log; the HARs and REA's analysis of each
 # (morluto/rea, offline, no browser) are in the endpoint-discovery artifact.
