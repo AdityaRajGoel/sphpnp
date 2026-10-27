@@ -62,6 +62,7 @@ const USER_AGENT =
 const NAV_TIMEOUT_MS = 45_000;
 const SETTLE_MS = 6_000;
 const DELAY_BETWEEN_PAGES_MS = 3_000;
+const BODY_WAIT_MS = 15_000;
 // Third-party telemetry and ads say nothing about where the page's data lives.
 const NOISE = /google|doubleclick|facebook|clarity\.ms|hotjar|sentry|segment|mixpanel|amplitude|cloudflareinsights|taboola|outbrain|adservice|criteo|moengage|clevertap|webengage|onesignal|branch\.io|hs-scripts|hubspot|intercom|freshchat|tawk/i;
 
@@ -184,7 +185,9 @@ for (const [i, target] of TARGETS.entries()) {
   } catch (e) {
     error = e instanceof Error ? e.message.split("\n")[0] : String(e);
   }
-  await Promise.all(pending);
+  // A streaming or long-polling response's body() never settles; closing the
+  // context ends those (their record() rejects and is skipped).
+  await Promise.race([Promise.all(pending), sleep(BODY_WAIT_MS)]);
   await context.close(); // flushes the HAR
   const seen = new Set<string>();
   const unique = endpoints.filter((e) => !seen.has(`${e.method} ${e.url}`) && seen.add(`${e.method} ${e.url}`));
