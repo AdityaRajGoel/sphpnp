@@ -98,11 +98,16 @@ jobs:
             --data-urlencode "username=$CONTABO_API_USER" \
             --data-urlencode "password=$CONTABO_API_PASSWORD" \
             --data-urlencode 'grant_type=password' | jq --raw-output --exit-status '.access_token')
-          request_id=$(cat /proc/sys/kernel/random/uuid)
+          contabo() {
+            curl --fail --silent --show-error --request "$1" "https://api.contabo.com/v1/compute/instances/$CONTABO_INSTANCE_ID$2" \
+              --header "Authorization: Bearer $access_token" \
+              --header "x-request-id: $(cat /proc/sys/kernel/random/uuid)" \
+              --header "x-trace-id: $GITHUB_RUN_ID"
+          }
 
-          curl --fail --silent --show-error --output /dev/null --request POST \
-            "https://api.contabo.com/v1/compute/instances/$CONTABO_INSTANCE_ID/actions/restart" \
-            --header "Authorization: Bearer $access_token" \
-            --header "x-request-id: $request_id" \
-            --header "x-trace-id: $GITHUB_RUN_ID"
-          echo 'Requested a Contabo restart after two failed external probes.'
+          # A Contabo host reboot (18 Oct 2026) leaves the VM stopped, and restart can't wake a stopped VM.
+          status=$(contabo GET '' | jq --raw-output --exit-status '.data[0].status')
+          action=restart
+          [ "$status" = stopped ] && action=start
+          contabo POST "/actions/$action" > /dev/null
+          echo "Instance was $status; requested a Contabo $action after two failed external probes."

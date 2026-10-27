@@ -12,13 +12,13 @@ The auto-recovery workflow below is a slow alarm, not a fast fix. GitHub runs it
 
 ## Automated containment
 
-`.github/workflows/vps-auto-recovery.yml` runs from GitHub-hosted infrastructure every five minutes. It checks the three critical public endpoints, waits one minute, then repeats them. Only if all three checks fail twice does it ask Contabo to restart the configured instance. A workflow failure remains visible even when the restart request succeeds, so GitHub's normal workflow-failure notification is the incident alert.
+`.github/workflows/vps-auto-recovery.yml` runs from GitHub-hosted infrastructure every five minutes. It checks the three critical public endpoints, waits one minute, then repeats them. Only if all three checks fail twice does it ask Contabo to restart the configured instance, or to start it if it is stopped (a Contabo host reboot on 18 October 2026 left it stopped). A workflow failure remains visible even when the restart request succeeds, so GitHub's normal workflow-failure notification is the incident alert.
 
 The edge-functions service also has explicit Cloudflare and Google DNS upstreams in `infra/vps/supabase/docker-compose.override.yml`. This prevents a Contabo-resolver-only outage from breaking upstream data calls while the container otherwise remains healthy.
 
 ## One-time setup
 
-1. In Contabo's Customer Control Panel, create a dedicated API user restricted to the production instance and only the permission required to restart it. Do not use the main account password.
+1. In Contabo's Customer Control Panel, create a dedicated API user restricted to the production instance and only the permissions required to read, start and restart it. Do not use the main account password.
 2. In GitHub repository Settings → Secrets and variables → Actions, create these repository secrets:
 
    - `CONTABO_CLIENT_ID`
