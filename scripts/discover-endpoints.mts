@@ -1,4 +1,5 @@
-// Finds the JSON endpoints behind the HTML pages the IPO and fundamentals syncs scrape,
+// Finds the JSON endpoints behind the exchange (NSE, BSE, MCX), IPO, fundamentals and
+// market pages the syncs read, flags hosts no sync uses yet,
 // and checks whether each one answers a plain fetch with no browser and no cookies.
 //
 // Several sources are scraped as rendered HTML (see the module comment in
@@ -17,11 +18,12 @@
 //   DISCOVERY_TARGETS='[{"name":"x","url":"http://localhost:8080/"}]' node ... (override)
 
 import { chromium, type Response } from "@playwright/test";
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
-type Target = { name: string; url: string; kind: "ipo" | "fundamentals" };
+type Target = { name: string; url: string; kind: "ipo" | "fundamentals" | "exchange" | "market" | "unlisted" };
 
+// Pages this repo already scrapes or whose APIs it calls, then candidate new sources.
 const TARGETS: Target[] = process.env.DISCOVERY_TARGETS
   ? JSON.parse(process.env.DISCOVERY_TARGETS)
   : [
@@ -30,8 +32,26 @@ const TARGETS: Target[] = process.env.DISCOVERY_TARGETS
       { name: "chittorgarh-sme", url: "https://www.chittorgarh.com/report/ipo-in-india-list-main-board-sme/82/sme/", kind: "ipo" },
       { name: "ipowatch-gmp", url: "https://ipowatch.in/ipo-grey-market-premium-latest-ipo-gmp/", kind: "ipo" },
       { name: "nse-upcoming-ipo", url: "https://www.nseindia.com/market-data/all-upcoming-issues-ipo", kind: "ipo" },
+      { name: "sebi-offer-documents", url: "https://www.sebi.gov.in/sebiweb/home/HomeAction.do?doListing=yes&sid=3&ssid=15&smid=10", kind: "ipo" },
       { name: "screener-company", url: "https://www.screener.in/company/RELIANCE/consolidated/", kind: "fundamentals" },
       { name: "tickertape-stock", url: "https://www.tickertape.in/stocks/reliance-industries-RELI", kind: "fundamentals" },
+      { name: "nse-financial-results", url: "https://www.nseindia.com/companies-listing/corporate-filings-financial-results", kind: "fundamentals" },
+      { name: "nse-event-calendar", url: "https://www.nseindia.com/companies-listing/corporate-filings-event-calendar", kind: "exchange" },
+      { name: "nse-option-chain", url: "https://www.nseindia.com/option-chain", kind: "exchange" },
+      { name: "nse-fii-dii", url: "https://www.nseindia.com/reports/fii-dii", kind: "exchange" },
+      { name: "nse-quote", url: "https://www.nseindia.com/get-quotes/equity?symbol=RELIANCE", kind: "exchange" },
+      { name: "bse-home", url: "https://www.bseindia.com/", kind: "exchange" },
+      { name: "bse-announcements", url: "https://www.bseindia.com/corporates/ann.html", kind: "exchange" },
+      { name: "bse-quote", url: "https://www.bseindia.com/stock-share-price/reliance-industries-ltd/reliance/500325/", kind: "exchange" },
+      { name: "mcx-market-watch", url: "https://www.mcxindia.com/market-data/market-watch", kind: "market" },
+      { name: "niftyindices-home", url: "https://www.niftyindices.com/", kind: "market" },
+      { name: "nsdl-fpi-latest", url: "https://www.fpi.nsdl.co.in/web/Reports/Latest.aspx", kind: "market" },
+      { name: "amfi-nav", url: "https://www.amfiindia.com/net-asset-value", kind: "market" },
+      { name: "unlistedzone-shares", url: "https://www.unlistedzone.com/shares", kind: "unlisted" },
+      { name: "stockify-unlisted", url: "https://stockify.net.in/unlisted-shares-price-list-india/", kind: "unlisted" },
+      // Not used by any sync yet: checked as possible extra IPO and fundamentals sources.
+      { name: "moneycontrol-ipo", url: "https://www.moneycontrol.com/ipo/", kind: "ipo" },
+      { name: "bse-public-issues", url: "https://www.bseindia.com/markets/PublicIssues/IPOIssues_new.aspx", kind: "ipo" },
     ];
 
 const OUT = process.env.DISCOVERY_OUT ?? "endpoint-discovery";
@@ -190,5 +210,30 @@ for (const { target, finalUrl, error, endpoints } of results) {
     lines.push("");
   }
 }
+// Every host that served the pages JSON, and whether any sync already calls it.
+const code = ["supabase/functions", "scripts"]
+  .flatMap((dir) => {
+    try {
+      return readdirSync(dir, { recursive: true, encoding: "utf8" }).map((f) => join(dir, f));
+    } catch {
+      return [];
+    }
+  })
+  .filter((f) => /\.(ts|mts|py)$/.test(f) && !f.endsWith("discover-endpoints.mts"))
+  .map((f) => readFileSync(f, "utf8"))
+  .join("\n");
+const hosts = new Map<string, Set<string>>();
+for (const { target, endpoints } of results) {
+  for (const e of endpoints) {
+    const host = new URL(e.url).hostname;
+    if (!hosts.has(host)) hosts.set(host, new Set());
+    hosts.get(host)!.add(target.name);
+  }
+}
+lines.push("## Data hosts", "", "| Host | Seen on | Used by a sync |", "|---|---|---|");
+for (const [host, pages] of [...hosts].sort()) {
+  lines.push(`| ${host} | ${[...pages].join(", ")} | ${code.includes(host) ? "yes" : "**no: new source**"} |`);
+}
+lines.push("");
 writeFileSync(join(OUT, "report.md"), lines.join("\n"));
 console.log(`\nwrote ${join(OUT, "report.md")}`);
