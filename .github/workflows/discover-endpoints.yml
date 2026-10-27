@@ -1,0 +1,60 @@
+# Finds the JSON endpoints behind the IPO and fundamentals pages the syncs scrape as
+# HTML, and whether each answers a plain fetch. A measurement, not a sync: it writes
+# nothing to the database and uses no secrets. See scripts/discover-endpoints.mts.
+#
+# The report is in the job summary and the log; the HARs and REA's analysis of each
+# (morluto/rea, offline, no browser) are in the endpoint-discovery artifact.
+name: Discover data endpoints
+
+on:
+  workflow_dispatch: {}
+  push:
+    branches: ["claude/**"]
+    paths:
+      - scripts/discover-endpoints.mts
+      - .github/workflows/discover-endpoints.yml
+
+permissions:
+  contents: read
+
+jobs:
+  discover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Visit each page and test its endpoints
+        run: node --experimental-strip-types scripts/discover-endpoints.mts
+
+      - name: Analyse each capture with REA
+        # Pinned like the rest of this repo's third-party tooling.
+        run: |
+          for har in endpoint-discovery/*.har; do
+            npx -y rea-agents@6.8.0 inspect-web-network-capture "$PWD/$har" har --json > "${har%.har}.rea.json" \
+              || echo "::warning::REA could not read $har"
+          done
+
+      - name: Report
+        if: always()
+        run: |
+          cat endpoint-discovery/report.md
+          cat endpoint-discovery/report.md >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: endpoint-discovery
+          path: endpoint-discovery/
+          retention-days: 14

@@ -1,0 +1,66 @@
+# AnythingMCP for sphpnp.com -> /opt/sphpnp-anythingmcp
+# An MCP gateway that turns the IPO, fundamentals and forecast tables into tools an AI
+# client (Claude, ChatGPT, Cursor) can call: tools.json, installed by setup.sh.
+# It reads the Supabase database through the mcp_reader role, which sees exactly what
+# the public anon key sees, read-only. It holds no write path and no service-role key.
+name: sphpnp-anythingmcp
+
+networks:
+  default:
+  # The Supabase database lives in that project's own network (same as PgHero).
+  supabase:
+    external: true
+    name: supabase_default
+
+services:
+  app:
+    # v0.50.0, pinned by digest like the other third-party images on this host.
+    image: helpcodeai/anythingmcp@sha256:32d574afd90ff15cecca86270bd329d142cd80585fb04e2c26d1eb9469a56981
+    restart: unless-stopped
+    security_opt: ["no-new-privileges:true"]
+    # Loopback only: an SSH tunnel or an nginx site with TLS goes in front (README.md).
+    ports:
+      - "127.0.0.1:8460:3000"
+      - "127.0.0.1:8461:4000"
+    environment:
+      NODE_ENV: production
+      PORT: "4000"
+      DATABASE_URL: postgresql://amcp:${AMCP_DB_PASSWORD}@amcp-db:5432/anythingmcp
+      JWT_SECRET: ${JWT_SECRET:?run setup.sh}
+      # Decrypts every stored connection string. Lose it and the connector must be re-created.
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:?run setup.sh}
+      NEXT_PUBLIC_API_URL: ${AMCP_PUBLIC_API_URL:-http://localhost:8461}
+      CORS_ORIGIN: ${AMCP_PUBLIC_UI_URL:-http://localhost:8460}
+      SERVER_URL: ${AMCP_PUBLIC_API_URL:-http://localhost:8461}
+      FRONTEND_URL: ${AMCP_PUBLIC_UI_URL:-http://localhost:8460}
+      MCP_AUTH_MODE: legacy
+      MCP_ALLOW_ANONYMOUS: "false"
+      ALLOW_OPEN_REGISTRATION: "false"
+      # The connector's host is private; AnythingMCP refuses private hosts unless listed.
+      SSRF_ALLOWED_HOSTS: supabase-db
+    depends_on:
+      amcp-db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:4000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+    networks: [default, supabase]
+
+  # AnythingMCP's own state (users, connector, audit log), kept apart from Supabase.
+  amcp-db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: amcp
+      POSTGRES_PASSWORD: ${AMCP_DB_PASSWORD:?run setup.sh}
+      POSTGRES_DB: anythingmcp
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U amcp -d anythingmcp"]
+      interval: 3s
+      timeout: 3s
+      retries: 10

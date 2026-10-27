@@ -1,0 +1,266 @@
+[
+  {
+    "name": "ipo_list",
+    "description": "IPOs in the sphpnp catalogue (merged from IPO Watch, InvestorGain, Chittorgarh and NSE), newest first, each with its latest grey-market premium. Price band, issue size (crore) and subscription multiples are as published; GMP is unofficial grey-market chatter, not an exchange figure.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": [
+            "any",
+            "upcoming",
+            "open",
+            "closed",
+            "listed"
+          ],
+          "default": "any",
+          "description": "Issue status"
+        },
+        "board": {
+          "type": "string",
+          "enum": [
+            "any",
+            "mainboard",
+            "sme"
+          ],
+          "default": "any",
+          "description": "Mainboard or SME"
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100,
+          "default": 25,
+          "description": "Rows to return"
+        }
+      }
+    },
+    "endpointMapping": {
+      "method": "query",
+      "path": "select i.slug, i.name, i.board, i.status, i.price_band_min, i.price_band_max, i.lot_size, i.issue_size_crore, i.open_date, i.close_date, i.allotment_date, i.listing_date, i.subscription_qib, i.subscription_nii, i.subscription_retail, i.subscription_total, i.listing_price, i.listing_gain_pct, g.gmp as latest_gmp, g.est_listing_price, g.captured_at as gmp_captured_at, g.source as gmp_source, i.data_as_of from public.ipos i left join lateral (select s.gmp, s.est_listing_price, s.captured_at, s.source from public.ipo_gmp_snapshots s where s.ipo_id = i.id order by s.captured_at desc limit 1) g on true where ($status::text = 'any' or i.status = $status::text) and ($board::text = 'any' or i.board = $board::text) order by coalesce(i.open_date, i.listing_date) desc nulls last limit least($limit::int, 100)"
+    }
+  },
+  {
+    "name": "ipo_details",
+    "description": "One IPO by slug or by part of its name: every catalogue field (price band, lots, subscription by category, documents, news), the last 30 grey-market premium readings, and NSE's own bid/subscription record when the issue is on NSE.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "ipo": {
+          "type": "string",
+          "description": "IPO slug (from ipo_list) or part of the company name"
+        }
+      },
+      "required": [
+        "ipo"
+      ]
+    },
+    "endpointMapping": {
+      "method": "query",
+      "path": "select to_jsonb(i) - 'id' as ipo, (select json_agg(h order by h.captured_at desc) from (select s.captured_at, s.gmp, s.est_listing_price, s.source from public.ipo_gmp_snapshots s where s.ipo_id = i.id order by s.captured_at desc limit 30) h) as gmp_history, (select row_to_json(n) from public.nse_ipos n where n.ipo_slug = i.slug limit 1) as nse from public.ipos i where i.slug = $ipo::text or i.name ilike '%' || $ipo::text || '%' order by (i.slug = $ipo::text) desc, coalesce(i.open_date, i.listing_date) desc nulls last limit 5"
+    }
+  },
+  {
+    "name": "ipo_pipeline",
+    "description": "Companies that have filed offer documents with SEBI (DRHP, UDRHP, RHP) but are not necessarily open yet, latest filing first.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "stage": {
+          "type": "string",
+          "enum": [
+            "any",
+            "drhp_filed",
+            "udrhp_filed",
+            "rhp_filed",
+            "launched"
+          ],
+          "default": "any",
+          "description": "Furthest filing stage reached"
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100,
+          "default": 25,
+          "description": "Rows to return"
+        }
+      }
+    },
+    "endpointMapping": {
+      "method": "query",
+      "path": "select p.key, p.name, p.stage, p.first_filed_on, p.latest_filed_on, p.ipo_slug, jsonb_array_length(p.filings) as filings_count, p.filings -> 0 as latest_filing, p.updated_at from public.ipo_pipeline p where ($stage::text = 'any' or p.stage = $stage::text) order by p.latest_filed_on desc limit least($limit::int, 100)"
+    }
+  },
+  {
+    "name": "stock_fundamentals",
+    "description": "Fundamentals snapshot for one NSE symbol: profile, latest quote (market cap in crore), headline ratios, the latest derived ratios and Piotroski/quality scores, key metrics, shareholding and peers. A null section means that source has nothing stored for the symbol.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "symbol": {
+          "type": "string",
+          "description": "NSE symbol, e.g. RELIANCE"
+        }
+      },
+      "required": [
+        "symbol"
+      ]
+    },
+    "endpointMapping": {
+      "method": "query",
+      "path": "select q.symbol, p.company_name, p.industry, p.isin, p.bse_code, p.description, row_to_json(sc) as quote, row_to_json(fs) as summary, row_to_json(d) as derived_latest, row_to_json(s) as scores_latest, p.key_metrics, p.shareholding, p.peers, p.fetched_at as profile_fetched_at from (select upper(trim($symbol::text)) as symbol) q left join public.stock_profiles p on p.symbol = q.symbol left join lateral (select x.price, x.change_pct, x.market_cap, x.pe, x.high_52, x.low_52, x.sector, x.updated_at from public.screener_stocks x where x.symbol = q.symbol) sc on true left join public.stock_fundamentals_summary fs on fs.symbol = q.symbol left join lateral (select x.period_end, x.roe, x.roce, x.current_ratio, x.free_cash_flow, x.inputs_complete, x.missing_inputs from public.fundamentals_derived x where x.symbol = q.symbol order by x.period_end desc limit 1) d on true left join lateral (select x.period_end, x.basis, x.piotroski_score, x.piotroski_testable, x.net_debt_to_equity, x.cash_conversion, x.fcf_yield, x.ev_to_sales, x.peg, x.payout_ratio, x.revenue_cagr_3y, x.profit_cagr_3y from public.stock_fundamental_scores x where x.symbol = q.symbol order by x.period_end desc limit 1) s on true"
+    }
+  },
+  {
+    "name": "stock_financials",
+    "description": "Period-by-period results for one NSE symbol from its NSE XBRL filings, newest first, joined to the balance sheet and derived ratios for the same period end.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "symbol": {
+          "type": "string",
+          "description": "NSE symbol, e.g. TCS"
+        },
+        "consolidated": {
+          "type": "boolean",
+          "default": true,
+          "description": "Consolidated (true) or standalone (false) figures"
+        },
+        "periods": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 40,
+          "default": 8,
+          "description": "How many periods"
+        }
+      },
+      "required": [
+        "symbol"
+      ]
+    },
+    "endpointMapping": {
+      "method": "query",
+      "path": "select i.period_end, i.is_consolidated, i.revenue, i.other_income, i.total_income, i.total_expenses, i.profit_before_tax, i.profit_after_tax, i.basic_eps, i.diluted_eps, b.total_assets, b.total_debt, b.total_equity, b.cash_and_equivalents, d.roe, d.roce, d.current_ratio, d.free_cash_flow, d.inputs_complete from public.fundamentals_income i left join public.fundamentals_balance b on b.symbol = i.symbol and b.period_end = i.period_end left join public.fundamentals_derived d on d.symbol = i.symbol and d.period_end = i.period_end where i.symbol = upper(trim($symbol::text)) and i.is_consolidated = $consolidated::boolean order by i.period_end desc limit least($periods::int, 40)"
+    }
+  },
+  {
+    "name": "stock_statement",
+    "description": "One financial statement grid for an NSE symbol as shown on its sphpnp stock page: periods across, line items down, values in crore (percent for % rows), null meaning not reported.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "symbol": {
+          "type": "string",
+          "description": "NSE symbol"
+        },
+        "statement": {
+          "type": "string",
+          "enum": [
+            "quarter_results",
+            "yoy_results",
+            "balancesheet",
+            "cashflow",
+            "ratios",
+            "gf_income_quarterly",
+            "gf_income_annual",
+            "gf_balance_quarterly",
+            "gf_balance_annual",
+            "gf_cashflow_quarterly",
+            "gf_cashflow_annual"
+          ],
+          "default": "quarter_results",
+          "description": "Which statement. The gf_* grids come from Google Finance and are kept for stocks IndianAPI does not cover."
+        }
+      },
+      "required": [
+        "symbol"
+      ]
+    },
+    "endpointMapping": {
+      "method": "query",
+      "path": "select s.symbol, s.statement, s.periods, s.period_ends, s.rows, s.verified, s.source, s.fetched_at from public.stock_statements s where s.symbol = upper(trim($symbol::text)) and s.statement = $statement::text"
+    }
+  },
+  {
+    "name": "screen_stocks",
+    "description": "Filter tracked NSE stocks on valuation and quality. Every filter is optional; market cap is in crore, ROE and debt/equity come from the stored fundamentals summary. Largest companies first.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "min_roe": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "default": null,
+          "description": "Minimum ROE, percent"
+        },
+        "max_pe": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "default": null,
+          "description": "Maximum P/E (loss-makers excluded when set)"
+        },
+        "min_market_cap": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "default": null,
+          "description": "Minimum market cap, crore"
+        },
+        "max_debt_to_equity": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "default": null,
+          "description": "Maximum debt/equity"
+        },
+        "sector": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null,
+          "description": "Part of the sector name"
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100,
+          "default": 25,
+          "description": "Rows to return"
+        }
+      }
+    },
+    "endpointMapping": {
+      "method": "query",
+      "path": "select sc.symbol, sc.name, sc.sector, sc.price, sc.change_pct, sc.market_cap, sc.pe, fs.roe, fs.roce, fs.opm, fs.debt_to_equity, fs.sales_growth_yoy, fs.profit_growth_yoy, fs.dividend_yield, fs.latest_quarter from public.screener_stocks sc join public.stock_fundamentals_summary fs on fs.symbol = sc.symbol where ($min_roe::numeric is null or fs.roe >= $min_roe::numeric) and ($max_pe::numeric is null or (sc.pe > 0 and sc.pe <= $max_pe::numeric)) and ($min_market_cap::numeric is null or sc.market_cap >= $min_market_cap::numeric) and ($max_debt_to_equity::numeric is null or fs.debt_to_equity <= $max_debt_to_equity::numeric) and ($sector::text is null or sc.sector ilike '%' || $sector::text || '%') order by sc.market_cap desc nulls last limit least($limit::int, 100)"
+    }
+  },
+  {
+    "name": "stock_forecast",
+    "description": "The latest Kronos model forecast band for an NSE symbol: 10th/50th/90th percentile price at the horizon and the per-session cone. Research output only, not a price target; always relay the disclaimer column with it.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "symbol": {
+          "type": "string",
+          "description": "NSE symbol"
+        }
+      },
+      "required": [
+        "symbol"
+      ]
+    },
+    "endpointMapping": {
+      "method": "query",
+      "path": "select f.symbol, f.as_of, f.model, f.horizon_days, f.samples, f.last_close, f.band_low, f.band_mid, f.band_high, f.band_low_pct, f.band_mid_pct, f.band_high_pct, f.path, f.disclaimer, f.generated_at from public.stock_forecasts_latest f where f.symbol = upper(trim($symbol::text))"
+    }
+  }
+]

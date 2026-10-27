@@ -49,9 +49,14 @@ jobs:
       # silent upstream change to the model code would change it without any
       # commit in this repo to explain the shift.
       - name: Fetch Kronos
+        env:
+          # Upstream master as of 2026-04-13. Bump deliberately, in its own commit.
+          KRONOS_REF: 67b630e67f6a18c9e9be918d9b4337c960db1e9a
         run: |
-          git clone --depth 1 https://github.com/shiyu-coder/Kronos.git /tmp/kronos
-          cd /tmp/kronos && git log -1 --format='Kronos at %H (%ci)'
+          git init -q /tmp/kronos && cd /tmp/kronos
+          git fetch -q --depth 1 https://github.com/shiyu-coder/Kronos.git "$KRONOS_REF"
+          git checkout -q FETCH_HEAD
+          git log -1 --format='Kronos at %H (%ci)'
 
       - name: Install dependencies
         run: |

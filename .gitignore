@@ -50,6 +50,7 @@ test-results/
 playwright-report/
 blob-report/
 coverage/
+endpoint-discovery/
 
 # Vendored agent skills — ~9MB of third-party content, re-installable from
 # skills-lock.json (which is tracked). Don't bloat the repo with copies.

@@ -178,6 +178,12 @@ its own container, nothing installed on the host - and reports HIGH and CRITICAL
 that have a fix available, at `https://admin.sphpnp.com/image-scan.txt`. Only critical
 findings raise an ntfy alert.
 
+## MCP gateway
+
+`anythingmcp/` (`/opt/sphpnp-anythingmcp`) exposes the IPO, fundamentals and forecast
+tables to AI clients as read-only MCP tools, through the `mcp_reader` role. Not installed
+yet; see [`anythingmcp/README.md`](anythingmcp/README.md).
+
 ## Logs and errors
 
 - `jobs/logs-archive.sh` (00:20 IST): each container's logs for the previous day, gzipped, in
