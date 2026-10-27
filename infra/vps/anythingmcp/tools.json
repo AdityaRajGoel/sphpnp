@@ -262,5 +262,281 @@
       "method": "query",
       "path": "select f.symbol, f.as_of, f.model, f.horizon_days, f.samples, f.last_close, f.band_low, f.band_mid, f.band_high, f.band_low_pct, f.band_mid_pct, f.band_high_pct, f.path, f.disclaimer, f.generated_at from public.stock_forecasts_latest f where f.symbol = upper(trim($symbol::text))"
     }
+  },
+  {
+    "name": "corporate_announcements",
+    "description": "NSE corporate announcements (board outcomes, press releases, disclosures), newest first, with the filing PDF link.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "company": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null,
+          "description": "Part of the company name"
+        },
+        "days": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 90,
+          "default": 7,
+          "description": "How many days back"
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 200,
+          "default": 50,
+          "description": "Rows to return"
+        }
+      }
+    },
+    "endpointMapping": {
+      "method": "query",
+      "path": "select a.company, a.subject, a.detail, a.attachment_url, a.published_at from public.nse_announcements a where a.published_at >= now() - make_interval(days => $days::int) and ($company::text is null or a.company ilike '%' || $company::text || '%') order by a.published_at desc limit least($limit::int, 200)"
+    }
+  },
+  {
+    "name": "corporate_actions_upcoming",
+    "description": "Upcoming NSE corporate actions by ex-date (dividends, bonus, splits, rights, buybacks), soonest first. Dates are IST.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "days": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 180,
+          "default": 30,
+          "description": "How many days ahead"
+        },
+        "purpose": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null,
+          "description": "Part of the purpose, e.g. dividend, bonus, split"
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 200,
+          "default": 100,
+          "description": "Rows to return"
+        }
+      }
+    },
+    "endpointMapping": {
+      "method": "query",
+      "path": "select c.company, c.purpose, c.ex_date, c.record_date, c.face_value, c.link from public.nse_corporate_actions c where c.ex_date between (now() at time zone 'Asia/Kolkata')::date and (now() at time zone 'Asia/Kolkata')::date + $days::int and ($purpose::text is null or c.purpose ilike '%' || $purpose::text || '%') order by c.ex_date, c.company limit least($limit::int, 200)"
+    }
+  },
+  {
+    "name": "promoter_pledges",
+    "description": "Promoter share pledges from the latest shareholding filing of each company, with the change since the filing before. Sort by level, or by increase to see where pledging is rising.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "symbol": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null,
+          "description": "NSE symbol; omit for all companies"
+        },
+        "min_pledged_pct": {
+          "type": "number",
+          "minimum": 0,
+          "default": 0,
+          "description": "Minimum pledged share of promoter holding, percent"
+        },
+        "sort": {
+          "type": "string",
+          "enum": [
+            "level",
+            "increase"
+          ],
+          "default": "level",
+          "description": "Order by pledge level or by its increase"
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 200,
+          "default": 50,
+          "description": "Rows to return"
+        }
+      }
+    },
+    "endpointMapping": {
+      "method": "query",
+      "path": "with ranked as (select p.*, row_number() over (partition by p.company order by p.shp_date desc) as rn from public.pledge_snapshots p where $symbol::text is null or p.symbol = upper(trim($symbol::text))) select l.company, l.symbol, l.shp_date, l.promoter_pct, l.pledged_pct_of_promoter, l.pledged_pct_of_total, prev.shp_date as previous_shp_date, prev.pledged_pct_of_promoter as previous_pledged_pct_of_promoter, l.pledged_pct_of_promoter - prev.pledged_pct_of_promoter as change_pct_points from ranked l left join ranked prev on prev.company = l.company and prev.rn = 2 where l.rn = 1 and coalesce(l.pledged_pct_of_promoter, 0) >= $min_pledged_pct::numeric order by case when $sort::text = 'increase' then l.pledged_pct_of_promoter - prev.pledged_pct_of_promoter end desc nulls last, l.pledged_pct_of_promoter desc nulls last limit least($limit::int, 200)"
+    }
+  },
+  {
+    "name": "insider_trades",
+    "description": "Insider trading disclosures filed with NSE under SEBI PIT rules (promoters, directors, KMP), newest first.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "symbol": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null,
+          "description": "NSE symbol"
+        },
+        "transaction": {
+          "type": "string",
+          "enum": [
+            "any",
+            "buy",
+            "sell",
+            "pledge",
+            "revoke",
+            "other"
+          ],
+          "default": "any",
+          "description": "Transaction type"
+        },
+        "min_value": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "default": null,
+          "description": "Minimum transaction value as disclosed"
+        },
+        "days": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 365,
+          "default": 30,
+          "description": "How many days back"
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 200,
+          "default": 50,
+          "description": "Rows to return"
+        }
+      }
+    },
+    "endpointMapping": {
+      "method": "query",
+      "path": "select t.symbol, t.person, t.category, t.transaction, t.mode, t.security, t.quantity, t.value, t.holding_after_pct, t.traded_from, t.traded_to, t.disclosed_at, t.xbrl_url from public.nse_insider_trades t where t.disclosed_at >= now() - make_interval(days => $days::int) and ($symbol::text is null or t.symbol = upper(trim($symbol::text))) and ($transaction::text = 'any' or t.transaction = $transaction::text) and ($min_value::numeric is null or t.value >= $min_value::numeric) order by t.disclosed_at desc limit least($limit::int, 200)"
+    }
+  },
+  {
+    "name": "bulk_block_deals",
+    "description": "NSE bulk and block deals: who bought or sold, how many shares, at what price, with the deal value in crore. Largest first within each day.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "symbol": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null,
+          "description": "NSE symbol"
+        },
+        "deal_type": {
+          "type": "string",
+          "enum": [
+            "any",
+            "bulk",
+            "block"
+          ],
+          "default": "any",
+          "description": "Deal type"
+        },
+        "days": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 90,
+          "default": 7,
+          "description": "How many days back"
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 200,
+          "default": 50,
+          "description": "Rows to return"
+        }
+      }
+    },
+    "endpointMapping": {
+      "method": "query",
+      "path": "select d.trade_date, d.deal_type, d.symbol, d.security_name, d.client_name, d.buy_sell, d.quantity, d.price, round(d.quantity * d.price / 1e7, 2) as value_crore from public.bulk_block_deals d where d.trade_date >= (now() at time zone 'Asia/Kolkata')::date - $days::int and ($symbol::text is null or d.symbol = upper(trim($symbol::text))) and ($deal_type::text = 'any' or d.deal_type = $deal_type::text) order by d.trade_date desc, d.quantity * d.price desc nulls last limit least($limit::int, 200)"
+    }
+  },
+  {
+    "name": "results_filings",
+    "description": "Financial results filed on NSE (quarterly and annual, consolidated or standalone, audited or not), newest first, with the XBRL link.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "company": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null,
+          "description": "Part of the company name"
+        },
+        "days": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 90,
+          "default": 14,
+          "description": "How many days back"
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 200,
+          "default": 50,
+          "description": "Rows to return"
+        }
+      }
+    },
+    "endpointMapping": {
+      "method": "query",
+      "path": "select r.company, r.period, r.period_ended, r.is_consolidated, r.is_audited, r.published_at, r.xbrl_url from public.nse_result_filings r where r.published_at >= now() - make_interval(days => $days::int) and ($company::text is null or r.company ilike '%' || $company::text || '%') order by r.published_at desc limit least($limit::int, 200)"
+    }
+  },
+  {
+    "name": "stock_event_feed",
+    "description": "One timeline of everything recorded for an NSE symbol: insider trades, bulk/block deals, SEBI actions (buybacks, open offers, orders), promoter pledges, surveillance flags, corporate announcements and actions. Announcements and actions are matched to the symbol by exact company name, so a few may be missing.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "symbol": {
+          "type": "string",
+          "description": "NSE symbol"
+        },
+        "days": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 365,
+          "default": 90,
+          "description": "How many days back"
+        }
+      },
+      "required": [
+        "symbol"
+      ]
+    },
+    "endpointMapping": {
+      "method": "query",
+      "path": "with q as (select upper(trim($symbol::text)) as s, now() - make_interval(days => $days::int) as since), co as (select lower(n.name) as name from public.nse_securities n, q where n.symbol = q.s) select e.at, e.kind, e.summary, e.link from (select t.disclosed_at as at, 'insider_' || t.transaction as kind, concat_ws(' ', t.person, '(' || t.category || ')', t.quantity::text, 'shares') as summary, t.xbrl_url as link from public.nse_insider_trades t, q where t.symbol = q.s and t.disclosed_at >= q.since union all select d.trade_date::timestamptz, d.deal_type || '_deal', concat_ws(' ', d.client_name, d.buy_sell, d.quantity::text, '@', d.price::text), null from public.bulk_block_deals d, q where d.symbol = q.s and d.trade_date >= q.since::date union all select s.filed_on::timestamptz, 'sebi_' || s.category, s.kind || ': ' || s.title, s.url from public.sebi_actions s, q where s.symbol = q.s and s.filed_on >= q.since::date union all select p.shp_date::timestamptz, 'promoter_pledge', 'Pledged ' || coalesce(p.pledged_pct_of_promoter::text, '?') || '% of promoter holding', null from public.pledge_snapshots p, q where p.symbol = q.s and p.shp_date >= q.since::date union all select f.as_of::timestamptz, 'surveillance', f.flag || coalesce(' ' || f.stage, ''), null from public.surveillance_flags f, q where f.symbol = q.s union all select a.published_at, 'announcement', a.subject, a.attachment_url from public.nse_announcements a, q where lower(a.company) in (select name from co) and a.published_at >= q.since union all select c.ex_date::timestamptz, 'corporate_action', c.purpose || ' (ex-date)', c.link from public.nse_corporate_actions c, q where lower(c.company) in (select name from co) and c.ex_date >= q.since::date) e order by e.at desc nulls last limit 100"
+    }
   }
 ]

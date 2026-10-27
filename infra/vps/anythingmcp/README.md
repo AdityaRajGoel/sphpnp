@@ -20,6 +20,17 @@ has no HTML parser, so the scrapers stay where they are and this reads what they
 | `stock_statement` | one `stock_statements` grid |
 | `screen_stocks` | `screener_stocks` + `stock_fundamentals_summary`, optional filters |
 | `stock_forecast` | `stock_forecasts_latest`, with its disclaimer |
+| `corporate_announcements` | `nse_announcements`, newest first |
+| `corporate_actions_upcoming` | `nse_corporate_actions` by ex-date (IST) |
+| `promoter_pledges` | `pledge_snapshots`, latest filing per company and the change since the one before |
+| `insider_trades` | `nse_insider_trades` (SEBI PIT disclosures) |
+| `bulk_block_deals` | `bulk_block_deals`, with value in crore |
+| `results_filings` | `nse_result_filings` |
+| `stock_event_feed` | one timeline per symbol across all of the above, SEBI actions and surveillance flags |
+
+`pledge_snapshots` and `nse_result_filings` are collected nightly but nothing on the site
+reads them yet, and announcements and corporate actions only feed the ticker strip; these
+tools are the first consumers.
 
 AnythingMCP adds `execute_query` (model-written SQL, single SELECT only),
 `get_database_schema` and `get_example_queries` to every database connector. They run as
