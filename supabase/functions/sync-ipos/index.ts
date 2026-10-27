@@ -37,9 +37,11 @@ const SOURCES = {
   // (found 2026-10-27 with scripts/discover-endpoints.mts) - see the API URLs
   // below and parseInvestorGainApi/parseChittorgarhApi.
   //
-  // The headless-browser path (scripts/ipo-browser-scrape.mts, run by hand via
-  // infra/vps/jobs/ipo-browser.sh) still POSTs rendered rows; they are used only
-  // for a source whose API returned nothing this run.
+  // The headless-browser job (scripts/ipo-browser-scrape.mts, infra/vps/jobs/
+  // ipo-browser.sh, five minutes after each plain run) still POSTs rendered rows
+  // as the fallback: they are used for a source whose API returned nothing this
+  // run - refused, blocked or reshaped - so a lockout of the API costs at most
+  // until the next browser run.
 } as const;
 
 // Both take a year and a "2026-27"-style segment. InvestorGain validates the

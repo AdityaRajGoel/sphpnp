@@ -44,7 +44,7 @@ with a plain fetch. Findings that matter, each re-checked from the VPS:
 
 | Source | Endpoint | Plain fetch | Use |
 |---|---|---|---|
-| InvestorGain GMP table | `webnodejs.investorgain.com/cloud/v2/report/data-read/331/...` | yes | **In use** by `sync-ipos` (replaced the headless browser) |
+| InvestorGain GMP table | `webnodejs.investorgain.com/cloud/v2/report/data-read/331/...` | yes | **In use** by `sync-ipos`; the headless browser stays as its fallback |
 | Chittorgarh IPO lists | `webnodejs.chittorgarh.com/cloud/report/data-read/82/.../{mainboard,sme}/0` | yes | **In use** by `sync-ipos`; the whole calendar year, not the first 50 rows |
 | InvestorGain | `.../cloud/v2/ipo/ipo-url-lists` | yes | 2,175 IPOs since 2019 (name, slug, open/close dates): a backfill source |
 | Stockify unlisted | `production.stockifyfintech.co.in/api/v1/company/top-gainer/un-listed?page=N` | yes | ~100 companies with ISIN, PAN, 52-week high/low, sector, DRHP status; `sync-unlisted-quotes` still parses the page's RSC payload |

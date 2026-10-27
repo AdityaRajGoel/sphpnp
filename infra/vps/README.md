@@ -267,7 +267,7 @@ Logs go to `/var/log/sphpnp-sync/YYYY-MM-DD.log` (two weeks kept).
 | Script | Does |
 |---|---|
 | `sync.sh` | calls a sync function (`once`, `repeat`, `loop`, `market-data`, `market-backfill`) |
-| `ipo-browser.sh` | Playwright render of InvestorGain + Chittorgarh, posted to `sync-ipos` |
+| `ipo-browser.sh` | Playwright render of InvestorGain + Chittorgarh, posted to `sync-ipos`. Since 27 Oct 2026 the fallback: `sync-ipos` reads both sites' JSON APIs and uses these rows only for a source whose API returned nothing |
 | `mospi.sh` | MoSPI CPI/IIP/WPI via Node (legacy TLS), posted to `sync-market-data` |
 | `kronos.sh` | weekly Kronos forecast (Python venv in `/opt/sphpnp/kronos-venv`) |
 
