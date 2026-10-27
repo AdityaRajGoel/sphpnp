@@ -54,13 +54,17 @@ bash infra/vps/anythingmcp/setup.sh       # secrets, mcp_reader, containers
 ssh -L 8460:127.0.0.1:8460 -L 8461:127.0.0.1:8461 sphpnp-vps
 ```
 
-Open <http://localhost:8460> and register. The first account is the admin and
-registration then closes. Then load the connector and tools, and issue a key:
+`setup.sh` also generates the admin login (`AMCP_ADMIN_EMAIL`, `AMCP_ADMIN_PASSWORD` in
+`.env`). Register it, load the connector and tools, and issue a key, all in one step:
 
 ```sh
 cd /opt/sphpnp-anythingmcp
-read -rs pw && printf '%s' "$pw" | AMCP_EMAIL=you@example.com node connect.mjs --new-key; unset pw
+grep '^AMCP_ADMIN_PASSWORD=' .env | cut -d= -f2- | tr -d '\n' \
+  | AMCP_EMAIL=$(grep '^AMCP_ADMIN_EMAIL=' .env | cut -d= -f2-) node connect.mjs --register --new-key
 ```
+
+The first account is the admin and registration then closes. The UI at
+<http://localhost:8460> (through the tunnel) takes the same login.
 
 `connect.mjs` is safe to re-run after editing `tools.json`; it updates by name. It prints
 the MCP endpoint (`/mcp/<server id>`) and, with `--new-key`, a key shown once.

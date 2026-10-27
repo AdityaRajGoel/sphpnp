@@ -23,6 +23,12 @@ for name in JWT_SECRET ENCRYPTION_KEY AMCP_DB_PASSWORD; do
     echo "generated $name in $DIR/.env"
   fi
 done
+# The admin login connect.mjs --register creates; upper, lower, digit and symbol, as required.
+if ! grep -qE '^AMCP_ADMIN_PASSWORD=.+' .env; then
+  echo "AMCP_ADMIN_EMAIL=admin@sphpnp.com" >> .env
+  echo "AMCP_ADMIN_PASSWORD=Amcp-$(openssl rand -hex 16)-Z9" >> .env
+  echo "generated the AnythingMCP admin login in $DIR/.env"
+fi
 
 # mcp_reader inherits anon: it reads exactly what www.sphpnp.com's public key already
 # reads, through the same RLS policies, and nothing else (no leads, no profiles).

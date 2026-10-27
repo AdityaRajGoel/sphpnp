@@ -36,11 +36,26 @@ Installing one is a click in the AnythingMCP catalog, then assigning it to the `
 MCP server; no code. These call the vendor directly, so they are research tools for an
 AI client, not data the site stores.
 
-## Still to measure
+## What the endpoint discovery found (27 Oct 2026)
 
-`scripts/discover-endpoints.mts` (workflow `discover-endpoints.yml`) loads each source
-page (NSE, BSE, MCX, Nifty Indices, SEBI, NSDL, AMFI, the IPO and fundamentals sites,
-and Moneycontrol and BSE public issues as new candidates), records the JSON each one
-requests, checks whether a plain fetch gets the same JSON, and lists every host that
-served data with whether a sync already uses it. REA analyses each capture. It has not
-run yet: it needs the branch pushed (or the sites allowed from the dev environment).
+`scripts/discover-endpoints.mts` loaded 23 source pages in Chromium from a residential IP,
+recorded each page's own JSON requests (HARs analysed with REA), and re-requested every one
+with a plain fetch. Findings that matter, each re-checked from the VPS:
+
+| Source | Endpoint | Plain fetch | Use |
+|---|---|---|---|
+| InvestorGain GMP table | `webnodejs.investorgain.com/cloud/v2/report/data-read/331/...` | yes | **In use** by `sync-ipos` (replaced the headless browser) |
+| Chittorgarh IPO lists | `webnodejs.chittorgarh.com/cloud/report/data-read/82/.../{mainboard,sme}/0` | yes | **In use** by `sync-ipos`; the whole calendar year, not the first 50 rows |
+| InvestorGain | `.../cloud/v2/ipo/ipo-url-lists` | yes | 2,175 IPOs since 2019 (name, slug, open/close dates): a backfill source |
+| Stockify unlisted | `production.stockifyfintech.co.in/api/v1/company/top-gainer/un-listed?page=N` | yes | ~100 companies with ISIN, PAN, 52-week high/low, sector, DRHP status; `sync-unlisted-quotes` still parses the page's RSC payload |
+| Screener.in | `/api/company/<id>/chart/?q=Price-DMA50-DMA200-Volume&days=365` | yes | price, 50/200-DMA and volume history per company |
+| Tickertape | `gms-api.tickertape.in/quotes/IN/latest?sids=...` | yes | batch live quotes by Tickertape id |
+| AMFI | `/api/latest-nav-category?mfid=all` | yes | category list only; NAVs still come from NAVAll.txt |
+
+No JSON behind: SEBI offer documents, BSE (home, announcements, quote, public issues),
+NSDL FPI, Moneycontrol IPO, MCX market watch (it needs full Chromium, see `host-mcx.mts`).
+NSE pages refuse a headless browser outright (HTTP/2 protocol error); the NSE APIs the
+syncs already call are unaffected. Nifty Indices timed out.
+
+Re-run after a source breaks: `node --experimental-strip-types scripts/discover-endpoints.mts`
+(or the `discover-endpoints.yml` workflow); `DISCOVERY_TARGETS` takes a JSON list of pages.

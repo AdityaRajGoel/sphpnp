@@ -4,6 +4,7 @@
 //
 //   read -rs pw && printf '%s' "$pw" | AMCP_EMAIL=you@example.com node connect.mjs; unset pw
 //   ... node connect.mjs --new-key    also issues an MCP API key for the server (shown once)
+//   ... node connect.mjs --register   first registers that email as the admin (fresh install)
 //
 // The admin password comes from stdin and the database password from .env, so neither
 // reaches a command line. Reads .env and tools.json from this script's directory.
@@ -43,6 +44,20 @@ async function call(method, path, body, token) {
   return text ? JSON.parse(text) : null;
 }
 const list = (value) => (Array.isArray(value) ? value : (value?.data ?? value?.items ?? []));
+
+if (process.argv.includes("--register")) {
+  // The first account becomes the admin; once one exists the server answers 403
+  // (registration closed) or 409, and the login below decides.
+  const res = await fetch(`${API}/api/auth/register`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password, name: "sphpnp admin", acceptTerms: true }),
+  });
+  if (!res.ok && res.status !== 403 && res.status !== 409) {
+    throw new Error(`register: HTTP ${res.status} ${(await res.text()).slice(0, 300)}`);
+  }
+  console.log(res.ok ? `registered ${email} as the admin` : "an admin already exists");
+}
 
 const { accessToken: token } = await call("POST", "/api/auth/login", { email, password });
 
