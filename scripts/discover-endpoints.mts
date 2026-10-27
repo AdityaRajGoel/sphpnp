@@ -169,7 +169,11 @@ for (const [i, target] of TARGETS.entries()) {
   const page = await context.newPage();
   const endpoints: Observed[] = [];
   const pending: Promise<void>[] = [];
-  page.on("response", (response) => pending.push(record(response, endpoints)));
+  // Caught here: these sit unawaited until the page settles, and one stray rejection
+  // (allHeaders on a closed request) would otherwise kill the whole run.
+  page.on("response", (response) =>
+    pending.push(record(response, endpoints).catch((e) => console.warn(`  skipped ${response.url()}: ${e}`))),
+  );
   let finalUrl: string | null = null;
   let error: string | undefined;
   try {
