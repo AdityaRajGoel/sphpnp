@@ -53,7 +53,7 @@ jobs:
           cat endpoint-discovery/report.md
           cat endpoint-discovery/report.md >> "$GITHUB_STEP_SUMMARY"
 
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: endpoint-discovery
